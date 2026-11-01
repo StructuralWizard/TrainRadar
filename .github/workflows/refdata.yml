@@ -62,8 +62,9 @@ jobs:
         run: |
           mkdir -p gtfs/rt
           for f in vehicle_positions_LD trip_updates_LD vehicle_positions trip_updates alerts; do
-            curl -fsSL --retry 3 -o "gtfs/rt/$f.pb" "https://gtfsrt.renfe.com/$f.pb"
+            curl -fsSL --retry 3 -D "gtfs/rt/$f.headers" -o "gtfs/rt/$f.pb" "https://gtfsrt.renfe.com/$f.pb"
           done
+          grep -i '^last-modified' gtfs/rt/alerts.headers || true
           cargo run --release -q -p trainradar-engine --example live_check -- web/data gtfs/rt \
             | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

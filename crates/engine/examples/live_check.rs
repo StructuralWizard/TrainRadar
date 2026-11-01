@@ -198,6 +198,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         s.trains, s.delayed, s.median_delay
     );
 
+    // Incidents (alerts feed): what they refer to and how many are active.
+    let inc = &live.incidents;
+    let active = inc
+        .iter()
+        .filter(|a| {
+            a.active_from.is_none_or(|f| f <= now) && a.active_until.is_none_or(|u| u >= now)
+        })
+        .count();
+    let with_routes = inc.iter().filter(|a| !a.route_ids.is_empty()).count();
+    let with_stops = inc.iter().filter(|a| !a.stop_ids.is_empty()).count();
+    println!(
+        "\nIncidents: {} total, {active} active now, {with_routes} name lines, {with_stops} name stations",
+        inc.len()
+    );
+    for a in inc.iter().take(6) {
+        let cut = |s: &str, n: usize| s.chars().take(n).collect::<String>().replace('\n', " ");
+        println!(
+            "- `{}` from {:?} until {:?}; routes {:?}; stops {:?}; \"{}\" / \"{}\"",
+            a.id,
+            a.active_from,
+            a.active_until,
+            a.route_ids.iter().take(4).collect::<Vec<_>>(),
+            a.stop_ids.iter().take(4).collect::<Vec<_>>(),
+            cut(&a.header, 80),
+            cut(&a.description, 160)
+        );
+    }
+
     let with_ahead: Vec<_> = views.iter().filter(|v| v.ahead.is_some()).collect();
     println!(
         "\nSpacing: {} of {} trains have a train ahead on the same line. Examples:\n",

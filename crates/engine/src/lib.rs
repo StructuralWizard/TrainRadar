@@ -6,6 +6,7 @@
 //! interpolation, spacing, stats) happens here, in the browser.
 
 pub mod gtfs_rt;
+pub mod incidents;
 mod json;
 pub mod live;
 pub mod network;
@@ -405,30 +406,52 @@ impl Engine {
         s
     }
 
-    /// Current incidents (alerts feed) as a JSON array.
+    /// Active incidents, newest first: `[{id, text, tags, lines, nucleos,
+    /// stops: [{id, name, lat, lon}], from, until}]`. Feed text is untrusted:
+    /// show it as text only.
     #[wasm_bindgen(js_name = incidentsJson)]
-    pub fn incidents_json(&self) -> String {
+    pub fn incidents_json(&self, now_ms: f64) -> String {
+        let strs = |v: &[String]| {
+            let mut x = String::from("[");
+            for (i, t) in v.iter().enumerate() {
+                if i > 0 {
+                    x.push(',');
+                }
+                json::str(&mut x, t);
+            }
+            x.push(']');
+            x
+        };
         let mut s = String::from("[");
-        for (i, a) in self.live.incidents.iter().enumerate() {
+        for (i, r) in incidents::active(&self.net, &self.live.incidents, secs(now_ms))
+            .iter()
+            .enumerate()
+        {
             if i > 0 {
                 s.push(',');
             }
-            let routes: Vec<String> = a
-                .route_ids
-                .iter()
-                .map(|r| {
-                    let mut x = String::new();
-                    json::str(&mut x, r);
-                    x
-                })
-                .collect();
+            let mut stops = String::from("[");
+            for (k, (id, name, c)) in r.stops.iter().enumerate() {
+                if k > 0 {
+                    stops.push(',');
+                }
+                json::Obj::new(&mut stops)
+                    .s("id", id)
+                    .s("name", name)
+                    .on("lat", c.map(|c| c.lat))
+                    .on("lon", c.map(|c| c.lon))
+                    .end();
+            }
+            stops.push(']');
             json::Obj::new(&mut s)
-                .s("id", &a.id)
-                .s("header", &a.header)
-                .s("description", &a.description)
-                .on("from", a.active_from)
-                .on("until", a.active_until)
-                .raw("routes", &format!("[{}]", routes.join(",")))
+                .s("id", &r.incident.id)
+                .s("text", &r.text)
+                .raw("tags", &strs(&r.tags))
+                .raw("lines", &strs(&r.lines))
+                .raw("nucleos", &strs(&r.nucleos))
+                .raw("stops", &stops)
+                .on("from", r.incident.active_from)
+                .on("until", r.incident.active_until)
                 .end();
         }
         s.push(']');
@@ -437,6 +460,11 @@ impl Engine {
 }
 
 impl Engine {
+    /// Time of the latest feed data (for filtering incidents in popups).
+    fn live_now(&self) -> i64 {
+        self.live.now
+    }
+
     fn view_json(&self, v: &TrainView) -> String {
         let t = &self.live.trains[v.index];
         let mut s = String::new();
@@ -480,7 +508,12 @@ impl Engine {
                     v.next_stop.map(|i| self.net.stop_name(m.trip, i)),
                 )
                 .on("next_arrival", v.next_arrival)
-                .b("matched_exact", m.exact);
+                .b("matched_exact", m.exact)
+                .s("route_id", &route.id)
+                .n(
+                    "incidents",
+                    incidents::for_route(&self.live.incidents, &route.id, self.live_now()).len(),
+                );
         }
         for (k, g) in [("ahead", &v.ahead), ("behind", &v.behind)] {
             match g {
@@ -618,5 +651,30 @@ mod tests {
         e.onboard_clear();
         let o: serde_json::Value = serde_json::from_str(&e.onboard_json()).unwrap();
         assert_eq!(o["samples"], 0);
+
+        // Incidents: resolved lines, and counted in the popup of a C3 train.
+        e.live.ingest(
+            &e.net,
+            "alerts",
+            source::FeedData::Alerts(vec![trainradar_proto::Incident {
+                id: "AVISO_1".into(),
+                header: String::new(),
+                description: "#MadC3 \"Obras\" <b>entre</b> A y B".into(),
+                active_from: Some(now - 3600),
+                active_until: None,
+                route_ids: vec!["10T0001C3".into()],
+                stop_ids: vec!["B".into()],
+            }]),
+            now,
+        );
+        let i: serde_json::Value = serde_json::from_str(&e.incidents_json(ms)).unwrap();
+        assert_eq!(
+            i[0]["text"], "\"Obras\" <b>entre</b> A y B",
+            "text kept verbatim, shown as text"
+        );
+        assert_eq!(i[0]["lines"][0], "C3");
+        assert_eq!(i[0]["stops"][0]["id"], "B");
+        let t: serde_json::Value = serde_json::from_str(&e.train_json(0, ms)).unwrap();
+        assert_eq!(t["incidents"], 1);
     }
 }

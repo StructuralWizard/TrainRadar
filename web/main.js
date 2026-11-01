@@ -17,7 +17,17 @@ import {
   setMapLanguage,
   trainsGeoJson,
 } from "./js/map.js";
-import { delayedItem, el, legend, nearPanel, onboardBlock, statsText, trainPopup, trainTitle } from "./js/ui.js";
+import {
+  delayedItem,
+  el,
+  incidentsPanel,
+  legend,
+  nearPanel,
+  onboardBlock,
+  statsText,
+  trainPopup,
+  trainTitle,
+} from "./js/ui.js";
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -46,6 +56,9 @@ let locator = null;
 let userFix = null;
 let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
+let incidents = [];
+let incFilter = null; // { label, test }
+const SHEETS = ["delayed", "near", "incidents"];
 
 function applyLang() {
   document.documentElement.lang = lang;
@@ -60,6 +73,9 @@ function applyLang() {
   $("delayed-close").setAttribute("aria-label", t(lang, "close"));
   $("near-close").setAttribute("aria-label", t(lang, "close"));
   $("near-title").textContent = t(lang, "nearYou");
+  $("inc-title").textContent = t(lang, "incidentsTitle");
+  $("inc-close").setAttribute("aria-label", t(lang, "close"));
+  renderIncidents();
   $("near-off").textContent = t(lang, "locationOff");
   $("near-privacy").textContent = t(lang, "privacy");
   $("center-btn").setAttribute("aria-label", t(lang, "centerOnMe"));
@@ -76,7 +92,7 @@ function applyLang() {
 
 /** Fly to a point, keeping it clear of the bottom sheet if one is open. */
 function flyToVisible(lon, lat, zoom) {
-  const sheet = [$("near"), $("delayed")].find((x) => !x.hidden);
+  const sheet = SHEETS.map($).find((x) => !x.hidden);
   const covered = sheet && sheet.getBoundingClientRect().width >= window.innerWidth - 1;
   map.flyTo({
     center: [lon, lat],
@@ -114,7 +130,7 @@ function setUserLayers() {
 function startLocation() {
   if (!Locator.supported()) {
     locMessage = "noLocationApi";
-    $("near").hidden = false;
+    openSheet("near");
     renderNear(true);
     return;
   }
@@ -144,8 +160,7 @@ function startLocation() {
   });
   locMessage = "locating";
   locator.start();
-  $("near").hidden = false;
-  $("delayed").hidden = true;
+  openSheet("near");
   updateLocButton();
   renderNear(true);
 }
@@ -205,6 +220,54 @@ function renderNear(force = false) {
   );
 }
 
+/** Show one bottom sheet and hide the others. */
+function openSheet(id) {
+  for (const s of SHEETS) $(s).hidden = s !== id;
+}
+
+/** Refresh the notices button, map markers and (if open) the panel. */
+function renderIncidents() {
+  if (engine) incidents = JSON.parse(engine.incidentsJson(Date.now()));
+  $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}${incidents.length ? ` (${incidents.length})` : ""}`;
+  const seen = new Set();
+  const features = [];
+  for (const i of incidents) {
+    for (const s of i.stops) {
+      if (s.lat === null || seen.has(s.id)) continue;
+      seen.add(s.id);
+      features.push({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+        properties: { id: s.id, name: s.name },
+      });
+    }
+  }
+  map?.getSource("incidents")?.setData({ type: "FeatureCollection", features });
+  if ($("incidents").hidden) return;
+  $("inc-body").replaceChildren(
+    ...incidentsPanel(lang, {
+      list: incidents,
+      modifiedMs: feeds?.modified("alerts"),
+      filter: incFilter,
+      regionName,
+      onShowAll: () => {
+        incFilter = null;
+        renderIncidents();
+      },
+      onStop: (s) => flyToVisible(s.lon, s.lat, 13),
+    }),
+  );
+  if (!incidents.length && !feeds?.modified("alerts")) {
+    $("inc-body").prepend(el("p", { class: "muted" }, t(lang, "incidentsLoading")));
+  }
+}
+
+function showIncidents(filter = null) {
+  incFilter = filter;
+  openSheet("incidents");
+  renderIncidents();
+}
+
 function regionName(code) {
   return ref?.region(code)?.name || "";
 }
@@ -237,7 +300,12 @@ function showPopup(open = false) {
     return;
   }
   map.getSource("selected")?.setData(pointGeoJson(info.lon, info.lat));
-  const body = trainPopup(lang, info, regionName(info.region));
+  const body = trainPopup(lang, info, regionName(info.region), (i) =>
+    showIncidents({
+      label: i.route,
+      test: (x) => x.lines.includes(i.route) && (!i.region || x.nucleos.includes(i.region)),
+    }),
+  );
   if (!popup) {
     popup = new maplibregl.Popup({ closeButton: true, maxWidth: "300px", offset: 12, focusAfterOpen: false })
       .setLngLat([info.lon, info.lat])
@@ -320,7 +388,10 @@ async function main() {
     return;
   }
   feeds = new Feeds(engine, CONFIG.rtBase, {
-    onUpdate: () => render(true),
+    onUpdate: (key) => {
+      if (key === "alerts") renderIncidents();
+      render(true);
+    },
     onError: (k, e) => console.warn("feed", k, e.message),
   });
   feeds.start();
@@ -340,10 +411,26 @@ async function main() {
       ],
       { layers: ["trains"] },
     );
-    if (!hits.length) return clearSelection();
+    if (!hits.length) {
+      const inc = map.queryRenderedFeatures(
+        [
+          [e.point.x - pad, e.point.y - pad],
+          [e.point.x + pad, e.point.y + pad],
+        ],
+        { layers: ["incidents"] },
+      );
+      if (inc.length) {
+        const { id, name } = inc[0].properties;
+        return showIncidents({ label: name, test: (x) => x.stops.some((s) => s.id === id) });
+      }
+      return clearSelection();
+    }
     const info = JSON.parse(engine.trainJson(hits[0].properties.i, Date.now()));
     selectTrain(info);
   });
+  renderIncidents();
+  map.on("mouseenter", "incidents", () => (map.getCanvas().style.cursor = "pointer"));
+  map.on("mouseleave", "incidents", () => (map.getCanvas().style.cursor = ""));
   map.on("mouseenter", "trains", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "trains", () => (map.getCanvas().style.cursor = ""));
   render(true);
@@ -358,19 +445,20 @@ $("lang").addEventListener("click", () => {
 });
 $("delayed-btn").addEventListener("click", () => {
   const panel = $("delayed");
-  panel.hidden = !panel.hidden;
-  if (!panel.hidden) {
-    $("near").hidden = true;
+  if (panel.hidden) {
+    openSheet("delayed");
     renderDelayedList();
-  }
+  } else panel.hidden = true;
 });
 $("delayed-close").addEventListener("click", () => ($("delayed").hidden = true));
 $("loc-btn").addEventListener("click", () => (locator?.active ? stopLocation() : startLocation()));
 $("near-close").addEventListener("click", () => ($("near").hidden = true));
+$("inc-btn").addEventListener("click", () => ($("incidents").hidden ? showIncidents() : ($("incidents").hidden = true)));
+$("inc-close").addEventListener("click", () => ($("incidents").hidden = true));
 $("near-off").addEventListener("click", () => stopLocation());
 $("center-btn").addEventListener("click", () => {
   if (locator?.active) {
-    $("near").hidden = false;
+    openSheet("near");
     renderNear(true);
   }
   if (userFix) flyToVisible(userFix.lon, userFix.lat, 13);

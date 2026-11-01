@@ -94,6 +94,31 @@ Downloaded at most weekly (GitHub Actions cache), filtered to `railway=rail`.
 Attribution: "© OpenStreetMap contributors". Approved by the maintainer on
 2026-11-01.
 
+## Adif network status (researched 2026-11-01)
+
+Adif (the infrastructure manager) publishes network status, including incidents
+affecting all operators (Renfe, Iryo, Ouigo), only as a web page:
+[adif.es → Estado de la red](https://www.adif.es/viajeros/estado-de-la-red).
+
+- **No official feed.** There's no RSS, API or GTFS-RT/SIRI feed for it. Nothing
+  for Adif on data.renfe.com, datos.gob.es or the NAP. Adif's only open data
+  there is static infrastructure (the rail network as WFS).
+- **Terms.** Adif's [legal notice](https://www.adif.es/aviso-legal) reserves all
+  rights to the site's content, databases and texts and prohibits reproduction or
+  distribution without Adif's authorisation. Other projects report that the site
+  returns 403 to automated clients, and that the Adif app uses undocumented,
+  signed requests.
+- **Decision:** TrainRadar does **not** scrape Adif. The notices panel links to
+  Adif's page instead. Showing Adif's data would need either a published feed or
+  written authorisation (a re-use request under Ley 37/2007).
+
+## Renfe notices feed status
+
+`alerts.pb` decodes fine, but on 2026-11-01 its `Last-Modified` was
+**7 Oct 2026**. All 69 notices had no end date, so all count as "active", and
+several describe works that have finished. The app shows the feed's age and
+each notice's start date, and warns when the feed is more than 2 days old.
+
 ## Not used (yet)
 
 - NAP (nap.transportes.gob.es) mirrors the same GTFS but needs an API key, so it isn't

@@ -64,6 +64,15 @@ try {
   if (rows < 1) await fail("delayed list is empty");
   await page.screenshot({ path: `${out}/delayed.png` });
 
+  // Notices panel with whatever Renfe publishes right now. On a phone the
+  // open sheet covers the bottom buttons, so close it first like a person.
+  await page.click("#delayed-close");
+  await page.click("#inc-btn");
+  await page.waitForTimeout(500);
+  console.log("notices:", (await page.textContent("#incidents")).replace(/\s+/g, " ").slice(0, 300));
+  await page.screenshot({ path: `${out}/notices.png` });
+  await page.click("#inc-close");
+
   await page.click("#lang");
   await page.waitForFunction(() => /trains/.test(document.getElementById("stats").textContent));
   console.log("english:", await page.textContent("#stats"));

@@ -73,6 +73,22 @@ export function addLayers(map) {
     },
     paint: { "text-color": "#333", "text-halo-color": "#fff", "text-halo-width": 1.2 },
   });
+  // Stations named in Renfe notices.
+  map.addSource("incidents", { type: "geojson", data: empty() });
+  map.addLayer({
+    id: "incidents",
+    type: "circle",
+    source: "incidents",
+    minzoom: 6,
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 5, 12, 9],
+      "circle-color": "#f59e0b",
+      "circle-stroke-color": "#7c2d12",
+      "circle-stroke-width": 1.5,
+      "circle-opacity": 0.9,
+    },
+  });
+
   // The user's position (only when they turn location on).
   map.addSource("user", { type: "geojson", data: empty() });
   map.addSource("user-accuracy", { type: "geojson", data: empty() });

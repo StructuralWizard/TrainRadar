@@ -9,10 +9,13 @@ export class Feeds {
     this.base = base;
     this.onUpdate = onUpdate;
     this.onError = onError;
-    // Alerts are shown from phase A6; don't spend requests on them yet.
-    this.feeds = JSON.parse(engine.feedsJson())
-      .filter((f) => f.key !== "alerts")
-      .map((f) => ({ ...f, poller: new FeedPoller(f.interval), timer: 0, last: 0 }));
+    this.feeds = JSON.parse(engine.feedsJson()).map((f) => ({
+      ...f,
+      poller: new FeedPoller(f.interval),
+      timer: 0,
+      last: 0,
+      lastModified: null,
+    }));
     document.addEventListener("visibilitychange", () => this.visibility());
   }
 
@@ -29,6 +32,9 @@ export class Feeds {
       this.engine.ingest(f.key, bytes, Date.now());
       f.poller.success();
       f.last = Date.now();
+      // When Renfe last changed the feed (exposed by the pass-through).
+      const lm = Date.parse(r.headers.get("Last-Modified") || "");
+      f.lastModified = Number.isNaN(lm) ? null : lm;
       this.onUpdate(f.key);
     } catch (e) {
       f.poller.failure();
@@ -58,6 +64,11 @@ export class Feeds {
   /** Time of the most recent successful vehicle-position update. */
   lastUpdate() {
     return Math.max(0, ...this.feeds.filter((f) => f.key.startsWith("vp")).map((f) => f.last));
+  }
+
+  /** Last-Modified (ms) of a feed, as reported by Renfe, if known. */
+  modified(key) {
+    return this.feeds.find((f) => f.key === key)?.lastModified ?? null;
   }
 
   failing() {

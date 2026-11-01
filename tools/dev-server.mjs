@@ -34,10 +34,12 @@ async function sendFile(res, base, rel) {
   const path = normalize(join(base, rel));
   if (!path.startsWith(base)) return send(res, 403, "forbidden");
   try {
-    const p = (await stat(path)).isDirectory() ? join(path, "index.html") : path;
+    const st = await stat(path);
+    const p = st.isDirectory() ? join(path, "index.html") : path;
     res.writeHead(200, {
       "Content-Type": TYPES[extname(p)] || "application/octet-stream",
       "Cache-Control": "no-store",
+      "Last-Modified": st.mtime.toUTCString(),
     });
     res.end(await readFile(p));
   } catch {

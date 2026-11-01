@@ -26,6 +26,10 @@ export function formatDuration(lang, secs) {
   const m = Math.round(s / MINUTE);
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
+  if (h >= 48) {
+    const d = Math.round(h / 24);
+    return lang === "en" ? `${d} days` : `${d} días`;
+  }
   return m % 60 ? `${h} h ${m % 60} min` : `${h} h`;
 }
 
@@ -58,4 +62,14 @@ export function formatClock(unixSecs) {
 /** Integer with thousands separators for the stats bar. */
 export function formatCount(lang, n) {
   return new Intl.NumberFormat(lang === "en" ? "en-GB" : "es-ES").format(n);
+}
+
+const dayFmt = {
+  es: new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone: "Europe/Madrid" }),
+  en: new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Europe/Madrid" }),
+};
+
+/** "7 oct" / "7 Oct" for a unix timestamp in seconds (Madrid date). */
+export function formatDay(lang, unixSecs) {
+  return (dayFmt[lang] || dayFmt.es).format(new Date(unixSecs * 1000)).replace(".", "");
 }
