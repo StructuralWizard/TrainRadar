@@ -1,0 +1,9 @@
+{
+  "name": "trainradar-proxy",
+  "private": true,
+  "type": "module",
+  "description": "CORS pass-through Worker for Renfe GTFS-RT feeds",
+  "scripts": {
+    "test": "node --test test/index.test.mjs"
+  }
+}
