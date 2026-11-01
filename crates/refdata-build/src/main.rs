@@ -7,6 +7,7 @@ mod calendar;
 mod gtfs_io;
 mod inspect;
 mod load;
+mod osm;
 mod verify;
 
 use build::{
@@ -26,19 +27,22 @@ usage:
   refdata-build inspect <file.zip|file.csv>...
   refdata-build verify DIR
   refdata-build build --out DIR [--ld ZIP] [--cercanias ZIP]
-                      [--date YYYY-MM-DD] [--days N] [--sources FILE.tsv]
-                      [--report FILE.md]
+                      [--rail FILE.geojsonseq] [--date YYYY-MM-DD] [--days N]
+                      [--sources FILE.tsv] [--report FILE.md]
 
 build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
   --date     service date the window is centred on (default: today, Madrid)
   --days     window length in days starting the day before --date (default 8)
   --sources  tab-separated name, url, etag, last-modified (from tools/fetch-gtfs.sh)
+  --rail     OpenStreetMap railway=rail ways (from tools/fetch-osm-rail.sh), used to
+             draw trips that have no usable GTFS shape (all of AV/LD/MD)
 ";
 
 struct BuildArgs {
     out: PathBuf,
     ld: Option<PathBuf>,
     cercanias: Option<PathBuf>,
+    rail: Option<PathBuf>,
     date: Option<String>,
     days: u8,
     sources: Option<PathBuf>,
@@ -50,6 +54,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         out: PathBuf::new(),
         ld: None,
         cercanias: None,
+        rail: None,
         date: None,
         days: 8,
         sources: None,
@@ -66,6 +71,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--out" => a.out = val()?.into(),
             "--ld" => a.ld = Some(val()?.into()),
             "--cercanias" => a.cercanias = Some(val()?.into()),
+            "--rail" => a.rail = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -145,6 +151,17 @@ fn run_build(a: BuildArgs) -> Result<()> {
         }
     }
 
+    let graph = match &a.rail {
+        Some(p) => {
+            let f = std::fs::File::open(p).map_err(|e| format!("{}: {e}", p.display()))?;
+            let g = osm::RailGraph::from_geojsonseq(std::io::BufReader::new(f))?;
+            eprintln!("rail graph: {} nodes", g.node_count());
+            Some(g)
+        }
+        None => None,
+    };
+    let mut router = graph.as_ref().map(osm::Router::new);
+
     let mut built: Vec<(RegionRec, TimetableFile, build::RegionStats)> = Vec::new();
     let mut report = String::new();
     for (path, commuter) in [(&a.ld, false), (&a.cercanias, true)] {
@@ -163,7 +180,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
             feed.stats.stop_time_rows
         ));
         for (code, trips) in split_regions(&feed, commuter) {
-            let (tt, st) = build_timetable(&feed, &trips, &code, header.clone());
+            let (tt, st) = build_timetable(&feed, &trips, &code, header.clone(), router.as_mut());
             let rec = RegionRec {
                 code: code.clone(),
                 name: region_name(&code),
@@ -171,6 +188,15 @@ fn run_build(a: BuildArgs) -> Result<()> {
             };
             built.push((rec, tt, st));
         }
+    }
+    if let Some(r) = &router {
+        report.push_str(&format!(
+            "- OpenStreetMap track: {} graph nodes; {} stop pairs routed, {} not routable \
+             (drawn straight)\n",
+            graph.as_ref().map_or(0, osm::RailGraph::node_count),
+            r.stats.pairs_routed,
+            r.stats.pairs_failed
+        ));
     }
     // AV/LD/MD first, then núcleos by code.
     built.sort_by(|a, b| {
@@ -234,7 +260,7 @@ fn size_report(m: &Manifest, n_stations: usize, load_report: &str) -> String {
         "### Refdata build\n\nWindow: {} + {} days. Format v{}.\n\n{load_report}\n",
         m.window_start, m.window_days, m.format
     ));
-    s.push_str("| File | Region | Raw | Trips | Patterns | Stops | Shapes | On shape / straight | Shape pts in → out |\n");
+    s.push_str("| File | Region | Raw | Trips | Patterns | Stops | Shapes | GTFS shape / OSM / straight | Shape pts in → out |\n");
     s.push_str("|---|---|---:|---:|---:|---:|---:|---:|---:|\n");
     s.push_str(&format!(
         "| `{}` | all stations ({n_stations}) + index | {} | | | | | | |\n",
@@ -246,7 +272,7 @@ fn size_report(m: &Manifest, n_stations: usize, load_report: &str) -> String {
         total += r.bytes;
         let st = &r.stats;
         s.push_str(&format!(
-            "| `{}` | {} ({}) | {} | {} | {} | {} | {} | {} / {} | {} → {} |\n",
+            "| `{}` | {} ({}) | {} | {} | {} | {} | {} | {} / {} / {} | {} → {} |\n",
             r.file,
             r.name,
             r.code,
@@ -256,6 +282,7 @@ fn size_report(m: &Manifest, n_stations: usize, load_report: &str) -> String {
             st.stops,
             st.shapes,
             st.patterns_on_shape,
+            st.patterns_on_osm,
             st.patterns_straight,
             st.shape_points_in,
             st.shape_points_out

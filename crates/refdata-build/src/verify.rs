@@ -133,7 +133,7 @@ mod tests {
         };
         let feed = load(&mut sample_gtfs(), &w).unwrap();
         let regions = split_regions(&feed, true);
-        let (mut tt, _) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0));
+        let (mut tt, _) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
         check_timetable(&tt).unwrap();
         tt.trips[0].days = 1 << 9;
         assert!(check_timetable(&tt).is_err());

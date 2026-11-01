@@ -2,6 +2,7 @@
 
 use crate::calendar::Window;
 use crate::load::{Feed, Trip};
+use crate::osm::{MAX_SNAP_M, Router};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 use trainradar_proto::LatLon;
@@ -67,8 +68,10 @@ pub struct RegionStats {
     pub shapes: usize,
     pub shape_points_in: usize,
     pub shape_points_out: usize,
-    /// Patterns that use a GTFS shape vs. straight segments between stops.
+    /// Patterns on a GTFS shape, on OpenStreetMap track, or on straight
+    /// segments between stops.
     pub patterns_on_shape: usize,
+    pub patterns_on_osm: usize,
     pub patterns_straight: usize,
 }
 
@@ -78,6 +81,7 @@ pub fn build_timetable(
     trips: &[&Trip],
     region: &str,
     header: Header,
+    mut router: Option<&mut Router<'_>>,
 ) -> (TimetableFile, RegionStats) {
     let mut st = RegionStats::default();
     let mut tt = TimetableFile {
@@ -99,6 +103,8 @@ pub fn build_timetable(
     // Cache per (shape, stop sequence): projecting is the slow part.
     type Placed = Option<(u32, u32, Vec<u32>)>;
     let mut placed_cache: HashMap<(&str, Vec<usize>), Placed> = HashMap::new();
+    // OpenStreetMap shapes, per stop sequence.
+    let mut osm_cache: HashMap<Vec<usize>, Placed> = HashMap::new();
 
     for trip in trips {
         let stops: Vec<u32> = trip
@@ -139,7 +145,7 @@ pub fn build_timetable(
         // Place stops on the trip's shape, trying it forwards then reversed.
         let placed = if feed.shapes.contains_key(&trip.shape_id) {
             placed_cache
-                .entry((trip.shape_id.as_str(), stop_ids))
+                .entry((trip.shape_id.as_str(), stop_ids.clone()))
                 .or_insert_with(|| {
                     [false, true].into_iter().find_map(|rev| {
                         let key = (trip.shape_id.as_str(), rev);
@@ -161,12 +167,36 @@ pub fn build_timetable(
                             e.insert((idx, Polyline::new(simple)));
                         }
                         let (idx, line) = &shape_map[&key];
-                        place_on_shape(line, &coords).map(|(start, cum)| (*idx, start, cum))
+                        place_on_shape(line, &coords, MAX_STOP_OFFSET_M)
+                            .map(|(start, cum)| (*idx, start, cum))
                     })
                 })
                 .clone()
         } else {
             None
+        };
+        // No usable GTFS shape: route along OpenStreetMap track if we can.
+        let placed = match (placed, router.as_deref_mut()) {
+            (None, Some(router)) => osm_cache
+                .entry(stop_ids)
+                .or_insert_with(|| {
+                    let line = router.route_stops(
+                        &trip.stop_times.iter().map(|s| s.0).collect::<Vec<_>>(),
+                        &coords,
+                    )?;
+                    let simple = simplify(&line, SIMPLIFY_TOLERANCE_M);
+                    let poly = Polyline::new(simple.clone());
+                    let (start, cum) = place_on_shape(&poly, &coords, MAX_SNAP_M + 50.0)?;
+                    st.shape_points_in += line.len();
+                    st.shape_points_out += simple.len();
+                    tt.shapes.push(ShapeRec::encode(
+                        format!("osm:{}", tt.shapes.len()),
+                        &simple,
+                    ));
+                    Some(((tt.shapes.len() - 1) as u32, start, cum))
+                })
+                .clone(),
+            (placed, _) => placed,
         };
         let (shape, shape_start_m, cum) = match placed {
             Some((idx, start, cum)) => {
@@ -215,9 +245,14 @@ pub fn build_timetable(
         });
     }
     // Pattern counters above count per trip; report per unique pattern instead.
-    let on_shape = tt.patterns.iter().filter(|p| p.shape.is_some()).count();
-    st.patterns_on_shape = on_shape;
-    st.patterns_straight = tt.patterns.len() - on_shape;
+    let is_osm = |p: &PatternRec| {
+        p.shape
+            .is_some_and(|s| tt.shapes[s as usize].id.starts_with("osm:"))
+    };
+    st.patterns_on_osm = tt.patterns.iter().filter(|p| is_osm(p)).count();
+    st.patterns_on_shape =
+        tt.patterns.iter().filter(|p| p.shape.is_some()).count() - st.patterns_on_osm;
+    st.patterns_straight = tt.patterns.len() - st.patterns_on_shape - st.patterns_on_osm;
     tt.trips.sort_by_key(|t| (t.start, t.route));
     st.trips = tt.trips.len();
     st.patterns = tt.patterns.len();
@@ -245,12 +280,16 @@ fn straight_distances(coords: &[LatLon]) -> Vec<u32> {
 /// Project stops onto a shape in order. Returns the first stop's position on
 /// the shape and cumulative distances from it, or `None` if a stop is too far
 /// from the shape or the stops don't advance along it.
-fn place_on_shape(line: &Polyline, coords: &[LatLon]) -> Option<(u32, Vec<u32>)> {
+fn place_on_shape(
+    line: &Polyline,
+    coords: &[LatLon],
+    max_offset_m: f64,
+) -> Option<(u32, Vec<u32>)> {
     let mut seg = 0;
     let mut along = Vec::with_capacity(coords.len());
     for &c in coords {
         let p = line.project_from(c, seg)?;
-        if p.offset_m > MAX_STOP_OFFSET_M {
+        if p.offset_m > max_offset_m {
             return None;
         }
         if along.last().is_some_and(|&prev| p.along_m + 1.0 < prev) {
@@ -427,7 +466,7 @@ mod tests {
         let feed = sample();
         let regions = split_regions(&feed, true);
         assert_eq!(regions.keys().collect::<Vec<_>>(), ["10"]);
-        let (tt, st) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0));
+        let (tt, st) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
 
         // Trips 100 and 102 share one pattern; 101 runs the other way.
         assert_eq!(st.trips, 3);
@@ -471,7 +510,7 @@ mod tests {
         let mut feed = sample();
         feed.shapes.clear();
         let trips: Vec<&Trip> = feed.trips.iter().collect();
-        let (tt, st) = build_timetable(&feed, &trips, LONG_DISTANCE, Header::new(0, 8, 0));
+        let (tt, st) = build_timetable(&feed, &trips, LONG_DISTANCE, Header::new(0, 8, 0), None);
         assert_eq!(st.shapes, 0);
         assert_eq!(st.patterns_straight, st.patterns);
         let d = tt.patterns[0].stop_times()[1].dist_m;
@@ -481,19 +520,68 @@ mod tests {
     }
 
     #[test]
+    fn routes_shapeless_trips_along_osm_track() {
+        use crate::load::tests::zip_of;
+        use crate::osm::{Router, tests::sample_graph};
+        // West end of line 1 → west end of line 2 (stops ~2.2 km apart; the
+        // track goes round via the east end, ~19 km).
+        let mut gtfs = zip_of(&[
+            (
+                "stops.txt",
+                "stop_id,stop_name,stop_lat,stop_lon\nP,P,40.0003,-3.7\nQ,Q,40.0197,-3.7\n",
+            ),
+            (
+                "routes.txt",
+                "route_id,route_short_name,route_type\nR,MD,2\n",
+            ),
+            (
+                "calendar.txt",
+                "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\nS,1,1,1,1,1,1,1,20260101,20261231\n",
+            ),
+            ("trips.txt", "route_id,service_id,trip_id\nR,S,T1\n"),
+            (
+                "stop_times.txt",
+                "trip_id,arrival_time,departure_time,stop_id,stop_sequence\nT1,10:00:00,10:00:00,P,1\nT1,10:20:00,10:20:00,Q,2\n",
+            ),
+        ]);
+        let w = Window {
+            start: parse_date("20261101").unwrap(),
+            days: 1,
+        };
+        let feed = load(&mut gtfs, &w).unwrap();
+        let graph = sample_graph();
+        let mut router = Router::new(&graph);
+        let trips: Vec<&Trip> = feed.trips.iter().collect();
+        let (tt, st) = build_timetable(
+            &feed,
+            &trips,
+            LONG_DISTANCE,
+            Header::new(0, 1, 0),
+            Some(&mut router),
+        );
+        assert_eq!(st.patterns_on_osm, 1);
+        assert!(tt.shapes[0].id.starts_with("osm:"));
+        let d = tt.patterns[0].stop_times()[1].dist_m;
+        assert!(
+            (18_000..20_000).contains(&d),
+            "{d} m along track, not 2.2 km straight"
+        );
+    }
+
+    #[test]
     fn rejects_shape_far_from_stops() {
         let line = Polyline::new(vec![LatLon::new(41.0, -3.0), LatLon::new(41.1, -3.0)]);
         let stops = [LatLon::new(40.40, -3.69), LatLon::new(40.35, -3.71)];
-        assert!(place_on_shape(&line, &stops).is_none());
+        assert!(place_on_shape(&line, &stops, MAX_STOP_OFFSET_M).is_none());
     }
 
     #[test]
     fn stations_merge_services_and_index() {
         let feed = sample();
         let regions = split_regions(&feed, true);
-        let (cer, _) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0));
+        let (cer, _) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
         let all: Vec<&Trip> = feed.trips.iter().take(1).collect();
-        let (ld, _) = build_timetable(&feed, &all, LONG_DISTANCE, Header::new(0, 8, 0));
+        let (ld, _) = build_timetable(&feed, &all, LONG_DISTANCE, Header::new(0, 8, 0), None);
         let rec = |code: &str, tt: &TimetableFile| RegionRec {
             code: code.into(),
             name: region_name(code),

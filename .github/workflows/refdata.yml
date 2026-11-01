@@ -36,6 +36,20 @@ jobs:
       - run: cargo build --release -p trainradar-refdata-build
       - name: Download Renfe GTFS
         run: tools/fetch-gtfs.sh | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Week number (OSM cache key)
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      # The rail network changes slowly: download from Geofabrik at most weekly.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: osm
+        with:
+          path: gtfs/rail.geojsonseq
+          key: osm-rail-${{ steps.week.outputs.week }}
+      - name: Download OpenStreetMap rail lines
+        if: steps.osm.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y osmium-tool
+          tools/fetch-osm-rail.sh
       - name: Sample realtime feeds (ids and fields, for trip matching)
         run: |
           for f in vehicle_positions vehicle_positions_LD trip_updates trip_updates_LD; do
@@ -47,7 +61,7 @@ jobs:
       - name: Build .bin files
         run: |
           target/release/refdata-build build --out web/data \
-            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip \
+            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq \
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data
