@@ -73,6 +73,7 @@ jobs:
           DATA=demo/data FIXTURES=demo/rt node tools/dev-server.mjs &
           sleep 1
           mkdir -p shots && node tools/feed-check/web-smoke.mjs http://localhost:8080/ shots
+          node tools/feed-check/location-smoke.mjs http://localhost:8080/ shots
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

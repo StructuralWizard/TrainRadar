@@ -20,8 +20,9 @@ and draws them on a MapLibre map. There is no TrainRadar server.
   next stop, delay, age of the last GPS fix).
 - Spacing to the previous and following train on the same line, in minutes and km along
   the track.
-- Optional "Use my location": centre on me, nearest stations and their next trains,
-  trains approaching my station, and "Am I on this train?".
+- Optional "Use my location": blue dot with accuracy circle, centre on me, nearest
+  stations with their next trains and delays, trains approaching your station, and
+  "Am I on this train?" (with a confidence level, never a guess).
 - Spanish (default) and English.
 
 Phase plan and design notes: [docs/roadmap.md](docs/roadmap.md). How the engine works:

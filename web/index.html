@@ -25,10 +25,29 @@
     <button id="lang" class="pill" type="button">EN</button>
   </header>
 
+  <div id="legend" class="legend"></div>
+
   <div class="bottom">
-    <div id="legend" class="legend"></div>
-    <button id="delayed-btn" class="pill pill-strong" type="button"></button>
+    <div class="actions">
+      <button id="center-btn" class="pill" type="button" hidden>◎</button>
+      <button id="loc-btn" class="pill" type="button" aria-pressed="false"></button>
+      <button id="delayed-btn" class="pill pill-strong" type="button"></button>
+    </div>
   </div>
+
+  <section id="near" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="near-title"></h2>
+      <span class="head-actions">
+        <button id="near-off" class="pill" type="button"></button>
+        <button id="near-close" class="pill" type="button">✕</button>
+      </span>
+    </div>
+    <p id="near-privacy" class="muted small"></p>
+    <p id="near-status" class="small" aria-live="polite"></p>
+    <div id="onboard"></div>
+    <div id="near-body"></div>
+  </section>
 
   <section id="delayed" class="sheet" hidden>
     <div class="sheet-head">

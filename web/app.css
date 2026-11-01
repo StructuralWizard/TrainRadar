@@ -39,12 +39,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .bottom {
   position: absolute; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom));
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; pointer-events: none;
+  display: flex; align-items: flex-end; justify-content: flex-end; gap: 8px; pointer-events: none;
+  z-index: 3; /* above MapLibre's controls */
 }
 .bottom > * { pointer-events: auto; }
 .legend {
-  display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 10px; font-size: 12px;
-  background: var(--bg); border-radius: 10px; box-shadow: var(--shadow); max-width: 70%;
+  position: absolute; top: calc(78px + var(--safe-top)); left: 8px;
+  display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 4px 10px; font-size: 12px;
+  background: var(--bg); border-radius: 10px; box-shadow: var(--shadow); max-width: calc(100% - 72px);
 }
 .legend-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .legend-item i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2); }
@@ -81,3 +83,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .maplibregl-ctrl-top-right { top: var(--safe-top); }
 /* Attribution sits above the legend and Delays button, never over them. */
 .maplibregl-ctrl-bottom-right { bottom: calc(52px + var(--safe-bottom)); }
+
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.pill[aria-pressed="true"] { background: #2563eb; color: #fff; border-color: #2563eb; }
+.small { font-size: 13px; margin: 4px 0; }
+.sheet h3 { font-size: 14px; margin: 14px 0 4px; }
+.board { list-style: none; margin: 0; padding: 0; }
+.board li { display: flex; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.board li.canceled .board-main { text-decoration: line-through; }
+.board-time { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; }
+.board-main { flex: 1; min-width: 0; }
+.board-delay { font-weight: 600; white-space: nowrap; }
+.link { border: 0; background: none; padding: 0; color: var(--accent); text-align: left; min-height: 32px; }
+.onboard { background: #eff6ff; border-radius: 10px; padding: 4px 10px 8px; margin: 8px 0; }
+.onboard h3 { margin-top: 6px; }
+.onboard p { margin: 4px 0 6px; }
+.warn { color: #b45309; }
+.head-actions { display: flex; gap: 6px; }

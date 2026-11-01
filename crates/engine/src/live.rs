@@ -140,6 +140,14 @@ impl Live {
         self.rebuild(net, now);
     }
 
+    /// Renfe's latest trip update for a GTFS trip id, if any.
+    pub fn trip_update(&self, trip_id: &str) -> Option<&RtTripUpdate> {
+        self.updates
+            .values()
+            .flatten()
+            .find(|u| u.trip_id == trip_id)
+    }
+
     /// Re-match every vehicle (also call after loading a timetable).
     pub fn rebuild(&mut self, net: &Network, now: i64) {
         let updates: HashMap<&str, &RtTripUpdate> = self

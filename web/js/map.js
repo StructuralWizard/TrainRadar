@@ -73,6 +73,26 @@ export function addLayers(map) {
     },
     paint: { "text-color": "#333", "text-halo-color": "#fff", "text-halo-width": 1.2 },
   });
+  // The user's position (only when they turn location on).
+  map.addSource("user", { type: "geojson", data: empty() });
+  map.addSource("user-accuracy", { type: "geojson", data: empty() });
+  map.addLayer({
+    id: "user-accuracy",
+    type: "fill",
+    source: "user-accuracy",
+    paint: { "fill-color": "#2563eb", "fill-opacity": 0.12, "fill-outline-color": "#2563eb" },
+  });
+  map.addLayer({
+    id: "user",
+    type: "circle",
+    source: "user",
+    paint: {
+      "circle-radius": 7,
+      "circle-color": "#2563eb",
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 2.5,
+    },
+  });
   map.addLayer({
     id: "selected-ring",
     type: "circle",
