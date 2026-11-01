@@ -155,9 +155,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     start: Some(now as u64 - 3 * 86_400),
                     end: None,
                 }],
+                // Renfe lists every route of a line (both directions).
                 informed_entity: vec![
                     EntitySelector {
                         route_id: Some("10T0001C3".into()),
+                        ..Default::default()
+                    },
+                    EntitySelector {
+                        route_id: Some("10T0002C3".into()),
                         ..Default::default()
                     },
                     EntitySelector {
