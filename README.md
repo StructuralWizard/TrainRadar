@@ -37,9 +37,10 @@ Renfe open data ──► your browser
 - **Static timetables** (GTFS) are never downloaded by the browser. `refdata-build` turns them
   into small, pre-indexed `.bin` files in CI. They are served with content-hashed names and
   long-lived caching, and Cercanías data is loaded per region on demand.
-- If a feed blocks cross-origin browser access (CORS), a tiny Cloudflare Worker forwards the
-  raw bytes unchanged and adds CORS headers. It does no parsing. See
-  [docs/data-sources.md](docs/data-sources.md) for the current status.
+- Renfe's realtime feeds don't send CORS headers, so browsers can't read them directly. A
+  tiny Cloudflare Worker forwards the raw bytes unchanged and adds CORS headers. It does no
+  parsing and only allows Renfe's feed paths. Details in
+  [docs/data-sources.md](docs/data-sources.md).
 
 ## Repository layout
 
@@ -50,7 +51,7 @@ Renfe open data ──► your browser
 | `crates/refdata-build` | Native CLI run in CI: Renfe GTFS → compact `.bin` files |
 | `web/` | Static site (Cloudflare Pages): `index.html`, MapLibre, `engine.wasm`, `.bin` data |
 | `tools/feed-check` | Browser-based CORS/HTTPS/refresh check of the Renfe endpoints |
-| `worker/` | Cloudflare Worker pass-through, only if CORS requires it |
+| `worker/` | Cloudflare Worker pass-through that adds CORS headers (phase A3) |
 
 ## Local development
 

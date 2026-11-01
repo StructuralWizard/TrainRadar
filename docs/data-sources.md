@@ -1,47 +1,83 @@
 # Data sources
 
-Status: **candidates, pending confirmation.** Nothing below is used by the app until it has
-been checked by `tools/feed-check` (see the "Feed check" GitHub Actions run) and approved.
+Status: **verified on 2026-11-01, awaiting maintainer approval.** Facts below come from the
+"Feed check" GitHub Actions run (`tools/feed-check`): headless Chromium on a separate HTTPS
+origin, plus the official dataset metadata from the data.renfe.com CKAN API
+(`/api/3/action/package_show`). Re-run the workflow any time to refresh them.
 
-## Realtime (fetched by the browser)
+## Realtime feeds (polled by the browser)
 
-All on `https://gtfsrt.renfe.com`. GTFS-Realtime v2.0, each in protobuf (`.pb`) and JSON
-(`.json`) forms.
+All GTFS-Realtime v2.0, on `https://gtfsrt.renfe.com`, each published as protobuf (`.pb`) and
+JSON (`.json`). We will use **`.pb`**: 4–5× smaller than the JSON.
 
-| Feed | Dataset on data.renfe.com | Candidate URL |
-|---|---|---|
-| Vehicle positions, Cercanías | `ubicacion-vehiculos` | `/vehicle_positions.pb` · `.json` |
-| Vehicle positions, AV/LD/MD | `posicion-vehiculos-av-ld-md` | `/vehicle_positions_LD.json` (`.pb` to verify) |
-| Trip updates, Cercanías | `horarios-viaje-cercanias` | `/trip_updates.pb` · `.json` |
-| Trip updates, AV/LD/MD | (to confirm) | `/trip_updates_LD.json` (`.pb` to verify) |
-| Alerts / incidents, Cercanías | `incidencias-avisos` | `/alerts.pb` · `.json` |
+| Feed | Dataset (data.renfe.com) | URL | `.pb` size | `.json` size | Official refresh | Measured change gap |
+|---|---|---|---:|---:|---|---|
+| Vehicle positions, Cercanías | `ubicacion-vehiculos` | `/vehicle_positions.pb` | 23.4 KB | 104.9 KB | 20 s | ~21–25 s |
+| Vehicle positions, AV/LD/MD | `posicion-vehiculos-av-ld-md` | `/vehicle_positions_LD.pb` | 8.8 KB | 44.6 KB | 15 s | ~17 s |
+| Trip updates, Cercanías | `horarios-viaje-cercanias` | `/trip_updates.pb` | 20.0 KB | 114.0 KB | 20 s | ~18–21 s |
+| Trip updates, AV/LD/MD | not listed in CKAN (see note) | `/trip_updates_LD.pb` | 11.4 KB | 50.3 KB | — | ~15 s |
+| Alerts, Cercanías | `incidencias-avisos` | `/alerts.pb` | 41.8 KB | 97.4 KB | 20 s | no change in 3 min |
 
-Refresh: reported as ~20–30 s by third parties. To be measured by feed-check; polling
-intervals will come from measured values, not from this table.
+All responses: HTTP 200, `Cache-Control: max-age=30, public`, `Last-Modified` set.
 
-Known quirks (reported by other projects, to verify):
-- The AV/LD/MD feed header `timestamp` is reportedly an hour off; HTTP `Last-Modified` is
-  more reliable.
-- The alerts feed has reportedly stalled for weeks at a time.
-- At least one project reports the feeds **don't allow CORS**. If confirmed, a pass-through
-  Cloudflare Worker is needed.
+**Planned polling:** 30 s per feed (the server's own `max-age`), ±3 s jitter, exponential
+backoff on errors, paused while the tab is hidden. Total ≈ 105 KB per 30 s with all feeds;
+Cercanías feeds will only be polled when a Cercanías region is on screen.
 
-## Static timetables (fetched in CI only)
+### CORS and HTTPS
 
-| Dataset | Candidate URL |
+| Check | Result |
 |---|---|
-| `horarios-de-alta-velocidad-larga-distancia-y-media-distancia` | `https://ssl.renfe.com/gtransit/Fichero_AV_LD/google_transit.zip` |
-| `horarios-cercanias` | `https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip` |
-| `estaciones-listado-completo` | `https://ssl.renfe.com/ftransit/Fichero_estaciones/estaciones.csv` |
+| HTTPS | ✅ all endpoints |
+| Plain HTTP | ❌ connection times out (so no mixed-content issue; HTTPS only) |
+| `Access-Control-Allow-Origin` | ❌ **absent on every endpoint** |
+| Browser `fetch()` from another origin | ❌ blocked: "No 'Access-Control-Allow-Origin' header is present" |
 
-Known quirks: fields padded with spaces; stations CSV in Latin-1; Cercanías `stop_times.txt`
-reportedly ~300 MB uncompressed.
+**Conclusion:** direct browser access is impossible. We need the minimal Cloudflare Worker
+described in the hard constraints: forward the raw bytes **unchanged**, add CORS headers,
+edge-cache for at most 15 s (the shortest refresh interval), allow-list only the five paths
+above, no parsing or logic.
+
+### Notes and quirks
+
+- `trip_updates_LD` is live and valid but not listed as a resource in any CKAN dataset we
+  queried. It sits on the same host and the same CC BY 4.0 publisher; we will ask Renfe or
+  treat it as part of the same open-data service. Your call.
+- **Alerts feed is stale:** `Last-Modified: Wed, 07 Oct 2026` (≈25 days old at check time).
+  Other projects report it stalling for weeks. The UI must show the feed's age and hide
+  incidents older than a threshold.
+- Third parties report the AV/LD/MD GTFS-RT header `timestamp` is an hour off; we will trust
+  per-entity timestamps and `Last-Modified` and verify in phase A3.
+- Cercanías vehicle `label` carries the platform, e.g. `"C1-23537-PLATF.(3)"` (official note).
+
+## Static timetables (downloaded in CI only, never by the browser)
+
+| Dataset | URL | Size | Updated |
+|---|---|---:|---|
+| `horarios-de-alta-velocidad-larga-distancia-y-media-distancia` | `https://ssl.renfe.com/gtransit/Fichero_AV_LD/google_transit.zip` | 836 KB | daily (Last-Modified 2026-11-01 00:04 GMT) |
+| `horarios-cercanias` | `https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip` | 16.1 MB | daily (2026-11-01 03:08 GMT) |
+| `estaciones-listado-completo` | `https://ssl.renfe.com/ftransit/Fichero_estaciones/estaciones.csv` (+ `.xlsx`) | 139 KB | 2026-11-01 01:50 GMT |
+
+All three send an `ETag`, so the nightly CI job can skip the rebuild when nothing changed.
+Reported quirks: fields padded with spaces; the stations CSV is Latin-1.
 
 ## Licence and attribution
 
-Renfe's datasets are listed as **CC BY 4.0** (per datos.gob.es and the portal's dataset
-listings; the legal page `data.renfe.com/legal` still needs to be read). CC BY 4.0 allows
-redistribution and derived works, including in an open-source app, with attribution.
+Every dataset above is published by Renfe Operadora under **Creative Commons Attribution 4.0
+(CC-BY-4.0)** per the CKAN metadata. CC BY 4.0 permits redistribution and derived works,
+including in an open-source app, provided we credit the source, link the licence and say that
+we changed the data.
 
-Planned attribution (UI and README): "Datos: © Renfe Operadora, CC BY 4.0
-(data.renfe.com). Modificados: procesados y combinados por TrainRadar."
+Attribution used in the UI and README:
+
+> Datos: © Renfe Operadora, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+> ([data.renfe.com](https://data.renfe.com)). Procesados y combinados por TrainRadar.
+
+Still to do: read the portal's legal page (`data.renfe.com/legal`) for any extra conditions;
+this sandbox couldn't reach it.
+
+## Not used (yet)
+
+- NAP (nap.transportes.gob.es) mirrors the same GTFS but needs an API key, so it isn't
+  suitable for a keyless browser app. Not needed.
+- Adif network status: researched in phase A6.
