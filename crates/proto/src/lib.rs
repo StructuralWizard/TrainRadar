@@ -3,15 +3,13 @@
 //! Everything here is plain data: serde-serialisable and encoded with
 //! [`postcard`] for the compact `.bin` reference files.
 
-#![no_std]
-extern crate alloc;
+pub mod geo;
+pub mod refdata;
 
-use alloc::string::String;
-use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 /// Version of the `.bin` format. Bump when a stored type changes shape.
-pub const FORMAT_VERSION: u16 = 1;
+pub const FORMAT_VERSION: u16 = 2;
 
 /// WGS84 coordinate in degrees.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -156,8 +154,6 @@ pub fn decode<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, postcard::Er
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloc::string::ToString;
-    use alloc::vec;
 
     fn sample_train() -> Train {
         Train {

@@ -77,11 +77,11 @@ fn inspect_zip(path: &Path) -> Result<()> {
         for (p, (n, ex)) in prefixes {
             println!("   {p}: {n}  e.g. {ex}");
         }
-        let types: BTreeMap<&str, usize> =
-            routes.rows.iter().fold(BTreeMap::new(), |mut m, r| {
-                *m.entry(routes.get(r, routes.col("route_type"))).or_default() += 1;
-                m
-            });
+        let types: BTreeMap<&str, usize> = routes.rows.iter().fold(BTreeMap::new(), |mut m, r| {
+            *m.entry(routes.get(r, routes.col("route_type")))
+                .or_default() += 1;
+            m
+        });
         println!("   route_type counts: {types:?}");
     }
 

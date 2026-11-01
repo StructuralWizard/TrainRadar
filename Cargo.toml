@@ -12,8 +12,8 @@ authors = ["TrainRadar contributors"]
 
 [workspace.dependencies]
 trainradar-proto = { path = "crates/proto" }
-serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
-postcard = { version = "1", default-features = false, features = ["alloc"] }
+serde = { version = "1", features = ["derive"] }
+postcard = { version = "1", default-features = false, features = ["use-std"] }
 wasm-bindgen = "=0.2.130"
 
 [workspace.lints.rust]

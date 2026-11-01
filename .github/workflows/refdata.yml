@@ -36,8 +36,26 @@ jobs:
       - run: cargo build --release -p trainradar-refdata-build
       - name: Download Renfe GTFS
         run: tools/fetch-gtfs.sh | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Inspect
+      - name: Build .bin files
         run: |
-          for f in gtfs/ld.zip gtfs/cercanias.zip gtfs/estaciones.csv; do
-            target/release/refdata-build inspect "$f"
-          done
+          target/release/refdata-build build --out web/data \
+            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip \
+            --sources gtfs/sources.tsv --report refdata.md
+      - name: Size report (raw and gzip -9)
+        run: |
+          command -v brotli >/dev/null || sudo apt-get install -y brotli
+          {
+            cat refdata.md
+            echo
+            echo "| File | Raw | gzip -9 | brotli -q 11 |"
+            echo "|---|---:|---:|---:|"
+            for f in web/data/*; do
+              printf '| `%s` | %s | %s | %s |\n' "$(basename "$f")" "$(wc -c <"$f")" \
+                "$(gzip -9c "$f" | wc -c)" "$(brotli -q 11 -c "$f" | wc -c)"
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: refdata
+          path: web/data
+          retention-days: 7

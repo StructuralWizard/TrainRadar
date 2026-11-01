@@ -93,6 +93,7 @@ impl Gtfs<File> {
 }
 
 impl<R: Read + Seek> Gtfs<R> {
+    #[cfg(test)]
     pub fn from_reader(r: R) -> Result<Self> {
         Ok(Self {
             zip: zip::ZipArchive::new(r)?,
@@ -116,10 +117,6 @@ impl<R: Read + Seek> Gtfs<R> {
             .filter_map(|n| n.ok())
             .find(|n| n.rsplit('/').next() == Some(name))
             .map(|n| n.into_owned())
-    }
-
-    pub fn has(&mut self, name: &str) -> bool {
-        self.find(name).is_some()
     }
 
     pub fn text(&mut self, name: &str) -> Result<Option<String>> {
