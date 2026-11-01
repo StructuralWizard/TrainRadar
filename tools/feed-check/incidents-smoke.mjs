@@ -18,6 +18,7 @@ const fail = async (msg) => {
 const text = async (sel) => (await page.textContent(sel)).replace(/\s+/g, " ");
 
 await page.goto(url);
+await page.waitForFunction(() => window.__trainradar?.map?.getSource("incidents"), null, { timeout: 30000 });
 await page.waitForFunction(() => /\(2\)/.test(document.getElementById("inc-btn").textContent), null, { timeout: 30000 });
 console.log("button:", await page.textContent("#inc-btn"));
 await page.click("#inc-btn");
