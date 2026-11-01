@@ -1,0 +1,83 @@
+:root {
+  --fg: #1a1a1a;
+  --muted: #666;
+  --bg: rgba(255, 255, 255, 0.94);
+  --line: rgba(0, 0, 0, 0.08);
+  --accent: #1d4ed8;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: #e5e3df; }
+#map { position: absolute; inset: 0; }
+.muted { color: var(--muted); }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+.bar {
+  position: absolute; top: calc(8px + var(--safe-top)); left: 8px; right: 56px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 12px; background: var(--bg); box-shadow: var(--shadow);
+  max-width: 560px;
+}
+.brand { font-weight: 700; color: var(--accent); white-space: nowrap; }
+.bar-text { flex: 1; min-width: 0; font-size: 13px; }
+#stats { font-weight: 600; }
+#status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 479px) {
+  .brand { display: none; }
+}
+
+.pill {
+  border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 6px 12px; min-height: 36px; min-width: 44px; box-shadow: var(--shadow);
+}
+.pill-strong { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.pill:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+
+.bottom {
+  position: absolute; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom));
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; pointer-events: none;
+}
+.bottom > * { pointer-events: auto; }
+.legend {
+  display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 10px; font-size: 12px;
+  background: var(--bg); border-radius: 10px; box-shadow: var(--shadow); max-width: 70%;
+}
+.legend-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.legend-item i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2); }
+
+.sheet {
+  position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; max-height: 55vh; overflow: auto;
+  background: #fff; border-radius: 14px 14px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,.18);
+  padding: 4px 12px calc(12px + var(--safe-bottom));
+}
+.sheet[hidden] { display: none; }
+@media (min-width: 720px) {
+  .sheet { left: auto; right: 8px; bottom: auto; top: 64px; width: 380px; max-height: calc(100vh - 140px); border-radius: 14px; }
+}
+.sheet-head { position: sticky; top: 0; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+.sheet-head h2 { margin: 0; font-size: 17px; }
+#delayed-list { list-style: none; margin: 0; padding: 0; }
+.delayed-item {
+  display: flex; gap: 10px; align-items: baseline; width: 100%; text-align: left;
+  padding: 10px 4px; border: 0; border-bottom: 1px solid var(--line); background: none; min-height: 44px;
+}
+.delayed-delay { font-weight: 700; min-width: 64px; }
+.delayed-main { flex: 1; min-width: 0; }
+
+.popup { font-size: 13px; min-width: 210px; }
+.popup-title { font-weight: 700; font-size: 16px; margin-bottom: 2px; padding-right: 18px; }
+.popup .row { display: flex; gap: 8px; padding: 3px 0; border-top: 1px solid var(--line); }
+.popup .row:first-of-type { border-top: 0; }
+.popup .label { color: var(--muted); min-width: 92px; }
+.popup .value { flex: 1; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: 600; margin: 4px 0; }
+.badge-red { background: #fde2e1; color: #b42318; }
+.maplibregl-popup-content { border-radius: 10px; padding: 10px 12px; }
+.maplibregl-popup-close-button { font-size: 20px; width: 32px; height: 32px; }
+.maplibregl-ctrl-top-right { top: var(--safe-top); }
+/* Attribution sits above the legend and Delays button, never over them. */
+.maplibregl-ctrl-bottom-right { bottom: calc(52px + var(--safe-bottom)); }
