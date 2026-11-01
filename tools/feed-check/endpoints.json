@@ -1,0 +1,30 @@
+{
+  "_comment": "Candidate endpoints to verify. Nothing here is trusted until feed-check confirms it. Sources: data.renfe.com dataset pages as cited by community projects (see docs/data-sources.md).",
+  "realtime": [
+    "https://gtfsrt.renfe.com/vehicle_positions.pb",
+    "https://gtfsrt.renfe.com/vehicle_positions.json",
+    "https://gtfsrt.renfe.com/vehicle_positions_LD.pb",
+    "https://gtfsrt.renfe.com/vehicle_positions_LD.json",
+    "https://gtfsrt.renfe.com/trip_updates.pb",
+    "https://gtfsrt.renfe.com/trip_updates.json",
+    "https://gtfsrt.renfe.com/trip_updates_LD.pb",
+    "https://gtfsrt.renfe.com/trip_updates_LD.json",
+    "https://gtfsrt.renfe.com/alerts.pb",
+    "https://gtfsrt.renfe.com/alerts.json"
+  ],
+  "static": [
+    "https://ssl.renfe.com/gtransit/Fichero_AV_LD/google_transit.zip",
+    "https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip",
+    "https://ssl.renfe.com/ftransit/Fichero_estaciones/estaciones.csv"
+  ],
+  "ckan_api": "https://data.renfe.com/api/3/action",
+  "ckan_datasets": [
+    "ubicacion-vehiculos",
+    "posicion-vehiculos-av-ld-md",
+    "horarios-viaje-cercanias",
+    "incidencias-avisos",
+    "horarios-cercanias",
+    "horarios-de-alta-velocidad-larga-distancia-y-media-distancia",
+    "estaciones-listado-completo"
+  ]
+}
