@@ -10,7 +10,15 @@ pub fn run(dir: &Path) -> Result<()> {
         serde_json::from_str(&std::fs::read_to_string(dir.join("manifest.json"))?)?;
     let file = |v: &serde_json::Value| -> Result<Vec<u8>> {
         let name = v["file"].as_str().ok_or("manifest: missing file name")?;
-        Ok(std::fs::read(dir.join(name))?)
+        let raw = std::fs::read(dir.join(name))?;
+        if name.ends_with(".gz") {
+            use std::io::Read;
+            let mut out = Vec::new();
+            flate2::read::GzDecoder::new(&raw[..]).read_to_end(&mut out)?;
+            Ok(out)
+        } else {
+            Ok(raw)
+        }
     };
 
     let st: StationsFile = decode_file(&file(&manifest["stations"])?)?;
