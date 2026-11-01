@@ -47,6 +47,32 @@ const info = JSON.parse(e.trainJson(i, Date.now()));  // popup, incl. spacing
    every 2 min, +0–10% jitter (never faster), exponential backoff to 10 min
    on errors, and no polling while the tab is hidden.
 
+## Location features (only after "Use my location")
+
+- **Nearest stations:** the grid spatial index in `stations.bin` (`places.rs`).
+- **Station board:** every trip in the loaded timetables that calls at the
+  station in the next 90 min, in timetable order, with Renfe's live delay
+  (or the delay of the matching train on the map), cancellations, and
+  arrivals for trains that terminate there. Turning location on loads the
+  Cercanías núcleo around you first.
+- **Approaching trains:** trains on the map whose remaining stops include
+  the station, with ETA (schedule + delay) and distance along the track.
+- **"Am I on this train?"** (`onboard.rs`). Every fix is compared with the
+  trains within 3 km at that moment. A train is a match when, over a
+  30–90 s window with ≥ 3 fixes:
+  - it was near ≥ 80% of the fixes;
+  - its median distance is within max(300 m, 2 × GPS accuracy);
+  - its speed is within 35% (or 3 m/s) of yours. Speeds are medians between
+    consecutive fixes, so one bad fix doesn't spoil them.
+
+  The user must be moving at ≥ 15 km/h; otherwise the answer is "standing still,
+  can't tell". One fit over ≥ 45 s and ≥ 4 fixes is **high** confidence; one
+  fit sooner, or a clear winner among several, is **medium**; close
+  alternatives are reported as ambiguous. It never assumes.
+- **Privacy:** fixes live only in page memory, are dropped after 90 s, and
+  are cleared when location is turned off. `watchPosition` runs only while
+  location is on and the tab is visible. Nothing is sent, logged or stored.
+
 ## Live results (CI "Refdata" run, 1 Nov 2026 ~19:15 Madrid)
 
 `cargo run --release -p trainradar-engine --example live_check -- web/data gtfs/rt`
