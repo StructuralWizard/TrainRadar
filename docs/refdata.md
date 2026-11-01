@@ -19,10 +19,11 @@ cargo run --release -p trainradar-refdata-build -- inspect gtfs/ld.zip   # explo
 | `stations.<hash>.bin` | at start | Every station (AV/LD/MD + Cercanías) with services, regions, and a spatial grid index for "nearest station" |
 | `tt-ld.<hash>.bin` | at start | AV/LD/MD timetable |
 | `tt-<núcleo>.<hash>.bin` | when that region is on screen | One Cercanías núcleo (10 Madrid, 51 Rodalies, …) |
+| `geo-<region>.<hash>.bin` | after the timetable | OpenStreetMap track for trips without a usable GTFS shape |
 
 Hashed names change whenever content changes, so they can be cached for a year.
 
-## Format (v2)
+## Format (v3)
 
 All files are [postcard](https://postcard.jamesmunns.com)-encoded structs from
 `crates/proto/src/refdata.rs`, starting with a header (`TRRD` magic, format
@@ -46,29 +47,38 @@ version, date window). Postcard writes integers as varints, so:
 | Feed | `shapes.txt` | What we do |
 |---|---|---|
 | Cercanías | Yes, one shape per line (e.g. `10_C1`), single direction | Stops are projected onto the shape in order. Trips running the other way use a reversed copy. 90% of patterns fit. The rest (a stop > 400 m off, or out of order) use straight segments. |
-| AV/LD/MD | **No** | Straight segments between stops (fallback). See the proposal below. |
+| AV/LD/MD | **No** | Routed along OpenStreetMap track (below). |
 
-**Proposal for AV/LD/MD geometry (needs approval):** use OpenStreetMap railway
-geometry. In CI, download a Spain rail extract (`railway=rail`, ~10–20 MB),
-build a track graph, and route each pair of consecutive stops along the track.
-That gives real curves for the map, better interpolation, and correct km for
-train spacing. Licence: OSM data is ODbL. We must show "© OpenStreetMap
-contributors" and publish the derived shapes under ODbL. Since the generated
-files are already public, the share-alike part is easy to meet.
+**OpenStreetMap track (approved 2026-11-01).** CI downloads the Spain and
+Portugal extracts from Geofabrik (cached weekly), keeps `railway=rail` ways
+(not yards, sidings or spurs) with `osmium`, and builds a track graph where
+ways sharing a node connect. Each pair of consecutive stops is routed with A*
+(stops snap to track within 1 km; routes more than 1.8× the straight distance
++ 20 km are rejected). Each routed stop pair is stored once as a *leg*,
+simplified at 15 m, and shared by every trip between those stops. Pairs that
+can't be routed (e.g. into France, or gaps in OSM) stay straight.
+
+Result: 2,334 of 3,049 stop pairs follow track. 1,630 of 1,655 AV/LD/MD
+patterns use OSM track for at least one section.
+
+Licence: OSM data © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/).
+The `geo-*.bin` files are a derived database, published openly with the site
+under the ODbL. Attribution is in `manifest.json`, the README and the map.
 
 ## Sizes (build of 2026-11-01)
 
 | File | Raw | gzip -9 | brotli |
 |---|---:|---:|---:|
-| `manifest.json` | 8.3 KB | 1.9 KB | 1.5 KB |
-| `stations` (1,471 stations) | 47.3 KB | 29.4 KB | 24.5 KB |
-| `tt-ld` (3,424 trips) | 269.4 KB | 97.1 KB | 77.3 KB |
-| `tt-10` Madrid | 200.6 KB | 55.5 KB | 34.6 KB |
-| `tt-51` Rodalies de Catalunya | 220.4 KB | 67.2 KB | 45.8 KB |
-| `tt-20` Asturias | 111.4 KB | 33.5 KB | 24.6 KB |
-| other 12 núcleos | 7–62 KB each | 2–19 KB each | 1.6–13 KB each |
-| **Initial load** (manifest + stations + AV/LD/MD) | 325 KB | **128 KB** | 103 KB |
-| **Everything** | 1.14 MB | 383 KB | 278 KB |
+| `manifest.json` | 9.8 KB | 2.1 KB | 1.7 KB |
+| `stations` (1,471 stations) | 47.3 KB | 29.4 KB | 24.6 KB |
+| `tt-ld` (3,424 trips) | 303.2 KB | 106.2 KB | 85.2 KB |
+| `geo-ld` (OSM track, 2,146 legs) | 418.1 KB | 263.1 KB | 178.7 KB |
+| `tt-10` Madrid | 200.9 KB | 55.6 KB | 34.6 KB |
+| `tt-51` Rodalies de Catalunya | 221.7 KB | 67.6 KB | 45.9 KB |
+| other 13 núcleos | 7–112 KB each | 2–34 KB each | 1.6–25 KB each |
+| `geo-<núcleo>` (OSM for the few Cercanías trips without a fitting shape) | 1–12 KB each | 1–8 KB each | 1–7 KB each |
+| **First load** (manifest + stations + AV/LD/MD timetable) | 360 KB | **138 KB** | 111 KB |
+| then AV/LD/MD track | 418 KB | 263 KB | 179 KB |
 
 Reproduce: the "Refdata" GitHub Actions workflow prints this table on every run.
 
