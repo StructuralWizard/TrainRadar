@@ -60,6 +60,8 @@ mod tests {
                 fix_time: 0,
                 source: PositionSource::Gps,
             },
+            ahead: None,
+            behind: None,
         }
     }
 

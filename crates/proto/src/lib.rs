@@ -99,6 +99,19 @@ pub struct Station {
     pub coord: LatLon,
 }
 
+/// Spacing to a neighbouring train running the same way on the same line.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Gap {
+    pub trip_id: String,
+    /// Distance along the track (shape), in metres. Never straight-line.
+    pub distance_m: u32,
+    /// Time separation in seconds: how long after the leading train the following
+    /// train is expected to pass the same point, using schedule plus current delay.
+    pub time_secs: u32,
+    /// How the gap was estimated; `Interpolated` if either train's position is.
+    pub source: PositionSource,
+}
+
 /// A live train as shown on the map.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Train {
@@ -111,6 +124,10 @@ pub struct Train {
     pub next_stop: Option<String>,
     pub delay: Option<Delay>,
     pub position: Position,
+    /// Train ahead on the same line and direction, if any.
+    pub ahead: Option<Gap>,
+    /// Train behind on the same line and direction, if any.
+    pub behind: Option<Gap>,
 }
 
 /// A service incident or notice.
@@ -157,6 +174,13 @@ mod tests {
                 fix_time: 1_000,
                 source: PositionSource::Interpolated,
             },
+            ahead: Some(Gap {
+                trip_id: "0069023042026".to_string(),
+                distance_m: 42_300,
+                time_secs: 14 * 60,
+                source: PositionSource::Gps,
+            }),
+            behind: None,
         }
     }
 
