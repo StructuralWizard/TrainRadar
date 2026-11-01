@@ -80,6 +80,13 @@ impl Engine {
         Ok(code)
     }
 
+    /// Load a `geo-<region>.<hash>.bin` (track geometry). Returns the region
+    /// code. Call after that region's timetable; trains redraw on track.
+    #[wasm_bindgen(js_name = loadGeometry)]
+    pub fn load_geometry(&mut self, bytes: &[u8]) -> Result<String, JsError> {
+        Ok(self.net.load_geometry(bytes)?)
+    }
+
     /// Feeds to poll, as JSON: `[{key, path, interval, commuter}]`.
     #[wasm_bindgen(js_name = feedsJson)]
     pub fn feeds_json(&self) -> String {

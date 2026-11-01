@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use trainradar_proto::LatLon;
 use trainradar_proto::geo::Polyline;
 use trainradar_proto::refdata::{
-    FormatError, NO_LEG, StationsFile, StopTime, TimetableFile, TripRec, decode_file,
+    FormatError, GeometryFile, NO_LEG, StationsFile, StopTime, TimetableFile, TripRec, decode_file,
 };
 use trainradar_proto::time::{madrid_day, service_day_base};
 
@@ -54,13 +54,13 @@ pub enum PatternGeom {
 pub struct Leg {
     /// Metres along the trip where this section starts (its first stop).
     pub start_m: f64,
-    pub line: LegLine,
-}
-
-#[derive(Debug)]
-pub enum LegLine {
-    Shared(u32),
-    Own(Polyline),
+    /// Section length along the track, from the timetable.
+    pub len_m: f64,
+    /// Index into the region's OSM legs, if this section has track geometry.
+    pub shared: Option<u32>,
+    /// Straight line between the two stops: used for straight sections, and
+    /// for track sections until the region's geometry file has loaded.
+    pub straight: Polyline,
 }
 
 #[derive(Debug, Default)]
@@ -112,7 +112,6 @@ impl Network {
             self.rebuild_indexes();
         }
         let shapes: Vec<Polyline> = tt.shapes.iter().map(|s| s.polyline()).collect();
-        let legs: Vec<Polyline> = tt.legs.iter().map(|s| s.polyline()).collect();
         let sched: Vec<Vec<StopTime>> = tt.patterns.iter().map(|p| p.stop_times()).collect();
         let geom = tt
             .patterns
@@ -131,11 +130,9 @@ impl Network {
                             .enumerate()
                             .map(|(i, &l)| Leg {
                                 start_m: f64::from(st[i].dist_m),
-                                line: if l == NO_LEG {
-                                    LegLine::Own(Polyline::new(vec![coord(i), coord(i + 1)]))
-                                } else {
-                                    LegLine::Shared(l)
-                                },
+                                len_m: f64::from(st[i + 1].dist_m - st[i].dist_m),
+                                shared: (l != NO_LEG).then_some(l),
+                                straight: Polyline::new(vec![coord(i), coord(i + 1)]),
                             })
                             .collect(),
                     ),
@@ -154,7 +151,7 @@ impl Network {
             stop_gid,
         });
         self.shapes.push(shapes);
-        self.legs.push(legs);
+        self.legs.push(Vec::new()); // until load_geometry
         self.index_region(self.regions.len() - 1);
         Ok(code)
     }
@@ -203,18 +200,43 @@ impl Network {
             PatternGeom::Legs(legs) => {
                 let i = legs.partition_point(|l| l.start_m <= d).saturating_sub(1);
                 let leg = legs.get(i)?;
-                let line = self.leg_line(t.region, leg);
-                let local = d - leg.start_m;
+                let (line, scale) = self.leg_line(t.region, leg);
+                let local = (d - leg.start_m) * scale;
                 Some((line.point_at(local)?, line.bearing_at(local)))
             }
         }
     }
 
-    fn leg_line<'a>(&'a self, region: u16, leg: &'a Leg) -> &'a Polyline {
-        match &leg.line {
-            LegLine::Shared(l) => &self.legs[region as usize][*l as usize],
-            LegLine::Own(p) => p,
+    /// The line to draw a section on, and the factor from trip metres to
+    /// metres along that line (the straight stand-in is shorter than track).
+    fn leg_line<'a>(&'a self, region: u16, leg: &'a Leg) -> (&'a Polyline, f64) {
+        if let Some(line) = leg
+            .shared
+            .and_then(|l| self.legs[region as usize].get(l as usize))
+        {
+            return (line, 1.0);
         }
+        let straight = leg.straight.length_m();
+        let scale = if leg.len_m > 0.0 {
+            straight / leg.len_m
+        } else {
+            1.0
+        };
+        (&leg.straight, scale)
+    }
+
+    /// Load a region's `geo-<region>.<hash>.bin` (OpenStreetMap track).
+    /// Returns the region code. Trains already on the map switch from
+    /// straight lines to track on the next frame.
+    pub fn load_geometry(&mut self, bytes: &[u8]) -> Result<String, FormatError> {
+        let g: GeometryFile = decode_file(bytes)?;
+        let ri = self
+            .regions
+            .iter()
+            .position(|r| r.tt.region == g.region)
+            .ok_or_else(|| FormatError::Decode(format!("load timetable {} first", g.region)))?;
+        self.legs[ri] = g.legs.iter().map(|s| s.polyline()).collect();
+        Ok(g.region)
     }
 
     /// Project a GPS point onto the trip: (metres along trip, metres off line).
@@ -224,7 +246,9 @@ impl Network {
         match &r.geom[r.tt.trips[t.trip as usize].pattern as usize] {
             PatternGeom::Shape { shape, start_m } => {
                 let line = &self.shapes[t.region as usize][*shape as usize];
-                let pr = line.project(p)?;
+                // Only the section this trip runs on: a shape covers the whole
+                // line, and a fix elsewhere on it must not snap to this trip.
+                let pr = line.project_range(p, *start_m, start_m + total)?;
                 Some(((pr.along_m - start_m).clamp(0.0, total), pr.offset_m))
             }
             PatternGeom::Straight(line) => {
@@ -234,8 +258,10 @@ impl Network {
             PatternGeom::Legs(legs) => legs
                 .iter()
                 .filter_map(|leg| {
-                    let pr = self.leg_line(t.region, leg).project(p)?;
-                    Some(((leg.start_m + pr.along_m).clamp(0.0, total), pr.offset_m))
+                    let (line, scale) = self.leg_line(t.region, leg);
+                    let pr = line.project(p)?;
+                    let along = leg.start_m + pr.along_m / scale;
+                    Some((along.clamp(0.0, total), pr.offset_m))
                 })
                 .min_by(|a, b| a.1.total_cmp(&b.1)),
         }
@@ -389,7 +415,6 @@ pub mod tests {
                 text_color: None,
             }],
             shapes: vec![ShapeRec::encode("10_C3".into(), &pts)],
-            legs: vec![],
             patterns: vec![pattern],
             services: vec!["1004D".into()],
             trips: vec![
@@ -470,11 +495,24 @@ pub mod tests {
         );
         p.legs = vec![0, NO_LEG];
         tt.patterns = vec![p];
-        tt.legs = vec![leg];
         tt.shapes.clear();
         let mut n = Network::default();
         n.load_timetable(&encode(&tt).unwrap()).unwrap();
         let t = TripRef { region: 0, trip: 0 };
+
+        // Before the geometry file: straight stand-in, scaled to track length.
+        let (mid, _) = n.point_at(t, f64::from(ab) / 2.0).unwrap();
+        assert!(
+            (mid.lon + 3.70).abs() < 1e-6 && (mid.lat - 40.35).abs() < 1e-3,
+            "{mid:?}"
+        );
+
+        let geo = GeometryFile {
+            header: tt.header.clone(),
+            region: "10".into(),
+            legs: vec![leg],
+        };
+        assert_eq!(n.load_geometry(&encode(&geo).unwrap()).unwrap(), "10");
         let (mid, _) = n.point_at(t, f64::from(ab) / 2.0).unwrap();
         assert!((mid.lon + 3.65).abs() < 1e-3, "follows the bend: {mid:?}");
         let (d, off) = n.project(t, LatLon::new(40.25, -3.70)).unwrap();

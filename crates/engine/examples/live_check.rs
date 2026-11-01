@@ -27,6 +27,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     net.load_stations(&file(&manifest["stations"])?)?;
     for r in manifest["regions"].as_array().unwrap() {
         net.load_timetable(&file(r)?)?;
+        if !r["geometry"].is_null() {
+            net.load_geometry(&file(&r["geometry"])?)?;
+        }
     }
     println!("### Live check\n\nLoaded {} regions.\n", net.regions.len());
 
@@ -91,6 +94,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    let mut early: Vec<_> = live
+        .trains
+        .iter()
+        .filter(|t| t.delay.is_some_and(|d| d < -900))
+        .collect();
+    early.sort_by_key(|t| t.delay);
+    for t in early.iter().take(3) {
+        println!(
+            "- Very early: `{}` ({}) feed {}, delay {:?} from {:?}",
+            t.rt.trip_id, t.rt.train_number, t.feed, t.delay, t.delay_source
+        );
+    }
     delays.sort_unstable();
     let pct = |v: &[i64], p: f64| v.get(((v.len() as f64 - 1.0) * p) as usize).copied();
     let d64: Vec<i64> = delays.iter().map(|&d| i64::from(d)).collect();
@@ -118,6 +133,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             haversine_m(v.coord, LatLon::new(t.rt.lat, t.rt.lon)).round() as i64
         })
         .collect();
+    let mut worst: Vec<_> = views
+        .iter()
+        .filter(|v| v.along.is_some())
+        .map(|v| {
+            let t = &live.trains[v.index];
+            (
+                haversine_m(v.coord, LatLon::new(t.rt.lat, t.rt.lon)),
+                v.index,
+            )
+        })
+        .collect();
+    worst.sort_by(|a, b| b.0.total_cmp(&a.0));
+    for (d, i) in worst.iter().take(3).filter(|w| w.0 > 1_000.0) {
+        let t = &live.trains[*i];
+        println!(
+            "- Far from GPS: {:.0} m, `{}` ({}) feed {}, delay {:?} ({:?}), fix age {} s",
+            d,
+            t.rt.trip_id,
+            t.rt.train_number,
+            t.feed,
+            t.delay,
+            t.delay_source,
+            now - t.fix_time
+        );
+    }
     err.sort_unstable();
     println!(
         "Drawn vs. GPS position (m), matched trains: median {:?}, p90 {:?}, max {:?}",
