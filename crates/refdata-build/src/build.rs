@@ -2,19 +2,23 @@
 
 use crate::calendar::Window;
 use crate::load::{Feed, Trip};
-use crate::osm::{MAX_SNAP_M, Router};
+use crate::osm::Router;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 use trainradar_proto::LatLon;
 use trainradar_proto::geo::{Polyline, haversine_m, simplify};
 use trainradar_proto::refdata::{
-    GridIndex, Header, PatternRec, RegionRec, RouteRec, SERVICE_COMMUTER, SERVICE_LONG_DISTANCE,
-    ShapeRec, StationRec, StationsFile, StopRec, TimetableFile, TripRec, to_e5,
+    GridIndex, Header, NO_LEG, PatternRec, RegionRec, RouteRec, SERVICE_COMMUTER,
+    SERVICE_LONG_DISTANCE, ShapeRec, StationRec, StationsFile, StopRec, TimetableFile, TripRec,
+    to_e5,
 };
 
 /// Shape simplification tolerance. 5 m is invisible on a phone map at any zoom
 /// where trains are distinguishable, and removes most shape points.
 pub const SIMPLIFY_TOLERANCE_M: f64 = 5.0;
+/// OpenStreetMap track is mapped very densely; 10 m keeps curves smooth on a
+/// phone and roughly halves the points again.
+pub const OSM_SIMPLIFY_TOLERANCE_M: f64 = 10.0;
 /// A stop further than this from its trip's shape means the shape is wrong
 /// for that trip; fall back to straight segments.
 pub const MAX_STOP_OFFSET_M: f64 = 400.0;
@@ -90,6 +94,7 @@ pub fn build_timetable(
         stops: vec![],
         routes: vec![],
         shapes: vec![],
+        legs: vec![],
         patterns: vec![],
         services: vec![],
         trips: vec![],
@@ -103,8 +108,8 @@ pub fn build_timetable(
     // Cache per (shape, stop sequence): projecting is the slow part.
     type Placed = Option<(u32, u32, Vec<u32>)>;
     let mut placed_cache: HashMap<(&str, Vec<usize>), Placed> = HashMap::new();
-    // OpenStreetMap shapes, per stop sequence.
-    let mut osm_cache: HashMap<Vec<usize>, Placed> = HashMap::new();
+    // OpenStreetMap legs per (stop, next stop): (index in tt.legs, length m).
+    let mut leg_map: HashMap<(usize, usize), Option<(u32, f64)>> = HashMap::new();
 
     for trip in trips {
         let stops: Vec<u32> = trip
@@ -175,38 +180,49 @@ pub fn build_timetable(
         } else {
             None
         };
-        // No usable GTFS shape: route along OpenStreetMap track if we can.
-        let placed = match (placed, router.as_deref_mut()) {
-            (None, Some(router)) => osm_cache
-                .entry(stop_ids)
-                .or_insert_with(|| {
-                    let line = router.route_stops(
-                        &trip.stop_times.iter().map(|s| s.0).collect::<Vec<_>>(),
-                        &coords,
-                    )?;
-                    let simple = simplify(&line, SIMPLIFY_TOLERANCE_M);
-                    let poly = Polyline::new(simple.clone());
-                    let (start, cum) = place_on_shape(&poly, &coords, MAX_SNAP_M + 50.0)?;
-                    st.shape_points_in += line.len();
-                    st.shape_points_out += simple.len();
-                    tt.shapes.push(ShapeRec::encode(
-                        format!("osm:{}", tt.shapes.len()),
-                        &simple,
-                    ));
-                    Some(((tt.shapes.len() - 1) as u32, start, cum))
-                })
-                .clone(),
-            (placed, _) => placed,
-        };
-        let (shape, shape_start_m, cum) = match placed {
-            Some((idx, start, cum)) => {
-                st.patterns_on_shape += 1;
-                (Some(idx), start, cum)
-            }
-            None => {
-                st.patterns_straight += 1;
-                (None, 0, straight_distances(&coords))
-            }
+        let (shape, shape_start_m, cum, legs) = match placed {
+            Some((idx, start, cum)) => (Some(idx), start, cum, Vec::new()),
+            // No usable GTFS shape: follow OpenStreetMap track, leg by leg.
+            None => match router.as_deref_mut() {
+                Some(router) => {
+                    let (mut legs, mut cum, mut d, mut any) = (Vec::new(), vec![0u32], 0.0, false);
+                    for i in 1..coords.len() {
+                        let key = (stop_ids[i - 1], stop_ids[i]);
+                        let leg = *leg_map.entry(key).or_insert_with(|| {
+                            let pts = router.route_pair(key.0, key.1, coords[i - 1], coords[i])?;
+                            let simple = simplify(&pts, OSM_SIMPLIFY_TOLERANCE_M);
+                            let rec = ShapeRec::encode(
+                                format!("{}>{}", feed.stops[key.0].id, feed.stops[key.1].id),
+                                &simple,
+                            );
+                            // Measure the geometry exactly as the browser decodes it.
+                            let len = Polyline::new(rec.points()).length_m();
+                            st.shape_points_in += pts.len();
+                            st.shape_points_out += simple.len();
+                            tt.legs.push(rec);
+                            Some(((tt.legs.len() - 1) as u32, len))
+                        });
+                        match leg {
+                            Some((li, len)) => {
+                                legs.push(li);
+                                d += len;
+                                any = true;
+                            }
+                            None => {
+                                legs.push(NO_LEG);
+                                d += haversine_m(coords[i - 1], coords[i]);
+                            }
+                        }
+                        cum.push(d.round() as u32);
+                    }
+                    if any {
+                        (None, 0, cum, legs)
+                    } else {
+                        (None, 0, straight_distances(&coords), Vec::new())
+                    }
+                }
+                None => (None, 0, straight_distances(&coords), Vec::new()),
+            },
         };
 
         let base = trip.stop_times[0].1;
@@ -215,7 +231,8 @@ pub fn build_timetable(
             .iter()
             .map(|&(_, a, d)| (a.saturating_sub(base), d.saturating_sub(base)))
             .collect();
-        let pat = PatternRec::from_absolute(stops, &times, &cum, shape, shape_start_m);
+        let mut pat = PatternRec::from_absolute(stops, &times, &cum, shape, shape_start_m);
+        pat.legs = legs;
         let next = pattern_map.len() as u32;
         let pattern = *pattern_map.entry(pat.clone()).or_insert_with(|| {
             tt.patterns.push(pat);
@@ -245,20 +262,15 @@ pub fn build_timetable(
         });
     }
     // Pattern counters above count per trip; report per unique pattern instead.
-    let is_osm = |p: &PatternRec| {
-        p.shape
-            .is_some_and(|s| tt.shapes[s as usize].id.starts_with("osm:"))
-    };
-    st.patterns_on_osm = tt.patterns.iter().filter(|p| is_osm(p)).count();
-    st.patterns_on_shape =
-        tt.patterns.iter().filter(|p| p.shape.is_some()).count() - st.patterns_on_osm;
+    st.patterns_on_osm = tt.patterns.iter().filter(|p| !p.legs.is_empty()).count();
+    st.patterns_on_shape = tt.patterns.iter().filter(|p| p.shape.is_some()).count();
     st.patterns_straight = tt.patterns.len() - st.patterns_on_shape - st.patterns_on_osm;
     tt.trips.sort_by_key(|t| (t.start, t.route));
     st.trips = tt.trips.len();
     st.patterns = tt.patterns.len();
     st.stops = tt.stops.len();
     st.routes = tt.routes.len();
-    st.shapes = tt.shapes.len();
+    st.shapes = tt.shapes.len() + tt.legs.len();
     (tt, st)
 }
 
@@ -560,7 +572,8 @@ mod tests {
             Some(&mut router),
         );
         assert_eq!(st.patterns_on_osm, 1);
-        assert!(tt.shapes[0].id.starts_with("osm:"));
+        assert_eq!(tt.patterns[0].legs, [0]);
+        assert_eq!(tt.legs[0].id, "P>Q");
         let d = tt.patterns[0].stop_times()[1].dist_m;
         assert!(
             (18_000..20_000).contains(&d),

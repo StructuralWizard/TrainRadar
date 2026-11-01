@@ -269,6 +269,9 @@ pub struct TimetableFile {
     pub stops: Vec<StopRec>,
     pub routes: Vec<RouteRec>,
     pub shapes: Vec<ShapeRec>,
+    /// Track sections between two consecutive stops (from OpenStreetMap),
+    /// shared by every pattern that runs between those stops.
+    pub legs: Vec<ShapeRec>,
     pub patterns: Vec<PatternRec>,
     /// GTFS service ids referenced by trips (to rebuild trip ids compactly).
     pub services: Vec<String>,
@@ -359,7 +362,14 @@ pub struct PatternRec {
     /// between stops. `shape_start_m` is where stop 0 sits on that shape.
     pub shape: Option<u32>,
     pub shape_start_m: u32,
+    /// When not empty (and `shape` is `None`): one entry per stop-to-stop
+    /// section, an index into [`TimetableFile::legs`] or [`NO_LEG`] for a
+    /// straight line between the two stops. `dist_m` then follows the legs.
+    pub legs: Vec<u32>,
 }
+
+/// Marks a straight section in [`PatternRec::legs`].
+pub const NO_LEG: u32 = u32::MAX;
 
 /// Arrival and departure (seconds after trip start) at one stop.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -400,6 +410,7 @@ impl PatternRec {
             dist_m,
             shape,
             shape_start_m,
+            legs: Vec::new(),
         }
     }
 
@@ -575,6 +586,7 @@ mod tests {
             stops: vec![],
             routes: vec![],
             shapes: vec![],
+            legs: vec![],
             patterns: vec![],
             services: vec!["1004D".into()],
             trips: vec![TripRec {

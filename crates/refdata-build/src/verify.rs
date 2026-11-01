@@ -3,7 +3,7 @@
 
 use crate::gtfs_io::Result;
 use std::path::Path;
-use trainradar_proto::refdata::{StationsFile, TimetableFile, decode_file};
+use trainradar_proto::refdata::{NO_LEG, StationsFile, TimetableFile, decode_file};
 
 pub fn run(dir: &Path) -> Result<()> {
     let manifest: serde_json::Value =
@@ -92,6 +92,22 @@ pub fn check_timetable(tt: &TimetableFile) -> Result<()> {
             p.shape.is_none_or(|s| (s as usize) < tt.shapes.len()),
             || format!("{}: pattern {i} has a bad shape index", tt.region),
         )?;
+        ensure(
+            p.legs.is_empty() || (p.shape.is_none() && p.legs.len() == n - 1),
+            || {
+                format!(
+                    "{}: pattern {i} has {} legs for {n} stops",
+                    tt.region,
+                    p.legs.len()
+                )
+            },
+        )?;
+        ensure(
+            p.legs
+                .iter()
+                .all(|&l| l == NO_LEG || (l as usize) < tt.legs.len()),
+            || format!("{}: pattern {i} has a bad leg index", tt.region),
+        )?;
     }
     for t in &tt.trips {
         let id = tt.trip_id(t);
@@ -109,7 +125,7 @@ pub fn check_timetable(tt: &TimetableFile) -> Result<()> {
             format!("{id}: days outside window")
         })?;
     }
-    for s in &tt.shapes {
+    for s in tt.shapes.iter().chain(&tt.legs) {
         ensure(s.deltas.len() % 2 == 0 && s.deltas.len() >= 4, || {
             format!("{}: shape {} is malformed", tt.region, s.id)
         })?;

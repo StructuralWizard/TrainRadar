@@ -217,44 +217,29 @@ impl<'g> Router<'g> {
         }
     }
 
-    /// Track polyline through all stops. Pairs that can't be routed become
-    /// straight segments between the stops. Returns `None` if no pair could be
-    /// routed at all (then the caller keeps plain straight segments).
-    pub fn route_stops(&mut self, stop_ids: &[usize], coords: &[LatLon]) -> Option<Vec<LatLon>> {
-        let mut out: Vec<LatLon> = Vec::new();
-        let push = |p: LatLon, out: &mut Vec<LatLon>| {
-            if out.last() != Some(&p) {
-                out.push(p);
-            }
-        };
-        let mut any = false;
-        for i in 1..coords.len() {
-            let key = (stop_ids[i - 1], stop_ids[i]);
-            let graph = self.graph;
-            let stats = &mut self.stats;
-            let leg = self.cache.entry(key).or_insert_with(|| {
-                let r = graph.route(coords[i - 1], coords[i]);
+    /// Track path between two stops (cached per stop pair), with at least two
+    /// points, or `None` if they can't be routed.
+    pub fn route_pair(
+        &mut self,
+        a_id: usize,
+        b_id: usize,
+        a: LatLon,
+        b: LatLon,
+    ) -> Option<Vec<LatLon>> {
+        let graph = self.graph;
+        let stats = &mut self.stats;
+        self.cache
+            .entry((a_id, b_id))
+            .or_insert_with(|| {
+                let r = graph.route(a, b).filter(|p| p.len() >= 2);
                 if r.is_some() {
                     stats.pairs_routed += 1;
                 } else {
                     stats.pairs_failed += 1;
                 }
                 r
-            });
-            match leg {
-                Some(pts) => {
-                    any = true;
-                    for &p in pts.iter() {
-                        push(p, &mut out);
-                    }
-                }
-                None => {
-                    push(coords[i - 1], &mut out);
-                    push(coords[i], &mut out);
-                }
-            }
-        }
-        (any && out.len() >= 2).then_some(out)
+            })
+            .clone()
     }
 }
 
@@ -307,24 +292,15 @@ pub mod tests {
     }
 
     #[test]
-    fn router_falls_back_per_pair_and_caches() {
+    fn router_caches_pairs() {
         let g = sample_graph();
         let mut r = Router::new(&g);
-        let coords = [
-            LatLon::new(40.0, -3.70),
-            LatLon::new(40.0, -3.65),
-            LatLon::new(41.0, -3.65), // off the network
-        ];
-        let line = r.route_stops(&[0, 1, 2], &coords).unwrap();
-        assert_eq!(line[0], coords[0], "on-track stop snaps to itself");
-        assert_eq!(
-            *line.last().unwrap(),
-            coords[2],
-            "unroutable leg is straight"
-        );
-        assert_eq!(r.stats.pairs_routed, 1);
-        assert_eq!(r.stats.pairs_failed, 1);
-        r.route_stops(&[0, 1, 2], &coords);
+        let (a, b) = (LatLon::new(40.0, -3.70), LatLon::new(40.0, -3.65));
+        let off = LatLon::new(41.0, -3.65);
+        assert_eq!(r.route_pair(0, 1, a, b).unwrap(), vec![a, b]);
+        assert!(r.route_pair(1, 2, b, off).is_none());
+        assert_eq!((r.stats.pairs_routed, r.stats.pairs_failed), (1, 1));
+        r.route_pair(0, 1, a, b);
         assert_eq!(r.stats.pairs_routed, 1, "cached");
     }
 }
