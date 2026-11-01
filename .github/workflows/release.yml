@@ -1,0 +1,41 @@
+# Creates a tag and GitHub release. Run manually from the Actions tab after a
+# phase is merged: Release → Run workflow → tag (e.g. v0.2.0) and target.
+# Notes come from docs/releases/<tag>.md on main.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to create, e.g. v0.2.0"
+        required: true
+      target:
+        description: "Commit SHA or branch to tag"
+        default: main
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          # Inputs are passed via env, never interpolated into the script.
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "bad tag: $TAG"; exit 1; }
+          [[ "$TARGET" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "bad target: $TARGET"; exit 1; }
+          notes="docs/releases/$TAG.md"
+          [ -f "$notes" ] || { echo "missing $notes on main"; exit 1; }
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$TARGET" \
+            --title "$TAG – $(head -1 "$notes" | sed 's/^# *//')" \
+            --notes-file <(tail -n +2 "$notes")

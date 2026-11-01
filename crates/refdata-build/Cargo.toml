@@ -14,7 +14,11 @@ name = "refdata-build"
 path = "src/main.rs"
 
 [dependencies]
+csv = "1"
+serde_json = "1"
 trainradar-proto.workspace = true
+serde.workspace = true
+zip = { version = "9", default-features = false, features = ["deflate"] }
 
 [lints]
 workspace = true

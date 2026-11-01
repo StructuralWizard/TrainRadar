@@ -2,8 +2,8 @@
 
 | Phase | Scope |
 |---|---|
-| A1 | Repo, research, CORS check, workspace scaffold, CI ✅ |
-| A2 | `refdata-build`: GTFS → `.bin` (AV/LD/MD, then Cercanías per núcleo), station spatial index, shape fallback |
+| A1 | Repo, research, CORS check, workspace scaffold, CI ✅ (v0.1.0) |
+| A2 | `refdata-build`: GTFS → `.bin` (AV/LD/MD, then Cercanías per núcleo), station spatial index, shape fallback ✅ |
 | A3 | Engine: decode GTFS-RT, match trips, delays, interpolation, **train spacing**; Cloudflare Worker pass-through |
 | A4 | Web: MapLibre map, coloured dots, stats bar, delayed list, popup with **spacing**, ES/EN |
 | A5 | "Use my location", nearest stations, approaching trains, "Am I on this train?" |
@@ -14,15 +14,16 @@
 
 Shown in the train popup: "Tren anterior: 6 min · 4.2 km" and "Tren siguiente: 9 min · 7.8 km".
 
-**Same line, same direction.** Two trains are neighbours when they run in the same direction
-along a common stretch of track:
+**Same line, same direction.** Two trains are neighbours when they run the same way over
+a common stretch of track. This is worked out at runtime from stop sequences, with no
+precomputed corridors:
 
-- refdata-build (A2) assigns each trip a *corridor* id and a direction. Trips sharing a
-  `shape_id`, or shapes that overlap within ~30 m for most of their length, share a
-  corridor. Cercanías lines that share track (e.g. a common trunk section) are linked over
-  that shared stretch only.
-- Each train's position is projected onto its shape to get a distance along it
-  (linear referencing), in metres, from the GTFS `shape_dist_traveled` or computed.
+- Train L is *ahead* of train F if the segment L is on (previous stop → next stop) also
+  appears later in F's remaining stops, in the same order. This covers trains on
+  different lines sharing a trunk section (e.g. several Cercanías lines through one
+  tunnel) and ignores trains going the other way.
+- Distances come from each pattern's per-stop distance along its shape (stored in the
+  `.bin` files since A2), so positions can be compared in metres along the track.
 
 **Distance (km):** difference in along-track distance between the two trains on the shared
 corridor. Never straight-line distance, which is misleading on curvy lines.
