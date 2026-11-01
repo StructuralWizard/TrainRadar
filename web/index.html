@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrainRadar</title>
+  <style>
+    :root { --bg: #fff; --fg: #1a1a1a; --muted: #666; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #111; --fg: #eee; --muted: #aaa; } }
+    body { margin: 0; padding: 16px; font: 16px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+    small { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <h1>TrainRadar</h1>
+  <p>Mapa en directo de trenes de Renfe. En construcción.</p>
+  <p id="status">Cargando motor…</p>
+  <small>Datos: © Renfe Operadora, CC BY 4.0. Proyecto independiente, sin relación con Renfe ni Adif.</small>
+  <script type="module">
+    import init, { version, delayClass } from "./pkg/engine.js";
+    const el = document.getElementById("status");
+    try {
+      await init();
+      el.textContent = `Motor ${version()} listo (prueba: 7 min → clase ${delayClass(420)}).`;
+    } catch (e) {
+      el.textContent = "No se pudo cargar el motor. Ejecuta tools/build-wasm.sh.";
+      console.error(e);
+    }
+  </script>
+</body>
+</html>
