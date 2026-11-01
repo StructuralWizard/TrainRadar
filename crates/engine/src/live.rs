@@ -112,6 +112,8 @@ pub struct Live {
     /// Vehicle key → (lat e5, lon e5, first time seen at that position).
     seen: HashMap<String, (i32, i32, i64)>,
     pub trains: Vec<LiveTrain>,
+    /// Time of the last ingest/rebuild (unix seconds).
+    pub now: i64,
 }
 
 fn key(v: &RtVehicle) -> String {
@@ -150,6 +152,7 @@ impl Live {
 
     /// Re-match every vehicle (also call after loading a timetable).
     pub fn rebuild(&mut self, net: &Network, now: i64) {
+        self.now = now;
         let updates: HashMap<&str, &RtTripUpdate> = self
             .updates
             .values()
