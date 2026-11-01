@@ -15,6 +15,7 @@ trainradar-proto = { path = "crates/proto" }
 serde = { version = "1", features = ["derive"] }
 postcard = { version = "1", default-features = false, features = ["use-std"] }
 wasm-bindgen = "=0.2.130"
+prost = "0.14"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -30,3 +31,4 @@ lto = true
 codegen-units = 1
 panic = "abort"
 # No `strip`: wasm-bindgen needs the target_features section and drops debug info itself.
+

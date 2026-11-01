@@ -1,6 +1,6 @@
 //! Numbers for the stats bar.
 
-use trainradar_proto::{Delay, DelayClass, Train};
+use trainradar_proto::{Delay, DelayClass};
 
 /// Summary shown in the stats bar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -12,16 +12,24 @@ pub struct MapStats {
     pub median_delay: Option<i32>,
 }
 
-pub fn compute(trains: &[Train]) -> MapStats {
-    let mut delays: Vec<i32> = trains.iter().filter_map(|t| t.delay.map(|d| d.0)).collect();
-    let delayed = delays
+/// Stats over one delay per train (`None` = unknown).
+pub fn compute(delays: impl IntoIterator<Item = Option<Delay>>) -> MapStats {
+    let mut trains = 0;
+    let mut known: Vec<i32> = Vec::new();
+    for d in delays {
+        trains += 1;
+        if let Some(d) = d {
+            known.push(d.0);
+        }
+    }
+    let delayed = known
         .iter()
         .filter(|&&d| Delay(d).class() != DelayClass::OnTime)
         .count();
     MapStats {
-        trains: trains.len(),
+        trains,
         delayed,
-        median_delay: median(&mut delays),
+        median_delay: median(&mut known),
     }
 }
 
@@ -43,42 +51,15 @@ fn median(values: &mut [i32]) -> Option<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use trainradar_proto::{LatLon, Position, PositionSource, Service};
-
-    fn train(delay: Option<i32>) -> Train {
-        Train {
-            trip_id: "t".into(),
-            label: "t".into(),
-            service: Service::LongDistance,
-            origin: "a".into(),
-            destination: "b".into(),
-            next_stop: None,
-            delay: delay.map(Delay),
-            position: Position {
-                coord: LatLon::new(40.0, -3.0),
-                bearing: None,
-                fix_time: 0,
-                source: PositionSource::Gps,
-            },
-            ahead: None,
-            behind: None,
-        }
-    }
 
     #[test]
     fn empty_map() {
-        assert_eq!(compute(&[]), MapStats::default());
+        assert_eq!(compute([]), MapStats::default());
     }
 
     #[test]
     fn counts_delayed_and_median() {
-        let ts = [
-            train(Some(0)),
-            train(Some(300)),
-            train(Some(1200)),
-            train(None),
-        ];
-        let s = compute(&ts);
+        let s = compute([Some(Delay(0)), Some(Delay(300)), Some(Delay(1200)), None]);
         assert_eq!(s.trains, 4);
         assert_eq!(s.delayed, 2);
         assert_eq!(s.median_delay, Some(300));
@@ -86,7 +67,9 @@ mod tests {
 
     #[test]
     fn even_median_averages_middle_values() {
-        let ts = [train(Some(60)), train(Some(120))];
-        assert_eq!(compute(&ts).median_delay, Some(90));
+        assert_eq!(
+            compute([Some(Delay(60)), Some(Delay(120))]).median_delay,
+            Some(90)
+        );
     }
 }
