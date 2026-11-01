@@ -137,6 +137,54 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     write("trip_updates_LD.pb", ld_tu)?;
     write("trip_updates.pb", cer_tu)?;
-    write("alerts.pb", vec![])?;
+    // Two sample notices in Renfe's style: one for line C3 naming Pinto,
+    // one without lines.
+    let text = |s: &str| {
+        Some(TranslatedString {
+            translation: vec![Translation {
+                text: Some(s.into()),
+                language: Some("es".into()),
+            }],
+        })
+    };
+    let alerts = vec![
+        FeedEntity {
+            id: Some("AVISO_DEMO1".into()),
+            alert: Some(Alert {
+                active_period: vec![TimeRange {
+                    start: Some(now as u64 - 3 * 86_400),
+                    end: None,
+                }],
+                informed_entity: vec![
+                    EntitySelector {
+                        route_id: Some("10T0001C3".into()),
+                        ..Default::default()
+                    },
+                    EntitySelector {
+                        stop_id: Some("35600".into()),
+                        ..Default::default()
+                    },
+                ],
+                description_text: text(
+                    "#MadC3 Por obras en la estación de Pinto, los trenes no efectúan parada en la vía 2.",
+                ),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+        FeedEntity {
+            id: Some("AVISO_DEMO2".into()),
+            alert: Some(Alert {
+                active_period: vec![TimeRange {
+                    start: Some(now as u64 - 3_600),
+                    end: Some(now as u64 + 3_600),
+                }],
+                description_text: text("Aviso de prueba sin línea."),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+    ];
+    write("alerts.pb", alerts)?;
     Ok(())
 }
