@@ -5,6 +5,7 @@
 
 pub mod geo;
 pub mod refdata;
+pub mod time;
 
 use serde::{Deserialize, Serialize};
 
