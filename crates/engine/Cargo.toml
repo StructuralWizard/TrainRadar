@@ -1,0 +1,19 @@
+[package]
+name = "trainradar-engine"
+description = "Browser engine for TrainRadar: feed polling, GTFS-RT decoding, matching and stats (WASM)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+trainradar-proto.workspace = true
+wasm-bindgen.workspace = true
+
+[lints]
+workspace = true
