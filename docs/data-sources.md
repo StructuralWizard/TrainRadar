@@ -1,6 +1,7 @@
 # Data sources
 
-Status: **verified on 2026-11-01, awaiting maintainer approval.** Facts below come from the
+Status: **verified on 2026-11-01 and approved by the maintainer on 2026-11-01**, including the
+unlisted `trip_updates_LD` feed and the CORS pass-through Worker. Facts below come from the
 "Feed check" GitHub Actions run (`tools/feed-check`): headless Chromium on a separate HTTPS
 origin, plus the official dataset metadata from the data.renfe.com CKAN API
 (`/api/3/action/package_show`). Re-run the workflow any time to refresh them.
@@ -41,8 +42,8 @@ above, no parsing or logic.
 ### Notes and quirks
 
 - `trip_updates_LD` is live and valid but not listed as a resource in any CKAN dataset we
-  queried. It sits on the same host and the same CC BY 4.0 publisher; we will ask Renfe or
-  treat it as part of the same open-data service. Your call.
+  queried. It sits on the same host and comes from the same CC BY 4.0 publisher, so we treat
+  it as part of the same open-data service (maintainer decision, 2026-11-01).
 - **Alerts feed is stale:** `Last-Modified: Wed, 07 Oct 2026` (≈25 days old at check time).
   Other projects report it stalling for weeks. The UI must show the feed's age and hide
   incidents older than a threshold.
