@@ -1,7 +1,15 @@
 // DOM for the stats bar, legend, delayed list and train popup. Feed text is
 // untrusted: it only ever goes into textContent, never innerHTML.
 import { t } from "./i18n.js";
-import { formatAgo, formatClock, formatCount, formatDelay, formatDistance, formatDuration } from "./format.js";
+import {
+  formatAgo,
+  formatClock,
+  formatCount,
+  formatDay,
+  formatDelay,
+  formatDistance,
+  formatDuration,
+} from "./format.js";
 import { COLORS } from "./map.js";
 
 /** Create an element: el("div", { class: "x", onclick }, child, "text"). */
@@ -13,7 +21,7 @@ export function el(tag, attrs = {}, ...children) {
     else if (k === "class") e.className = v;
     else e.setAttribute(k, v === true ? "" : v);
   }
-  for (const c of children.flat()) {
+  for (const c of children.flat(Infinity)) {
     if (c === null || c === undefined || c === false) continue;
     e.append(c instanceof Node ? c : document.createTextNode(String(c)));
   }
@@ -58,7 +66,7 @@ function gapText(lang, g) {
 }
 
 /** Popup body for one train (engine.trainJson). */
-export function trainPopup(lang, info, regionName) {
+export function trainPopup(lang, info, regionName, onIncidents) {
   const title = el("div", { class: "popup-title" }, trainTitle(info));
   const sub = [];
   if (info.feed === "vp_cer" && regionName) sub.push(t(lang, "cercanias", { region: regionName }));
@@ -101,6 +109,15 @@ export function trainPopup(lang, info, regionName) {
   if (info.origin) {
     rows.push(row(t(lang, "ahead"), gapText(lang, info.ahead)));
     rows.push(row(t(lang, "behind"), gapText(lang, info.behind)));
+  }
+  if (info.incidents > 0 && onIncidents) {
+    rows.push(
+      el(
+        "button",
+        { class: "link warn", onclick: () => onIncidents(info) },
+        info.incidents === 1 ? t(lang, "trainIncident") : t(lang, "trainIncidents", { n: info.incidents }),
+      ),
+    );
   }
   return el("div", { class: "popup" }, title, sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null, rows);
 }
@@ -242,4 +259,68 @@ export function delayedItem(lang, info, onSelect) {
       ),
     ),
   );
+}
+
+/** The notices panel body: feed age, optional filter, list, Adif link. */
+export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onShowAll, onStop }) {
+  const out = [];
+  if (modifiedMs) {
+    const ageSecs = (Date.now() - modifiedMs) / 1000;
+    const vars = { date: formatDay(lang, modifiedMs / 1000), ago: formatAgo(lang, ageSecs) };
+    const stale = ageSecs > 2 * 86_400;
+    out.push(el("p", { class: stale ? "small warn" : "small muted" }, t(lang, stale ? "incidentsStale" : "incidentsAge", vars)));
+  }
+  if (filter) {
+    out.push(
+      el(
+        "p",
+        { class: "small" },
+        t(lang, "filteredBy", { what: filter.label }),
+        " · ",
+        el("button", { class: "link", onclick: onShowAll }, t(lang, "showAll")),
+      ),
+    );
+  }
+  const shown = filter ? list.filter(filter.test) : list;
+  if (!shown.length) out.push(el("p", { class: "muted" }, t(lang, "noIncidents")));
+  out.push(
+    el(
+      "ul",
+      { class: "incidents" },
+      shown.map((i) =>
+        el(
+          "li",
+          {},
+          el(
+            "div",
+            { class: "incident-meta" },
+            i.nucleos.map((n) => el("span", { class: "chip chip-region" }, regionName(n) || n)),
+            i.lines.map((l) => el("span", { class: "chip" }, l)),
+            el(
+              "span",
+              { class: "muted" },
+              i.from ? t(lang, "published", { date: formatDay(lang, i.from) }) : "",
+              i.until ? ` ${t(lang, "untilDate", { date: formatDay(lang, i.until) })}` : "",
+            ),
+          ),
+          el("p", { class: "incident-text" }, i.text),
+          i.stops.length
+            ? el(
+                "p",
+                { class: "small" },
+                i.stops.map((s, k) => [k ? ", " : "", s.lat !== null ? el("button", { class: "link", onclick: () => onStop(s) }, s.name) : s.name]),
+              )
+            : null,
+        ),
+      ),
+    ),
+  );
+  out.push(
+    el(
+      "p",
+      { class: "small" },
+      el("a", { href: "https://www.adif.es/viajeros/estado-de-la-red", target: "_blank", rel: "noopener" }, t(lang, "adifLink")),
+    ),
+  );
+  return out;
 }

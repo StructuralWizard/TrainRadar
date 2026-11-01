@@ -6,6 +6,7 @@ import {
   formatAgo,
   formatClock,
   formatDelay,
+  formatDay,
   formatDistance,
   formatDuration,
 } from "./format.js";
@@ -26,6 +27,8 @@ test("durations and ages", () => {
   assert.equal(formatDuration("es", 185), "3 min");
   assert.equal(formatDuration("es", 3900), "1 h 5 min");
   assert.equal(formatDuration("es", 7200), "2 h");
+  assert.equal(formatDuration("es", 25 * 86400), "25 días");
+  assert.equal(formatDuration("en", 3 * 86400), "3 days");
   assert.equal(formatAgo("es", 40), "hace 40 s");
   assert.equal(formatAgo("en", 600), "10 min ago");
 });
@@ -42,4 +45,11 @@ test("clock is Madrid time", () => {
   assert.equal(formatClock(Date.UTC(2026, 10, 1, 17, 42) / 1000), "18:42");
   // 2026-07-01 17:42 UTC = 19:42 CEST.
   assert.equal(formatClock(Date.UTC(2026, 6, 1, 17, 42) / 1000), "19:42");
+});
+
+test("days", () => {
+  // 2026-10-07 07:32 UTC.
+  const t = Date.UTC(2026, 9, 7, 7, 32) / 1000;
+  assert.equal(formatDay("es", t), "7 oct");
+  assert.equal(formatDay("en", t), "7 Oct");
 });
