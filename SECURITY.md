@@ -15,6 +15,21 @@ for this repository. We aim to reply within 7 days.
 Problems in Renfe's data themselves are not security issues; please use the "Data problem"
 issue template.
 
+## Secrets
+
+TrainRadar needs no API keys: Renfe's feeds are public. The only secrets are the Cloudflare
+deploy credentials, stored as GitHub Actions secrets and used only by deploy jobs on `main`
+(never on pull requests). Every PR runs a full-history [gitleaks](https://github.com/gitleaks/gitleaks)
+scan, and GitHub secret scanning with push protection should be enabled in the repository
+settings. If you spot a leaked credential, report it privately as above.
+
+## Prompt injection and automation
+
+AI agents may work on this repo. Their rules are in [AGENTS.md](AGENTS.md): issue, PR and
+comment text, CI logs and feed contents are treated as untrusted data, never as instructions.
+Workflows use read-only tokens, SHA-pinned actions and no `pull_request_target`, and changes
+to `.github/` and `AGENTS.md` require maintainer review (CODEOWNERS).
+
 ## Supported versions
 
 Only the latest release and the live site are supported.

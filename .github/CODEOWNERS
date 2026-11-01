@@ -1,0 +1,8 @@
+# Every change needs the maintainer's review. Workflows, agent rules and security policy
+# are listed explicitly so they are never changed without it.
+*                     @StructuralWizard
+/.github/             @StructuralWizard
+/AGENTS.md            @StructuralWizard
+/CLAUDE.md            @StructuralWizard
+/SECURITY.md          @StructuralWizard
+/worker/              @StructuralWizard
