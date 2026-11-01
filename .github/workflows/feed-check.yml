@@ -25,15 +25,17 @@ jobs:
       run:
         working-directory: tools/feed-check
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: node check.mjs --watch-seconds "${{ inputs.watch_seconds || '180' }}" | tee report.md
       - run: cat report.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: feed-check-report
           path: tools/feed-check/report.md
