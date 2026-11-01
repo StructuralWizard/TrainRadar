@@ -2,7 +2,7 @@
 
 **Live map of Renfe trains in Spain, coloured by delay. Runs entirely in your browser.**
 
-> 🚧 Work in progress (phase A1: scaffold and data research). Nothing to see on the map yet.
+> 🚧 Work in progress: the map works locally (phase A4); public deployment comes in phase A7.
 
 ![Screenshot placeholder](docs/screenshot-placeholder.svg)
 
@@ -12,7 +12,7 @@ TrainRadar is an open-source Rust workspace compiled to WebAssembly. Your browse
 Renfe's open realtime feeds, decodes them, matches trains to the timetable, works out delays
 and draws them on a MapLibre map. There is no TrainRadar server.
 
-## Features (planned)
+## Features
 
 - Trains on a map coloured by delay: on time / under 5 min, 5–14 min, 15+ min.
 - Stats bar: trains on the map, number delayed, median delay.
@@ -71,9 +71,21 @@ cargo install wasm-bindgen-cli --version 0.2.130 --locked
 cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-tools/build-wasm.sh                 # builds web/pkg/engine*.{js,wasm}, prints sizes
-python3 -m http.server -d web 8080  # then open http://localhost:8080
+tools/build-web.sh                  # engine → web/pkg, MapLibre → web/vendor
 ```
+
+**Try it offline with demo data** (synthetic timetable and fake live feeds):
+
+```sh
+python3 tools/demo-gtfs.py demo/gtfs
+cargo run --release -p trainradar-refdata-build -- build --out demo/data \
+  --ld demo/gtfs/ld.zip --cercanias demo/gtfs/cercanias.zip
+cargo run --release -p trainradar-engine --example fixture -- demo/data demo/rt
+DATA=demo/data FIXTURES=demo/rt node tools/dev-server.mjs   # http://localhost:8080
+```
+
+**With real data**, build the reference data as below and run `node tools/dev-server.mjs`.
+The dev server forwards `/rt/*.pb` to Renfe using the Worker's own code.
 
 Build the reference data (needs network access to Renfe; see [docs/refdata.md](docs/refdata.md)):
 
@@ -97,7 +109,9 @@ cd tools/feed-check && npm ci && npx playwright install chromium && npm run chec
 - Track geometry for AV/LD/MD trains: © [OpenStreetMap](https://www.openstreetmap.org/copyright)
   contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/). The derived
   `geo-*.bin` files are published with the site under the same licence.
-- Map tiles will be credited in the map UI and here.
+- Base map: [OpenFreeMap](https://openfreemap.org) (free, no API key),
+  © [OpenMapTiles](https://www.openmaptiles.org/), data © OpenStreetMap contributors.
+- Map library: [MapLibre GL JS](https://maplibre.org) (BSD-3-Clause), vendored at build time.
 
 Data is shown as published by Renfe. It may be incomplete, delayed or wrong. Don't rely on it
 for anything safety-critical.

@@ -7,13 +7,14 @@ on:
   pull_request:
     paths:
       - crates/**
-      - tools/fetch-gtfs.sh
-      - tools/fetch-osm-rail.sh
+      - web/**
+      - tools/**
       - .github/workflows/refdata.yml
   push:
     branches-ignore: [main]
     paths:
       - crates/**
+      - web/**
       - .github/workflows/refdata.yml
 
 permissions:
@@ -65,6 +66,24 @@ jobs:
           done
           cargo run --release -q -p trainradar-engine --example live_check -- web/data gtfs/rt \
             | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Live web smoke test (real feeds via worker code, real map tiles)
+        run: |
+          cargo install wasm-bindgen-cli --locked --version "$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name=="wasm-bindgen") | .version')"
+          tools/build-web.sh
+          (cd tools/feed-check && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium)
+          node tools/dev-server.mjs &
+          sleep 1
+          mkdir -p shots && node tools/feed-check/web-smoke.mjs http://localhost:8080/ shots --print-screenshot
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: live-screenshots
+          path: shots
+          retention-days: 7
       - name: Size report (raw and gzip -9)
         run: |
           command -v brotli >/dev/null || sudo apt-get install -y brotli

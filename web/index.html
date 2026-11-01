@@ -2,22 +2,42 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Feed text is untrusted: no inline event handlers, no third-party scripts beyond the allow-list. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Mapa en directo de trenes de Renfe, coloreados por retraso. Funciona en tu navegador.">
+  <meta name="theme-color" content="#1d4ed8">
+  <!-- Feed text is untrusted: no inline scripts, no third-party scripts.
+       connect-src: map tiles, and the feed pass-through (set at deploy). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://tiles.openfreemap.org; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>TrainRadar</title>
-  <style>
-    :root { --bg: #fff; --fg: #1a1a1a; --muted: #666; }
-    @media (prefers-color-scheme: dark) { :root { --bg: #111; --fg: #eee; --muted: #aaa; } }
-    body { margin: 0; padding: 16px; font: 16px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
-    small { color: var(--muted); }
-  </style>
+  <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
 </head>
 <body>
-  <h1>TrainRadar</h1>
-  <p>Mapa en directo de trenes de Renfe. En construcción.</p>
-  <p id="status">Cargando motor…</p>
-  <small>Datos: © Renfe Operadora, CC BY 4.0. Proyecto independiente, sin relación con Renfe ni Adif.</small>
-  <script type="module" src="./main.js"></script>
+  <div id="map" role="application" aria-label="Mapa de trenes"></div>
+
+  <header class="bar">
+    <div class="brand">TrainRadar</div>
+    <div class="bar-text">
+      <div id="stats" aria-live="polite"></div>
+      <div id="status" class="muted"></div>
+    </div>
+    <button id="lang" class="pill" type="button">EN</button>
+  </header>
+
+  <div class="bottom">
+    <div id="legend" class="legend"></div>
+    <button id="delayed-btn" class="pill pill-strong" type="button"></button>
+  </div>
+
+  <section id="delayed" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="delayed-title"></h2>
+      <button id="delayed-close" class="pill" type="button">✕</button>
+    </div>
+    <ul id="delayed-list"></ul>
+  </section>
+
+  <script type="module" src="main.js"></script>
 </body>
 </html>
