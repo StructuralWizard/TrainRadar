@@ -41,6 +41,8 @@ jobs:
           target/release/refdata-build build --out web/data \
             --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip \
             --sources gtfs/sources.tsv --report refdata.md
+      - name: Verify .bin files decode and are consistent
+        run: target/release/refdata-build verify web/data
       - name: Size report (raw and gzip -9)
         run: |
           command -v brotli >/dev/null || sudo apt-get install -y brotli

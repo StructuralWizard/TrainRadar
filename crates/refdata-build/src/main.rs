@@ -7,6 +7,7 @@ mod calendar;
 mod gtfs_io;
 mod inspect;
 mod load;
+mod verify;
 
 use build::{
     ATTRIBUTION, FileEntry, LONG_DISTANCE, Manifest, RegionEntry, Source, bbox_e5, build_stations,
@@ -23,6 +24,7 @@ use trainradar_proto::refdata::{RegionRec, TimetableFile, from_e5};
 const USAGE: &str = "\
 usage:
   refdata-build inspect <file.zip|file.csv>...
+  refdata-build verify DIR
   refdata-build build --out DIR [--ld ZIP] [--cercanias ZIP]
                       [--date YYYY-MM-DD] [--days N] [--sources FILE.tsv]
                       [--report FILE.md]
@@ -269,6 +271,7 @@ fn main() -> ExitCode {
         Some("inspect") if args.len() > 1 => args[1..]
             .iter()
             .try_for_each(|p| inspect::run(&PathBuf::from(p))),
+        Some("verify") if args.len() == 2 => verify::run(Path::new(&args[1])),
         Some("build") => match parse_build_args(&args[1..]) {
             Ok(a) => run_build(a),
             Err(e) => {
