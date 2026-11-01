@@ -3,6 +3,7 @@
 //   node tools/dev-server.mjs                       # live: /rt/* via worker/src/index.js
 //   FIXTURES=path/to/rt node tools/dev-server.mjs   # offline: /rt/* from .pb files
 //   DATA=path/to/data PORT=8080 node tools/dev-server.mjs
+//   ROOT=dist node tools/dev-server.mjs              # serve a built dist/
 //
 // Serves web/ at http://localhost:8080, /data/* from $DATA (default web/data).
 // In live mode the Worker's own code forwards feeds, so local behaviour
@@ -12,7 +13,7 @@ import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
 import worker from "../worker/src/index.js";
 
-const ROOT = resolve(new URL("../web", import.meta.url).pathname);
+const ROOT = resolve(process.env.ROOT || new URL("../web", import.meta.url).pathname);
 const DATA = resolve(process.env.DATA || join(ROOT, "data"));
 const FIXTURES = process.env.FIXTURES && resolve(process.env.FIXTURES);
 const PORT = Number(process.env.PORT || 8080);

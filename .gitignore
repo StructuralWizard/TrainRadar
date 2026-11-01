@@ -33,3 +33,4 @@ Thumbs.db
 # Vendored at build time from npm (tools/build-web.sh)
 /web/vendor/
 /demo/
+/build/

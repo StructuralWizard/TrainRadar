@@ -465,3 +465,8 @@ $("center-btn").addEventListener("click", () => {
 });
 
 main();
+
+// Installable app (PWA). Not on localhost, so development always gets fresh files.
+if ("serviceWorker" in navigator && !["localhost", "127.0.0.1"].includes(location.hostname)) {
+  navigator.serviceWorker.register("sw.js").catch((e) => console.warn("service worker", e));
+}
