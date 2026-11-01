@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use trainradar_proto::LatLon;
 use trainradar_proto::geo::Polyline;
 use trainradar_proto::refdata::{
-    FormatError, StationsFile, StopTime, TimetableFile, TripRec, decode_file,
+    FormatError, NO_LEG, StationsFile, StopTime, TimetableFile, TripRec, decode_file,
 };
 use trainradar_proto::time::{madrid_day, service_day_base};
 
@@ -41,8 +41,26 @@ pub struct Region {
 
 #[derive(Debug)]
 pub enum PatternGeom {
-    Shape { shape: u32, start_m: f64 },
+    Shape {
+        shape: u32,
+        start_m: f64,
+    },
     Straight(Polyline),
+    /// One section per stop pair: a shared OSM leg or a straight line.
+    Legs(Vec<Leg>),
+}
+
+#[derive(Debug)]
+pub struct Leg {
+    /// Metres along the trip where this section starts (its first stop).
+    pub start_m: f64,
+    pub line: LegLine,
+}
+
+#[derive(Debug)]
+pub enum LegLine {
+    Shared(u32),
+    Own(Polyline),
 }
 
 #[derive(Debug, Default)]
@@ -50,6 +68,7 @@ pub struct Network {
     pub stations: Option<StationsFile>,
     pub regions: Vec<Region>,
     pub shapes: Vec<Vec<Polyline>>,
+    pub legs: Vec<Vec<Polyline>>,
     station_gid: HashMap<String, u32>,
     by_trip_id: HashMap<String, TripRef>,
     by_number: HashMap<String, Vec<TripRef>>,
@@ -89,24 +108,41 @@ impl Network {
         if let Some(i) = self.regions.iter().position(|r| r.tt.region == code) {
             self.regions.remove(i);
             self.shapes.remove(i);
+            self.legs.remove(i);
             self.rebuild_indexes();
         }
         let shapes: Vec<Polyline> = tt.shapes.iter().map(|s| s.polyline()).collect();
+        let legs: Vec<Polyline> = tt.legs.iter().map(|s| s.polyline()).collect();
         let sched: Vec<Vec<StopTime>> = tt.patterns.iter().map(|p| p.stop_times()).collect();
         let geom = tt
             .patterns
             .iter()
-            .map(|p| match p.shape {
-                Some(s) => PatternGeom::Shape {
-                    shape: s,
-                    start_m: f64::from(p.shape_start_m),
-                },
-                None => PatternGeom::Straight(Polyline::new(
-                    p.stops
-                        .iter()
-                        .map(|&s| tt.stops[s as usize].coord())
-                        .collect(),
-                )),
+            .zip(&sched)
+            .map(|(p, st)| {
+                let coord = |i: usize| tt.stops[p.stops[i] as usize].coord();
+                match p.shape {
+                    Some(s) => PatternGeom::Shape {
+                        shape: s,
+                        start_m: f64::from(p.shape_start_m),
+                    },
+                    None if !p.legs.is_empty() => PatternGeom::Legs(
+                        p.legs
+                            .iter()
+                            .enumerate()
+                            .map(|(i, &l)| Leg {
+                                start_m: f64::from(st[i].dist_m),
+                                line: if l == NO_LEG {
+                                    LegLine::Own(Polyline::new(vec![coord(i), coord(i + 1)]))
+                                } else {
+                                    LegLine::Shared(l)
+                                },
+                            })
+                            .collect(),
+                    ),
+                    None => PatternGeom::Straight(Polyline::new(
+                        (0..p.stops.len()).map(coord).collect(),
+                    )),
+                }
             })
             .collect();
         let stop_gid = tt.stops.iter().map(|s| s.id.clone()).collect::<Vec<_>>();
@@ -118,6 +154,7 @@ impl Network {
             stop_gid,
         });
         self.shapes.push(shapes);
+        self.legs.push(legs);
         self.index_region(self.regions.len() - 1);
         Ok(code)
     }
@@ -163,6 +200,20 @@ impl Network {
                 Some((line.point_at(start_m + d)?, line.bearing_at(start_m + d)))
             }
             PatternGeom::Straight(line) => Some((line.point_at(d)?, line.bearing_at(d))),
+            PatternGeom::Legs(legs) => {
+                let i = legs.partition_point(|l| l.start_m <= d).saturating_sub(1);
+                let leg = legs.get(i)?;
+                let line = self.leg_line(t.region, leg);
+                let local = d - leg.start_m;
+                Some((line.point_at(local)?, line.bearing_at(local)))
+            }
+        }
+    }
+
+    fn leg_line<'a>(&'a self, region: u16, leg: &'a Leg) -> &'a Polyline {
+        match &leg.line {
+            LegLine::Shared(l) => &self.legs[region as usize][*l as usize],
+            LegLine::Own(p) => p,
         }
     }
 
@@ -180,6 +231,13 @@ impl Network {
                 let pr = line.project(p)?;
                 Some((pr.along_m.clamp(0.0, total), pr.offset_m))
             }
+            PatternGeom::Legs(legs) => legs
+                .iter()
+                .filter_map(|leg| {
+                    let pr = self.leg_line(t.region, leg).project(p)?;
+                    Some(((leg.start_m + pr.along_m).clamp(0.0, total), pr.offset_m))
+                })
+                .min_by(|a, b| a.1.total_cmp(&b.1)),
         }
     }
 
@@ -198,6 +256,19 @@ impl Network {
         p.stops
             .get(index)
             .map_or("", |&s| r.tt.stops[s as usize].name.as_str())
+    }
+
+    /// Why a record doesn't match (for diagnostics).
+    pub fn explain_no_match(&self, trip_id: &str, number: &str) -> &'static str {
+        let n = number.trim_start_matches('0');
+        match (
+            self.by_trip_id.contains_key(trip_id),
+            self.by_number.contains_key(n),
+        ) {
+            (true, _) => "trip id known, but not scheduled around now",
+            (false, true) => "number known, but no run around now",
+            (false, false) => "trip id and number not in timetable",
+        }
     }
 
     /// Find the scheduled run a realtime record belongs to. Tries the exact
@@ -318,6 +389,7 @@ pub mod tests {
                 text_color: None,
             }],
             shapes: vec![ShapeRec::encode("10_C3".into(), &pts)],
+            legs: vec![],
             patterns: vec![pattern],
             services: vec!["1004D".into()],
             trips: vec![
@@ -372,6 +444,45 @@ pub mod tests {
         assert!((bearing.unwrap() - 180.0).abs() < 1.0, "heading south");
         assert_eq!(n.stop_name(t, 1), "Stop B");
         assert_eq!(n.stop_gids(t).count(), 3);
+    }
+
+    #[test]
+    fn follows_shared_legs_and_straight_sections() {
+        let mut tt = sample_timetable();
+        // Same stops, no GTFS shape: leg A→B bends east via (40.35, -3.65);
+        // B→C is straight.
+        let bend = vec![
+            LatLon::new(40.40, -3.70),
+            LatLon::new(40.35, -3.65),
+            LatLon::new(40.30, -3.70),
+        ];
+        let leg = ShapeRec::encode("A>B".into(), &bend);
+        let ab = leg.polyline().length_m().round() as u32;
+        let bc = Polyline::new(vec![bend[2], LatLon::new(40.20, -3.70)])
+            .length_m()
+            .round() as u32;
+        let mut p = PatternRec::from_absolute(
+            vec![0, 1, 2],
+            &[(0, 0), (600, 660), (1260, 1260)],
+            &[0, ab, ab + bc],
+            None,
+            0,
+        );
+        p.legs = vec![0, NO_LEG];
+        tt.patterns = vec![p];
+        tt.legs = vec![leg];
+        tt.shapes.clear();
+        let mut n = Network::default();
+        n.load_timetable(&encode(&tt).unwrap()).unwrap();
+        let t = TripRef { region: 0, trip: 0 };
+        let (mid, _) = n.point_at(t, f64::from(ab) / 2.0).unwrap();
+        assert!((mid.lon + 3.65).abs() < 1e-3, "follows the bend: {mid:?}");
+        let (d, off) = n.project(t, LatLon::new(40.25, -3.70)).unwrap();
+        assert!(off < 5.0);
+        assert!(
+            (d - f64::from(ab) - f64::from(bc) / 2.0).abs() < 20.0,
+            "{d}"
+        );
     }
 
     #[test]

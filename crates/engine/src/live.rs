@@ -40,6 +40,52 @@ pub struct LiveTrain {
     pub canceled: bool,
 }
 
+/// Same train listed more than once (the AV/LD/MD feed lists some trains
+/// once per timetable variant): same number, within this distance.
+const DUPLICATE_RADIUS_M: f64 = 500.0;
+
+/// Keep one entry per physical train: the best-matched one.
+fn dedupe(mut trains: Vec<LiveTrain>) -> Vec<LiveTrain> {
+    let rank = |t: &LiveTrain| {
+        (
+            t.matched.is_some_and(|m| m.exact),
+            t.matched.is_some(),
+            t.delay_source == Some(DelaySource::TripUpdate),
+            t.fix_along.is_some(),
+        )
+    };
+    // Best first within each number, so the first kept wins.
+    trains.sort_by(|a, b| {
+        (a.feed, &a.rt.train_number)
+            .cmp(&(b.feed, &b.rt.train_number))
+            .then_with(|| rank(b).cmp(&rank(a)))
+    });
+    let mut kept: Vec<LiveTrain> = Vec::with_capacity(trains.len());
+    for t in trains {
+        let dup = !t.rt.train_number.is_empty()
+            && kept
+                .iter()
+                .rev()
+                .take_while(|k| k.feed == t.feed && k.rt.train_number == t.rt.train_number)
+                .any(|k| {
+                    haversine_m(
+                        LatLon::new(k.rt.lat, k.rt.lon),
+                        LatLon::new(t.rt.lat, t.rt.lon),
+                    ) <= DUPLICATE_RADIUS_M
+                });
+        if !dup {
+            kept.push(t);
+        }
+    }
+    // Stable order (by train number) so indexes don't jump between updates.
+    kept.sort_by(|a, b| {
+        a.rt.train_number
+            .cmp(&b.rt.train_number)
+            .then(a.feed.cmp(b.feed))
+    });
+    kept
+}
+
 /// A train's state at a given instant, ready to draw.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TrainView {
@@ -147,9 +193,7 @@ impl Live {
                 });
             }
         }
-        // Stable order (by train number) so indexes don't jump between updates.
-        trains.sort_by(|a, b| a.rt.train_number.cmp(&b.rt.train_number));
-        self.trains = trains;
+        self.trains = dedupe(trains);
     }
 
     /// Positions of all trains at `now`. Spacing to neighbours is optional
@@ -289,6 +333,27 @@ mod tests {
         assert_eq!(t.delay_source, Some(DelaySource::TripUpdate));
         assert_eq!(t.fix_time, now, "same position: still the old fix");
         assert_eq!(live.views(&net, now + 90, false)[0].fix_age_secs, 90);
+    }
+
+    #[test]
+    fn merges_duplicate_listings_of_one_train() {
+        let net = sample_network();
+        let mut live = Live::default();
+        let now = local(8, 5);
+        let mut a = vehicle("0019052026-11-01", 40.38, Some(now)); // unknown variant id
+        a.train_number = "00190".into();
+        let mut b = vehicle("1004D100C3", 40.3801, Some(now)); // exact id, same number
+        b.train_number = "00190".into();
+        let mut far = vehicle("x", 41.5, Some(now)); // same number, elsewhere
+        far.train_number = "00190".into();
+        live.ingest(&net, "vp_ld", FeedData::Vehicles(vec![a, b, far]), now);
+        assert_eq!(live.trains.len(), 2);
+        assert!(live.trains.iter().any(|t| t.rt.trip_id == "1004D100C3"));
+        assert!(
+            live.trains
+                .iter()
+                .all(|t| t.rt.trip_id != "0019052026-11-01")
+        );
     }
 
     #[test]

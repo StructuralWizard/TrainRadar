@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut by_feed: BTreeMap<&str, [usize; 6]> = BTreeMap::new();
-    let mut unmatched = Vec::new();
+    let mut unmatched: BTreeMap<(&str, &str), (usize, Vec<String>)> = BTreeMap::new();
     let mut delays = Vec::new();
     let mut ages = Vec::new();
     for t in &live.trains {
@@ -55,8 +55,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(_) => c[2] += 1,
             None => {
                 c[3] += 1;
-                if unmatched.len() < 8 {
-                    unmatched.push(format!("{} / {}", t.rt.trip_id, t.rt.train_number));
+                let why = net.explain_no_match(&t.rt.trip_id, &t.rt.train_number);
+                let e = unmatched.entry((t.feed, why)).or_default();
+                e.0 += 1;
+                if e.1.len() < 5 {
+                    e.1.push(format!("`{}` ({})", t.rt.trip_id, t.rt.train_number));
                 }
             }
         }
@@ -71,13 +74,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         ages.push(now - t.fix_time);
     }
-    println!("\n| Feed | Trains | Matched by id | by number | Unmatched | Fix on line | Delay from Renfe |");
+    println!(
+        "\n| Feed | Trains | Matched by id | by number | Unmatched | Fix on line | Delay from Renfe |"
+    );
     println!("|---|---:|---:|---:|---:|---:|---:|");
     for (f, c) in &by_feed {
-        println!("| {f} | {} | {} | {} | {} | {} | {} |", c[0], c[1], c[2], c[3], c[4], c[5]);
+        println!(
+            "| {f} | {} | {} | {} | {} | {} | {} |",
+            c[0], c[1], c[2], c[3], c[4], c[5]
+        );
     }
-    if !unmatched.is_empty() {
-        println!("\nUnmatched examples (trip id / number): {}", unmatched.join(", "));
+    for ((feed, why), (n, ex)) in &unmatched {
+        println!(
+            "\n- Unmatched in {feed}: {n} × {why}, e.g. {}",
+            ex.join(", ")
+        );
     }
 
     delays.sort_unstable();
