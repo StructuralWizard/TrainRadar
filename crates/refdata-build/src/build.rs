@@ -16,9 +16,9 @@ use trainradar_proto::refdata::{
 /// Shape simplification tolerance. 5 m is invisible on a phone map at any zoom
 /// where trains are distinguishable, and removes most shape points.
 pub const SIMPLIFY_TOLERANCE_M: f64 = 5.0;
-/// OpenStreetMap track is mapped very densely; 10 m keeps curves smooth on a
-/// phone and roughly halves the points again.
-pub const OSM_SIMPLIFY_TOLERANCE_M: f64 = 10.0;
+/// OpenStreetMap track is mapped very densely. 15 m is under one pixel up to
+/// zoom 12 and still smooth on curves when zoomed in.
+pub const OSM_SIMPLIFY_TOLERANCE_M: f64 = 15.0;
 /// A stop further than this from its trip's shape means the shape is wrong
 /// for that trip; fall back to straight segments.
 pub const MAX_STOP_OFFSET_M: f64 = 400.0;
@@ -86,7 +86,8 @@ pub fn build_timetable(
     region: &str,
     header: Header,
     mut router: Option<&mut Router<'_>>,
-) -> (TimetableFile, RegionStats) {
+) -> (TimetableFile, Vec<ShapeRec>, RegionStats) {
+    let mut legs_out: Vec<ShapeRec> = Vec::new();
     let mut st = RegionStats::default();
     let mut tt = TimetableFile {
         header,
@@ -94,7 +95,6 @@ pub fn build_timetable(
         stops: vec![],
         routes: vec![],
         shapes: vec![],
-        legs: vec![],
         patterns: vec![],
         services: vec![],
         trips: vec![],
@@ -108,7 +108,7 @@ pub fn build_timetable(
     // Cache per (shape, stop sequence): projecting is the slow part.
     type Placed = Option<(u32, u32, Vec<u32>)>;
     let mut placed_cache: HashMap<(&str, Vec<usize>), Placed> = HashMap::new();
-    // OpenStreetMap legs per (stop, next stop): (index in tt.legs, length m).
+    // OpenStreetMap legs per (stop, next stop): (index in legs_out, length m).
     let mut leg_map: HashMap<(usize, usize), Option<(u32, f64)>> = HashMap::new();
 
     for trip in trips {
@@ -199,8 +199,8 @@ pub fn build_timetable(
                             let len = Polyline::new(rec.points()).length_m();
                             st.shape_points_in += pts.len();
                             st.shape_points_out += simple.len();
-                            tt.legs.push(rec);
-                            Some(((tt.legs.len() - 1) as u32, len))
+                            legs_out.push(rec);
+                            Some(((legs_out.len() - 1) as u32, len))
                         });
                         match leg {
                             Some((li, len)) => {
@@ -270,8 +270,8 @@ pub fn build_timetable(
     st.patterns = tt.patterns.len();
     st.stops = tt.stops.len();
     st.routes = tt.routes.len();
-    st.shapes = tt.shapes.len() + tt.legs.len();
-    (tt, st)
+    st.shapes = tt.shapes.len() + legs_out.len();
+    (tt, legs_out, st)
 }
 
 /// Cumulative straight-line distances between consecutive stops, in metres.
@@ -438,11 +438,13 @@ pub struct RegionEntry {
     pub bbox: [f64; 4],
     pub file: String,
     pub bytes: usize,
+    /// OpenStreetMap track for this region, loaded after the timetable.
+    pub geometry: Option<FileEntry>,
     pub stats: RegionStats,
 }
 
 pub const ATTRIBUTION: &str = "Datos: © Renfe Operadora, CC BY 4.0 (data.renfe.com). \
-     Procesados y combinados por TrainRadar.";
+     Vías: © colaboradores de OpenStreetMap, ODbL. Procesados y combinados por TrainRadar.";
 
 pub fn window_header(w: &Window, generated_at: i64) -> Header {
     Header::new(w.start as u32, w.days, generated_at)
@@ -478,7 +480,8 @@ mod tests {
         let feed = sample();
         let regions = split_regions(&feed, true);
         assert_eq!(regions.keys().collect::<Vec<_>>(), ["10"]);
-        let (tt, st) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
+        let (tt, _legs, st) =
+            build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
 
         // Trips 100 and 102 share one pattern; 101 runs the other way.
         assert_eq!(st.trips, 3);
@@ -522,7 +525,8 @@ mod tests {
         let mut feed = sample();
         feed.shapes.clear();
         let trips: Vec<&Trip> = feed.trips.iter().collect();
-        let (tt, st) = build_timetable(&feed, &trips, LONG_DISTANCE, Header::new(0, 8, 0), None);
+        let (tt, _legs, st) =
+            build_timetable(&feed, &trips, LONG_DISTANCE, Header::new(0, 8, 0), None);
         assert_eq!(st.shapes, 0);
         assert_eq!(st.patterns_straight, st.patterns);
         let d = tt.patterns[0].stop_times()[1].dist_m;
@@ -564,7 +568,7 @@ mod tests {
         let graph = sample_graph();
         let mut router = Router::new(&graph);
         let trips: Vec<&Trip> = feed.trips.iter().collect();
-        let (tt, st) = build_timetable(
+        let (tt, legs, st) = build_timetable(
             &feed,
             &trips,
             LONG_DISTANCE,
@@ -573,7 +577,7 @@ mod tests {
         );
         assert_eq!(st.patterns_on_osm, 1);
         assert_eq!(tt.patterns[0].legs, [0]);
-        assert_eq!(tt.legs[0].id, "P>Q");
+        assert_eq!(legs[0].id, "P>Q");
         let d = tt.patterns[0].stop_times()[1].dist_m;
         assert!(
             (18_000..20_000).contains(&d),
@@ -592,9 +596,9 @@ mod tests {
     fn stations_merge_services_and_index() {
         let feed = sample();
         let regions = split_regions(&feed, true);
-        let (cer, _) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
+        let (cer, _, _) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
         let all: Vec<&Trip> = feed.trips.iter().take(1).collect();
-        let (ld, _) = build_timetable(&feed, &all, LONG_DISTANCE, Header::new(0, 8, 0), None);
+        let (ld, _, _) = build_timetable(&feed, &all, LONG_DISTANCE, Header::new(0, 8, 0), None);
         let rec = |code: &str, tt: &TimetableFile| RegionRec {
             code: code.into(),
             name: region_name(code),

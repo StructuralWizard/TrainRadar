@@ -269,9 +269,6 @@ pub struct TimetableFile {
     pub stops: Vec<StopRec>,
     pub routes: Vec<RouteRec>,
     pub shapes: Vec<ShapeRec>,
-    /// Track sections between two consecutive stops (from OpenStreetMap),
-    /// shared by every pattern that runs between those stops.
-    pub legs: Vec<ShapeRec>,
     pub patterns: Vec<PatternRec>,
     /// GTFS service ids referenced by trips (to rebuild trip ids compactly).
     pub services: Vec<String>,
@@ -279,6 +276,22 @@ pub struct TimetableFile {
 }
 
 impl HasHeader for TimetableFile {
+    fn header(&self) -> &Header {
+        &self.header
+    }
+}
+
+/// Track sections between consecutive stops (from OpenStreetMap) for one
+/// region, shared by every pattern running between those stops. A separate
+/// file so the map can show trains before the detailed geometry arrives.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GeometryFile {
+    pub header: Header,
+    pub region: String,
+    pub legs: Vec<ShapeRec>,
+}
+
+impl HasHeader for GeometryFile {
     fn header(&self) -> &Header {
         &self.header
     }
@@ -363,8 +376,9 @@ pub struct PatternRec {
     pub shape: Option<u32>,
     pub shape_start_m: u32,
     /// When not empty (and `shape` is `None`): one entry per stop-to-stop
-    /// section, an index into [`TimetableFile::legs`] or [`NO_LEG`] for a
-    /// straight line between the two stops. `dist_m` then follows the legs.
+    /// section, an index into the region's [`GeometryFile::legs`] or
+    /// [`NO_LEG`] for a straight line between the two stops. `dist_m` then
+    /// follows the legs.
     pub legs: Vec<u32>,
 }
 
@@ -586,7 +600,6 @@ mod tests {
             stops: vec![],
             routes: vec![],
             shapes: vec![],
-            legs: vec![],
             patterns: vec![],
             services: vec!["1004D".into()],
             trips: vec![TripRec {

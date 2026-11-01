@@ -3,7 +3,7 @@
 
 use crate::gtfs_io::Result;
 use std::path::Path;
-use trainradar_proto::refdata::{NO_LEG, StationsFile, TimetableFile, decode_file};
+use trainradar_proto::refdata::{GeometryFile, NO_LEG, StationsFile, TimetableFile, decode_file};
 
 pub fn run(dir: &Path) -> Result<()> {
     let manifest: serde_json::Value =
@@ -26,7 +26,21 @@ pub fn run(dir: &Path) -> Result<()> {
         .ok_or("manifest: no regions")?
     {
         let tt: TimetableFile = decode_file(&file(r)?)?;
-        check_timetable(&tt)?;
+        let legs = if r["geometry"].is_null() {
+            0
+        } else {
+            let g: GeometryFile = decode_file(&file(&r["geometry"])?)?;
+            if g.region != tt.region {
+                return Err(format!("{}: geometry file is for {}", tt.region, g.region).into());
+            }
+            for s in &g.legs {
+                ensure(s.deltas.len() % 2 == 0 && s.deltas.len() >= 4, || {
+                    format!("{}: leg {} is malformed", tt.region, s.id)
+                })?;
+            }
+            g.legs.len()
+        };
+        check_timetable(&tt, legs)?;
         println!(
             "ok  {}: {} trips, {} patterns, {} stops",
             tt.region,
@@ -69,7 +83,7 @@ pub fn check_stations(st: &StationsFile) -> Result<()> {
     Ok(())
 }
 
-pub fn check_timetable(tt: &TimetableFile) -> Result<()> {
+pub fn check_timetable(tt: &TimetableFile, n_legs: usize) -> Result<()> {
     let window_mask = if tt.header.window_days >= 16 {
         u16::MAX
     } else {
@@ -103,9 +117,7 @@ pub fn check_timetable(tt: &TimetableFile) -> Result<()> {
             },
         )?;
         ensure(
-            p.legs
-                .iter()
-                .all(|&l| l == NO_LEG || (l as usize) < tt.legs.len()),
+            p.legs.iter().all(|&l| l == NO_LEG || (l as usize) < n_legs),
             || format!("{}: pattern {i} has a bad leg index", tt.region),
         )?;
     }
@@ -125,7 +137,7 @@ pub fn check_timetable(tt: &TimetableFile) -> Result<()> {
             format!("{id}: days outside window")
         })?;
     }
-    for s in tt.shapes.iter().chain(&tt.legs) {
+    for s in &tt.shapes {
         ensure(s.deltas.len() % 2 == 0 && s.deltas.len() >= 4, || {
             format!("{}: shape {} is malformed", tt.region, s.id)
         })?;
@@ -149,9 +161,10 @@ mod tests {
         };
         let feed = load(&mut sample_gtfs(), &w).unwrap();
         let regions = split_regions(&feed, true);
-        let (mut tt, _) = build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
-        check_timetable(&tt).unwrap();
+        let (mut tt, _, _) =
+            build_timetable(&feed, &regions["10"], "10", Header::new(0, 8, 0), None);
+        check_timetable(&tt, 0).unwrap();
         tt.trips[0].days = 1 << 9;
-        assert!(check_timetable(&tt).is_err());
+        assert!(check_timetable(&tt, 0).is_err());
     }
 }
