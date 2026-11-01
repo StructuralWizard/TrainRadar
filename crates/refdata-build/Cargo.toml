@@ -1,0 +1,20 @@
+[package]
+name = "trainradar-refdata-build"
+description = "Native CLI that turns Renfe static GTFS into compact .bin reference files"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[[bin]]
+name = "refdata-build"
+path = "src/main.rs"
+
+[dependencies]
+trainradar-proto.workspace = true
+
+[lints]
+workspace = true
