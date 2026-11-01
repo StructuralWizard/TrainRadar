@@ -10,7 +10,8 @@ read them. This Worker is the smallest possible fix:
   `wrangler.toml`), so other websites can't use it.
 - Edge cache: 15 s, the fastest feed refresh. `Cache-Control: max-age=15`.
 
-Test: `node --test worker/test/index.test.mjs`. Deployment is set up in phase A7.
+Test: `node --test worker/test/index.test.mjs`. Deployed by `.github/workflows/deploy.yml`
+(see `docs/deploy.md`), with `ALLOWED_ORIGINS` set to the live site's URL.
 
 Free-tier note: Cloudflare Workers allow 100,000 requests per day. With
 polling every 30 s, one visitor with AV/LD/MD plus one Cercanías region open
