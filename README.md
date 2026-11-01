@@ -23,6 +23,8 @@ and draws them on a MapLibre map. There is no TrainRadar server.
 - Optional "Use my location": blue dot with accuracy circle, centre on me, nearest
   stations with their next trains and delays, trains approaching your station, and
   "Am I on this train?" (with a confidence level, never a guess).
+- Renfe notices (incidents) with lines, stations on the map, and the feed's age, plus a
+  link to Adif's network status page.
 - Spanish (default) and English.
 
 Phase plan and design notes: [docs/roadmap.md](docs/roadmap.md). How the engine works:
