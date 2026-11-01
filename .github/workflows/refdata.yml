@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup show active-toolchain || rustup toolchain install
@@ -36,6 +36,14 @@ jobs:
       - run: cargo build --release -p trainradar-refdata-build
       - name: Download Renfe GTFS
         run: tools/fetch-gtfs.sh | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Sample realtime feeds (ids and fields, for trip matching)
+        run: |
+          for f in vehicle_positions vehicle_positions_LD trip_updates trip_updates_LD; do
+            echo "== $f"
+            curl -fsSL --retry 3 "https://gtfsrt.renfe.com/$f.json" -o "gtfs/$f.json"
+            jq -c '{header, n: (.entity | length)}' "gtfs/$f.json"
+            jq -c '.entity[:3][]' "gtfs/$f.json" | cut -c1-600
+          done
       - name: Build .bin files
         run: |
           target/release/refdata-build build --out web/data \
@@ -56,7 +64,7 @@ jobs:
                 "$(gzip -9c "$f" | wc -c)" "$(brotli -q 11 -c "$f" | wc -c)"
             done
           } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: refdata
           path: web/data
