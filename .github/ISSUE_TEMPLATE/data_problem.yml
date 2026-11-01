@@ -1,0 +1,29 @@
+name: Data problem
+description: A train, station, delay or incident looks wrong
+labels: [data]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        TrainRadar shows Renfe's open data as published. Some problems come from the source
+        and can't be fixed here, but reports help us spot matching or parsing bugs.
+  - type: input
+    id: train
+    attributes:
+      label: Train number, line or station
+      placeholder: e.g. AVE 03071, C-4, Madrid-Atocha
+    validations:
+      required: true
+  - type: input
+    id: when
+    attributes:
+      label: When did you see it? (date, time, time zone)
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What looks wrong, and what is correct?
+      description: e.g. wrong position, wrong delay, missing train. A Renfe or Adif source helps.
+    validations:
+      required: true
