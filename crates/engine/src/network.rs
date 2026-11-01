@@ -10,7 +10,7 @@ use trainradar_proto::refdata::{
 use trainradar_proto::time::{madrid_day, service_day_base};
 
 /// A trip on a specific service day.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TripRef {
     pub region: u16,
     pub trip: u32,
@@ -37,6 +37,10 @@ pub struct Region {
     pub geom: Vec<PatternGeom>,
     /// Global station id per timetable stop (for cross-region spacing).
     pub stop_gid: Vec<u32>,
+    /// Stop id → (pattern, position in pattern) for every call there.
+    pub calls: HashMap<String, Vec<(u32, u16)>>,
+    /// Trips using each pattern.
+    pub pattern_trips: Vec<Vec<u32>>,
 }
 
 #[derive(Debug)]
@@ -144,11 +148,26 @@ impl Network {
             .collect();
         let stop_gid = tt.stops.iter().map(|s| s.id.clone()).collect::<Vec<_>>();
         let stop_gid = stop_gid.iter().map(|id| self.gid(id)).collect();
+        let mut calls: HashMap<String, Vec<(u32, u16)>> = HashMap::new();
+        for (pi, p) in tt.patterns.iter().enumerate() {
+            for (pos, &s) in p.stops.iter().enumerate() {
+                calls
+                    .entry(tt.stops[s as usize].id.clone())
+                    .or_default()
+                    .push((pi as u32, pos as u16));
+            }
+        }
+        let mut pattern_trips = vec![Vec::new(); tt.patterns.len()];
+        for (ti, t) in tt.trips.iter().enumerate() {
+            pattern_trips[t.pattern as usize].push(ti as u32);
+        }
         self.regions.push(Region {
             tt,
             sched,
             geom,
             stop_gid,
+            calls,
+            pattern_trips,
         });
         self.shapes.push(shapes);
         self.legs.push(Vec::new()); // until load_geometry

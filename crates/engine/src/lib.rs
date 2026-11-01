@@ -9,6 +9,8 @@ pub mod gtfs_rt;
 mod json;
 pub mod live;
 pub mod network;
+pub mod onboard;
+pub mod places;
 pub mod poll;
 pub mod renfe;
 pub mod schedule;
@@ -57,6 +59,7 @@ pub const POSITION_STRIDE: usize = 5;
 pub struct Engine {
     net: Network,
     live: Live,
+    onboard: onboard::Onboard,
 }
 
 #[wasm_bindgen]
@@ -223,6 +226,183 @@ impl Engine {
             .iter()
             .position(|t| t.rt.trip_id == trip_id && t.rt.train_number == number)
             .map_or(-1, |i| i as i32)
+    }
+
+    /// Up to `k` stations within `max_m` of a point, nearest first:
+    /// `[{id, name, lat, lon, distance_m, services}]`.
+    #[wasm_bindgen(js_name = nearestStationsJson)]
+    pub fn nearest_stations_json(&self, lat: f64, lon: f64, k: usize, max_m: f64) -> String {
+        let near =
+            places::nearest_stations(&self.net, trainradar_proto::LatLon::new(lat, lon), k, max_m);
+        let mut s = String::from("[");
+        for (i, n) in near.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            let c = n.station.coord();
+            json::Obj::new(&mut s)
+                .s("id", &n.station.id)
+                .s("name", &n.station.name)
+                .n("lat", c.lat)
+                .n("lon", c.lon)
+                .n("distance_m", n.distance_m.round())
+                .n("services", n.station.services)
+                .end();
+        }
+        s.push(']');
+        s
+    }
+
+    /// Next trains at a station (loaded timetables, live delays), by expected
+    /// time: `[{trip_id, route, number, other_end, terminates, sched, delay,
+    /// expected, canceled, live}]`. `sched` is the departure, or the arrival
+    /// for trains that terminate here.
+    #[wasm_bindgen(js_name = stationBoardJson)]
+    pub fn station_board_json(
+        &self,
+        station_id: &str,
+        now_ms: f64,
+        horizon_secs: i32,
+        limit: usize,
+    ) -> String {
+        let rows = places::board(
+            &self.net,
+            &self.live,
+            station_id,
+            secs(now_ms),
+            i64::from(horizon_secs),
+            limit,
+        );
+        let mut s = String::from("[");
+        for (i, r) in rows.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            json::Obj::new(&mut s)
+                .s("trip_id", &r.trip_id)
+                .s("route", &r.route)
+                .s("number", &r.number)
+                .s("other_end", &r.other_end)
+                .b("terminates", r.terminates)
+                .n(
+                    "sched",
+                    if r.terminates {
+                        r.sched_arr
+                    } else {
+                        r.sched_dep
+                    },
+                )
+                .on("delay", r.delay)
+                .n("expected", r.expected())
+                .b("canceled", r.canceled)
+                .b("live", r.live)
+                .end();
+        }
+        s.push(']');
+        s
+    }
+
+    /// Trains on the map heading for a station within `horizon_secs`, by
+    /// arrival: each is the train's popup JSON plus `eta` and `distance_m`.
+    #[wasm_bindgen(js_name = approachingJson)]
+    pub fn approaching_json(&self, station_id: &str, now_ms: f64, horizon_secs: i32) -> String {
+        let now = secs(now_ms);
+        let list = places::approaching(
+            &self.net,
+            &self.live,
+            station_id,
+            now,
+            i64::from(horizon_secs),
+        );
+        let views = self.live.views(&self.net, now, false);
+        let mut s = String::from("[");
+        for (i, a) in list.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            let mut v = self.view_json(&views[a.index]);
+            v.pop(); // reopen the object to add fields
+            s.push_str(&v);
+            s.push_str(&format!(
+                ",\"eta\":{},\"distance_m\":{}}}",
+                a.eta,
+                a.distance_m.round()
+            ));
+        }
+        s.push(']');
+        s
+    }
+
+    /// Add a user location fix for "Am I on this train?". Kept in memory for
+    /// 90 s only; never sent anywhere.
+    #[wasm_bindgen(js_name = onboardAdd)]
+    pub fn onboard_add(&mut self, lat: f64, lon: f64, accuracy_m: f64, now_ms: f64) {
+        self.onboard.add(
+            &self.net,
+            &self.live,
+            onboard::Sample {
+                t: secs(now_ms),
+                p: trainradar_proto::LatLon::new(lat, lon),
+                accuracy_m,
+            },
+        );
+    }
+
+    /// Forget all location fixes (location turned off).
+    #[wasm_bindgen(js_name = onboardClear)]
+    pub fn onboard_clear(&mut self) {
+        self.onboard.clear();
+    }
+
+    /// `{status, samples, span_secs, user_speed, candidates: [{index,
+    /// trip_id, number, median_m, confidence}]}`; status is one of
+    /// collecting, stationary, none, match, ambiguous.
+    #[wasm_bindgen(js_name = onboardJson)]
+    pub fn onboard_json(&self) -> String {
+        use onboard::{Confidence, Status};
+        let v = self.onboard.verdict();
+        let mut cands = String::from("[");
+        for (i, c) in v.candidates.iter().take(3).enumerate() {
+            if i > 0 {
+                cands.push(',');
+            }
+            json::Obj::new(&mut cands)
+                .n("index", self.find_train(&c.trip_id, &c.number))
+                .s("trip_id", &c.trip_id)
+                .s("number", &c.number)
+                .n("median_m", c.median_m.round())
+                .s(
+                    "confidence",
+                    match c.confidence {
+                        Confidence::High => "high",
+                        Confidence::Medium => "medium",
+                        Confidence::Low => "low",
+                    },
+                )
+                .end();
+        }
+        cands.push(']');
+        let mut s = String::new();
+        json::Obj::new(&mut s)
+            .s(
+                "status",
+                match v.status {
+                    Status::Collecting => "collecting",
+                    Status::Stationary => "stationary",
+                    Status::NoMatch => "none",
+                    Status::Match => "match",
+                    Status::Ambiguous => "ambiguous",
+                },
+            )
+            .n("samples", v.samples)
+            .n("span_secs", v.span_secs)
+            .on(
+                "user_speed",
+                v.user_speed_ms.map(|x| (x * 10.0).round() / 10.0),
+            )
+            .raw("candidates", &cands)
+            .end();
+        s
     }
 
     /// Current incidents (alerts feed) as a JSON array.
@@ -399,5 +579,44 @@ mod tests {
         assert_eq!(feat["properties"]["name"], "Madrid \"Chamartín\"");
         assert_eq!(feat["properties"]["services"], 3);
         assert_eq!(e.find_train("x", "1"), -1);
+    }
+
+    #[test]
+    fn location_json_parses() {
+        use crate::network::tests::{local, sample_network};
+        let mut e = Engine::new();
+        e.net = sample_network();
+        let now = local(8, 5);
+        let v = source::RtVehicle {
+            trip_id: "1004D100C3".into(),
+            train_number: "100".into(),
+            line: "C3".into(),
+            platform: None,
+            lat: 40.35,
+            lon: -3.70,
+            bearing: None,
+            speed: None,
+            timestamp: Some(now),
+            stop_id: None,
+            status: None,
+        };
+        e.live
+            .ingest(&e.net, "vp_cer", source::FeedData::Vehicles(vec![v]), now);
+        let ms = now as f64 * 1000.0;
+        let a: serde_json::Value =
+            serde_json::from_str(&e.approaching_json("B", ms, 1800)).unwrap();
+        assert_eq!(a[0]["trip_id"], "1004D100C3");
+        assert_eq!(a[0]["eta"], local(8, 10));
+        let b: serde_json::Value =
+            serde_json::from_str(&e.station_board_json("B", ms, 7200, 5)).unwrap();
+        assert_eq!(b[0]["route"], "C3");
+        assert_eq!(b[0]["live"], true);
+        e.onboard_add(40.35, -3.70, 15.0, ms);
+        let o: serde_json::Value = serde_json::from_str(&e.onboard_json()).unwrap();
+        assert_eq!(o["status"], "collecting");
+        assert_eq!(o["samples"], 1);
+        e.onboard_clear();
+        let o: serde_json::Value = serde_json::from_str(&e.onboard_json()).unwrap();
+        assert_eq!(o["samples"], 0);
     }
 }
