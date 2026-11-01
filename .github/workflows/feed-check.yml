@@ -35,7 +35,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node check.mjs --watch-seconds "${{ inputs.watch_seconds || '180' }}" | tee report.md
       - run: cat report.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: feed-check-report
           path: tools/feed-check/report.md
