@@ -60,8 +60,8 @@ impl BoardRow {
     }
 }
 
-/// Trains calling at a station from now until `horizon_secs` ahead, by
-/// expected time. Uses loaded timetables only (the web app loads the
+/// Trains calling at a station from now until `horizon_secs` ahead, in
+/// timetable order (only those not yet gone, counting their delay). Uses loaded timetables only (the web app loads the
 /// Cercanías núcleo around the user first).
 pub fn board(
     net: &Network,
@@ -135,7 +135,14 @@ pub fn board(
             }
         }
     }
-    rows.sort_by_key(BoardRow::expected);
+    // Like a station board: in timetable order (delays shown alongside).
+    rows.sort_by_key(|r| {
+        if r.terminates {
+            r.sched_arr
+        } else {
+            r.sched_dep
+        }
+    });
     rows.truncate(limit);
     rows
 }

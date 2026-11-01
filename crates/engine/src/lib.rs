@@ -253,8 +253,8 @@ impl Engine {
         s
     }
 
-    /// Next trains at a station (loaded timetables, live delays), by expected
-    /// time: `[{trip_id, route, number, other_end, terminates, sched, delay,
+    /// Next trains at a station (loaded timetables, live delays), in
+    /// timetable order: `[{trip_id, route, number, other_end, terminates, sched, delay,
     /// expected, canceled, live}]`. `sched` is the departure, or the arrival
     /// for trains that terminate here.
     #[wasm_bindgen(js_name = stationBoardJson)]

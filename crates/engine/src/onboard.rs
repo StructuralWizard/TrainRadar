@@ -20,6 +20,28 @@ pub const MIN_SPEED_MS: f64 = 4.0;
 /// Trains further than this from a fix aren't candidates for it.
 pub const SEARCH_RADIUS_M: f64 = 3_000.0;
 
+/// Median speed (m/s) over consecutive points at least 5 s apart. Robust to
+/// a single bad fix (e.g. a coarse first fix), unlike first-to-last.
+fn median_speed(points: impl Iterator<Item = (i64, LatLon)>) -> f64 {
+    let pts: Vec<(i64, LatLon)> = points.collect();
+    let mut speeds = Vec::new();
+    let mut prev = match pts.first() {
+        Some(&p) => p,
+        None => return 0.0,
+    };
+    for &(t, p) in &pts[1..] {
+        if t - prev.0 >= 5 {
+            speeds.push(haversine_m(prev.1, p) / (t - prev.0) as f64);
+            prev = (t, p);
+        }
+    }
+    if speeds.is_empty() {
+        return 0.0;
+    }
+    speeds.sort_by(f64::total_cmp);
+    speeds[speeds.len() / 2]
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sample {
     pub t: i64,
@@ -135,7 +157,7 @@ impl Onboard {
         if n < MIN_SAMPLES || span < MIN_SPAN_SECS {
             return v;
         }
-        let user_speed = haversine_m(first.p, last.p) / span as f64;
+        let user_speed = median_speed(self.samples.iter().map(|x| (x.0.t, x.0.p)));
         v.user_speed_ms = Some(user_speed);
         if user_speed < MIN_SPEED_MS {
             v.status = Status::Stationary;
@@ -173,8 +195,7 @@ impl Onboard {
             let mut d: Vec<f64> = track.iter().map(|x| x.2).collect();
             d.sort_by(f64::total_cmp);
             let median = d[d.len() / 2];
-            let (a, b) = (track[0], track[track.len() - 1]);
-            let train_speed = haversine_m(a.1, b.1) / (b.0 - a.0).max(1) as f64;
+            let train_speed = median_speed(track.iter().map(|x| (x.0, x.1)));
             let speed_diff = (train_speed - user_speed).abs();
             if median <= tolerance && speed_diff <= (0.35 * user_speed).max(3.0) {
                 fits.push(Candidate {
@@ -278,6 +299,28 @@ mod tests {
         assert_eq!(v.candidates[0].trip_id, "1004D100C3");
         assert_eq!(v.candidates[0].confidence, Confidence::High);
         assert!((v.user_speed_ms.unwrap() - 18.5).abs() < 1.0);
+    }
+
+    #[test]
+    fn a_stray_first_fix_does_not_spoil_the_match() {
+        let (mut ob, net, live) = ride(0.0, 0.0005, 1.0, 75);
+        // Rebuild with a bad first fix 5 km away, 10 s before the ride.
+        let rest: Vec<_> = ob.samples.drain(..).collect();
+        ob.add(
+            &net,
+            &live,
+            Sample {
+                t: rest[0].0.t - 10,
+                p: LatLon::new(40.40, -3.64),
+                accuracy_m: 900.0,
+            },
+        );
+        for (s, _) in rest {
+            ob.add(&net, &live, s);
+        }
+        let v = ob.verdict();
+        assert_eq!(v.status, Status::Match, "{v:?}");
+        assert_eq!(v.candidates[0].trip_id, "1004D100C3");
     }
 
     #[test]
