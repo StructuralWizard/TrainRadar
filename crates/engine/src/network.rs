@@ -335,8 +335,9 @@ impl Network {
                     continue;
                 }
                 let start = service_day_base(day) + i64::from(trip.start);
-                // Allow 30 min early (positioning) to 6 h late.
-                let (lo, hi) = (start - 1_800, start + dur + 6 * 3_600);
+                // Trains report positions up to ~50 min before departure while
+                // waiting at the origin; allow 60 min early to 6 h late.
+                let (lo, hi) = (start - 3_600, start + dur + 6 * 3_600);
                 if !(lo..=hi).contains(&now) {
                     continue;
                 }
@@ -456,6 +457,10 @@ pub mod tests {
             .unwrap();
         assert!(!m.exact);
         assert_eq!(m.trip.trip, 2);
+
+        // Waiting at the origin 45 min before departure still matches.
+        assert!(n.match_trip("1004D100C3", "", local(7, 15)).is_some());
+        assert!(n.match_trip("1004D100C3", "", local(6, 50)).is_none());
 
         // Outside the trip's span (8:00 run, at 20:00 even with slack): no match.
         assert!(n.match_trip("1004D100C3", "", local(20, 0)).is_none());
