@@ -1,0 +1,16 @@
+[package]
+name = "trainradar-proto"
+description = "Domain types shared by the TrainRadar engine and refdata builder"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+postcard.workspace = true
+
+[lints]
+workspace = true

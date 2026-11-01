@@ -1,0 +1,41 @@
+# Verifies Renfe endpoints from a real browser on a different HTTPS origin:
+# CORS, HTTPS, size, cache headers, refresh rate and official dataset
+# metadata. Run manually, or automatically when the checker changes.
+name: Feed check
+
+on:
+  workflow_dispatch:
+    inputs:
+      watch_seconds:
+        description: How long to poll feeds to measure refresh rate
+        default: "180"
+  push:
+    paths:
+      - tools/feed-check/**
+      - .github/workflows/feed-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: tools/feed-check
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: node check.mjs --watch-seconds "${{ inputs.watch_seconds || '180' }}" | tee report.md
+      - run: cat report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: feed-check-report
+          path: tools/feed-check/report.md

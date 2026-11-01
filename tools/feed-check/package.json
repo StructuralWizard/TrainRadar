@@ -1,0 +1,12 @@
+{
+  "name": "trainradar-feed-check",
+  "private": true,
+  "type": "module",
+  "description": "Checks Renfe endpoints for CORS, HTTPS, size and refresh rate from a real browser",
+  "scripts": {
+    "check": "node check.mjs --watch-seconds 180"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

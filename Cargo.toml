@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = ["crates/proto", "crates/engine", "crates/refdata-build"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/StructuralWizard/TrainRadar"
+authors = ["TrainRadar contributors"]
+
+[workspace.dependencies]
+trainradar-proto = { path = "crates/proto" }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+postcard = { version = "1", default-features = false, features = ["alloc"] }
+wasm-bindgen = "=0.2.130"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+# Small WASM: size over speed, single codegen unit, LTO, strip symbols.
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+# No `strip`: wasm-bindgen needs the target_features section and drops debug info itself.
