@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Feed text is untrusted: no inline event handlers, no third-party scripts beyond the allow-list. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
   <title>TrainRadar</title>
   <style>
     :root { --bg: #fff; --fg: #1a1a1a; --muted: #666; }
@@ -16,16 +18,6 @@
   <p>Mapa en directo de trenes de Renfe. En construcción.</p>
   <p id="status">Cargando motor…</p>
   <small>Datos: © Renfe Operadora, CC BY 4.0. Proyecto independiente, sin relación con Renfe ni Adif.</small>
-  <script type="module">
-    import init, { version, delayClass } from "./pkg/engine.js";
-    const el = document.getElementById("status");
-    try {
-      await init();
-      el.textContent = `Motor ${version()} listo (prueba: 7 min → clase ${delayClass(420)}).`;
-    } catch (e) {
-      el.textContent = "No se pudo cargar el motor. Ejecuta tools/build-wasm.sh.";
-      console.error(e);
-    }
-  </script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
