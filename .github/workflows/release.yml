@@ -35,7 +35,7 @@ jobs:
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "bad tag: $TAG"; exit 1; }
           [[ "$TARGET" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "bad target: $TARGET"; exit 1; }
           notes="docs/releases/$TAG.md"
-          [ -f "$notes" ] || { echo "missing $notes on main"; exit 1; }
+          [ -f "$notes" ] || { echo "::error::$notes is not on main yet. Merge the phase PR first, then run Release again."; exit 1; }
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$TARGET" \
             --title "$TAG – $(head -1 "$notes" | sed 's/^# *//')" \
             --notes-file <(tail -n +2 "$notes")
