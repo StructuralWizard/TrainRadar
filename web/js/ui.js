@@ -105,6 +105,114 @@ export function trainPopup(lang, info, regionName) {
   return el("div", { class: "popup" }, title, sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null, rows);
 }
 
+function minutesUntil(lang, unix) {
+  const m = Math.round((unix - Date.now() / 1000) / 60);
+  return m <= 0 ? t(lang, "now") : t(lang, "inMin", { m });
+}
+
+/** "¿Voy en este tren?" status line, with a button to show the train. */
+export function onboardBlock(lang, v, trainTitles, onShow) {
+  let text;
+  let show = null;
+  const conf = (c) => t(lang, c === "high" ? "confHigh" : c === "medium" ? "confMedium" : "confLow");
+  switch (v.status) {
+    case "collecting":
+      text = t(lang, "onboardCollecting", { n: v.samples, s: v.span_secs });
+      break;
+    case "stationary":
+      text = t(lang, "onboardStationary");
+      break;
+    case "none":
+      text = t(lang, "onboardNone");
+      break;
+    case "match": {
+      const c = v.candidates[0];
+      text = t(lang, "onboardMatch", { train: trainTitles(c), conf: conf(c.confidence) });
+      if (c.index >= 0) show = c;
+      break;
+    }
+    default:
+      text = t(lang, "onboardAmbiguous", { trains: v.candidates.map(trainTitles).join(", ") });
+  }
+  return el(
+    "div",
+    { class: "onboard" },
+    el("h3", {}, t(lang, "onboardTitle")),
+    el("p", {}, text),
+    show ? el("button", { class: "pill", onclick: () => onShow(show) }, t(lang, "showTrain")) : null,
+  );
+}
+
+/** Nearest stations with a board for the closest and trains approaching it. */
+export function nearPanel(lang, { stations, board, approaching, onStation, onTrain }) {
+  const out = [];
+  if (stations.length) {
+    const s0 = stations[0];
+    out.push(el("h3", {}, t(lang, "nextTrains", { station: s0.name })));
+    out.push(
+      board.length
+        ? el(
+            "ul",
+            { class: "board" },
+            board.map((r) =>
+              el(
+                "li",
+                { class: r.canceled ? "canceled" : "" },
+                el("span", { class: "board-time" }, formatClock(r.sched)),
+                el(
+                  "span",
+                  { class: "board-main" },
+                  el("strong", {}, `${r.route} ${r.number}`.trim()),
+                  " ",
+                  r.terminates ? t(lang, "fromOrigin", { origin: r.other_end }) : t(lang, "toDest", { dest: r.other_end }),
+                ),
+                el(
+                  "span",
+                  { class: "board-delay", style: `color:${COLORS[r.delay === null ? 3 : r.delay < 300 ? 0 : r.delay < 900 ? 1 : 2]}` },
+                  r.canceled ? t(lang, "canceled") : formatDelay(lang, r.delay),
+                ),
+              ),
+            ),
+          )
+        : el("p", { class: "muted" }, t(lang, "noTrainsSoon")),
+    );
+    out.push(el("h3", {}, t(lang, "approaching", { station: s0.name })));
+    out.push(
+      approaching.length
+        ? el(
+            "ul",
+            { class: "board" },
+            approaching.map((a) =>
+              el(
+                "li",
+                {},
+                el("button", { class: "link", onclick: () => onTrain(a) }, el("strong", {}, trainTitle(a))),
+                el("span", { class: "board-main muted" }, ` ${minutesUntil(lang, a.eta)} · ${formatDistance(lang, a.distance_m)}`),
+                el("span", { class: "board-delay" }, formatDelay(lang, a.delay)),
+              ),
+            ),
+          )
+        : el("p", { class: "muted" }, t(lang, "noneApproaching")),
+    );
+    out.push(el("h3", {}, t(lang, "nearestStations")));
+    out.push(
+      el(
+        "ul",
+        { class: "board" },
+        stations.map((s) =>
+          el(
+            "li",
+            {},
+            el("button", { class: "link", onclick: () => onStation(s) }, s.name),
+            el("span", { class: "board-delay muted" }, formatDistance(lang, s.distance_m)),
+          ),
+        ),
+      ),
+    );
+  }
+  return out;
+}
+
 /** One row of the delayed-arrivals list. */
 export function delayedItem(lang, info, onSelect) {
   return el(
