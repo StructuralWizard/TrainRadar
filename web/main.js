@@ -7,7 +7,15 @@ import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
 import { formatAgo } from "./js/format.js";
 import { pickLang, t } from "./js/i18n.js";
-import { addLayers, createMap, emptyGeoJson, maplibregl, pointGeoJson, trainsGeoJson } from "./js/map.js";
+import {
+  addLayers,
+  createMap,
+  emptyGeoJson,
+  maplibregl,
+  pointGeoJson,
+  setMapLanguage,
+  trainsGeoJson,
+} from "./js/map.js";
 import { delayedItem, el, legend, statsText, trainPopup } from "./js/ui.js";
 
 const $ = (id) => document.getElementById(id);
@@ -49,6 +57,7 @@ function applyLang() {
     attr.options.customAttribution = t(lang, "attribution");
     attr._updateAttributions?.();
   }
+  if (map?.isStyleLoaded()) setMapLanguage(map, lang);
   render(true);
 }
 
@@ -172,6 +181,7 @@ async function main() {
   feeds.start();
 
   await mapReady;
+  setMapLanguage(map, lang);
   addLayers(map);
   map.getSource("stations").setData(JSON.parse(engine.stationsGeoJson()));
   map.on("moveend", loadVisibleRegions);

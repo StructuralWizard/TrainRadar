@@ -100,6 +100,17 @@ export function addLayers(map) {
   });
 }
 
+/** Show base-map place names in the app's language (OpenMapTiles has
+ * `name:es`, `name:en` and the local `name`). */
+export function setMapLanguage(map, lang) {
+  const field = ["coalesce", ["get", `name:${lang}`], ["get", "name"]];
+  for (const layer of map.getStyle()?.layers || []) {
+    if (layer.type !== "symbol" || layer.source === "stations") continue;
+    const tf = map.getLayoutProperty(layer.id, "text-field");
+    if (tf && JSON.stringify(tf).includes("name")) map.setLayoutProperty(layer.id, "text-field", field);
+  }
+}
+
 /** Turn engine.positions() into GeoJSON. */
 export function trainsGeoJson(flat) {
   const features = [];
