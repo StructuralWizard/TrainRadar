@@ -184,6 +184,47 @@ impl Engine {
         s
     }
 
+    /// All stations as a GeoJSON FeatureCollection (name, id, services bitmask:
+    /// 1 = AV/LD/MD, 2 = Cercanías), for the map's station layer.
+    #[wasm_bindgen(js_name = stationsGeoJson)]
+    pub fn stations_geojson(&self) -> String {
+        let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
+        for (i, st) in self
+            .net
+            .stations
+            .iter()
+            .flat_map(|f| &f.stations)
+            .enumerate()
+        {
+            if i > 0 {
+                s.push(',');
+            }
+            let c = st.coord();
+            s.push_str(r#"{"type":"Feature","geometry":{"type":"Point","coordinates":["#);
+            s.push_str(&format!("{:.5},{:.5}]}},\"properties\":", c.lon, c.lat));
+            json::Obj::new(&mut s)
+                .s("id", &st.id)
+                .s("name", &st.name)
+                .n("services", st.services)
+                .end();
+            s.push('}');
+        }
+        s.push_str("]}");
+        s
+    }
+
+    /// Current index of a train (as in `positions`) by trip id and number,
+    /// or -1. Indexes can shift when feeds update; popups use this to follow
+    /// the same train.
+    #[wasm_bindgen(js_name = findTrain)]
+    pub fn find_train(&self, trip_id: &str, number: &str) -> i32 {
+        self.live
+            .trains
+            .iter()
+            .position(|t| t.rt.trip_id == trip_id && t.rt.train_number == number)
+            .map_or(-1, |i| i as i32)
+    }
+
     /// Current incidents (alerts feed) as a JSON array.
     #[wasm_bindgen(js_name = incidentsJson)]
     pub fn incidents_json(&self) -> String {
@@ -303,6 +344,11 @@ impl FeedPoller {
         self.0.failure();
     }
 
+    /// Consecutive failed fetches (0 when healthy).
+    pub fn failures(&self) -> u32 {
+        self.0.failures()
+    }
+
     #[wasm_bindgen(js_name = setHidden)]
     pub fn set_hidden(&mut self, hidden: bool) {
         self.0.set_hidden(hidden);
@@ -310,7 +356,48 @@ impl FeedPoller {
 
     /// Milliseconds to wait, or -1 while the tab is hidden.
     #[wasm_bindgen(js_name = nextDelayMs)]
-    pub fn next_delay_ms(&self, random: f64) -> i64 {
-        self.0.next_delay_ms(random).map_or(-1, i64::from)
+    pub fn next_delay_ms(&self, random: f64) -> i32 {
+        // ≤ 10 min in ms, so it always fits; an i32 is a plain JS number.
+        self.0
+            .next_delay_ms(random)
+            .map_or(-1, |ms| i32::try_from(ms).unwrap_or(i32::MAX))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use trainradar_proto::encode;
+    use trainradar_proto::refdata::{GridIndex, Header, RegionRec, StationRec, StationsFile};
+
+    #[test]
+    fn stations_geojson_is_valid() {
+        let mut stations = vec![StationRec {
+            id: "17000".into(),
+            name: "Madrid \"Chamartín\"".into(),
+            lat_e5: 4_047_118,
+            lon_e5: -368_295,
+            services: 3,
+            regions: vec![0],
+        }];
+        let grid = GridIndex::build(&mut stations, |s| (s.lat_e5, s.lon_e5), 10_000);
+        let f = StationsFile {
+            header: Header::new(0, 8, 0),
+            regions: vec![RegionRec {
+                code: "ld".into(),
+                name: "x".into(),
+                bbox_e5: [0; 4],
+            }],
+            stations,
+            grid,
+        };
+        let mut e = Engine::new();
+        e.net.load_stations(&encode(&f).unwrap()).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&e.stations_geojson()).unwrap();
+        let feat = &v["features"][0];
+        assert_eq!(feat["geometry"]["coordinates"][0], -3.68295);
+        assert_eq!(feat["properties"]["name"], "Madrid \"Chamartín\"");
+        assert_eq!(feat["properties"]["services"], 3);
+        assert_eq!(e.find_train("x", "1"), -1);
     }
 }
