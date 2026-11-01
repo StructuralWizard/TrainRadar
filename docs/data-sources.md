@@ -83,6 +83,17 @@ Attribution used in the UI and README:
 Still to do: read the portal's legal page (`data.renfe.com/legal`) for any extra conditions;
 this sandbox couldn't reach it.
 
+## OpenStreetMap (track geometry, built in CI)
+
+| What | URL | Licence |
+|---|---|---|
+| Spain extract | `https://download.geofabrik.de/europe/spain-latest.osm.pbf` | ODbL 1.0 |
+| Portugal extract (cross-border trains) | `https://download.geofabrik.de/europe/portugal-latest.osm.pbf` | ODbL 1.0 |
+
+Downloaded at most weekly (GitHub Actions cache), filtered to `railway=rail`.
+Attribution: "© OpenStreetMap contributors". Approved by the maintainer on
+2026-11-01.
+
 ## Not used (yet)
 
 - NAP (nap.transportes.gob.es) mirrors the same GTFS but needs an API key, so it isn't

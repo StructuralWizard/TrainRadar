@@ -122,6 +122,35 @@ impl Polyline {
         self.project_from(p, 0)
     }
 
+    /// Nearest projection onto the part of the line between `from_m` and
+    /// `to_m` metres from its start (e.g. the section one trip uses).
+    pub fn project_range(&self, p: LatLon, from_m: f64, to_m: f64) -> Option<Projection> {
+        if self.pts.len() < 2 {
+            return self.project(p);
+        }
+        let first = self.cum.partition_point(|&c| c <= from_m).saturating_sub(1);
+        let last = self
+            .cum
+            .partition_point(|&c| c < to_m)
+            .min(self.pts.len() - 1);
+        let mut best: Option<Projection> = None;
+        for i in first..last.max(first + 1) {
+            let (t, _) = project_on_segment(p, self.pts[i], self.pts[i + 1]);
+            let seg = self.cum[i + 1] - self.cum[i];
+            let along = (self.cum[i] + t * seg).clamp(from_m, to_m);
+            let q = self.point_at(along)?;
+            let off = haversine_m(p, q);
+            if best.is_none_or(|b| off < b.offset_m) {
+                best = Some(Projection {
+                    along_m: along,
+                    offset_m: off,
+                    segment: i,
+                });
+            }
+        }
+        best
+    }
+
     /// Point at `along_m` metres from the start (clamped to the line).
     pub fn point_at(&self, along_m: f64) -> Option<LatLon> {
         let last = *self.pts.last()?;
@@ -225,6 +254,24 @@ mod tests {
         assert_eq!(line.point_at(1e9), Some(line.points()[2]));
         assert!((line.bearing_at(10.0).unwrap() - 90.0).abs() < 0.5);
         assert!(line.bearing_at(line.length_m() - 1.0).unwrap() < 0.5);
+    }
+
+    #[test]
+    fn project_range_stays_within_section() {
+        // Straight line 0 → ~2.2 km east; restrict to the first ~550 m.
+        let line = Polyline::new(vec![
+            LatLon::new(40.0, -3.0),
+            LatLon::new(40.0, -2.9935),
+            LatLon::new(40.0, -2.974),
+        ]);
+        let far = LatLon::new(40.0, -2.98); // ~1.7 km along, outside the range
+        let p = line.project_range(far, 0.0, 550.0).unwrap();
+        assert!((p.along_m - 550.0).abs() < 1.0);
+        assert!(p.offset_m > 1_000.0, "reported as far from this section");
+        let near = line
+            .project_range(LatLon::new(40.0001, -2.997), 0.0, 550.0)
+            .unwrap();
+        assert!(near.offset_m < 20.0);
     }
 
     #[test]

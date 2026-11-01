@@ -6,14 +6,14 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - crates/proto/**
-      - crates/refdata-build/**
+      - crates/**
       - tools/fetch-gtfs.sh
+      - tools/fetch-osm-rail.sh
       - .github/workflows/refdata.yml
   push:
     branches-ignore: [main]
     paths:
-      - crates/refdata-build/**
+      - crates/**
       - .github/workflows/refdata.yml
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup show active-toolchain || rustup toolchain install
@@ -36,13 +36,35 @@ jobs:
       - run: cargo build --release -p trainradar-refdata-build
       - name: Download Renfe GTFS
         run: tools/fetch-gtfs.sh | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Week number (OSM cache key)
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      # The rail network changes slowly: download from Geofabrik at most weekly.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: osm
+        with:
+          path: gtfs/rail.geojsonseq
+          key: osm-rail-${{ steps.week.outputs.week }}
+      - name: Download OpenStreetMap rail lines
+        if: steps.osm.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y osmium-tool
+          tools/fetch-osm-rail.sh
       - name: Build .bin files
         run: |
           target/release/refdata-build build --out web/data \
-            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip \
+            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq \
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data
+      - name: Live check (engine against current Renfe feeds)
+        run: |
+          mkdir -p gtfs/rt
+          for f in vehicle_positions_LD trip_updates_LD vehicle_positions trip_updates alerts; do
+            curl -fsSL --retry 3 -o "gtfs/rt/$f.pb" "https://gtfsrt.renfe.com/$f.pb"
+          done
+          cargo run --release -q -p trainradar-engine --example live_check -- web/data gtfs/rt \
+            | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Size report (raw and gzip -9)
         run: |
           command -v brotli >/dev/null || sudo apt-get install -y brotli
@@ -56,7 +78,7 @@ jobs:
                 "$(gzip -9c "$f" | wc -c)" "$(brotli -q 11 -c "$f" | wc -c)"
             done
           } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: refdata
           path: web/data

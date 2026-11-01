@@ -24,7 +24,8 @@ and draws them on a MapLibre map. There is no TrainRadar server.
   trains approaching my station, and "Am I on this train?".
 - Spanish (default) and English.
 
-Phase plan and design notes: [docs/roadmap.md](docs/roadmap.md).
+Phase plan and design notes: [docs/roadmap.md](docs/roadmap.md). How the engine works:
+[docs/engine.md](docs/engine.md).
 
 ## How it works in the browser
 
@@ -55,7 +56,7 @@ Renfe open data ──► your browser
 | `crates/refdata-build` | Native CLI run in CI: Renfe GTFS → compact `.bin` files |
 | `web/` | Static site (Cloudflare Pages): `index.html`, MapLibre, `engine.wasm`, `.bin` data |
 | `tools/feed-check` | Browser-based CORS/HTTPS/refresh check of the Renfe endpoints |
-| `worker/` | Cloudflare Worker pass-through that adds CORS headers (phase A3) |
+| `worker/` | Cloudflare Worker pass-through that adds CORS headers ([details](worker/README.md)) |
 
 ## Local development
 
@@ -93,7 +94,10 @@ cd tools/feed-check && npm ci && npx playwright install chromium && npm run chec
 - Train data: **Renfe Operadora open data** ([data.renfe.com](https://data.renfe.com)),
   licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Exact datasets and
   attribution text: [docs/data-sources.md](docs/data-sources.md).
-- Map tiles and any OpenStreetMap-derived data will be credited in the map UI and here.
+- Track geometry for AV/LD/MD trains: © [OpenStreetMap](https://www.openstreetmap.org/copyright)
+  contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/). The derived
+  `geo-*.bin` files are published with the site under the same licence.
+- Map tiles will be credited in the map UI and here.
 
 Data is shown as published by Renfe. It may be incomplete, delayed or wrong. Don't rely on it
 for anything safety-critical.

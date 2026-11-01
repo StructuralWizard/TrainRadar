@@ -3,8 +3,8 @@
 | Phase | Scope |
 |---|---|
 | A1 | Repo, research, CORS check, workspace scaffold, CI ✅ (v0.1.0) |
-| A2 | `refdata-build`: GTFS → `.bin` (AV/LD/MD, then Cercanías per núcleo), station spatial index, shape fallback ✅ |
-| A3 | Engine: decode GTFS-RT, match trips, delays, interpolation, **train spacing**; Cloudflare Worker pass-through |
+| A2 | `refdata-build`: GTFS → `.bin` (AV/LD/MD, then Cercanías per núcleo), station spatial index, shape fallback ✅ (v0.2.0) |
+| A3 | Engine: decode GTFS-RT, match trips, delays, interpolation, **train spacing**; Cloudflare Worker pass-through; OSM track for AV/LD/MD ✅ |
 | A4 | Web: MapLibre map, coloured dots, stats bar, delayed list, popup with **spacing**, ES/EN |
 | A5 | "Use my location", nearest stations, approaching trains, "Am I on this train?" |
 | A6 | Incidents (Renfe alerts), Adif status research |
