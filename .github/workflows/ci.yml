@@ -21,7 +21,7 @@ jobs:
     name: fmt, clippy, test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # rust-toolchain.toml pins the version, components and wasm target.
       - run: rustup show active-toolchain || rustup toolchain install
       - uses: Swatinem/rust-cache@v2
@@ -34,7 +34,7 @@ jobs:
     name: wasm build + size report
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: rustup show active-toolchain || rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - name: Install wasm-bindgen-cli (version from Cargo.lock)
@@ -45,7 +45,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y binaryen
       - run: SIZE_REPORT=size.md tools/build-wasm.sh
       - run: cat size.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: web-pkg
           path: web/pkg
