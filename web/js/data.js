@@ -4,7 +4,14 @@
 async function fetchBytes(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-  return new Uint8Array(await r.arrayBuffer());
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  // Deployed files are pre-gzipped (.bin.gz). Decompress unless the host
+  // already did (then the gzip magic bytes 1f 8b are gone).
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  return bytes;
 }
 
 export class RefData {

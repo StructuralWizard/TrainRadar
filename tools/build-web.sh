@@ -17,4 +17,15 @@ if [ -n "${RT_BASE:-}" ]; then
   sed -i "s#rtBase: \"/rt/\"#rtBase: \"$RT_BASE\"#" web/js/config.js
   sed -i "s#connect-src 'self' https://tiles.openfreemap.org#connect-src 'self' https://tiles.openfreemap.org $origin#" web/index.html
 fi
+# DIST=dir [DATA_DIR=dir] [VERSION=id]: assemble a deployable copy without
+# node_modules, with reference data and a versioned service worker.
+if [ -n "${DIST:-}" ]; then
+  rm -rf "$DIST" && mkdir -p "$DIST"
+  cp -r web/index.html web/main.js web/app.css web/icon.svg web/icons web/js web/pkg web/vendor \
+    web/manifest.webmanifest web/sw.js web/_headers "$DIST"/
+  rm -f "$DIST"/js/*.test.mjs "$DIST"/pkg/.gitignore "$DIST"/pkg/.gitkeep
+  sed -i "s#const VERSION = \"dev\";#const VERSION = \"${VERSION:-$(date +%s)}\";#" "$DIST/sw.js"
+  if [ -n "${DATA_DIR:-}" ]; then cp -r "$DATA_DIR" "$DIST/data"; fi
+  echo "dist ready in $DIST ($(du -sh "$DIST" | cut -f1))"
+fi
 echo "web/ ready: serve it with  node tools/dev-server.mjs"

@@ -7,8 +7,8 @@
 | A3 | Engine: decode GTFS-RT, match trips, delays, interpolation, **train spacing**; Cloudflare Worker pass-through; OSM track for AV/LD/MD ✅ (v0.3.0) |
 | A4 | Web: MapLibre map, coloured dots, stats bar, delayed list, popup with **spacing**, ES/EN ✅ (v0.4.0) |
 | A5 | "Use my location", nearest stations, approaching trains, "Am I on this train?" ✅ (v0.5.0) |
-| A6 | Incidents (Renfe alerts), Adif status research ✅ |
-| A7 | Cloudflare Pages deploy, nightly refdata rebuild, PWA, v1.0.0 |
+| A6 | Incidents (Renfe alerts), Adif status research ✅ (v0.6.0) |
+| A7 | Cloudflare Pages deploy, nightly refdata rebuild, PWA, v1.0.0 ✅ |
 
 ## Train spacing (previous / following train)
 

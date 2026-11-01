@@ -19,7 +19,8 @@ issue template.
 
 TrainRadar needs no API keys: Renfe's feeds are public. The only secrets are the Cloudflare
 deploy credentials, stored as GitHub Actions secrets and used only by deploy jobs on `main`
-(never on pull requests). Every PR runs a full-history [gitleaks](https://github.com/gitleaks/gitleaks)
+(never on pull requests). The token has only *Cloudflare Pages: Edit* and
+*Workers Scripts: Edit* on one account (see `docs/deploy.md`). Every PR runs a full-history [gitleaks](https://github.com/gitleaks/gitleaks)
 scan, and GitHub secret scanning with push protection should be enabled in the repository
 settings. If you spot a leaked credential, report it privately as above.
 

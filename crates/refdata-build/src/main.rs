@@ -28,12 +28,13 @@ usage:
   refdata-build verify DIR
   refdata-build build --out DIR [--ld ZIP] [--cercanias ZIP]
                       [--rail FILE.geojsonseq] [--date YYYY-MM-DD] [--days N]
-                      [--sources FILE.tsv] [--report FILE.md]
+                      [--sources FILE.tsv] [--report FILE.md] [--gzip]
 
 build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
   --date     service date the window is centred on (default: today, Madrid)
   --days     window length in days starting the day before --date (default 8)
   --sources  tab-separated name, url, etag, last-modified (from tools/fetch-gtfs.sh)
+  --gzip     write gzip-compressed .bin.gz files (for deployment)
   --rail     OpenStreetMap railway=rail ways (from tools/fetch-osm-rail.sh), used to
              draw trips that have no usable GTFS shape (all of AV/LD/MD)
 ";
@@ -47,6 +48,7 @@ struct BuildArgs {
     days: u8,
     sources: Option<PathBuf>,
     report: Option<PathBuf>,
+    gzip: bool,
 }
 
 fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
@@ -59,6 +61,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         days: 8,
         sources: None,
         report: None,
+        gzip: false,
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -82,6 +85,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             }
             "--sources" => a.sources = Some(val()?.into()),
             "--report" => a.report = Some(val()?.into()),
+            "--gzip" => a.gzip = true,
             other => return Err(format!("unknown option {other}")),
         }
     }
@@ -118,10 +122,23 @@ fn read_sources(path: &Path) -> Result<Vec<Source>> {
         .collect())
 }
 
-fn write_hashed(out: &Path, stem: &str, bytes: &[u8]) -> Result<String> {
-    let name = format!("{stem}.{}.bin", content_hash(bytes));
-    std::fs::write(out.join(&name), bytes)?;
-    Ok(name)
+/// Write `<stem>.<hash>.bin`, or `.bin.gz` gzip-compressed. Pre-compressing
+/// means phones get the small size whatever the host does with `.bin`; the
+/// browser decompresses with the built-in DecompressionStream.
+fn write_hashed(out: &Path, stem: &str, bytes: &[u8], gzip: bool) -> Result<String> {
+    let hash = content_hash(bytes);
+    if gzip {
+        use std::io::Write;
+        let name = format!("{stem}.{hash}.bin.gz");
+        let mut enc = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::best());
+        enc.write_all(bytes)?;
+        std::fs::write(out.join(&name), enc.finish()?)?;
+        Ok(name)
+    } else {
+        let name = format!("{stem}.{hash}.bin");
+        std::fs::write(out.join(&name), bytes)?;
+        Ok(name)
+    }
 }
 
 fn run_build(a: BuildArgs) -> Result<()> {
@@ -146,7 +163,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
     std::fs::create_dir_all(&a.out)?;
     for e in std::fs::read_dir(&a.out)? {
         let p = e?.path();
-        if p.extension().is_some_and(|x| x == "bin") || p.ends_with("manifest.json") {
+        if p.extension().is_some_and(|x| x == "bin" || x == "gz") || p.ends_with("manifest.json") {
             std::fs::remove_file(p)?;
         }
     }
@@ -209,12 +226,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
         built.iter().map(|(r, t, _, _)| (r.clone(), t)).collect();
     let stations = build_stations(&pairs, header);
     let st_bytes = encode(&stations)?;
-    let st_file = write_hashed(&a.out, "stations", &st_bytes)?;
+    let st_file = write_hashed(&a.out, "stations", &st_bytes, a.gzip)?;
 
     let mut regions = Vec::new();
     for (rec, tt, legs, stats) in built {
         let bytes = encode(&tt)?;
-        let file = write_hashed(&a.out, &format!("tt-{}", rec.code), &bytes)?;
+        let file = write_hashed(&a.out, &format!("tt-{}", rec.code), &bytes, a.gzip)?;
         let geometry = if legs.is_empty() {
             None
         } else {
@@ -225,7 +242,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
             };
             let gb = encode(&g)?;
             Some(FileEntry {
-                file: write_hashed(&a.out, &format!("geo-{}", rec.code), &gb)?,
+                file: write_hashed(&a.out, &format!("geo-{}", rec.code), &gb, a.gzip)?,
                 bytes: gb.len(),
             })
         };

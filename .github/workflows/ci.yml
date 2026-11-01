@@ -59,7 +59,7 @@ jobs:
           v=$(cargo metadata --format-version 1 --locked \
             | jq -r '.packages[] | select(.name=="wasm-bindgen") | .version')
           cargo install wasm-bindgen-cli --version "$v" --locked
-      - run: tools/build-web.sh
+      - run: DIST=dist tools/build-web.sh # also checks the deployable bundle assembles
       - run: cd web && npm test
       - name: Demo data and fake feeds
         run: |

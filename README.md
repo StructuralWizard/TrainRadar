@@ -2,11 +2,11 @@
 
 **Live map of Renfe trains in Spain, coloured by delay. Runs entirely in your browser.**
 
-> 🚧 Work in progress: the map works locally (phase A4); public deployment comes in phase A7.
+
 
 ![Screenshot placeholder](docs/screenshot-placeholder.svg)
 
-**Live demo:** _coming in phase A7_
+**Live:** https://trainradar.pages.dev · installable on your phone's home screen
 
 TrainRadar is an open-source Rust workspace compiled to WebAssembly. Your browser fetches
 Renfe's open realtime feeds, decodes them, matches trains to the timetable, works out delays
@@ -60,6 +60,7 @@ Renfe open data ──► your browser
 | `web/` | Static site (Cloudflare Pages): `index.html`, MapLibre, `engine.wasm`, `.bin` data |
 | `tools/feed-check` | Browser-based CORS/HTTPS/refresh check of the Renfe endpoints |
 | `worker/` | Cloudflare Worker pass-through that adds CORS headers ([details](worker/README.md)) |
+| `docs/deploy.md` | How it's deployed (Cloudflare Pages + Worker, free tier) |
 
 ## Local development
 

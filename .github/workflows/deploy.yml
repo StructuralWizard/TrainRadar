@@ -1,0 +1,162 @@
+# Deploys TrainRadar to Cloudflare: the CORS pass-through Worker and the
+# static site on Pages, with freshly built reference data.
+#   - on every merge to main
+#   - nightly, only if Renfe's timetables changed (ETag) or the 7-day data
+#     window needs moving forward
+#   - manually (Actions → Deploy → Run workflow)
+# Secrets (repository or "production" environment): CLOUDFLARE_API_TOKEN,
+# CLOUDFLARE_ACCOUNT_ID. See docs/deploy.md. Never runs on pull requests.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * *" # after Renfe's nightly GTFS updates (~00:05 and ~03:10 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  PAGES_PROJECT: trainradar
+  WRANGLER: wrangler@4.151.1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: decide whether to deploy
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - name: Compare Renfe's timetables with the deployed ones
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ "$EVENT" != "schedule" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          sub=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects/$PAGES_PROJECT" \
+            | jq -r '.result.subdomain // empty') || true
+          deployed=$(curl -fsS "https://$sub/data/manifest.json" || true)
+          if [ -z "$sub" ] || [ -z "$deployed" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          changed=false
+          for url in $(echo "$deployed" | jq -r '.sources[].url'); do
+            now=$(curl -fsSI "$url" | grep -i '^etag:' | cut -d' ' -f2- | tr -d '\r"' || true)
+            was=$(echo "$deployed" | jq -r --arg u "$url" '.sources[] | select(.url==$u) | .etag')
+            echo "$url: deployed $was, now $now"
+            [ -n "$now" ] && [ "$now" != "$was" ] && changed=true
+          done
+          # The data covers yesterday + 7 days; refresh at least every 3 days.
+          start=$(echo "$deployed" | jq -r '.window_start')
+          if [ "$(date -u -d "$start + 3 days" +%s)" -lt "$(date -u +%s)" ]; then changed=true; fi
+          echo "run=$changed" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: build and deploy
+    needs: check
+    if: needs.check.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+      url: ${{ steps.urls.outputs.site }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Download Renfe GTFS
+        run: tools/fetch-gtfs.sh | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Week number (OSM cache key)
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: osm
+        with:
+          path: gtfs/rail.geojsonseq
+          key: osm-rail-${{ steps.week.outputs.week }}
+      - name: Download OpenStreetMap rail lines
+        if: steps.osm.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y osmium-tool
+          tools/fetch-osm-rail.sh
+      - name: Build reference data
+        run: |
+          cargo run --release -q -p trainradar-refdata-build -- build --out build/data --gzip \
+            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq \
+            --sources gtfs/sources.tsv --report refdata.md
+          cargo run --release -q -p trainradar-refdata-build -- verify build/data
+          cat refdata.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cloudflare names
+        id: urls
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
+          auth="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+          if ! curl -fsS -H "$auth" "$api/pages/projects/$PAGES_PROJECT" >/dev/null; then
+            npx --yes "$WRANGLER" pages project create "$PAGES_PROJECT" --production-branch main
+          fi
+          pages=$(curl -fsS -H "$auth" "$api/pages/projects/$PAGES_PROJECT" | jq -r '.result.subdomain')
+          workers=$(curl -fsS -H "$auth" "$api/workers/subdomain" | jq -r '.result.subdomain // empty')
+          if [ -z "$workers" ]; then
+            echo "::error::No workers.dev subdomain yet. Open Workers & Pages in the Cloudflare dashboard once to create it."
+            exit 1
+          fi
+          echo "site=https://$pages" >> "$GITHUB_OUTPUT"
+          echo "proxy=https://trainradar-proxy.$workers.workers.dev/" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy the Worker (CORS pass-through)
+        env:
+          SITE: ${{ steps.urls.outputs.site }}
+        run: npx --yes "$WRANGLER" deploy --config worker/wrangler.toml --var "ALLOWED_ORIGINS:$SITE"
+
+      - name: Install wasm-bindgen-cli (version from Cargo.lock)
+        run: |
+          v=$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name=="wasm-bindgen") | .version')
+          cargo install wasm-bindgen-cli --version "$v" --locked
+          sudo apt-get install -y binaryen
+      - name: Build the site
+        env:
+          RT_BASE: ${{ steps.urls.outputs.proxy }}
+          DIST: dist
+          DATA_DIR: build/data
+          VERSION: ${{ github.sha }}
+        run: tools/build-web.sh
+      - name: Deploy to Cloudflare Pages
+        run: |
+          npx --yes "$WRANGLER" pages deploy dist --project-name "$PAGES_PROJECT" \
+            --branch main --commit-hash "$GITHUB_SHA" --commit-dirty=true
+
+      - name: Smoke test the live site
+        env:
+          SITE: ${{ steps.urls.outputs.site }}
+        run: |
+          (cd tools/feed-check && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium)
+          sleep 20 # let the deployment propagate
+          mkdir -p shots && node tools/feed-check/web-smoke.mjs "$SITE/" shots | tee smoke.txt
+          echo "Live: $SITE" >> "$GITHUB_STEP_SUMMARY"
+          grep -E "^(stats|OK)" smoke.txt >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: live-site-screenshots
+          path: shots
+          retention-days: 14
