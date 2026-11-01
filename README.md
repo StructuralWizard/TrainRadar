@@ -74,6 +74,14 @@ tools/build-wasm.sh                 # builds web/pkg/engine*.{js,wasm}, prints s
 python3 -m http.server -d web 8080  # then open http://localhost:8080
 ```
 
+Build the reference data (needs network access to Renfe; see [docs/refdata.md](docs/refdata.md)):
+
+```sh
+tools/fetch-gtfs.sh
+cargo run --release -p trainradar-refdata-build -- build --out web/data \
+  --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --sources gtfs/sources.tsv
+```
+
 Check the Renfe endpoints from a real browser (needs network access to Renfe):
 
 ```sh

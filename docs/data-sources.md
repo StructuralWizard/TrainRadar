@@ -60,6 +60,12 @@ above, no parsing or logic.
 | `estaciones-listado-completo` | `https://ssl.renfe.com/ftransit/Fichero_estaciones/estaciones.csv` (+ `.xlsx`) | 139 KB | 2026-11-01 01:50 GMT |
 
 All three send an `ETag`, so the nightly CI job can skip the rebuild when nothing changed.
+Structure (from `refdata-build inspect`, 2026-11-01):
+- AV/LD/MD: 672 routes, 1,006 stops, 8,532 trips, `calendar.txt` + `calendar_dates.txt`,
+  **no `shapes.txt`**. Times aren't zero-padded (`8:30:00`).
+- Cercanías: 265 routes (48 are buses), 1,147 stops, 138,503 trips (one service id per
+  day), `shapes.txt` with one shape per line, 288 MB `stop_times.txt`. `route_id` starts
+  with the núcleo code (`10T0001C1` → 10 Madrid).
 Reported quirks: fields padded with spaces; the stations CSV is Latin-1.
 
 ## Licence and attribution
