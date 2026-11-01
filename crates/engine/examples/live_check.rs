@@ -61,8 +61,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let why = net.explain_no_match(&t.rt.trip_id, &t.rt.train_number);
                 let e = unmatched.entry((t.feed, why)).or_default();
                 e.0 += 1;
-                if e.1.len() < 5 {
-                    e.1.push(format!("`{}` ({})", t.rt.trip_id, t.rt.train_number));
+                if e.1.len() < 6 {
+                    let detail = net.find_trip(&t.rt.trip_id).map_or(String::new(), |tr| {
+                        let r = &net.regions[tr.region as usize];
+                        let trip = net.trip(tr);
+                        let dur = net.schedule(tr).last().map_or(0, |s| s.arrival);
+                        let hm = |s: u32| format!("{:02}:{:02}", s / 3600, s % 3600 / 60);
+                        format!(
+                            " sched {}–{} days {:#010b} (window from day {}), now {}",
+                            hm(trip.start),
+                            hm(trip.start + dur),
+                            trip.days,
+                            r.tt.header.window_start_day,
+                            {
+                                let l = now + trainradar_proto::time::madrid_offset(now);
+                                let d = l.rem_euclid(86_400);
+                                format!(
+                                    "{:02}:{:02} local, day {}",
+                                    d / 3600,
+                                    d % 3600 / 60,
+                                    l.div_euclid(86_400)
+                                )
+                            }
+                        )
+                    });
+                    e.1.push(format!(
+                        "`{}` ({}){detail}",
+                        t.rt.trip_id, t.rt.train_number
+                    ));
                 }
             }
         }

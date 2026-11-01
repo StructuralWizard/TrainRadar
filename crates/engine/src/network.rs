@@ -284,6 +284,11 @@ impl Network {
             .map_or("", |&s| r.tt.stops[s as usize].name.as_str())
     }
 
+    /// Look up a trip by its GTFS id, ignoring dates.
+    pub fn find_trip(&self, trip_id: &str) -> Option<TripRef> {
+        self.by_trip_id.get(trip_id).copied()
+    }
+
     /// Why a record doesn't match (for diagnostics).
     pub fn explain_no_match(&self, trip_id: &str, number: &str) -> &'static str {
         let n = number.trim_start_matches('0');
