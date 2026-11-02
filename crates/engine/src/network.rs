@@ -258,6 +258,59 @@ impl Network {
         Ok(g.region)
     }
 
+    /// The track of a whole trip, first stop to last.
+    pub fn trip_line(&self, t: TripRef) -> Vec<LatLon> {
+        let r = &self.regions[t.region as usize];
+        let total = self.schedule(t).last().map_or(0.0, |s| f64::from(s.dist_m));
+        match &r.geom[r.tt.trips[t.trip as usize].pattern as usize] {
+            PatternGeom::Shape { shape, start_m } => {
+                self.shapes[t.region as usize][*shape as usize].slice(*start_m, start_m + total)
+            }
+            PatternGeom::Straight(line) => line.points().to_vec(),
+            PatternGeom::Legs(legs) => {
+                let mut out: Vec<LatLon> = Vec::new();
+                for leg in legs {
+                    let (line, _) = self.leg_line(t.region, leg);
+                    for &p in line.points() {
+                        if out.last() != Some(&p) {
+                            out.push(p);
+                        }
+                    }
+                }
+                out
+            }
+        }
+    }
+
+    /// Stops of a trip: (name, coordinate, scheduled arrival offset s).
+    pub fn trip_stops(&self, t: TripRef) -> Vec<(String, LatLon, u32)> {
+        let r = &self.regions[t.region as usize];
+        let p = &r.tt.patterns[r.tt.trips[t.trip as usize].pattern as usize];
+        p.stops
+            .iter()
+            .zip(self.schedule(t))
+            .map(|(&s, st)| {
+                let s = &r.tt.stops[s as usize];
+                (s.name.clone(), s.coord(), st.arrival)
+            })
+            .collect()
+    }
+
+    /// Key grouping trips of the same line: Cercanías by line name within
+    /// the núcleo; others by line name and the pair of terminal stations
+    /// (either direction).
+    pub fn line_key(&self, t: TripRef) -> (u16, String, u32, u32) {
+        let r = &self.regions[t.region as usize];
+        let trip = &r.tt.trips[t.trip as usize];
+        let name = r.tt.routes[trip.route as usize].short_name.clone();
+        if r.tt.live && r.tt.region != "ld" {
+            return (t.region, name, 0, 0);
+        }
+        let g: Vec<u32> = self.stop_gids(t).collect();
+        let (a, b) = (g[0], g[g.len() - 1]);
+        (t.region, name, a.min(b), a.max(b))
+    }
+
     /// Project a GPS point onto the trip: (metres along trip, metres off line).
     pub fn project(&self, t: TripRef, p: LatLon) -> Option<(f64, f64)> {
         let r = &self.regions[t.region as usize];

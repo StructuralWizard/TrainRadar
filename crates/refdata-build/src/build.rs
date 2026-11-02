@@ -25,6 +25,32 @@ pub const MAX_STOP_OFFSET_M: f64 = 400.0;
 
 /// Region code for AV/LD/MD.
 pub const LONG_DISTANCE: &str = "ld";
+/// Region code for OUIGO (timetable only, from the NAP).
+pub const OUIGO: &str = "ouigo";
+
+/// OUIGO's GTFS (a UIC MERITS export) uses 9-digit UIC station codes; the
+/// last five digits are the Adif code Renfe uses (`007160000` → `60000`).
+pub fn uic_to_adif(id: &str) -> String {
+    if id.len() == 9 && id.starts_with("0071") && id.bytes().all(|b| b.is_ascii_digit()) {
+        id[4..].to_owned()
+    } else {
+        id.to_owned()
+    }
+}
+
+/// Make a loaded OUIGO feed look like the others: Adif station codes, the
+/// brand as line name, and plain train numbers ("TGV 6477" → "6477").
+pub fn normalise_ouigo(feed: &mut Feed) {
+    for s in &mut feed.stops {
+        s.id = uic_to_adif(&s.id);
+    }
+    for r in &mut feed.routes {
+        r.short_name = "OUIGO".into();
+    }
+    for t in &mut feed.trips {
+        t.short_name = t.short_name.chars().filter(char::is_ascii_digit).collect();
+    }
+}
 
 /// Display names for Cercanías núcleo codes (the leading digits of
 /// `route_id`). Unknown codes fall back to "Núcleo NN".
@@ -49,6 +75,9 @@ const NUCLEO_NAMES: &[(&str, &str)] = &[
 pub fn region_name(code: &str) -> String {
     if code == LONG_DISTANCE {
         return "Alta Velocidad, Larga y Media Distancia".into();
+    }
+    if code == OUIGO {
+        return "OUIGO (según horario)".into();
     }
     NUCLEO_NAMES
         .iter()
@@ -359,7 +388,7 @@ pub fn bbox_e5(tt: &TimetableFile) -> [i32; 4] {
 pub fn build_stations(timetables: &[(RegionRec, &TimetableFile)], header: Header) -> StationsFile {
     let mut by_id: BTreeMap<&str, StationRec> = BTreeMap::new();
     for (ri, (region, tt)) in timetables.iter().enumerate() {
-        let flag = if region.code == LONG_DISTANCE {
+        let flag = if region.code == LONG_DISTANCE || region.code == OUIGO {
             SERVICE_LONG_DISTANCE
         } else {
             SERVICE_COMMUTER
@@ -373,8 +402,8 @@ pub fn build_stations(timetables: &[(RegionRec, &TimetableFile)], header: Header
                 services: 0,
                 regions: vec![],
             });
-            // Prefer the AV/LD/MD name (usually the full official one).
-            if flag == SERVICE_LONG_DISTANCE {
+            // Prefer Renfe's AV/LD/MD name (usually the full official one).
+            if region.code == LONG_DISTANCE {
                 e.name.clone_from(&s.name);
             }
             e.services |= flag;
@@ -442,10 +471,14 @@ pub struct RegionEntry {
     pub bytes: usize,
     /// OpenStreetMap track for this region, loaded after the timetable.
     pub geometry: Option<FileEntry>,
+    pub operator: String,
+    /// False for timetable-only operators (no live positions).
+    pub live: bool,
     pub stats: RegionStats,
 }
 
 pub const ATTRIBUTION: &str = "Datos: © Renfe Operadora, CC BY 4.0 (data.renfe.com). \
+     OUIGO: horario del Punto de Acceso Nacional, Powered by MITRAMS (datos explotados). \
      Vías: © colaboradores de OpenStreetMap, ODbL. Procesados y combinados por TrainRadar.";
 
 pub fn window_header(w: &Window, generated_at: i64) -> Header {
@@ -466,6 +499,18 @@ mod tests {
             days: 8,
         };
         load(&mut sample_gtfs(), &w).unwrap()
+    }
+
+    #[test]
+    fn ouigo_station_codes_map_to_adif() {
+        assert_eq!(uic_to_adif("007160000"), "60000");
+        assert_eq!(uic_to_adif("007104040"), "04040");
+        assert_eq!(uic_to_adif("60000"), "60000");
+        assert_eq!(
+            uic_to_adif("008700014"),
+            "008700014",
+            "not Spanish: unchanged"
+        );
     }
 
     #[test]

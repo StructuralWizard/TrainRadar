@@ -177,6 +177,23 @@ impl Polyline {
         ))
     }
 
+    /// The part of the line between `from_m` and `to_m` (clamped), including
+    /// interpolated end points.
+    pub fn slice(&self, from_m: f64, to_m: f64) -> Vec<LatLon> {
+        let (a, b) = (from_m.max(0.0), to_m.min(self.length_m()));
+        if self.pts.len() < 2 || b <= a {
+            return self.point_at(a).into_iter().collect();
+        }
+        let mut out: Vec<LatLon> = self.point_at(a).into_iter().collect();
+        for (p, &c) in self.pts.iter().zip(&self.cum) {
+            if c > a && c < b {
+                out.push(*p);
+            }
+        }
+        out.extend(self.point_at(b));
+        out
+    }
+
     /// Bearing in degrees (0 = north, clockwise) of the segment at `along_m`.
     pub fn bearing_at(&self, along_m: f64) -> Option<f32> {
         if self.pts.len() < 2 {
@@ -272,6 +289,21 @@ mod tests {
             .project_range(LatLon::new(40.0001, -2.997), 0.0, 550.0)
             .unwrap();
         assert!(near.offset_m < 20.0);
+    }
+
+    #[test]
+    fn slice_keeps_inner_points_and_interpolates_ends() {
+        let line = Polyline::new(vec![
+            LatLon::new(40.0, -3.0),
+            LatLon::new(40.0, -2.99),
+            LatLon::new(40.0, -2.98),
+        ]);
+        let mid = line.length_m() / 2.0;
+        let s = line.slice(mid / 2.0, mid + mid / 2.0);
+        assert_eq!(s.len(), 3);
+        assert_eq!(s[1], LatLon::new(40.0, -2.99));
+        assert!((s[0].lon + 2.995).abs() < 1e-6);
+        assert_eq!(line.slice(10.0, 5.0).len(), 1);
     }
 
     #[test]
