@@ -9,6 +9,7 @@ import { formatAgo, formatDistance } from "./js/format.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
+  FLAG,
   addLayers,
   createMap,
   emptyGeoJson,
@@ -17,6 +18,7 @@ import {
   setMapLanguage,
   trainsGeoJson,
 } from "./js/map.js";
+import { formatClock } from "./js/format.js";
 import {
   delayedItem,
   el,
@@ -51,6 +53,8 @@ let lang = pickLang(store.get("lang"));
 let engine, ref, feeds, map, attr;
 let selected = null; // { trip_id, number }
 let popup = null;
+let popupKey = "";
+let popupAt = 0;
 let lastRender = 0;
 let locator = null;
 let userFix = null;
@@ -59,6 +63,8 @@ let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
 const SHEETS = ["delayed", "near", "incidents"];
+const show = { commuter: true, long: true, scheduled: true, lines: true };
+let highlight = null; // Set of train indexes on the selected train's line
 
 function applyLang() {
   document.documentElement.lang = lang;
@@ -75,6 +81,11 @@ function applyLang() {
   $("near-title").textContent = t(lang, "nearYou");
   $("inc-title").textContent = t(lang, "incidentsTitle");
   $("inc-close").setAttribute("aria-label", t(lang, "close"));
+  $("layers-title").textContent = t(lang, "layers");
+  for (const [id, k] of [["f-commuter-l", "showCommuter"], ["f-long-l", "showLong"], ["f-scheduled-l", "showScheduled"], ["f-lines-l", "showLines"]]) {
+    $(id).textContent = t(lang, k);
+  }
+  fillJump();
   renderIncidents();
   $("near-off").textContent = t(lang, "locationOff");
   $("near-privacy").textContent = t(lang, "privacy");
@@ -146,7 +157,10 @@ function startLocation() {
         // Cercanías timetables around the user, for boards and matching.
         const d = 0.1;
         for (const r of ref?.regionsIn([fix.lon - d, fix.lat - d, fix.lon + d, fix.lat + d]) || []) {
-          ref.loadRegion(r.code).then(() => renderNear(true));
+          ref.loadRegion(r.code).then(() => {
+            refreshLines();
+            renderNear(true);
+          });
         }
       }
       updateLocButton();
@@ -220,6 +234,48 @@ function renderNear(force = false) {
   );
 }
 
+function hiddenByFilter(flags) {
+  if (flags & FLAG.scheduled) return !show.scheduled;
+  if (flags & FLAG.commuter) return !show.commuter;
+  return !show.long;
+}
+
+/** Draw the selected train's route and highlight its line's trains. */
+function updateRoute() {
+  const i = engine.findTrain(selected.trip_id, selected.number);
+  const r = i >= 0 ? JSON.parse(engine.tripJson(i)) : null;
+  if (!r) {
+    highlight = null;
+    map.getSource("route")?.setData(emptyGeoJson());
+    return;
+  }
+  highlight = new Set([i, ...r.same_line]);
+  map.getSource("route")?.setData({
+    type: "FeatureCollection",
+    features: [
+      { type: "Feature", geometry: { type: "LineString", coordinates: r.line }, properties: {} },
+      ...r.stops.map((s) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+        properties: { name: s.name, time: formatClock(s.time) },
+      })),
+    ],
+  });
+}
+
+function refreshLines() {
+  if (engine && map?.getSource("lines")) map.getSource("lines").setData(JSON.parse(engine.linesGeoJson(Date.now())));
+}
+
+function fillJump() {
+  const sel = $("jump");
+  const opts = [["", t(lang, "goTo")], ["es", t(lang, "allSpain")]];
+  for (const r of ref?.manifest?.regions || []) {
+    if (r.code !== "ld" && r.live !== false) opts.push([r.code, r.name]);
+  }
+  sel.replaceChildren(...opts.map(([v, label]) => el("option", { value: v }, label)));
+}
+
 /** Show one bottom sheet and hide the others. */
 function openSheet(id) {
   for (const s of SHEETS) $(s).hidden = s !== id;
@@ -228,6 +284,7 @@ function openSheet(id) {
 /** Refresh the notices button, map markers and (if open) the panel. */
 function renderIncidents() {
   if (engine) incidents = JSON.parse(engine.incidentsJson(Date.now()));
+  refreshLines();
   $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}${incidents.length ? ` (${incidents.length})` : ""}`;
   const seen = new Set();
   const features = [];
@@ -255,6 +312,8 @@ function renderIncidents() {
         renderIncidents();
       },
       onStop: (s) => flyToVisible(s.lon, s.lat, 13),
+      stopped: JSON.parse(engine.stoppedJson(Date.now())),
+      onTrain: (i) => selectTrain(i, { fly: true }),
     }),
   );
   if (!incidents.length && !feeds?.modified("alerts")) {
@@ -274,12 +333,16 @@ function regionName(code) {
 
 function selectTrain(info, { fly = false } = {}) {
   selected = { trip_id: info.trip_id, number: info.number };
+  updateRoute();
+  render(true);
   if (fly) flyToVisible(info.lon, info.lat, 10);
   showPopup(true);
 }
 
 function clearSelection() {
   selected = null;
+  highlight = null;
+  map.getSource("route")?.setData(emptyGeoJson());
   popup?.remove();
   popup = null;
   map.getSource("selected")?.setData(emptyGeoJson());
@@ -300,13 +363,34 @@ function showPopup(open = false) {
     return;
   }
   map.getSource("selected")?.setData(pointGeoJson(info.lon, info.lat));
-  const body = trainPopup(lang, info, regionName(info.region), (i) =>
-    showIncidents({
-      label: i.route,
-      test: (x) => x.lines.includes(i.route) && (!i.region || x.nucleos.includes(i.region)),
-    }),
+  if (popup) {
+    popup.setLngLat([info.lon, info.lat]);
+    // Rebuilding the content swaps its buttons out from under a finger, so
+    // only do it when something changed, at most every 2 s, and never while
+    // the pointer is over the popup.
+    const key = JSON.stringify({ ...info, lat: 0, lon: 0, fix_age: Math.floor(info.fix_age / 10) });
+    const over = popup.getElement()?.matches(":hover");
+    if (!open && (key === popupKey || over || Date.now() - popupAt < 2000)) return;
+    popupKey = key;
+  }
+  popupAt = Date.now();
+  const body = trainPopup(
+    lang,
+    info,
+    regionName(info.region),
+    (i) =>
+      showIncidents({
+        label: i.route,
+        test: (x) => x.lines.includes(i.route) && (!i.region || x.nucleos.includes(i.region)),
+      }),
+    { napDate: ref?.napDate() },
   );
   if (!popup) {
+    // On small screens fold the credits into their ⓘ button while a popup is
+    // open, so they don't cover it (they stay one tap away).
+    if (window.innerWidth < 720) {
+      document.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact-show")?.classList.remove("maplibregl-compact-show");
+    }
     popup = new maplibregl.Popup({ closeButton: true, maxWidth: "300px", offset: 12, focusAfterOpen: false })
       .setLngLat([info.lon, info.lat])
       .setDOMContent(body)
@@ -314,10 +398,12 @@ function showPopup(open = false) {
     popup.on("close", () => {
       popup = null;
       selected = null;
+      highlight = null;
+      map.getSource("route")?.setData(emptyGeoJson());
       map.getSource("selected")?.setData(emptyGeoJson());
     });
   } else {
-    popup.setLngLat([info.lon, info.lat]).setDOMContent(body);
+    popup.setDOMContent(body);
   }
 }
 
@@ -345,8 +431,11 @@ function render(force = false) {
   const interval = map.getZoom() >= 10 ? 250 : 1000;
   if (!force && now - lastRender < interval) return;
   lastRender = now;
-  map.getSource("trains")?.setData(trainsGeoJson(engine.positions(now)));
-  $("stats").textContent = statsText(lang, JSON.parse(engine.statsJson(now)));
+  if (selected) updateRoute();
+  map.getSource("trains")?.setData(trainsGeoJson(engine.positions(now), highlight, hiddenByFilter));
+  const st = JSON.parse(engine.statsJson(now));
+  $("stats").textContent =
+    statsText(lang, st) + (st.scheduled ? ` ${t(lang, "scheduledCount", { n: st.scheduled })}` : "");
   const last = feeds?.lastUpdate() || 0;
   $("status").textContent = feeds?.failing()
     ? t(lang, "feedError")
@@ -367,7 +456,10 @@ function loadVisibleRegions() {
   if (!ref?.manifest || map.getZoom() < CONFIG.regionZoom) return;
   const b = map.getBounds();
   for (const r of ref.regionsIn([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()])) {
-    ref.loadRegion(r.code).catch((e) => console.warn("region", r.code, e));
+    ref
+      .loadRegion(r.code)
+      .then(refreshLines)
+      .catch((e) => console.warn("region", r.code, e));
   }
 }
 
@@ -429,6 +521,8 @@ async function main() {
     selectTrain(info);
   });
   renderIncidents();
+  fillJump();
+  refreshLines();
   map.on("mouseenter", "incidents", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "incidents", () => (map.getCanvas().style.cursor = ""));
   map.on("mouseenter", "trains", () => (map.getCanvas().style.cursor = "pointer"));
@@ -451,6 +545,22 @@ $("delayed-btn").addEventListener("click", () => {
   } else panel.hidden = true;
 });
 $("delayed-close").addEventListener("click", () => ($("delayed").hidden = true));
+$("jump").addEventListener("change", (e) => {
+  const v = e.target.value;
+  e.target.value = "";
+  if (v === "es") return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
+  const r = ref?.region(v);
+  if (r) map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: 40, maxZoom: 11 });
+});
+for (const [id, key] of [["f-commuter", "commuter"], ["f-long", "long"], ["f-scheduled", "scheduled"], ["f-lines", "lines"]]) {
+  $(id).addEventListener("change", (e) => {
+    show[key] = e.target.checked;
+    if (key === "lines") {
+      for (const l of ["lines", "lines-notice"]) map?.setLayoutProperty(l, "visibility", show.lines ? "visible" : "none");
+    }
+    render(true);
+  });
+}
 $("loc-btn").addEventListener("click", () => (locator?.active ? stopLocation() : startLocation()));
 $("near-close").addEventListener("click", () => ($("near").hidden = true));
 $("inc-btn").addEventListener("click", () => ($("incidents").hidden ? showIncidents() : ($("incidents").hidden = true)));

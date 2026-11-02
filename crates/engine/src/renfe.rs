@@ -138,6 +138,15 @@ impl SourceAdapter for Renfe {
                             trip_id: trip.trip_id?,
                             delay,
                             canceled: trip.schedule_relationship == Some(TRIP_CANCELED),
+                            accessible: match tu
+                                .vehicle
+                                .as_ref()
+                                .and_then(|v| v.wheelchair_accessible)
+                            {
+                                Some(2) => Some(true),
+                                Some(3) => Some(false),
+                                _ => None,
+                            },
                             stops,
                         })
                     })

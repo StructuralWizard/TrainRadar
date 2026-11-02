@@ -63,7 +63,7 @@ await page.waitForTimeout(1000);
 const pick = await page.evaluate(() => {
   const { engine } = window.__trainradar;
   const p = engine.positions(Date.now());
-  for (let i = 0; i < p.length / 5; i++) {
+  for (let i = 0; i < p.length / 6; i++) {
     const info = JSON.parse(engine.trainJson(i, Date.now()));
     if (info.feed === "vp_cer" && info.next_stop) return { i, number: info.number };
   }
@@ -73,7 +73,7 @@ if (!pick) await fail("no moving Cercanías train in the demo right now");
 const follow = async () => {
   const p = await page.evaluate((i) => {
     const q = window.__trainradar.engine.positions(Date.now());
-    return { latitude: q[i * 5 + 1] + 0.0002, longitude: q[i * 5], accuracy: 20 };
+    return { latitude: q[i * 6 + 1] + 0.0002, longitude: q[i * 6], accuracy: 20 };
   }, pick.i);
   await ctx.setGeolocation(p);
 };

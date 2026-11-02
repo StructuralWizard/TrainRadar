@@ -18,8 +18,13 @@ and draws them on a MapLibre map. There is no TrainRadar server.
 - Stats bar: trains on the map, number delayed, median delay.
 - Delayed-arrivals list, incidents panel, train detail popup (service, origin → destination,
   next stop, delay, age of the last GPS fix).
-- Spacing to the previous and following train on the same line, in minutes and km along
-  the track.
+- Arrows showing each train's direction; tap a train to highlight its route, stops and
+  the other trains on its line.
+- Spacing to the train ahead and behind on the same track, in minutes and km.
+- Speed (measured or timetabled), gauge and line speed, accessibility.
+- Trains stopped between stations, with likely problem sections.
+- OUIGO trains placed by timetable (OUIGO publishes no live data), clearly marked.
+- Cercanías lines in their official colours; lines named in notices highlighted.
 - Optional "Use my location": blue dot with accuracy circle, centre on me, nearest
   stations with their next trains and delays, trains approaching your station, and
   "Am I on this train?" (with a confidence level, never a guess).
@@ -110,6 +115,9 @@ cd tools/feed-check && npm ci && npx playwright install chromium && npm run chec
 - Train data: **Renfe Operadora open data** ([data.renfe.com](https://data.renfe.com)),
   licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Exact datasets and
   attribution text: [docs/data-sources.md](docs/data-sources.md).
+- OUIGO timetable: National Access Point (NAP), **Powered by
+  [MITRAMS](https://www.transportes.gob.es/)**, processed data, under the
+  [NAP open-data licence](https://nap.transportes.gob.es/licencia-datos).
 - Track geometry for AV/LD/MD trains: © [OpenStreetMap](https://www.openstreetmap.org/copyright)
   contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/). The derived
   `geo-*.bin` files are published with the site under the same licence.

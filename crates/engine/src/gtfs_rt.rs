@@ -63,6 +63,9 @@ pub struct VehicleDescriptor {
     pub label: Option<String>,
     #[prost(string, optional, tag = "3")]
     pub license_plate: Option<String>,
+    /// 0 NO_VALUE, 1 UNKNOWN, 2 WHEELCHAIR_ACCESSIBLE, 3 WHEELCHAIR_INACCESSIBLE.
+    #[prost(int32, optional, tag = "4")]
+    pub wheelchair_accessible: Option<i32>,
 }
 
 #[derive(Clone, PartialEq, Message)]

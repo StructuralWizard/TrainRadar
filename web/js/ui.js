@@ -10,7 +10,7 @@ import {
   formatDistance,
   formatDuration,
 } from "./format.js";
-import { COLORS } from "./map.js";
+import { COLORS, SCHEDULED_COLOR } from "./map.js";
 
 /** Create an element: el("div", { class: "x", onclick }, child, "text"). */
 export function el(tag, attrs = {}, ...children) {
@@ -62,17 +62,55 @@ function row(label, ...value) {
 function gapText(lang, g) {
   if (!g) return t(lang, "none");
   const s = t(lang, "gap", { time: formatDuration(lang, g.time_secs), dist: formatDistance(lang, g.distance_m) });
-  return g.estimated ? `≈ ${s}` : s;
+  return `${g.title ? `${g.title} · ` : ""}${g.estimated ? "≈ " : ""}${s}`;
+}
+
+/** Official pages for live information we can't reuse. */
+export const OFFICIAL_LINKS = [
+  ["linkAdif", "https://www.adif.es/viajeros/estado-de-la-red"],
+  ["linkRenfe", "https://tiempo-real.renfe.com/"],
+  ["linkOuigo", "https://www.ouigo.com/es/"],
+  ["linkIryo", "https://iryo.eu/es"],
+  ["linkAdifMap", "https://www.adif.es/sobre-adif/red-ferroviaria/mapa"],
+];
+const OPERATOR_SITES = { OUIGO: "https://www.ouigo.com/es/" };
+
+export function officialLinks(lang) {
+  return [
+    el("h3", {}, t(lang, "otherSources")),
+    el(
+      "ul",
+      { class: "links" },
+      OFFICIAL_LINKS.map(([k, href]) =>
+        el("li", {}, el("a", { href, target: "_blank", rel: "noopener" }, `${t(lang, k)} ↗`)),
+      ),
+    ),
+  ];
+}
+
+function gaugeName(lang, mm) {
+  return { 1668: "gaugeIberian", 1435: "gaugeStandard", 1000: "gaugeMetric", 1: "gaugeDual" }[mm];
 }
 
 /** Popup body for one train (engine.trainJson). */
-export function trainPopup(lang, info, regionName, onIncidents) {
-  const title = el("div", { class: "popup-title" }, trainTitle(info));
+export function trainPopup(lang, info, regionName, onIncidents, { napDate } = {}) {
+  const title = el(
+    "div",
+    { class: "popup-title", style: info.timetable_only ? `color:${SCHEDULED_COLOR}` : null },
+    trainTitle(info),
+  );
   const sub = [];
   if (info.feed === "vp_cer" && regionName) sub.push(t(lang, "cercanias", { region: regionName }));
   if (info.platform) sub.push(t(lang, "platform", { p: info.platform }));
   const rows = [];
   if (info.canceled) rows.push(el("div", { class: "badge badge-red" }, t(lang, "canceled")));
+  if (info.timetable_only) {
+    rows.push(el("div", { class: "notice-box" }, t(lang, "timetableOnly", { op: info.operator })));
+  }
+  if (info.stopped) {
+    const vars = { a: info.stopped.after, b: info.stopped.before, t: formatDuration(lang, Date.now() / 1000 - info.stopped.since) };
+    rows.push(el("div", { class: "badge badge-red" }, t(lang, info.stopped.confirmed ? "stoppedConfirmed" : "stoppedLikely", vars)));
+  }
   if (info.origin) {
     rows.push(row(t(lang, "from"), info.origin));
     rows.push(row(t(lang, "to"), info.destination));
@@ -98,8 +136,28 @@ export function trainPopup(lang, info, regionName, onIncidents) {
         : "",
     ),
   );
+  // A timetabled 0 km/h just means "dwelling at a station": not worth a row.
+  if (info.speed_kmh !== null && info.speed_kmh !== undefined && (info.speed_measured || info.speed_kmh > 0)) {
+    rows.push(
+      row(t(lang, "speed"), t(lang, info.speed_measured ? "speedMeasured" : "speedScheduled", { v: info.speed_kmh })),
+    );
+  }
+  if (info.gauge_mm || info.max_kmh) {
+    const parts = [];
+    const g = gaugeName(lang, info.gauge_mm);
+    if (g) parts.push(t(lang, g));
+    if (info.max_kmh) parts.push(t(lang, "maxSpeed", { v: info.max_kmh }));
+    rows.push(row(t(lang, "track"), parts.join(" · "), el("span", { class: "muted" }, ` ${t(lang, "trackSource")}`)));
+  }
+  if (info.accessible) rows.push(el("div", { class: "small" }, t(lang, info.accessible === "yes" ? "accessibleYes" : "accessibleNo")));
   const age = formatAgo(lang, info.fix_age);
-  rows.push(
+  if (info.timetable_only) {
+    const site = OPERATOR_SITES[info.operator];
+    if (napDate) rows.push(el("div", { class: "small muted" }, t(lang, "timetableSource", { date: formatDay(lang, napDate) })));
+    if (site) rows.push(el("a", { class: "small", href: site, target: "_blank", rel: "noopener" }, t(lang, "operatorLive", { op: info.operator })));
+    rows.push(el("a", { class: "small", href: "https://www.transportes.gob.es/", target: "_blank", rel: "noopener" }, "Powered by MITRAMS"));
+  }
+  if (!info.timetable_only) rows.push(
     row(
       t(lang, "position"),
       // Under a minute old, the dot is effectively at the GPS fix.
@@ -262,8 +320,9 @@ export function delayedItem(lang, info, onSelect) {
 }
 
 /** The notices panel body: feed age, optional filter, list, Adif link. */
-export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onShowAll, onStop }) {
-  const out = [];
+export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onShowAll, onStop, stopped, onTrain }) {
+  const out = stopped ? stoppedPanel(lang, stopped, onTrain) : [];
+  out.push(el("h3", {}, t(lang, "incidentsTitle")));
   if (modifiedMs) {
     const ageSecs = (Date.now() - modifiedMs) / 1000;
     const vars = { date: formatDay(lang, modifiedMs / 1000), ago: formatAgo(lang, ageSecs) };
@@ -315,11 +374,45 @@ export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onS
       ),
     ),
   );
+  out.push(...officialLinks(lang));
+  return out;
+}
+
+/** Trains stopped between stations, grouped by section to flag likely problems. */
+export function stoppedPanel(lang, list, onSelect) {
+  const out = [el("h3", {}, t(lang, "stoppedTitle"))];
+  if (!list.length) {
+    out.push(el("p", { class: "muted small" }, t(lang, "stoppedNone")));
+    return out;
+  }
+  const bySection = new Map();
+  for (const i of list) {
+    const k = `${i.stopped.after}|${i.stopped.before}`;
+    bySection.set(k, [...(bySection.get(k) || []), i]);
+  }
+  for (const [k, group] of bySection) {
+    if (group.length >= 2) {
+      const [a, b] = k.split("|");
+      out.push(el("p", { class: "small warn" }, t(lang, "stoppedCluster", { n: group.length, a, b })));
+    }
+  }
   out.push(
     el(
-      "p",
-      { class: "small" },
-      el("a", { href: "https://www.adif.es/viajeros/estado-de-la-red", target: "_blank", rel: "noopener" }, t(lang, "adifLink")),
+      "ul",
+      { class: "board" },
+      list.map((i) =>
+        el(
+          "li",
+          {},
+          el("button", { class: "link", onclick: () => onSelect(i) }, el("strong", {}, trainTitle(i))),
+          el(
+            "span",
+            { class: "board-main muted" },
+            ` ${i.stopped.after} – ${i.stopped.before} · ${formatDuration(lang, Date.now() / 1000 - i.stopped.since)}${i.stopped.confirmed ? "" : " (?)"}`,
+          ),
+          el("span", { class: "board-delay" }, formatDelay(lang, i.delay)),
+        ),
+      ),
     ),
   );
   return out;

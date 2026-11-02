@@ -47,12 +47,35 @@ fn class_code(d: Option<Delay>) -> u8 {
     }
 }
 
+fn flags(v: &TrainView, t: &live::LiveTrain) -> u32 {
+    let mut f = 0;
+    if t.feed == "vp_cer" {
+        f |= FLAG_COMMUTER;
+    }
+    if let Some(s) = v.stopped {
+        f |= FLAG_STOPPED;
+        if !s.confirmed {
+            f |= FLAG_STOPPED_LIKELY;
+        }
+    }
+    if v.source == PositionSource::Scheduled {
+        f |= FLAG_SCHEDULED_ONLY;
+    }
+    f
+}
+
 fn secs(now_ms: f64) -> i64 {
     (now_ms / 1000.0).floor() as i64
 }
 
 /// Values per train in [`Engine::positions`].
-pub const POSITION_STRIDE: usize = 5;
+pub const POSITION_STRIDE: usize = 6;
+
+/// Bits of the flags value in [`Engine::positions`].
+pub const FLAG_STOPPED: u32 = 1;
+pub const FLAG_STOPPED_LIKELY: u32 = 2;
+pub const FLAG_SCHEDULED_ONLY: u32 = 4;
+pub const FLAG_COMMUTER: u32 = 8;
 
 /// Everything the browser needs, behind one handle.
 #[wasm_bindgen]
@@ -129,7 +152,8 @@ impl Engine {
 
     /// Flat array for drawing, [`POSITION_STRIDE`] numbers per train:
     /// lon, lat, delay class (0–2, 3 = unknown), bearing (NaN if unknown),
-    /// GPS fix age in seconds.
+    /// GPS fix age in seconds, flags (1 stopped between stations, 2 only
+    /// likely, 4 position from the timetable only, 8 Cercanías).
     pub fn positions(&self, now_ms: f64) -> Vec<f64> {
         let views = self.live.views(&self.net, secs(now_ms), false);
         let mut out = Vec::with_capacity(views.len() * POSITION_STRIDE);
@@ -140,6 +164,7 @@ impl Engine {
                 f64::from(class_code(v.delay)),
                 v.bearing.map_or(f64::NAN, f64::from),
                 v.fix_age_secs as f64,
+                f64::from(flags(v, &self.live.trains[v.index])),
             ]);
         }
         out
@@ -148,20 +173,31 @@ impl Engine {
     /// Details for the popup of train `index` (as in `positions`), as JSON.
     #[wasm_bindgen(js_name = trainJson)]
     pub fn train_json(&self, index: usize, now_ms: f64) -> String {
-        let views = self.live.views(&self.net, secs(now_ms), true);
-        views
-            .get(index)
-            .map_or_else(|| "null".into(), |v| self.view_json(v))
+        let now = secs(now_ms);
+        let views = self.live.views(&self.net, now, false);
+        let Some(v) = views.get(index) else {
+            return "null".into();
+        };
+        let (ahead, behind) = spacing::for_train(&self.net, &self.live.trains, &views, index, now);
+        let mut v = v.clone();
+        v.ahead = ahead;
+        v.behind = behind;
+        self.view_json(&v)
     }
 
     /// Stats bar: `{trains, delayed, median_delay}`.
     #[wasm_bindgen(js_name = statsJson)]
     pub fn stats_json(&self, now_ms: f64) -> String {
         let views = self.live.views(&self.net, secs(now_ms), false);
-        let s = stats::compute(views.iter().map(|v| v.delay));
+        let live = views
+            .iter()
+            .filter(|v| v.source != PositionSource::Scheduled);
+        let s = stats::compute(live.map(|v| v.delay));
+        let scheduled = views.len() - s.trains;
         let mut out = String::new();
         json::Obj::new(&mut out)
             .n("trains", s.trains)
+            .n("scheduled", scheduled)
             .n("delayed", s.delayed)
             .on("median_delay", s.median_delay)
             .end();
@@ -227,6 +263,129 @@ impl Engine {
             .iter()
             .position(|t| t.rt.trip_id == trip_id && t.rt.train_number == number)
             .map_or(-1, |i| i as i32)
+    }
+
+    /// Route of train `index` for highlighting: `{line: [[lon, lat]…],
+    /// stops: [{name, lon, lat, time}], same_line: [indexes]}`. `time` is the
+    /// expected arrival (schedule + current delay). `null` if unmatched.
+    #[wasm_bindgen(js_name = tripJson)]
+    pub fn trip_json(&self, index: usize) -> String {
+        let Some(t) = self.live.trains.get(index) else {
+            return "null".into();
+        };
+        let Some(m) = t.matched else {
+            return "null".into();
+        };
+        let delay = i64::from(t.delay.unwrap_or(0));
+        let coords: Vec<String> = self
+            .net
+            .trip_line(m.trip)
+            .iter()
+            .map(|p| format!("[{:.5},{:.5}]", p.lon, p.lat))
+            .collect();
+        let mut stops = String::from("[");
+        for (i, (name, c, arr)) in self.net.trip_stops(m.trip).iter().enumerate() {
+            if i > 0 {
+                stops.push(',');
+            }
+            json::Obj::new(&mut stops)
+                .s("name", name)
+                .n("lon", format!("{:.5}", c.lon))
+                .n("lat", format!("{:.5}", c.lat))
+                .n("time", m.start_utc + i64::from(*arr) + delay)
+                .end();
+        }
+        stops.push(']');
+        let key = self.net.line_key(m.trip);
+        let same: Vec<String> = self
+            .live
+            .trains
+            .iter()
+            .enumerate()
+            .filter(|(i, o)| {
+                *i != index
+                    && o.matched
+                        .is_some_and(|om| self.net.line_key(om.trip) == key)
+            })
+            .map(|(i, _)| i.to_string())
+            .collect();
+        let mut out = String::new();
+        json::Obj::new(&mut out)
+            .raw("line", &format!("[{}]", coords.join(",")))
+            .raw("stops", &stops)
+            .raw("same_line", &format!("[{}]", same.join(",")))
+            .end();
+        out
+    }
+
+    /// Lines of the loaded Cercanías núcleos in their official colours, as a
+    /// GeoJSON FeatureCollection: `{line, region, color, notice}`; `notice`
+    /// is true when an active Renfe notice names the line.
+    #[wasm_bindgen(js_name = linesGeoJson)]
+    pub fn lines_geojson(&self, now_ms: f64) -> String {
+        use std::collections::{BTreeMap, HashSet};
+        let active = incidents::active(&self.net, &self.live.incidents, secs(now_ms));
+        let noticed: HashSet<(String, String)> = active
+            .iter()
+            .flat_map(|r| {
+                r.nucleos
+                    .iter()
+                    .flat_map(move |n| r.lines.iter().map(move |l| (n.clone(), l.clone())))
+            })
+            .collect();
+        let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
+        let mut first = true;
+        for (ri, r) in self.net.regions.iter().enumerate() {
+            if r.tt.region == "ld" || !r.tt.live {
+                continue;
+            }
+            // Longest trip per line name draws that line.
+            let mut best: BTreeMap<&str, (u32, u32)> = BTreeMap::new();
+            for (ti, trip) in r.tt.trips.iter().enumerate() {
+                let name = r.tt.routes[trip.route as usize].short_name.as_str();
+                let len = r.sched[trip.pattern as usize]
+                    .last()
+                    .map_or(0, |x| x.dist_m);
+                if best.get(name).is_none_or(|b| len > b.0) {
+                    best.insert(name, (len, ti as u32));
+                }
+            }
+            for (name, (_, ti)) in best {
+                let tref = network::TripRef {
+                    region: ri as u16,
+                    trip: ti,
+                };
+                let trip = &r.tt.trips[ti as usize];
+                let color = r.tt.routes[trip.route as usize]
+                    .color
+                    .map_or_else(|| "#6b7280".to_owned(), |c| format!("#{c:06x}"));
+                let coords: Vec<String> = self
+                    .net
+                    .trip_line(tref)
+                    .iter()
+                    .map(|p| format!("[{:.5},{:.5}]", p.lon, p.lat))
+                    .collect();
+                if !first {
+                    s.push(',');
+                }
+                first = false;
+                s.push_str(r#"{"type":"Feature","geometry":{"type":"LineString","coordinates":["#);
+                s.push_str(&coords.join(","));
+                s.push_str("]},\"properties\":");
+                json::Obj::new(&mut s)
+                    .s("line", name)
+                    .s("region", &r.tt.region)
+                    .s("color", &color)
+                    .b(
+                        "notice",
+                        noticed.contains(&(r.tt.region.clone(), name.to_owned())),
+                    )
+                    .end();
+                s.push('}');
+            }
+        }
+        s.push_str("]}");
+        s
     }
 
     /// Up to `k` stations within `max_m` of a point, nearest first:
@@ -406,6 +565,16 @@ impl Engine {
         s
     }
 
+    /// Trains stopped between stations (longest first), as popup JSON.
+    #[wasm_bindgen(js_name = stoppedJson)]
+    pub fn stopped_json(&self, now_ms: f64) -> String {
+        let views = self.live.views(&self.net, secs(now_ms), false);
+        let mut list: Vec<&TrainView> = views.iter().filter(|v| v.stopped.is_some()).collect();
+        list.sort_by_key(|v| v.stopped.map(|s| s.since));
+        let items: Vec<String> = list.iter().map(|v| self.view_json(v)).collect();
+        format!("[{}]", items.join(","))
+    }
+
     /// Active incidents, newest first: `[{id, text, tags, lines, nucleos,
     /// stops: [{id, name, lat, lon}], from, until}]`. Feed text is untrusted:
     /// show it as text only.
@@ -460,6 +629,27 @@ impl Engine {
 }
 
 impl Engine {
+    /// "AVE 3071" / "C3 21096" for a train identified by trip id or number.
+    fn title_of(&self, id: &str) -> String {
+        let Some(t) =
+            self.live.trains.iter().find(|t| {
+                t.rt.trip_id == id || (t.rt.trip_id.is_empty() && t.rt.train_number == id)
+            })
+        else {
+            return String::new();
+        };
+        let route = t.matched.map_or_else(
+            || t.rt.line.clone(),
+            |m| {
+                let r = &self.net.regions[m.trip.region as usize];
+                r.tt.routes[self.net.trip(m.trip).route as usize]
+                    .short_name
+                    .clone()
+            },
+        );
+        format!("{route} {}", t.rt.train_number).trim().to_owned()
+    }
+
     /// Time of the latest feed data (for filtering incidents in popups).
     fn live_now(&self) -> i64 {
         self.live.now
@@ -491,9 +681,16 @@ impl Engine {
                 match v.source {
                     PositionSource::Gps => "gps",
                     PositionSource::Interpolated => "interpolated",
+                    PositionSource::Scheduled => "scheduled",
                 },
             )
-            .b("canceled", t.canceled);
+            .b("canceled", t.canceled)
+            .on("speed_kmh", v.speed.map(|s| s.0.round()))
+            .b("speed_measured", v.speed.is_some_and(|s| s.1))
+            .os(
+                "accessible",
+                t.accessible.map(|a| if a { "yes" } else { "no" }),
+            );
         if let Some(m) = t.matched {
             let r = &self.net.regions[m.trip.region as usize];
             let trip = self.net.trip(m.trip);
@@ -509,11 +706,26 @@ impl Engine {
                 )
                 .on("next_arrival", v.next_arrival)
                 .b("matched_exact", m.exact)
+                .s("operator", &r.tt.operator);
+            if let Some(info) = v.along.and_then(|d| self.net.track_info(m.trip, d)) {
+                o.n("gauge_mm", info.gauge_mm).n("max_kmh", info.max_kmh);
+            }
+            o.b("timetable_only", !r.tt.live)
                 .s("route_id", &route.id)
                 .n(
                     "incidents",
                     incidents::for_route(&self.live.incidents, &route.id, self.live_now()).len(),
                 );
+        }
+        if let (Some(st), Some(m)) = (v.stopped, t.matched) {
+            let mut x = String::new();
+            json::Obj::new(&mut x)
+                .n("since", st.since)
+                .b("confirmed", st.confirmed)
+                .s("after", self.net.stop_name(m.trip, st.after_stop))
+                .s("before", self.net.stop_name(m.trip, st.after_stop + 1))
+                .end();
+            o.raw("stopped", &x);
         }
         for (k, g) in [("ahead", &v.ahead), ("behind", &v.behind)] {
             match g {
@@ -521,6 +733,7 @@ impl Engine {
                     let mut x = String::new();
                     json::Obj::new(&mut x)
                         .s("trip_id", &g.trip_id)
+                        .s("title", &self.title_of(&g.trip_id))
                         .n("distance_m", g.distance_m)
                         .n("time_secs", g.time_secs)
                         .b("estimated", g.source == PositionSource::Interpolated)
@@ -676,5 +889,13 @@ mod tests {
         assert_eq!(i[0]["stops"][0]["id"], "B");
         let t: serde_json::Value = serde_json::from_str(&e.train_json(0, ms)).unwrap();
         assert_eq!(t["incidents"], 1);
+
+        // Route highlight and coloured lines.
+        let r: serde_json::Value = serde_json::from_str(&e.trip_json(0)).unwrap();
+        assert_eq!(r["stops"].as_array().unwrap().len(), 3);
+        assert!(r["line"].as_array().unwrap().len() >= 2);
+        let l: serde_json::Value = serde_json::from_str(&e.lines_geojson(ms)).unwrap();
+        assert_eq!(l["features"][0]["properties"]["line"], "C3");
+        assert_eq!(l["features"][0]["properties"]["notice"], true);
     }
 }

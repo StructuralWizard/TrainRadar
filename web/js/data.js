@@ -29,6 +29,17 @@ export class RefData {
     this.manifest = await r.json();
     this.engine.loadStations(await fetchBytes(this.base + this.manifest.stations.file));
     await this.loadRegion("ld");
+    // Timetable-only operators (OUIGO) are small; load them up front.
+    for (const r of this.manifest.regions.filter((r) => r.live === false)) {
+      await this.loadRegion(r.code).catch((e) => console.warn("region", r.code, e));
+    }
+  }
+
+  /** Unix seconds when the NAP last updated a timetable-only source, if known. */
+  napDate() {
+    const s = this.manifest?.sources?.find((x) => /NAP/.test(x.name));
+    const t = s && Date.parse(s.last_modified);
+    return t ? t / 1000 : null;
   }
 
   region(code) {
@@ -63,7 +74,7 @@ export class RefData {
   regionsIn(bounds) {
     const [w, s, e, n] = bounds;
     return (this.manifest?.regions || []).filter(
-      (r) => r.code !== "ld" && !(r.bbox[3] < w || r.bbox[1] > e || r.bbox[2] < s || r.bbox[0] > n),
+      (r) => r.code !== "ld" && r.live !== false && !(r.bbox[3] < w || r.bbox[1] > e || r.bbox[2] < s || r.bbox[0] > n),
     );
   }
 }

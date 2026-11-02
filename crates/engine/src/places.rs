@@ -251,6 +251,7 @@ mod tests {
             "tu_cer",
             FeedData::TripUpdates(vec![RtTripUpdate {
                 trip_id: "1004D102C3".into(),
+                accessible: None,
                 delay: Some(240),
                 canceled: false,
                 stops: vec![],

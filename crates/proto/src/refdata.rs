@@ -266,6 +266,12 @@ impl GridIndex {
 pub struct TimetableFile {
     pub header: Header,
     pub region: String,
+    /// Operator shown to users (e.g. "Renfe", "OUIGO").
+    pub operator: String,
+    /// Whether live positions exist for this timetable. When false (e.g.
+    /// OUIGO, which publishes only its timetable), the engine places trains
+    /// by timetable and marks them as such.
+    pub live: bool,
     pub stops: Vec<StopRec>,
     pub routes: Vec<RouteRec>,
     pub shapes: Vec<ShapeRec>,
@@ -289,6 +295,17 @@ pub struct GeometryFile {
     pub header: Header,
     pub region: String,
     pub legs: Vec<ShapeRec>,
+    /// Track facts per leg (same order as `legs`), from OpenStreetMap tags.
+    pub info: Vec<LegInfo>,
+}
+
+/// Track facts for one leg: the most common value along it (0 = unknown).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct LegInfo {
+    /// Track gauge in mm (1668 Iberian, 1435 standard, 1000 metric); 1 = dual gauge.
+    pub gauge_mm: u16,
+    /// Maximum line speed in km/h.
+    pub max_kmh: u16,
 }
 
 impl HasHeader for GeometryFile {
@@ -597,6 +614,8 @@ mod tests {
         let tt = TimetableFile {
             header: Header::new(20_000, 8, 0),
             region: "ld".into(),
+            operator: "Renfe".into(),
+            live: true,
             stops: vec![],
             routes: vec![],
             shapes: vec![],

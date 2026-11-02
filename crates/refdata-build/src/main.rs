@@ -20,13 +20,15 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 use trainradar_proto::encode;
-use trainradar_proto::refdata::{GeometryFile, RegionRec, ShapeRec, TimetableFile, from_e5};
+use trainradar_proto::refdata::{
+    GeometryFile, LegInfo, RegionRec, ShapeRec, TimetableFile, from_e5,
+};
 
 const USAGE: &str = "\
 usage:
   refdata-build inspect <file.zip|file.csv>...
   refdata-build verify DIR
-  refdata-build build --out DIR [--ld ZIP] [--cercanias ZIP]
+  refdata-build build --out DIR [--ld ZIP] [--cercanias ZIP] [--ouigo ZIP]
                       [--rail FILE.geojsonseq] [--date YYYY-MM-DD] [--days N]
                       [--sources FILE.tsv] [--report FILE.md] [--gzip]
 
@@ -43,6 +45,7 @@ struct BuildArgs {
     out: PathBuf,
     ld: Option<PathBuf>,
     cercanias: Option<PathBuf>,
+    ouigo: Option<PathBuf>,
     rail: Option<PathBuf>,
     date: Option<String>,
     days: u8,
@@ -56,6 +59,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         out: PathBuf::new(),
         ld: None,
         cercanias: None,
+        ouigo: None,
         rail: None,
         date: None,
         days: 8,
@@ -75,6 +79,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--ld" => a.ld = Some(val()?.into()),
             "--cercanias" => a.cercanias = Some(val()?.into()),
             "--rail" => a.rail = Some(val()?.into()),
+            "--ouigo" => a.ouigo = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -92,8 +97,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
     if a.out.as_os_str().is_empty() {
         return Err("--out is required".into());
     }
-    if a.ld.is_none() && a.cercanias.is_none() {
-        return Err("give --ld and/or --cercanias".into());
+    if a.ld.is_none() && a.cercanias.is_none() && a.ouigo.is_none() {
+        return Err("give --ld, --cercanias and/or --ouigo".into());
     }
     Ok(a)
 }
@@ -179,13 +184,26 @@ fn run_build(a: BuildArgs) -> Result<()> {
     };
     let mut router = graph.as_ref().map(osm::Router::new);
 
-    type Built = (RegionRec, TimetableFile, Vec<ShapeRec>, build::RegionStats);
+    type Built = (
+        RegionRec,
+        TimetableFile,
+        Vec<(ShapeRec, LegInfo)>,
+        build::RegionStats,
+    );
     let mut built: Vec<Built> = Vec::new();
     let mut report = String::new();
-    for (path, commuter) in [(&a.ld, false), (&a.cercanias, true)] {
+    for (path, kind) in [
+        (&a.ld, "ld"),
+        (&a.cercanias, "cercanias"),
+        (&a.ouigo, "ouigo"),
+    ] {
         let Some(path) = path else { continue };
+        let commuter = kind == "cercanias";
         let mut g = Gtfs::open(path)?;
-        let feed = load::load(&mut g, &window)?;
+        let mut feed = load::load(&mut g, &window)?;
+        if kind == "ouigo" {
+            build::normalise_ouigo(&mut feed);
+        }
         report.push_str(&format!(
             "- `{}`: {} trips in feed, {} in window, {} outside window, {} buses skipped, \
              {} too short; {} stop_times rows\n",
@@ -197,9 +215,18 @@ fn run_build(a: BuildArgs) -> Result<()> {
             feed.stats.trips_too_short,
             feed.stats.stop_time_rows
         ));
-        for (code, trips) in split_regions(&feed, commuter) {
-            let (tt, legs, st) =
+        let regions = if kind == "ouigo" {
+            std::iter::once((build::OUIGO.to_owned(), feed.trips.iter().collect())).collect()
+        } else {
+            split_regions(&feed, commuter)
+        };
+        for (code, trips) in regions {
+            let (mut tt, legs, st) =
                 build_timetable(&feed, &trips, &code, header.clone(), router.as_mut());
+            if kind == "ouigo" {
+                tt.operator = "OUIGO".into();
+                tt.live = false;
+            }
             let rec = RegionRec {
                 code: code.clone(),
                 name: region_name(&code),
@@ -235,10 +262,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
         let geometry = if legs.is_empty() {
             None
         } else {
+            let (legs, info) = legs.into_iter().unzip();
             let g = GeometryFile {
                 header: tt.header.clone(),
                 region: rec.code.clone(),
                 legs,
+                info,
             };
             let gb = encode(&g)?;
             Some(FileEntry {
@@ -248,6 +277,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
         };
         let b = rec.bbox_e5;
         regions.push(RegionEntry {
+            operator: tt.operator.clone(),
+            live: tt.live,
             code: rec.code,
             name: rec.name,
             bbox: [from_e5(b[0]), from_e5(b[1]), from_e5(b[2]), from_e5(b[3])],

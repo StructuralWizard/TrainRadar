@@ -35,7 +35,9 @@ jobs:
       - run: rustup show active-toolchain || rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo build --release -p trainradar-refdata-build
-      - name: Download Renfe GTFS
+      - name: Download Renfe GTFS (and OUIGO from the NAP)
+        env:
+          NAP_API_KEY: ${{ secrets.NAP_API_KEY }}
         run: tools/fetch-gtfs.sh | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Week number (OSM cache key)
         id: week
@@ -54,7 +56,7 @@ jobs:
       - name: Build .bin files
         run: |
           target/release/refdata-build build --out web/data \
-            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq \
+            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data

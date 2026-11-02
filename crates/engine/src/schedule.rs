@@ -78,6 +78,22 @@ pub fn next_stop(st: &[StopTime], d: f64) -> Option<usize> {
     (i < st.len()).then_some(i)
 }
 
+/// Timetabled speed (m/s) at relative time `t`: 0 while dwelling, the
+/// section's average between stops, `None` outside the trip.
+pub fn scheduled_speed(st: &[StopTime], t: f64) -> Option<f64> {
+    for w in st.windows(2) {
+        let (a, b) = (&w[0], &w[1]);
+        if t >= f64::from(a.arrival) && t <= f64::from(a.departure) {
+            return Some(0.0);
+        }
+        if t > f64::from(a.departure) && t < f64::from(b.arrival) {
+            let dt = f64::from(b.arrival - a.departure);
+            return (dt > 0.0).then(|| f64::from(b.dist_m - a.dist_m) / dt);
+        }
+    }
+    None
+}
+
 /// Current position along the trip at relative time `now`, given an anchor
 /// (a GPS fix at distance `fix_d`, relative time `fix_t`) and the delay.
 ///
@@ -132,6 +148,14 @@ mod tests {
         assert_eq!(delay_at(&s, 5_000.0, 480.0), 180.0, "3 min late");
         assert_eq!(delay_at(&s, 10_000.0, 640.0), 0.0, "within dwell");
         assert_eq!(delay_at(&s, 5_000.0, 240.0), -60.0, "early");
+    }
+
+    #[test]
+    fn timetabled_speed() {
+        let s = sched();
+        assert_eq!(scheduled_speed(&s, 300.0), Some(10_000.0 / 600.0));
+        assert_eq!(scheduled_speed(&s, 630.0), Some(0.0), "dwelling");
+        assert_eq!(scheduled_speed(&s, 5_000.0), None);
     }
 
     #[test]

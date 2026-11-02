@@ -82,7 +82,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Download Renfe GTFS
+      - name: Download Renfe GTFS (and OUIGO from the NAP)
+        env:
+          NAP_API_KEY: ${{ secrets.NAP_API_KEY }}
         run: tools/fetch-gtfs.sh | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Week number (OSM cache key)
         id: week
@@ -100,7 +102,7 @@ jobs:
       - name: Build reference data
         run: |
           cargo run --release -q -p trainradar-refdata-build -- build --out build/data --gzip \
-            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq \
+            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
             --sources gtfs/sources.tsv --report refdata.md
           cargo run --release -q -p trainradar-refdata-build -- verify build/data
           cat refdata.md >> "$GITHUB_STEP_SUMMARY"

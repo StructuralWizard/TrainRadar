@@ -65,7 +65,7 @@ jobs:
         run: |
           python3 tools/demo-gtfs.py demo/gtfs
           cargo run --release -q -p trainradar-refdata-build -- build --out demo/data \
-            --ld demo/gtfs/ld.zip --cercanias demo/gtfs/cercanias.zip
+            --ld demo/gtfs/ld.zip --cercanias demo/gtfs/cercanias.zip --ouigo demo/gtfs/ouigo.zip
           cargo run --release -q -p trainradar-engine --example fixture -- demo/data demo/rt
       - name: Browser test
         run: |
