@@ -431,6 +431,8 @@ pub mod tests {
         TimetableFile {
             header: Header::new((day - 1) as u32, 8, 0),
             region: "10".into(),
+            operator: "Renfe".into(),
+            live: true,
             stops,
             routes: vec![RouteRec {
                 id: "10T0001C3".into(),

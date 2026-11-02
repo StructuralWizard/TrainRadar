@@ -57,6 +57,8 @@ pub struct RtTripUpdate {
     /// Trip-level delay in seconds, or the latest stop-level one.
     pub delay: Option<i32>,
     pub canceled: bool,
+    /// Wheelchair accessible vehicle, if the feed says.
+    pub accessible: Option<bool>,
     /// (stop id, arrival delay seconds, arrival unix time).
     pub stops: Vec<(String, Option<i32>, Option<i64>)>,
 }

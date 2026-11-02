@@ -47,12 +47,31 @@ fn class_code(d: Option<Delay>) -> u8 {
     }
 }
 
+fn flags(v: &TrainView) -> u32 {
+    let mut f = 0;
+    if let Some(s) = v.stopped {
+        f |= FLAG_STOPPED;
+        if !s.confirmed {
+            f |= FLAG_STOPPED_LIKELY;
+        }
+    }
+    if v.source == PositionSource::Scheduled {
+        f |= FLAG_SCHEDULED_ONLY;
+    }
+    f
+}
+
 fn secs(now_ms: f64) -> i64 {
     (now_ms / 1000.0).floor() as i64
 }
 
 /// Values per train in [`Engine::positions`].
-pub const POSITION_STRIDE: usize = 5;
+pub const POSITION_STRIDE: usize = 6;
+
+/// Bits of the flags value in [`Engine::positions`].
+pub const FLAG_STOPPED: u32 = 1;
+pub const FLAG_STOPPED_LIKELY: u32 = 2;
+pub const FLAG_SCHEDULED_ONLY: u32 = 4;
 
 /// Everything the browser needs, behind one handle.
 #[wasm_bindgen]
@@ -129,7 +148,8 @@ impl Engine {
 
     /// Flat array for drawing, [`POSITION_STRIDE`] numbers per train:
     /// lon, lat, delay class (0–2, 3 = unknown), bearing (NaN if unknown),
-    /// GPS fix age in seconds.
+    /// GPS fix age in seconds, flags (1 stopped between stations, 2 only
+    /// likely, 4 position from the timetable only).
     pub fn positions(&self, now_ms: f64) -> Vec<f64> {
         let views = self.live.views(&self.net, secs(now_ms), false);
         let mut out = Vec::with_capacity(views.len() * POSITION_STRIDE);
@@ -140,6 +160,7 @@ impl Engine {
                 f64::from(class_code(v.delay)),
                 v.bearing.map_or(f64::NAN, f64::from),
                 v.fix_age_secs as f64,
+                f64::from(flags(v)),
             ]);
         }
         out
@@ -164,10 +185,15 @@ impl Engine {
     #[wasm_bindgen(js_name = statsJson)]
     pub fn stats_json(&self, now_ms: f64) -> String {
         let views = self.live.views(&self.net, secs(now_ms), false);
-        let s = stats::compute(views.iter().map(|v| v.delay));
+        let live = views
+            .iter()
+            .filter(|v| v.source != PositionSource::Scheduled);
+        let s = stats::compute(live.map(|v| v.delay));
+        let scheduled = views.len() - s.trains;
         let mut out = String::new();
         json::Obj::new(&mut out)
             .n("trains", s.trains)
+            .n("scheduled", scheduled)
             .n("delayed", s.delayed)
             .on("median_delay", s.median_delay)
             .end();
@@ -497,9 +523,16 @@ impl Engine {
                 match v.source {
                     PositionSource::Gps => "gps",
                     PositionSource::Interpolated => "interpolated",
+                    PositionSource::Scheduled => "scheduled",
                 },
             )
-            .b("canceled", t.canceled);
+            .b("canceled", t.canceled)
+            .on("speed_kmh", v.speed.map(|s| s.0.round()))
+            .b("speed_measured", v.speed.is_some_and(|s| s.1))
+            .os(
+                "accessible",
+                t.accessible.map(|a| if a { "yes" } else { "no" }),
+            );
         if let Some(m) = t.matched {
             let r = &self.net.regions[m.trip.region as usize];
             let trip = self.net.trip(m.trip);
@@ -515,11 +548,22 @@ impl Engine {
                 )
                 .on("next_arrival", v.next_arrival)
                 .b("matched_exact", m.exact)
+                .s("operator", &r.tt.operator)
                 .s("route_id", &route.id)
                 .n(
                     "incidents",
                     incidents::for_route(&self.live.incidents, &route.id, self.live_now()).len(),
                 );
+        }
+        if let (Some(st), Some(m)) = (v.stopped, t.matched) {
+            let mut x = String::new();
+            json::Obj::new(&mut x)
+                .n("since", st.since)
+                .b("confirmed", st.confirmed)
+                .s("after", self.net.stop_name(m.trip, st.after_stop))
+                .s("before", self.net.stop_name(m.trip, st.after_stop + 1))
+                .end();
+            o.raw("stopped", &x);
         }
         for (k, g) in [("ahead", &v.ahead), ("behind", &v.behind)] {
             match g {

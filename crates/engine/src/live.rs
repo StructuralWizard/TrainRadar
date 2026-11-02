@@ -38,6 +38,16 @@ pub struct LiveTrain {
     pub delay: Option<i32>,
     pub delay_source: Option<DelaySource>,
     pub canceled: bool,
+    /// Since when (unix s) the GPS position hasn't changed.
+    pub still_since: i64,
+    /// Latest fix time at the current position (feed timestamps only).
+    pub last_fix: i64,
+    /// Speed measured between the last two different fixes, m/s.
+    pub measured_speed: Option<f32>,
+    /// Wheelchair accessible, if Renfe says.
+    pub accessible: Option<bool>,
+    /// No live data: placed by timetable (operators that publish none).
+    pub scheduled: bool,
 }
 
 /// Same train listed more than once (the AV/LD/MD feed lists some trains
@@ -102,18 +112,130 @@ pub struct TrainView {
     pub next_arrival: Option<i64>,
     pub ahead: Option<Gap>,
     pub behind: Option<Gap>,
+    /// Stopped between stations: since when (unix s), and whether that's
+    /// confirmed by fresh timestamped fixes (Cercanías) or only likely.
+    pub stopped: Option<Stopped>,
+    /// Speed in km/h, and whether measured from GPS (else from the timetable).
+    pub speed: Option<(f32, bool)>,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Stopped {
+    pub since: i64,
+    pub confirmed: bool,
+    /// Index of the last stop passed (the train is between it and the next).
+    pub after_stop: usize,
+}
+
+/// Stopped this long away from a station counts as "stopped between stations".
+pub const STOPPED_CONFIRMED_SECS: i64 = 180;
+/// Without timestamps (AV/LD/MD), require longer: the GPS may just be silent.
+pub const STOPPED_LIKELY_SECS: i64 = 300;
+/// Further than this from any stop counts as "between stations".
+pub const AWAY_FROM_STOP_M: f64 = 400.0;
 
 #[derive(Debug, Default)]
 pub struct Live {
     vehicles: HashMap<&'static str, Vec<RtVehicle>>,
     updates: HashMap<&'static str, Vec<RtTripUpdate>>,
     pub incidents: Vec<Incident>,
-    /// Vehicle key → (lat e5, lon e5, first time seen at that position).
-    seen: HashMap<String, (i32, i32, i64)>,
+    /// Vehicle key → position history (for fix age, stops and speed).
+    seen: HashMap<String, Seen>,
     pub trains: Vec<LiveTrain>,
     /// Time of the last ingest/rebuild (unix seconds).
     pub now: i64,
+}
+
+/// Trains of timetable-only operators (no live feed) that should be running
+/// now, placed by their timetable.
+fn scheduled_trains(net: &Network, now: i64) -> Vec<LiveTrain> {
+    use trainradar_proto::time::{madrid_day, service_day_base};
+    let today = madrid_day(now);
+    let mut out = Vec::new();
+    for (ri, r) in net.regions.iter().enumerate() {
+        if r.tt.live {
+            continue;
+        }
+        for (ti, trip) in r.tt.trips.iter().enumerate() {
+            let tref = crate::network::TripRef {
+                region: ri as u16,
+                trip: ti as u32,
+            };
+            let st = net.schedule(tref);
+            let dur = st.last().map_or(0, |s| i64::from(s.arrival));
+            for day in [today - 1, today] {
+                let bit = day - i64::from(r.tt.header.window_start_day);
+                if !(0..16).contains(&bit) || trip.days & (1 << bit) == 0 {
+                    continue;
+                }
+                let start = service_day_base(day) + i64::from(trip.start);
+                if now < start || now > start + dur {
+                    continue;
+                }
+                let first =
+                    r.tt.stops[r.tt.patterns[trip.pattern as usize].stops[0] as usize].coord();
+                out.push(LiveTrain {
+                    rt: RtVehicle {
+                        trip_id: r.tt.trip_id(trip),
+                        train_number: crate::network::train_number(trip),
+                        line: r.tt.routes[trip.route as usize].short_name.clone(),
+                        platform: None,
+                        lat: first.lat,
+                        lon: first.lon,
+                        bearing: None,
+                        speed: None,
+                        timestamp: None,
+                        stop_id: None,
+                        status: None,
+                    },
+                    feed: "timetable",
+                    matched: Some(Match {
+                        trip: tref,
+                        day,
+                        start_utc: start,
+                        exact: true,
+                    }),
+                    fix_time: now,
+                    fix_along: Some(0.0),
+                    delay: None,
+                    delay_source: None,
+                    canceled: false,
+                    still_since: now,
+                    last_fix: now,
+                    measured_speed: None,
+                    accessible: None,
+                    scheduled: true,
+                });
+            }
+        }
+    }
+    out
+}
+
+/// What we remember about one vehicle's recent positions.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Seen {
+    lat: i32,
+    lon: i32,
+    /// First fix time at this position.
+    since: i64,
+    /// Latest fix time at this position.
+    last: i64,
+    /// Previous different position and its last fix time.
+    prev: Option<(i32, i32, i64)>,
+}
+
+impl Seen {
+    fn speed(&self) -> Option<f32> {
+        let (plat, plon, pt) = self.prev?;
+        let dt = self.since - pt;
+        if !(5..=300).contains(&dt) {
+            return None;
+        }
+        let a = LatLon::new(f64::from(plat) / 1e5, f64::from(plon) / 1e5);
+        let b = LatLon::new(f64::from(self.lat) / 1e5, f64::from(self.lon) / 1e5);
+        Some((haversine_m(a, b) / dt as f64) as f32)
+    }
 }
 
 fn key(v: &RtVehicle) -> String {
@@ -126,10 +248,26 @@ impl Live {
         match data {
             FeedData::Vehicles(v) => {
                 for x in &v {
-                    let pos = ((x.lat * 1e5) as i32, (x.lon * 1e5) as i32);
-                    let e = self.seen.entry(key(x)).or_insert((pos.0, pos.1, now));
-                    if (e.0, e.1) != pos {
-                        *e = (pos.0, pos.1, now);
+                    let (lat, lon) = ((x.lat * 1e5) as i32, (x.lon * 1e5) as i32);
+                    let ft = x
+                        .timestamp
+                        .filter(|t| (t - now).abs() <= MAX_CLOCK_SKEW_SECS)
+                        .unwrap_or(now);
+                    let fresh = Seen {
+                        lat,
+                        lon,
+                        since: ft,
+                        last: ft,
+                        prev: None,
+                    };
+                    let e = self.seen.entry(key(x)).or_insert(fresh);
+                    if (e.lat, e.lon) == (lat, lon) {
+                        e.last = e.last.max(ft);
+                    } else {
+                        *e = Seen {
+                            prev: Some((e.lat, e.lon, e.last)),
+                            ..fresh
+                        };
                     }
                 }
                 self.vehicles.insert(feed, v);
@@ -166,10 +304,11 @@ impl Live {
         let mut trains = Vec::new();
         for (&feed, list) in &self.vehicles {
             for v in list {
+                let seen = self.seen.get(&key(v)).copied();
                 let fix_time = v
                     .timestamp
                     .filter(|t| (t - now).abs() <= MAX_CLOCK_SKEW_SECS)
-                    .unwrap_or_else(|| self.seen.get(&key(v)).map_or(now, |s| s.2));
+                    .unwrap_or_else(|| seen.map_or(now, |s| s.since));
                 let matched = net.match_trip(&v.trip_id, &v.train_number, now);
                 let gps = LatLon::new(v.lat, v.lon);
                 let fix_along = matched.and_then(|m| {
@@ -201,10 +340,17 @@ impl Live {
                     delay,
                     delay_source,
                     canceled: tu.is_some_and(|u| u.canceled),
+                    still_since: seen.map_or(fix_time, |s| s.since),
+                    last_fix: seen.map_or(fix_time, |s| s.last),
+                    measured_speed: seen.and_then(|s| s.speed()),
+                    accessible: tu.and_then(|u| u.accessible),
+                    scheduled: false,
                 });
             }
         }
-        self.trains = dedupe(trains);
+        let mut trains = dedupe(trains);
+        trains.extend(scheduled_trains(net, now));
+        self.trains = trains;
     }
 
     /// Positions of all trains at `now`. Spacing to neighbours is optional
@@ -238,6 +384,8 @@ fn view(net: &Network, index: usize, t: &LiveTrain, now: i64) -> TrainView {
         next_arrival: None,
         ahead: None,
         behind: None,
+        stopped: None,
+        speed: None,
     };
     let (Some(m), Some(fix_d)) = (t.matched, t.fix_along) else {
         return raw;
@@ -245,7 +393,59 @@ fn view(net: &Network, index: usize, t: &LiveTrain, now: i64) -> TrainView {
     let st = net.schedule(m.trip);
     let delay = f64::from(t.delay.unwrap_or(0));
     let rel = |x: i64| (x - m.start_utc) as f64;
-    let along = advance_from_fix(st, fix_d, rel(t.fix_time), rel(now), delay);
+    if t.scheduled {
+        let along = crate::schedule::dist_at(st, rel(now));
+        let Some((coord, bearing)) = net.point_at(m.trip, along) else {
+            return raw;
+        };
+        let next = next_stop(st, along);
+        return TrainView {
+            coord,
+            bearing,
+            along: Some(along),
+            fix_age_secs: 0,
+            source: PositionSource::Scheduled,
+            next_stop: next,
+            next_arrival: next.map(|i| m.start_utc + i64::from(st[i].arrival)),
+            speed: crate::schedule::scheduled_speed(st, rel(now))
+                .map(|ms| (ms as f32 * 3.6, false)),
+            ..raw
+        };
+    }
+
+    // Stopped between stations? Confirmed when fresh timestamped fixes keep
+    // reporting the same spot; likely when an untimestamped one hasn't moved.
+    let total = st.last().map_or(0.0, |s| f64::from(s.dist_m));
+    let between = fix_d > AWAY_FROM_STOP_M
+        && fix_d < total - AWAY_FROM_STOP_M
+        && st
+            .iter()
+            .all(|s| (f64::from(s.dist_m) - fix_d).abs() > AWAY_FROM_STOP_M);
+    let timestamped = t.rt.timestamp.is_some();
+    let confirmed = timestamped
+        && now - t.last_fix <= 90
+        && t.last_fix - t.still_since >= STOPPED_CONFIRMED_SECS;
+    let likely = !timestamped && now - t.still_since >= STOPPED_LIKELY_SECS;
+    let stopped = (between && (confirmed || likely)).then(|| Stopped {
+        since: t.still_since,
+        confirmed,
+        after_stop: crate::schedule::prev_stop(st, fix_d),
+    });
+
+    // A confirmed stop holds the train where it is; otherwise it moves on
+    // with the timetable from the last fix.
+    let along = if confirmed {
+        fix_d
+    } else {
+        advance_from_fix(st, fix_d, rel(t.fix_time), rel(now), delay)
+    };
+    let speed = if confirmed {
+        Some((0.0, true))
+    } else if let Some(ms) = t.measured_speed.filter(|_| now - t.still_since <= 120) {
+        Some((ms * 3.6, true))
+    } else {
+        crate::schedule::scheduled_speed(st, rel(now) - delay).map(|ms| (ms as f32 * 3.6, false))
+    };
     let Some((coord, bearing)) = net.point_at(m.trip, along) else {
         return raw;
     };
@@ -267,6 +467,8 @@ fn view(net: &Network, index: usize, t: &LiveTrain, now: i64) -> TrainView {
         },
         next_stop: next,
         next_arrival: next.map(|i| m.start_utc + i64::from(st[i].arrival) + delay as i64),
+        stopped,
+        speed,
         ..raw
     }
 }
@@ -329,6 +531,7 @@ mod tests {
             "tu_cer",
             FeedData::TripUpdates(vec![RtTripUpdate {
                 trip_id: "1004D100C3".into(),
+                accessible: None,
                 delay: Some(300),
                 canceled: false,
                 stops: vec![],
@@ -365,6 +568,106 @@ mod tests {
                 .iter()
                 .all(|t| t.rt.trip_id != "0019052026-11-01")
         );
+    }
+
+    #[test]
+    fn detects_trains_stopped_between_stations() {
+        let net = sample_network();
+        let t0 = local(8, 5);
+        // Cercanías (timestamped): same spot between A and B for 4 minutes.
+        let mut live = Live::default();
+        for k in 0..=4 {
+            let t = t0 + k * 60;
+            live.ingest(
+                &net,
+                "vp_cer",
+                FeedData::Vehicles(vec![vehicle("1004D100C3", 40.35, Some(t))]),
+                t,
+            );
+        }
+        let v = &live.views(&net, t0 + 240, false)[0];
+        let s = v.stopped.expect("stopped");
+        assert!(s.confirmed);
+        assert_eq!(s.since, t0);
+        assert_eq!(s.after_stop, 0, "between A and B");
+        assert_eq!(v.speed, Some((0.0, true)));
+        assert!(
+            (v.coord.lat - 40.35).abs() < 1e-3,
+            "held at the fix, not moved on"
+        );
+
+        // At a station it's a normal stop, not "between stations".
+        let mut live = Live::default();
+        for k in 0..=4 {
+            let t = t0 + k * 60;
+            live.ingest(
+                &net,
+                "vp_cer",
+                FeedData::Vehicles(vec![vehicle("1004D100C3", 40.30, Some(t))]),
+                t,
+            );
+        }
+        assert!(live.views(&net, t0 + 240, false)[0].stopped.is_none());
+
+        // AV/LD/MD-style (no timestamps): likely after 5 minutes unchanged.
+        let mut live = Live::default();
+        for k in 0..=6 {
+            let t = t0 + k * 60;
+            live.ingest(
+                &net,
+                "vp_ld",
+                FeedData::Vehicles(vec![vehicle("1004D100C3", 40.35, None)]),
+                t,
+            );
+        }
+        let s = live.views(&net, t0 + 360, false)[0]
+            .stopped
+            .expect("likely stopped");
+        assert!(!s.confirmed);
+    }
+
+    #[test]
+    fn measures_speed_between_fixes() {
+        let net = sample_network();
+        let mut live = Live::default();
+        let t0 = local(8, 3);
+        live.ingest(
+            &net,
+            "vp_cer",
+            FeedData::Vehicles(vec![vehicle("1004D100C3", 40.38, Some(t0))]),
+            t0,
+        );
+        // 0.01° of latitude (~1112 m) in 60 s ≈ 66.7 km/h.
+        live.ingest(
+            &net,
+            "vp_cer",
+            FeedData::Vehicles(vec![vehicle("1004D100C3", 40.37, Some(t0 + 60))]),
+            t0 + 60,
+        );
+        let (kmh, measured) = live.views(&net, t0 + 70, false)[0].speed.unwrap();
+        assert!(measured);
+        assert!((kmh - 66.7).abs() < 1.0, "{kmh}");
+    }
+
+    #[test]
+    fn timetable_only_operators_are_placed_by_timetable() {
+        use crate::network::tests::sample_timetable;
+        let mut tt = sample_timetable();
+        tt.live = false;
+        tt.operator = "OUIGO".into();
+        let mut net = crate::network::Network::default();
+        net.load_timetable(&trainradar_proto::encode(&tt).unwrap())
+            .unwrap();
+        let mut live = Live::default();
+        let now = local(8, 5); // trip 100 halfway A→B, trip 102 not started
+        live.rebuild(&net, now);
+        let views = live.views(&net, now, false);
+        assert_eq!(views.len(), 1);
+        let v = &views[0];
+        assert_eq!(v.source, PositionSource::Scheduled);
+        assert_eq!(v.delay, None);
+        assert!((v.coord.lat - 40.35).abs() < 2e-3, "{:?}", v.coord);
+        assert_eq!(live.trains[0].rt.trip_id, "1004D100C3");
     }
 
     #[test]

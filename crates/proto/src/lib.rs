@@ -10,7 +10,7 @@ pub mod time;
 use serde::{Deserialize, Serialize};
 
 /// Version of the `.bin` format. Bump when a stored type changes shape.
-pub const FORMAT_VERSION: u16 = 3;
+pub const FORMAT_VERSION: u16 = 4;
 
 /// WGS84 coordinate in degrees.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -32,6 +32,8 @@ pub enum PositionSource {
     Gps,
     /// Estimated along the shape from the schedule plus current delay.
     Interpolated,
+    /// From the timetable only: the operator publishes no live data.
+    Scheduled,
 }
 
 /// A train position at a point in time.

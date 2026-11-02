@@ -92,6 +92,8 @@ pub fn build_timetable(
     let mut tt = TimetableFile {
         header,
         region: region.to_owned(),
+        operator: "Renfe".into(),
+        live: true,
         stops: vec![],
         routes: vec![],
         shapes: vec![],
