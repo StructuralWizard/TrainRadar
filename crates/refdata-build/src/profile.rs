@@ -6,7 +6,9 @@ use trainradar_proto::geo::haversine_m;
 use trainradar_proto::refdata::Profile;
 
 /// Target spacing between profile samples.
-pub const STEP_M: f64 = 200.0;
+/// (400 m: a gradient is read over 800 m anyway, and it keeps the
+/// geometry files small.)
+pub const STEP_M: f64 = 400.0;
 /// Share of a leg's points that must have a height.
 pub const MIN_KNOWN: f64 = 0.9;
 
@@ -36,9 +38,7 @@ pub fn leg_profile(pts: &[LatLon], heights: &[f32]) -> Profile {
     let mut z: Vec<f64> = (0..n)
         .map(|i| interpolate(&known, len * i as f64 / (n - 1) as f64))
         .collect();
-    for _ in 0..2 {
-        z = smooth(&z);
-    }
+    z = smooth(&z);
     Profile::encode(&z.iter().map(|&h| h as f32).collect::<Vec<_>>())
 }
 
@@ -73,19 +73,19 @@ mod tests {
 
     #[test]
     fn even_samples_fill_gaps_and_keep_steady_grades() {
-        // 2 km due east (~0.0235° at lat 40), climbing 20 m: a 10 ‰ grade,
+        // 4 km due east (~0.047° at lat 40), climbing 40 m: a 10 ‰ grade,
         // with one unknown height in the middle (one in 11 is fine).
         let pts: Vec<LatLon> = (0..=10)
-            .map(|i| LatLon::new(40.0, -3.7 + 0.00235 * f64::from(i)))
+            .map(|i| LatLon::new(40.0, -3.7 + 0.0047 * f64::from(i)))
             .collect();
-        let mut z: Vec<f32> = (0..=10).map(|i| 600.0 + 2.0 * i as f32).collect();
+        let mut z: Vec<f32> = (0..=10).map(|i| 600.0 + 4.0 * i as f32).collect();
         z[5] = f32::NAN;
         let p = leg_profile(&pts, &z);
         let h = p.heights_m();
-        assert_eq!(h.len(), 11, "every 200 m");
-        assert_eq!((h[0], h[10]), (600.0, 620.0));
+        assert_eq!(h.len(), 11, "every 400 m");
+        assert_eq!((h[0], h[10]), (600.0, 640.0));
         for w in h.windows(2) {
-            assert!((w[1] - w[0] - 2.0).abs() < 0.15, "{h:?}");
+            assert!((w[1] - w[0] - 4.0).abs() < 0.15, "{h:?}");
         }
         z[6] = f32::NAN;
         assert!(leg_profile(&pts, &z).deltas.is_empty(), "too many unknown");
