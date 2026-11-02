@@ -47,8 +47,11 @@ fn class_code(d: Option<Delay>) -> u8 {
     }
 }
 
-fn flags(v: &TrainView) -> u32 {
+fn flags(v: &TrainView, t: &live::LiveTrain) -> u32 {
     let mut f = 0;
+    if t.feed == "vp_cer" {
+        f |= FLAG_COMMUTER;
+    }
     if let Some(s) = v.stopped {
         f |= FLAG_STOPPED;
         if !s.confirmed {
@@ -72,6 +75,7 @@ pub const POSITION_STRIDE: usize = 6;
 pub const FLAG_STOPPED: u32 = 1;
 pub const FLAG_STOPPED_LIKELY: u32 = 2;
 pub const FLAG_SCHEDULED_ONLY: u32 = 4;
+pub const FLAG_COMMUTER: u32 = 8;
 
 /// Everything the browser needs, behind one handle.
 #[wasm_bindgen]
@@ -149,7 +153,7 @@ impl Engine {
     /// Flat array for drawing, [`POSITION_STRIDE`] numbers per train:
     /// lon, lat, delay class (0–2, 3 = unknown), bearing (NaN if unknown),
     /// GPS fix age in seconds, flags (1 stopped between stations, 2 only
-    /// likely, 4 position from the timetable only).
+    /// likely, 4 position from the timetable only, 8 Cercanías).
     pub fn positions(&self, now_ms: f64) -> Vec<f64> {
         let views = self.live.views(&self.net, secs(now_ms), false);
         let mut out = Vec::with_capacity(views.len() * POSITION_STRIDE);
@@ -160,7 +164,7 @@ impl Engine {
                 f64::from(class_code(v.delay)),
                 v.bearing.map_or(f64::NAN, f64::from),
                 v.fix_age_secs as f64,
-                f64::from(flags(v)),
+                f64::from(flags(v, &self.live.trains[v.index])),
             ]);
         }
         out
@@ -561,6 +565,16 @@ impl Engine {
         s
     }
 
+    /// Trains stopped between stations (longest first), as popup JSON.
+    #[wasm_bindgen(js_name = stoppedJson)]
+    pub fn stopped_json(&self, now_ms: f64) -> String {
+        let views = self.live.views(&self.net, secs(now_ms), false);
+        let mut list: Vec<&TrainView> = views.iter().filter(|v| v.stopped.is_some()).collect();
+        list.sort_by_key(|v| v.stopped.map(|s| s.since));
+        let items: Vec<String> = list.iter().map(|v| self.view_json(v)).collect();
+        format!("[{}]", items.join(","))
+    }
+
     /// Active incidents, newest first: `[{id, text, tags, lines, nucleos,
     /// stops: [{id, name, lat, lon}], from, until}]`. Feed text is untrusted:
     /// show it as text only.
@@ -615,6 +629,27 @@ impl Engine {
 }
 
 impl Engine {
+    /// "AVE 3071" / "C3 21096" for a train identified by trip id or number.
+    fn title_of(&self, id: &str) -> String {
+        let Some(t) =
+            self.live.trains.iter().find(|t| {
+                t.rt.trip_id == id || (t.rt.trip_id.is_empty() && t.rt.train_number == id)
+            })
+        else {
+            return String::new();
+        };
+        let route = t.matched.map_or_else(
+            || t.rt.line.clone(),
+            |m| {
+                let r = &self.net.regions[m.trip.region as usize];
+                r.tt.routes[self.net.trip(m.trip).route as usize]
+                    .short_name
+                    .clone()
+            },
+        );
+        format!("{route} {}", t.rt.train_number).trim().to_owned()
+    }
+
     /// Time of the latest feed data (for filtering incidents in popups).
     fn live_now(&self) -> i64 {
         self.live.now
@@ -698,6 +733,7 @@ impl Engine {
                     let mut x = String::new();
                     json::Obj::new(&mut x)
                         .s("trip_id", &g.trip_id)
+                        .s("title", &self.title_of(&g.trip_id))
                         .n("distance_m", g.distance_m)
                         .n("time_secs", g.time_secs)
                         .b("estimated", g.source == PositionSource::Interpolated)

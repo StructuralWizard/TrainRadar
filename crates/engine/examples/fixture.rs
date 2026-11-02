@@ -36,6 +36,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut feeds: [(Vec<FeedEntity>, Vec<FeedEntity>); 2] = Default::default();
     let today = madrid_day(now);
     for (ri, region) in net.regions.iter().enumerate() {
+        if !region.tt.live {
+            continue; // timetable-only operators have no live feed to fake
+        }
         let ld = region.tt.region == "ld";
         for (ti, trip) in region.tt.trips.iter().enumerate() {
             let tref = TripRef {
