@@ -65,6 +65,29 @@ Licence: OSM data © OpenStreetMap contributors, [ODbL 1.0](https://opendatacomm
 The `geo-*.bin` files are a derived database, published openly with the site
 under the ODbL. Attribution is in `manifest.json`, the README and the map.
 
+### Height profiles (gradients)
+
+With `--rail-heights` (from `tools/fetch-dem-heights.sh`), every leg also gets
+a height profile: one sample about every 200 m, stored as decimetre deltas in
+`GeometryFile.profiles` (format v5).
+
+1. `refdata-build dem-tiles` lists the Copernicus GLO-30 tiles (1°×1°, AWS open
+   data, no key) that contain rail nodes; CI downloads them, `dem-sample` reads
+   the height under every OSM rail node, and the tiles are deleted. The small
+   result is cached weekly, like the OSM file.
+2. Tunnels, bridges and covered track (OSM `tunnel`, `bridge`, `covered`): the
+   DEM shows the mountain or the valley floor there, so nodes inside are
+   interpolated between the two nearest ends of the structure, by distance
+   along the track.
+3. Each routed leg is resampled evenly and smoothed twice with a [1, 2, 1]
+   filter. Legs where under 90 % of the points have a height get no profile.
+
+The engine measures the gradient over 800 m centred on the train (within its
+leg), positive uphill in the direction of travel. The DEM is a surface model
+(it includes buildings and trees) with metre-level noise, so gradients are
+approximate, good to a few ‰, and cuttings and embankments are smoothed away.
+Cercanías trips on GTFS shapes have no profile yet.
+
 ## Sizes (build of 2026-11-01)
 
 | File | Raw | gzip -9 | brotli |

@@ -348,6 +348,11 @@ function clearSelection() {
   map.getSource("selected")?.setData(emptyGeoJson());
 }
 
+function selectedProfile(now) {
+  const i = selected ? engine.findTrain(selected.trip_id, selected.number) : -1;
+  return i < 0 ? null : JSON.parse(engine.profileJson(i, now));
+}
+
 function selectedInfo(now) {
   if (!selected) return null;
   const i = engine.findTrain(selected.trip_id, selected.number);
@@ -383,7 +388,7 @@ function showPopup(open = false) {
         label: i.route,
         test: (x) => x.lines.includes(i.route) && (!i.region || x.nucleos.includes(i.region)),
       }),
-    { napDate: ref?.napDate() },
+    { napDate: ref?.napDate(), profile: info.altitude_m === undefined ? null : selectedProfile(now) },
   );
   if (!popup) {
     // On small screens fold the credits into their ⓘ button while a popup is

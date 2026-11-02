@@ -93,7 +93,62 @@ function gaugeName(lang, mm) {
 }
 
 /** Popup body for one train (engine.trainJson). */
-export function trainPopup(lang, info, regionName, onIncidents, { napDate } = {}) {
+/** Required by the Copernicus WorldDEM-30 licence for modified data. */
+export const COPERNICUS_NOTICE =
+  "Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 " +
+  "provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge " +
+  "of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.";
+
+/** Gradient label: "+12 ‰ uphill", "−8 ‰ downhill", "level". */
+function gradeText(lang, g) {
+  if (Math.abs(g) < 2) return t(lang, "gradeLevel");
+  return t(lang, g > 0 ? "gradeUp" : "gradeDown", { v: Math.abs(g) });
+}
+
+const SVG = "http://www.w3.org/2000/svg";
+function svg(tag, attrs) {
+  const e = document.createElementNS(SVG, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  return e;
+}
+
+/** Small height-profile chart of the trip with the train's position. */
+export function profileChart(lang, p) {
+  if (!p || !p.km?.length) return null;
+  const known = p.h.filter((h) => h !== null);
+  if (known.length < 2) return null;
+  const W = 260, H = 64, pad = 2;
+  const lo = Math.min(...known), hi = Math.max(...known);
+  const span = Math.max(hi - lo, 50); // don't blow 5 m of noise up into cliffs
+  const total = p.km[p.km.length - 1] || 1;
+  const x = (km) => pad + (km / total) * (W - 2 * pad);
+  const y = (h) => H - pad - ((h - lo) / span) * (H - 2 * pad - 10);
+  let d = "";
+  let pen = false;
+  p.km.forEach((km, i) => {
+    const h = p.h[i];
+    if (h === null) { pen = false; return; }
+    d += `${pen ? "L" : "M"}${x(km).toFixed(1)},${y(h).toFixed(1)}`;
+    pen = true;
+  });
+  const chart = svg("svg", { viewBox: `0 0 ${W} ${H}`, class: "profile", role: "img", "aria-label": t(lang, "profile") });
+  chart.append(svg("path", { d, class: "profile-line" }));
+  if (p.at !== null && p.at !== undefined) {
+    const i = Math.max(0, p.km.findIndex((k) => k >= p.at));
+    const h = p.h[i];
+    if (h !== null) chart.append(svg("circle", { cx: x(p.at).toFixed(1), cy: y(h).toFixed(1), r: 3.5, class: "profile-train" }));
+  }
+  return el(
+    "div",
+    { class: "profile-box" },
+    chart,
+    el("div", { class: "small muted profile-scale" },
+      el("span", {}, `${Math.round(lo)}–${Math.round(hi)} m`),
+      el("span", {}, `${Math.round(total)} km`)),
+  );
+}
+
+export function trainPopup(lang, info, regionName, onIncidents, { napDate, profile } = {}) {
   const title = el(
     "div",
     { class: "popup-title", style: info.timetable_only ? `color:${SCHEDULED_COLOR}` : null },
@@ -148,6 +203,18 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate } = {}
     if (g) parts.push(t(lang, g));
     if (info.max_kmh) parts.push(t(lang, "maxSpeed", { v: info.max_kmh }));
     rows.push(row(t(lang, "track"), parts.join(" · "), el("span", { class: "muted" }, ` ${t(lang, "trackSource")}`)));
+  }
+  if (info.grade_permille !== undefined) {
+    rows.push(
+      row(
+        t(lang, "grade"),
+        gradeText(lang, info.grade_permille),
+        el("span", { class: "muted" }, ` · ${t(lang, "altitude", { v: info.altitude_m })}`),
+      ),
+    );
+    const chart = profileChart(lang, profile);
+    if (chart) rows.push(chart);
+    rows.push(el("details", { class: "small muted" }, el("summary", {}, t(lang, "gradeSource")), COPERNICUS_NOTICE));
   }
   if (info.accessible) rows.push(el("div", { class: "small" }, t(lang, info.accessible === "yes" ? "accessibleYes" : "accessibleNo")));
   const age = formatAgo(lang, info.fix_age);
