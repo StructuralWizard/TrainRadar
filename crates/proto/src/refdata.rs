@@ -297,6 +297,43 @@ pub struct GeometryFile {
     pub legs: Vec<ShapeRec>,
     /// Track facts per leg (same order as `legs`), from OpenStreetMap tags.
     pub info: Vec<LegInfo>,
+    /// Height profile per leg (same order as `legs`); empty when unknown.
+    pub profiles: Vec<Profile>,
+}
+
+/// Track height along a leg: `n` samples evenly spaced from its first point
+/// (0 m) to its last (the leg's length), so the spacing is `length / (n - 1)`.
+/// Heights in decimetres, delta-encoded: `[h0, h1 - h0, ...]`.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct Profile {
+    pub deltas: Vec<i32>,
+}
+
+impl Profile {
+    pub fn encode(heights_m: &[f32]) -> Self {
+        let mut prev = 0;
+        let deltas = heights_m
+            .iter()
+            .map(|h| {
+                let dm = (h * 10.0).round() as i32;
+                let d = dm - prev;
+                prev = dm;
+                d
+            })
+            .collect();
+        Self { deltas }
+    }
+
+    pub fn heights_m(&self) -> Vec<f32> {
+        let mut dm = 0;
+        self.deltas
+            .iter()
+            .map(|d| {
+                dm += d;
+                dm as f32 / 10.0
+            })
+            .collect()
+    }
 }
 
 /// Track facts for one leg: the most common value along it (0 = unknown).
@@ -495,6 +532,13 @@ impl TimetableFile {
 mod tests {
     use super::*;
     use crate::{decode, encode};
+
+    #[test]
+    fn profile_round_trip_in_decimetres() {
+        let p = Profile::encode(&[629.64, 631.0, 600.04]);
+        assert_eq!(p.deltas, [6296, 14, -310]);
+        assert_eq!(p.heights_m(), [629.6, 631.0, 600.0]);
+    }
 
     fn station(id: &str, lat: f64, lon: f64) -> StationRec {
         StationRec {

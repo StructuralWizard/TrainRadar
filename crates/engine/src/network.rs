@@ -75,6 +75,9 @@ pub struct Network {
     pub legs: Vec<Vec<Polyline>>,
     /// Track facts per OSM leg, per region (from the geometry file).
     pub leg_info: Vec<Vec<trainradar_proto::refdata::LegInfo>>,
+    /// Track heights per OSM leg, per region: evenly spaced samples from the
+    /// leg's start to its end (empty when unknown).
+    pub profiles: Vec<Vec<Vec<f32>>>,
     station_gid: HashMap<String, u32>,
     by_trip_id: HashMap<String, TripRef>,
     by_number: HashMap<String, Vec<TripRef>>,
@@ -82,6 +85,18 @@ pub struct Network {
 
 /// Commercial train number of a trip: `short_name`, or the leading digits of
 /// the id after its service prefix (Cercanías `1004D` + `19799` + `C1`).
+/// Distance over which gradients are measured: long enough to average out
+/// DEM noise, short enough to show a ramp.
+pub const GRADE_WINDOW_M: f64 = 800.0;
+
+/// Height at fraction `f` (0..=1) of evenly spaced samples `h` (≥ 2).
+fn height_in(h: &[f32], f: f64) -> f32 {
+    let x = f.clamp(0.0, 1.0) * (h.len() - 1) as f64;
+    let i = (x.floor() as usize).min(h.len() - 2);
+    let w = (x - i as f64) as f32;
+    h[i] + (h[i + 1] - h[i]) * w
+}
+
 pub fn train_number(t: &TripRec) -> String {
     if !t.short_name.is_empty() {
         return t.short_name.trim_start_matches('0').to_owned();
@@ -116,6 +131,7 @@ impl Network {
             self.shapes.remove(i);
             self.legs.remove(i);
             self.leg_info.remove(i);
+            self.profiles.remove(i);
             self.rebuild_indexes();
         }
         let shapes: Vec<Polyline> = tt.shapes.iter().map(|s| s.polyline()).collect();
@@ -175,6 +191,7 @@ impl Network {
         self.shapes.push(shapes);
         self.legs.push(Vec::new()); // until load_geometry
         self.leg_info.push(Vec::new());
+        self.profiles.push(Vec::new());
         self.index_region(self.regions.len() - 1);
         Ok(code)
     }
@@ -260,6 +277,7 @@ impl Network {
             .ok_or_else(|| FormatError::Decode(format!("load timetable {} first", g.region)))?;
         self.legs[ri] = g.legs.iter().map(|s| s.polyline()).collect();
         self.leg_info[ri] = g.info;
+        self.profiles[ri] = g.profiles.iter().map(|p| p.heights_m()).collect();
         Ok(g.region)
     }
 
@@ -275,6 +293,63 @@ impl Network {
         self.leg_info[t.region as usize]
             .get(shared as usize)
             .copied()
+    }
+
+    /// The OSM leg under `d` metres along the trip: (its heights, metres
+    /// into the leg, leg length), when the leg has a height profile.
+    fn leg_profile_at(&self, t: TripRef, d: f64) -> Option<(&[f32], f64, f64)> {
+        let r = &self.regions[t.region as usize];
+        let PatternGeom::Legs(legs) = &r.geom[r.tt.trips[t.trip as usize].pattern as usize] else {
+            return None;
+        };
+        let i = legs.partition_point(|l| l.start_m <= d).saturating_sub(1);
+        let leg = legs.get(i)?;
+        let h = self.profiles[t.region as usize].get(leg.shared? as usize)?;
+        (h.len() >= 2 && leg.len_m > 0.0).then(|| (&h[..], d - leg.start_m, leg.len_m))
+    }
+
+    /// Track height (m) and gradient (‰, positive uphill in the direction of
+    /// travel) at `d` metres along the trip. The gradient is measured over
+    /// [`GRADE_WINDOW_M`] centred on the train, within its leg.
+    pub fn slope_at(&self, t: TripRef, d: f64) -> Option<(f32, f32)> {
+        let (h, x, len) = self.leg_profile_at(t, d)?;
+        let x = x.clamp(0.0, len);
+        let (a, b) = (
+            (x - GRADE_WINDOW_M / 2.0).max(0.0),
+            (x + GRADE_WINDOW_M / 2.0).min(len),
+        );
+        let alt = height_in(h, x / len);
+        let grade = if b - a >= GRADE_WINDOW_M / 4.0 {
+            (height_in(h, b / len) - height_in(h, a / len)) / (b - a) as f32 * 1000.0
+        } else {
+            0.0
+        };
+        Some((alt, grade))
+    }
+
+    /// Height profile of a whole trip as (metres along trip, height m), with
+    /// `None` heights where a section has no profile, at most every `step_m`.
+    pub fn trip_profile(&self, t: TripRef, step_m: f64) -> Vec<(f64, Option<f32>)> {
+        let r = &self.regions[t.region as usize];
+        let PatternGeom::Legs(legs) = &r.geom[r.tt.trips[t.trip as usize].pattern as usize] else {
+            return Vec::new();
+        };
+        let mut out = Vec::new();
+        for leg in legs {
+            let h = leg
+                .shared
+                .and_then(|l| self.profiles[t.region as usize].get(l as usize))
+                .filter(|h| h.len() >= 2);
+            let n = ((leg.len_m / step_m).ceil() as usize).max(1);
+            for i in 0..=n {
+                let f = i as f64 / n as f64;
+                out.push((leg.start_m + f * leg.len_m, h.map(|h| height_in(h, f))));
+            }
+        }
+        if out.iter().all(|p| p.1.is_none()) {
+            out.clear();
+        }
+        out
     }
 
     /// The track of a whole trip, first stop to last.
@@ -614,6 +689,9 @@ pub mod tests {
             header: tt.header.clone(),
             region: "10".into(),
             legs: vec![leg],
+            profiles: vec![trainradar_proto::refdata::Profile::encode(&[
+                600.0, 650.0, 700.0,
+            ])],
             info: vec![trainradar_proto::refdata::LegInfo {
                 gauge_mm: 1435,
                 max_kmh: 300,
@@ -627,6 +705,15 @@ pub mod tests {
             n.track_info(t, f64::from(ab) + 100.0).is_none(),
             "straight section"
         );
+        // Climbing 100 m over the bent leg; nothing known on the straight one.
+        let (alt, grade) = n.slope_at(t, f64::from(ab) / 2.0).unwrap();
+        assert!((alt - 650.0).abs() < 0.01, "{alt}");
+        let expect = 100_000.0 / ab as f32;
+        assert!((grade - expect).abs() < 0.01, "{grade} vs {expect}");
+        assert!(n.slope_at(t, f64::from(ab) + 100.0).is_none());
+        let prof = n.trip_profile(t, 1_000.0);
+        assert_eq!(prof.first().unwrap().1, Some(600.0));
+        assert_eq!(prof.last().unwrap().1, None);
         let (d, off) = n.project(t, LatLon::new(40.25, -3.70)).unwrap();
         assert!(off < 5.0);
         assert!(

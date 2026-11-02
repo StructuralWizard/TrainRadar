@@ -4,10 +4,12 @@
 
 mod build;
 mod calendar;
+mod dem;
 mod gtfs_io;
 mod inspect;
 mod load;
 mod osm;
+mod profile;
 mod verify;
 
 use build::{
@@ -21,16 +23,19 @@ use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 use trainradar_proto::encode;
 use trainradar_proto::refdata::{
-    GeometryFile, LegInfo, RegionRec, ShapeRec, TimetableFile, from_e5,
+    GeometryFile, LegInfo, Profile, RegionRec, ShapeRec, TimetableFile, from_e5,
 };
 
 const USAGE: &str = "\
 usage:
   refdata-build inspect <file.zip|file.csv>...
   refdata-build verify DIR
+  refdata-build dem-tiles --rail FILE.geojsonseq
+  refdata-build dem-sample --rail FILE.geojsonseq --dem DIR --out FILE
   refdata-build build --out DIR [--ld ZIP] [--cercanias ZIP] [--ouigo ZIP]
                       [--rail FILE.geojsonseq] [--date YYYY-MM-DD] [--days N]
-                      [--sources FILE.tsv] [--report FILE.md] [--gzip]
+                      [--rail-heights FILE] [--sources FILE.tsv] [--report FILE.md]
+                      [--gzip]
 
 build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
   --date     service date the window is centred on (default: today, Madrid)
@@ -39,6 +44,12 @@ build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
   --gzip     write gzip-compressed .bin.gz files (for deployment)
   --rail     OpenStreetMap railway=rail ways (from tools/fetch-osm-rail.sh), used to
              draw trips that have no usable GTFS shape (all of AV/LD/MD)
+  --rail-heights  terrain heights of the --rail nodes (from dem-sample): adds a
+             height profile to every OpenStreetMap leg, for gradients
+
+dem-tiles: prints the URLs of the Copernicus DEM tiles covering the rail nodes.
+dem-sample: looks up every rail node in the tiles in DIR (<name>.tif) and writes
+  lines of \"lat_e7 lon_e7 height_dm\".
 ";
 
 struct BuildArgs {
@@ -47,6 +58,7 @@ struct BuildArgs {
     cercanias: Option<PathBuf>,
     ouigo: Option<PathBuf>,
     rail: Option<PathBuf>,
+    rail_heights: Option<PathBuf>,
     date: Option<String>,
     days: u8,
     sources: Option<PathBuf>,
@@ -61,6 +73,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         cercanias: None,
         ouigo: None,
         rail: None,
+        rail_heights: None,
         date: None,
         days: 8,
         sources: None,
@@ -79,6 +92,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--ld" => a.ld = Some(val()?.into()),
             "--cercanias" => a.cercanias = Some(val()?.into()),
             "--rail" => a.rail = Some(val()?.into()),
+            "--rail-heights" => a.rail_heights = Some(val()?.into()),
             "--ouigo" => a.ouigo = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
@@ -173,11 +187,24 @@ fn run_build(a: BuildArgs) -> Result<()> {
         }
     }
 
+    let mut heights_note = None;
     let graph = match &a.rail {
         Some(p) => {
-            let f = std::fs::File::open(p).map_err(|e| format!("{}: {e}", p.display()))?;
-            let g = osm::RailGraph::from_geojsonseq(std::io::BufReader::new(f))?;
-            eprintln!("rail graph: {} nodes", g.node_count());
+            let mut g = read_graph(p)?;
+            if let Some(h) = &a.rail_heights {
+                let f = std::fs::File::open(h).map_err(|e| format!("{}: {e}", h.display()))?;
+                let terrain = dem::read_heights(std::io::BufReader::new(f))?;
+                let (known, filled) = g.set_heights(&terrain);
+                let note = format!(
+                    "{known} of {} rail nodes have a terrain height (Copernicus DEM); \
+                     {filled} in tunnels or on bridges interpolated between their ends",
+                    g.node_count()
+                );
+                eprintln!("{note}");
+                heights_note = Some(note);
+            } else {
+                eprintln!("no --rail-heights: legs get no height profile");
+            }
             Some(g)
         }
         None => None,
@@ -187,7 +214,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
     type Built = (
         RegionRec,
         TimetableFile,
-        Vec<(ShapeRec, LegInfo)>,
+        Vec<(ShapeRec, LegInfo, Profile)>,
         build::RegionStats,
     );
     let mut built: Vec<Built> = Vec::new();
@@ -244,6 +271,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
             r.stats.pairs_failed
         ));
     }
+    if let Some(n) = &heights_note {
+        let with: usize = built.iter().map(|b| b.3.legs_with_profile).sum();
+        report.push_str(&format!(
+            "- Heights: {n}; {with} legs have a height profile\n"
+        ));
+    }
     // AV/LD/MD first, then núcleos by code.
     built.sort_by(|a, b| {
         (a.0.code != LONG_DISTANCE, &a.0.code).cmp(&(b.0.code != LONG_DISTANCE, &b.0.code))
@@ -262,12 +295,18 @@ fn run_build(a: BuildArgs) -> Result<()> {
         let geometry = if legs.is_empty() {
             None
         } else {
-            let (legs, info) = legs.into_iter().unzip();
+            let (mut shapes, mut info, mut profiles) = (Vec::new(), Vec::new(), Vec::new());
+            for (s, i, p) in legs {
+                shapes.push(s);
+                info.push(i);
+                profiles.push(p);
+            }
             let g = GeometryFile {
                 header: tt.header.clone(),
                 region: rec.code.clone(),
-                legs,
+                legs: shapes,
                 info,
+                profiles,
             };
             let gb = encode(&g)?;
             Some(FileEntry {
@@ -365,6 +404,47 @@ fn size_report(m: &Manifest, n_stations: usize, load_report: &str) -> String {
     s
 }
 
+fn read_graph(p: &Path) -> Result<osm::RailGraph> {
+    let f = std::fs::File::open(p).map_err(|e| format!("{}: {e}", p.display()))?;
+    let g = osm::RailGraph::from_geojsonseq(std::io::BufReader::new(f))?;
+    eprintln!("rail graph: {} nodes", g.node_count());
+    Ok(g)
+}
+
+/// `--name value` pairs for the small subcommands.
+fn flags<'a>(args: &'a [String], names: &[&str]) -> Result<Vec<&'a str>> {
+    let mut out = vec![None; names.len()];
+    for pair in args.chunks(2) {
+        let i = names
+            .iter()
+            .position(|n| *n == pair[0])
+            .ok_or_else(|| format!("unknown option {}", pair[0]))?;
+        out[i] = Some(pair.get(1).ok_or("missing value")?.as_str());
+    }
+    out.into_iter()
+        .zip(names)
+        .map(|(v, n)| v.ok_or_else(|| format!("missing {n}").into()))
+        .collect()
+}
+
+fn dem_tiles(args: &[String]) -> Result<()> {
+    let f = flags(args, &["--rail"])?;
+    let g = read_graph(Path::new(f[0]))?;
+    for (lat, lon) in dem::tiles_for(g.nodes().iter().copied()) {
+        let name = dem::tile_name(lat, lon);
+        println!("{}/{name}/{name}.tif", dem::BASE_URL);
+    }
+    Ok(())
+}
+
+fn dem_sample(args: &[String]) -> Result<()> {
+    let f = flags(args, &["--rail", "--dem", "--out"])?;
+    let g = read_graph(Path::new(f[0]))?;
+    let (done, missing) = dem::sample(g.nodes(), Path::new(f[1]), Path::new(f[2]))?;
+    eprintln!("heights: {done} nodes, {missing} without a tile or with no data");
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let result = match args.first().map(String::as_str) {
@@ -372,6 +452,8 @@ fn main() -> ExitCode {
             .iter()
             .try_for_each(|p| inspect::run(&PathBuf::from(p))),
         Some("verify") if args.len() == 2 => verify::run(Path::new(&args[1])),
+        Some("dem-tiles") => dem_tiles(&args[1..]),
+        Some("dem-sample") => dem_sample(&args[1..]),
         Some("build") => match parse_build_args(&args[1..]) {
             Ok(a) => run_build(a),
             Err(e) => {
