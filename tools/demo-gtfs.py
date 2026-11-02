@@ -2,7 +2,7 @@
 """Write a small synthetic GTFS (two AV/LD/MD lines and Cercanías Madrid C3)
 for offline development and UI tests. Not real timetables.
 
-    python3 tools/demo-gtfs.py OUT_DIR   # writes OUT_DIR/{ld,cercanias}.zip
+    python3 tools/demo-gtfs.py OUT_DIR   # writes OUT_DIR/{ld,cercanias,ouigo}.zip
 """
 import math
 import sys
@@ -115,5 +115,32 @@ def main(out):
     })
 
 
+def write_ouigo(out):
+    """A tiny OUIGO-style feed (UIC station codes, as on the NAP)."""
+    stops = LD_LINES["MAD-BCN"][1]
+    uic = {s[0]: "0071" + s[0] for s in stops}
+    times, trips = [], []
+    for k, hour in enumerate(range(7, 21, 2)):
+        tid = str(k + 1)
+        trips.append(f"{tid},1,1,BARCELONA-SANTS,TGV {6100 + k}")
+        s = hour * 3600 + 900
+        for i, st in enumerate(stops):
+            if i:
+                s += int(km(stops[i - 1], st) / 260 * 3600)
+            dep = s + (120 if 0 < i < len(stops) - 1 else 0)
+            times.append(f"{tid},{i + 1},{uic[st[0]]},{t(s)},{t(dep)},0,0")
+            s = dep
+    write(out / "ouigo.zip", {
+        "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\n3780,OUIGO Espana,http://uic.org/,Europe/Paris\n",
+        "routes.txt": "route_id,agency_id,route_short_name,route_long_name,route_type\n1,3780,TGV,MADRID -- BARCELONA,101\n",
+        "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\n" + "".join(
+            f"{uic[i]},{n.upper()},{la},{lo}\n" for i, n, la, lo in stops),
+        "calendar.txt": "service_id,start_date,end_date,monday,tuesday,wednesday,thursday,friday,saturday,sunday\n1,20260101,20271231,1,1,1,1,1,1,1\n",
+        "trips.txt": "trip_id,route_id,service_id,trip_headsign,trip_short_name\n" + "\n".join(trips) + "\n",
+        "stop_times.txt": "trip_id,stop_sequence,stop_id,arrival_time,departure_time,drop_off_type,pickup_type\n" + "\n".join(times) + "\n",
+    })
+
+
 if __name__ == "__main__":
     main(Path(sys.argv[1]))
+    write_ouigo(Path(sys.argv[1]))

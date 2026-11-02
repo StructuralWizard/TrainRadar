@@ -39,7 +39,7 @@ try {
   // Open the popup of a train that has a timetable match if there is one.
   const pt = await page.evaluate(async () => {
     const { engine, map } = window.__trainradar;
-    const n = engine.positions(Date.now()).length / 5;
+    const n = engine.positions(Date.now()).length / 6;
     let pick = 0;
     for (let i = 0; i < n; i++) {
       if (JSON.parse(engine.trainJson(i, Date.now())).origin) {
@@ -48,10 +48,10 @@ try {
       }
     }
     const p = engine.positions(Date.now());
-    map.jumpTo({ center: [p[pick * 5], p[pick * 5 + 1]], zoom: 11 });
+    map.jumpTo({ center: [p[pick * 6], p[pick * 6 + 1]], zoom: 11 });
     await new Promise((r) => setTimeout(r, 2000));
     const q = engine.positions(Date.now());
-    return map.project([q[pick * 5], q[pick * 5 + 1]]);
+    return map.project([q[pick * 6], q[pick * 6 + 1]]);
   });
   await page.mouse.click(pt.x, pt.y);
   await page.waitForSelector(".popup", { timeout: 5000 }).catch(() => fail("popup did not open"));

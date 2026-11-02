@@ -17,3 +17,22 @@ fetch() {
 }
 fetch "Renfe AV/LD/MD GTFS" https://ssl.renfe.com/gtransit/Fichero_AV_LD/google_transit.zip ld.zip
 fetch "Renfe Cercanías GTFS" https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip cercanias.zip
+
+# OUIGO publishes only its timetable, on the National Access Point (NAP,
+# MITRAMS). Needs a free NAP API key in $NAP_API_KEY; skipped without it.
+# Licence: https://nap.transportes.gob.es/licencia-datos ("Powered by MITRAMS").
+if [ -n "${NAP_API_KEY:-}" ]; then
+  nap=https://nap.transportes.gob.es/api
+  if curl -fsSL --retry 3 -H "ApiKey: $NAP_API_KEY" -o gtfs/ouigo.zip "$nap/Fichero/download/1766"; then
+    updated=$(curl -fsSL --retry 3 -H "ApiKey: $NAP_API_KEY" -H "Accept: application/json" "$nap/Fichero/1515" \
+      | python3 -c "import json,sys;d=json.load(sys.stdin);print(next((f.get('fechaActualizacion') or '' for f in d.get('ficherosDto',[]) if f.get('ficheroId')==1766),''))" || true)
+    printf '%s\t%s\t%s\t%s\n' "OUIGO GTFS (NAP, Powered by MITRAMS)" \
+      "https://nap.transportes.gob.es/ConjuntoDato/Detail/1515" "" "$updated" >>gtfs/sources.tsv
+    printf -- '- OUIGO (NAP): %s bytes, updated %s\n' "$(wc -c <gtfs/ouigo.zip)" "$updated"
+  else
+    echo "- OUIGO (NAP): download failed, building without it"
+    rm -f gtfs/ouigo.zip
+  fi
+else
+  echo "- OUIGO (NAP): no NAP_API_KEY, skipped"
+fi

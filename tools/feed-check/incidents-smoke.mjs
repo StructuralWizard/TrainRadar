@@ -25,7 +25,7 @@ await page.click("#inc-btn");
 await page.waitForSelector("#inc-body li");
 const panel = await text("#incidents");
 console.log("panel:", panel.slice(0, 400));
-for (const want of ["Pinto", "C3", "Actualizados por Renfe", "Estado de la red de Adif"]) {
+for (const want of ["Pinto", "C3", "Actualizados por Renfe", "Estado de la red", "Iryo", "OUIGO"]) {
   if (!panel.includes(want)) await fail(`panel lacks "${want}"`);
 }
 if (panel.includes("#MadC3")) await fail("tag not stripped");
@@ -33,30 +33,39 @@ if (panel.includes("[object")) await fail("element rendered as text");
 await page.screenshot({ path: `${out}/incidents.png` });
 await page.click("#inc-close");
 
-// Tap the Pinto marker: the panel opens filtered to Pinto.
+// Tap the Pinto marker: the panel opens filtered to Pinto. (If a train is
+// standing on it, the tap rightly opens the train; skip this check then.)
 const pt = await page.evaluate(async () => {
   const { map } = window.__trainradar;
   map.jumpTo({ center: [-3.7016, 40.2433], zoom: 12 });
   await new Promise((r) => setTimeout(r, 1500));
-  return map.project([-3.7016, 40.2433]);
+  const p = map.project([-3.7016, 40.2433]);
+  const box = [[p.x - 10, p.y - 10], [p.x + 10, p.y + 10]];
+  return { ...p, covered: map.queryRenderedFeatures(box, { layers: ["trains"] }).length > 0 };
 });
-await page.mouse.click(pt.x, pt.y);
-await page.waitForFunction(() => /Avisos de Pinto/.test(document.getElementById("incidents").textContent), null, { timeout: 5000 }).catch(() => fail("marker filter"));
-console.log("marker filter:", (await text("#inc-body")).slice(0, 120));
-await page.click("#inc-close");
+if (pt.covered) {
+  console.log("marker filter: skipped (a train is standing at Pinto)");
+} else {
+  await page.mouse.click(pt.x, pt.y);
+  await page
+    .waitForFunction(() => /Avisos de Pinto/.test(document.getElementById("incidents").textContent), null, { timeout: 5000 })
+    .catch(() => fail("marker filter"));
+  console.log("marker filter:", (await text("#inc-body")).slice(0, 120));
+  await page.click("#inc-close");
+}
 
 // A C3 train's popup links to the notices on its line.
 await page.waitForFunction(() => window.__trainradar.ref.loaded.has("10"), null, { timeout: 15000 });
 const tp = await page.evaluate(async () => {
   const { engine, map } = window.__trainradar;
   const p = engine.positions(Date.now());
-  for (let i = 0; i < p.length / 5; i++) {
+  for (let i = 0; i < p.length / 6; i++) {
     const info = JSON.parse(engine.trainJson(i, Date.now()));
     if (info.route === "C3" && info.incidents > 0) {
-      map.jumpTo({ center: [p[i * 5], p[i * 5 + 1]], zoom: 12 });
+      map.jumpTo({ center: [p[i * 6], p[i * 6 + 1]], zoom: 12 });
       await new Promise((r) => setTimeout(r, 1500));
       const q = engine.positions(Date.now());
-      return map.project([q[i * 5], q[i * 5 + 1]]);
+      return map.project([q[i * 6], q[i * 6 + 1]]);
     }
   }
   return null;
