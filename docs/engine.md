@@ -38,12 +38,18 @@ const info = JSON.parse(e.trainJson(i, Date.now()));  // popup, incl. spacing
    terminus. Fresh fixes (≤ 45 s) are shown as-is.
 6. **Fix age.** The feed timestamp if it has one (Cercanías). AV/LD/MD positions
    have none, so the age counts from when that train's position last changed.
-7. **Spacing** (`spacing.rs`). Train L is ahead of F if the track section L is
-   on (previous stop → next stop) appears later in F's route, in the same
-   direction. Distance is measured along F's track. Time is when F should
-   reach L's current position (F's schedule + delay). This works across lines
-   that share track, and across AV/LD/MD and Cercanías.
-8. **Polling** (`poll.rs`): 30 s per feed (the server's own `max-age`), alerts
+7. **Spacing** (`spacing.rs`). Every other train within 400 km is projected
+   onto F's own track: it's ahead if it lies within 250 m of F's line, further
+   along, and heading the same way (±60°). This works whatever the stopping
+   patterns, across lines sharing track, and for trains we can't match. Time
+   ahead: when F should reach that point; time behind: when the follower
+   should reach F.
+8. **Stopped between stations.** Confirmed when fresh timestamped fixes
+   (Cercanías) report the same spot for 3+ min more than 400 m from any stop;
+   likely when an untimestamped AV/LD/MD position hasn't changed for 5+ min.
+9. **Timetable-only operators** (OUIGO): trips running now are placed by
+   timetable and flagged, never shown as live.
+10. **Polling** (`poll.rs`): 30 s per feed (the server's own `max-age`), alerts
    every 2 min, +0–10% jitter (never faster), exponential backoff to 10 min
    on errors, and no polling while the tab is hidden.
 

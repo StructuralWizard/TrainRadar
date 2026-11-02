@@ -94,6 +94,35 @@ Downloaded at most weekly (GitHub Actions cache), filtered to `railway=rail`.
 Attribution: "© OpenStreetMap contributors". Approved by the maintainer on
 2026-11-01.
 
+## OUIGO timetable (NAP, approved 2026-11-02)
+
+| What | Where | Notes |
+|---|---|---|
+| OUIGO GTFS (UIC MERITS export) | NAP dataset [1515](https://nap.transportes.gob.es/ConjuntoDato/Detail/1515), file 1766, via `GET /api/Fichero/download/1766` with header `ApiKey` | 11 routes, ~70 trips, valid to 12 Dec 2026; file dated 2 Jul 2026 |
+
+- Downloaded in CI only, with the `NAP_API_KEY` GitHub secret (never in the browser).
+- Station codes are UIC (`007160000`); the last five digits are Adif's, so
+  they match Renfe's stations. No shapes: OSM routing is used.
+- OUIGO publishes **no live data**, so its trains are shown **by timetable**
+  (hollow purple arrows) and labelled as such, with a link to OUIGO.
+- **Licence** ([NAP licence](https://nap.transportes.gob.es/licencia-datos), MITRAMS open-data
+  licence under Ley 37/2007): commercial and non-commercial reuse, copying,
+  modification and combination allowed; derived works may use other licences.
+  Obligations we meet: cite MITRAMS as source and say the data is *explotado*
+  (processed); show **"Powered by MITRAMS"** with a link to
+  https://www.transportes.gob.es/; keep the update date (shown in each OUIGO
+  popup); keep it up to date (rebuilt nightly); no suggestion that MITRAMS
+  endorses TrainRadar.
+
+## IDEAdif (Adif's geoportal)
+
+- Licence (IDEE catalogue record): *"Se permite cualquier uso si se menciona la
+  autoría de ADIF del siguiente modo: «© Administrador de infraestructuras
+  ferroviarias»"*.
+- Services: `https://ideadif.adif.es/services/wfs` and `/services/wms`. On
+  2026-11-02 both returned **HTTP 503** to GitHub's servers, so nothing is
+  integrated yet. Next step: a manual download from IDEAdif, or a retry later.
+
 ## Adif network status (researched 2026-11-01)
 
 Adif (the infrastructure manager) publishes network status, including incidents
