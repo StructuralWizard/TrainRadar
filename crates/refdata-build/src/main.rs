@@ -20,7 +20,9 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 use trainradar_proto::encode;
-use trainradar_proto::refdata::{GeometryFile, RegionRec, ShapeRec, TimetableFile, from_e5};
+use trainradar_proto::refdata::{
+    GeometryFile, LegInfo, RegionRec, ShapeRec, TimetableFile, from_e5,
+};
 
 const USAGE: &str = "\
 usage:
@@ -182,7 +184,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
     };
     let mut router = graph.as_ref().map(osm::Router::new);
 
-    type Built = (RegionRec, TimetableFile, Vec<ShapeRec>, build::RegionStats);
+    type Built = (
+        RegionRec,
+        TimetableFile,
+        Vec<(ShapeRec, LegInfo)>,
+        build::RegionStats,
+    );
     let mut built: Vec<Built> = Vec::new();
     let mut report = String::new();
     for (path, kind) in [
@@ -255,10 +262,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
         let geometry = if legs.is_empty() {
             None
         } else {
+            let (legs, info) = legs.into_iter().unzip();
             let g = GeometryFile {
                 header: tt.header.clone(),
                 region: rec.code.clone(),
                 legs,
+                info,
             };
             let gb = encode(&g)?;
             Some(FileEntry {

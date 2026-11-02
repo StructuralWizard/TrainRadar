@@ -671,7 +671,11 @@ impl Engine {
                 )
                 .on("next_arrival", v.next_arrival)
                 .b("matched_exact", m.exact)
-                .s("operator", &r.tt.operator)
+                .s("operator", &r.tt.operator);
+            if let Some(info) = v.along.and_then(|d| self.net.track_info(m.trip, d)) {
+                o.n("gauge_mm", info.gauge_mm).n("max_kmh", info.max_kmh);
+            }
+            o.b("timetable_only", !r.tt.live)
                 .s("route_id", &route.id)
                 .n(
                     "incidents",

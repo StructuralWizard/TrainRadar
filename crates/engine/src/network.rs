@@ -73,6 +73,8 @@ pub struct Network {
     pub regions: Vec<Region>,
     pub shapes: Vec<Vec<Polyline>>,
     pub legs: Vec<Vec<Polyline>>,
+    /// Track facts per OSM leg, per region (from the geometry file).
+    pub leg_info: Vec<Vec<trainradar_proto::refdata::LegInfo>>,
     station_gid: HashMap<String, u32>,
     by_trip_id: HashMap<String, TripRef>,
     by_number: HashMap<String, Vec<TripRef>>,
@@ -113,6 +115,7 @@ impl Network {
             self.regions.remove(i);
             self.shapes.remove(i);
             self.legs.remove(i);
+            self.leg_info.remove(i);
             self.rebuild_indexes();
         }
         let shapes: Vec<Polyline> = tt.shapes.iter().map(|s| s.polyline()).collect();
@@ -171,6 +174,7 @@ impl Network {
         });
         self.shapes.push(shapes);
         self.legs.push(Vec::new()); // until load_geometry
+        self.leg_info.push(Vec::new());
         self.index_region(self.regions.len() - 1);
         Ok(code)
     }
@@ -255,7 +259,22 @@ impl Network {
             .position(|r| r.tt.region == g.region)
             .ok_or_else(|| FormatError::Decode(format!("load timetable {} first", g.region)))?;
         self.legs[ri] = g.legs.iter().map(|s| s.polyline()).collect();
+        self.leg_info[ri] = g.info;
         Ok(g.region)
+    }
+
+    /// Gauge and line speed of the track at `d` metres along the trip, when
+    /// it runs on OpenStreetMap legs and their facts are known.
+    pub fn track_info(&self, t: TripRef, d: f64) -> Option<trainradar_proto::refdata::LegInfo> {
+        let r = &self.regions[t.region as usize];
+        let PatternGeom::Legs(legs) = &r.geom[r.tt.trips[t.trip as usize].pattern as usize] else {
+            return None;
+        };
+        let i = legs.partition_point(|l| l.start_m <= d).saturating_sub(1);
+        let shared = legs.get(i)?.shared?;
+        self.leg_info[t.region as usize]
+            .get(shared as usize)
+            .copied()
     }
 
     /// The track of a whole trip, first stop to last.
@@ -595,10 +614,19 @@ pub mod tests {
             header: tt.header.clone(),
             region: "10".into(),
             legs: vec![leg],
+            info: vec![trainradar_proto::refdata::LegInfo {
+                gauge_mm: 1435,
+                max_kmh: 300,
+            }],
         };
         assert_eq!(n.load_geometry(&encode(&geo).unwrap()).unwrap(), "10");
         let (mid, _) = n.point_at(t, f64::from(ab) / 2.0).unwrap();
         assert!((mid.lon + 3.65).abs() < 1e-3, "follows the bend: {mid:?}");
+        assert_eq!(n.track_info(t, 100.0).unwrap().max_kmh, 300);
+        assert!(
+            n.track_info(t, f64::from(ab) + 100.0).is_none(),
+            "straight section"
+        );
         let (d, off) = n.project(t, LatLon::new(40.25, -3.70)).unwrap();
         assert!(off < 5.0);
         assert!(
