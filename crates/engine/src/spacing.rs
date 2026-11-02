@@ -1,142 +1,145 @@
-//! Spacing to the previous and following train on the same line.
+//! Spacing to the previous and following train on the same track.
 //!
-//! Train L is ahead of train F when the track segment L is on (previous stop →
-//! next stop, as global station ids) also appears in F's remaining route, in
-//! the same direction. That links trains on different lines sharing a trunk
-//! section (and AV/LD/MD with Cercanías on shared track), and ignores trains
-//! going the other way. Distances are along F's track; the time gap is when F
-//! is expected to reach L's current position (schedule + F's delay).
+//! For train F, every other train L within reach is projected onto F's own
+//! route geometry. L is *ahead* of F when it lies on F's track (within
+//! [`MAX_OFF_TRACK_M`]), further along than F, and heading the same way. This
+//! works whatever the stopping patterns: a non-stop AVE and a stopping one,
+//! semi-direct and stopping Cercanías, AV/LD/MD and Cercanías on shared track.
+//! Distances are along F's track. The time to the train ahead is when F should
+//! reach L's current position (F's schedule + delay); the time to the train
+//! behind is when that train should reach F's position (its schedule + delay).
 
 use crate::live::{LiveTrain, TrainView};
 use crate::network::Network;
-use crate::schedule::{prev_stop, time_window_at};
-use std::collections::HashMap;
+use crate::schedule::time_window_at;
+use trainradar_proto::geo::haversine_m;
 use trainradar_proto::{Gap, PositionSource};
 
-/// Don't look further ahead than this along a train's route.
-pub const MAX_LOOKAHEAD_M: f64 = 150_000.0;
+/// Furthest we look ahead or behind along a route.
+pub const MAX_LOOKAHEAD_M: f64 = 400_000.0;
+/// A train further than this from F's line isn't on F's track.
+pub const MAX_OFF_TRACK_M: f64 = 250.0;
+/// Headings must agree within this many degrees to count as the same direction.
+pub const MAX_HEADING_DIFF: f32 = 60.0;
 
-struct OnSegment {
-    view: usize,
-    /// Fraction of the way along the segment, 0..1.
-    frac: f64,
+fn heading_diff(a: f32, b: f32) -> f32 {
+    let d = (a - b).rem_euclid(360.0);
+    d.min(360.0 - d)
 }
 
+fn label(t: &LiveTrain) -> String {
+    if t.rt.trip_id.is_empty() {
+        t.rt.train_number.clone()
+    } else {
+        t.rt.trip_id.clone()
+    }
+}
+
+/// Position of train `o` measured along train `f`'s route, if `o` is on
+/// `f`'s track and heading the same way.
+fn along_route_of(net: &Network, f: &TrainView, ft: &LiveTrain, o: &TrainView) -> Option<f64> {
+    let m = ft.matched?;
+    let (d, off) = net.project(m.trip, o.coord)?;
+    if off > MAX_OFF_TRACK_M {
+        return None;
+    }
+    // Same direction: the other train's heading must follow F's line there.
+    let (_, line_bearing) = net.point_at(m.trip, d)?;
+    match (o.bearing, line_bearing) {
+        (Some(ob), Some(lb)) if heading_diff(ob, lb) <= MAX_HEADING_DIFF => Some(d),
+        _ => None,
+    }
+    .filter(|_| f.index != o.index)
+}
+
+fn estimated(a: &TrainView, b: &TrainView) -> PositionSource {
+    if a.source == PositionSource::Gps && b.source == PositionSource::Gps {
+        PositionSource::Gps
+    } else {
+        PositionSource::Interpolated
+    }
+}
+
+/// Seconds until train `t` (view `v`) is expected at `d` metres along its trip.
+fn time_to(net: &Network, t: &LiveTrain, d: f64, now: i64) -> Option<u32> {
+    let m = t.matched?;
+    let st = net.schedule(m.trip);
+    let reach = m.start_utc as f64 + time_window_at(st, d).0 + f64::from(t.delay.unwrap_or(0));
+    Some((reach - now as f64).max(0.0).round() as u32)
+}
+
+/// Gaps to the train ahead of and behind view `i`.
+pub fn for_train(
+    net: &Network,
+    trains: &[LiveTrain],
+    views: &[TrainView],
+    i: usize,
+    now: i64,
+) -> (Option<Gap>, Option<Gap>) {
+    let f = &views[i];
+    let ft = &trains[f.index];
+    let Some(f_along) = f.along else {
+        return (None, None);
+    };
+    let mut ahead: Option<(f64, usize)> = None;
+    let mut behind: Option<(f64, usize, f64)> = None;
+    for (j, o) in views.iter().enumerate() {
+        if j == i || haversine_m(f.coord, o.coord) > MAX_LOOKAHEAD_M {
+            continue;
+        }
+        let ot = &trains[o.index];
+        // Is o ahead of f, on f's track?
+        if let Some(d) = along_route_of(net, f, ft, o) {
+            let gap = d - f_along;
+            if gap > 20.0 && gap <= MAX_LOOKAHEAD_M && ahead.is_none_or(|a| gap < a.0) {
+                ahead = Some((gap, j));
+            }
+        }
+        // Is f ahead of o, on o's track? Then o is behind f.
+        if let (Some(o_along), Some(d)) = (o.along, along_route_of(net, o, ot, f)) {
+            let gap = d - o_along;
+            if gap > 20.0 && gap <= MAX_LOOKAHEAD_M && behind.is_none_or(|b| gap < b.0) {
+                behind = Some((gap, j, d));
+            }
+        }
+    }
+    let ahead = ahead.map(|(gap, j)| Gap {
+        trip_id: label(&trains[views[j].index]),
+        distance_m: gap.round() as u32,
+        time_secs: time_to(net, ft, f_along + gap, now).unwrap_or(0),
+        source: estimated(f, &views[j]),
+    });
+    let behind = behind.map(|(gap, j, d)| Gap {
+        trip_id: label(&trains[views[j].index]),
+        distance_m: gap.round() as u32,
+        time_secs: time_to(net, &trains[views[j].index], d, now).unwrap_or(0),
+        source: estimated(f, &views[j]),
+    });
+    (ahead, behind)
+}
+
+/// Fill spacing for every train (diagnostics; the app asks per train).
 pub fn fill(net: &Network, trains: &[LiveTrain], views: &mut [TrainView], now: i64) {
-    // Per train: its stop gids, schedule and current segment.
-    struct Placed {
-        gids: Vec<u32>,
-        seg: usize,
-        frac: f64,
-    }
-    let mut placed: Vec<Option<Placed>> = Vec::with_capacity(views.len());
-    let mut by_segment: HashMap<(u32, u32), Vec<OnSegment>> = HashMap::new();
-    for (i, v) in views.iter().enumerate() {
-        let p = (|| {
-            let m = trains[v.index].matched?;
-            let along = v.along?;
-            let st = net.schedule(m.trip);
-            let seg = prev_stop(st, along);
-            if seg + 1 >= st.len() {
-                return None; // at the terminus
-            }
-            let (a, b) = (f64::from(st[seg].dist_m), f64::from(st[seg + 1].dist_m));
-            let frac = if b > a {
-                ((along - a) / (b - a)).clamp(0.0, 1.0)
-            } else {
-                0.0
-            };
-            let gids: Vec<u32> = net.stop_gids(m.trip).collect();
-            by_segment
-                .entry((gids[seg], gids[seg + 1]))
-                .or_default()
-                .push(OnSegment { view: i, frac });
-            Some(Placed { gids, seg, frac })
-        })();
-        placed.push(p);
-    }
-
-    let mut ahead: Vec<Option<(usize, Gap)>> = vec![None; views.len()];
-    for (fi, p) in placed.iter().enumerate() {
-        let Some(p) = p else { continue };
-        let ftrain = &trains[views[fi].index];
-        let m = ftrain.matched.expect("placed implies matched");
-        let st = net.schedule(m.trip);
-        let along = views[fi].along.expect("placed implies along");
-        for j in p.seg..p.gids.len() - 1 {
-            let (a, b) = (f64::from(st[j].dist_m), f64::from(st[j + 1].dist_m));
-            if a - along > MAX_LOOKAHEAD_M {
-                break;
-            }
-            let Some(list) = by_segment.get(&(p.gids[j], p.gids[j + 1])) else {
-                continue;
-            };
-            let best = list
-                .iter()
-                .filter(|o| o.view != fi && (j > p.seg || o.frac > p.frac))
-                .min_by(|x, y| x.frac.total_cmp(&y.frac));
-            if let Some(o) = best {
-                let at = a + o.frac * (b - a);
-                let delay = f64::from(ftrain.delay.unwrap_or(0));
-                let reach = m.start_utc as f64 + time_window_at(st, at).0 + delay;
-                let estimated = views[fi].source != PositionSource::Gps
-                    || views[o.view].source != PositionSource::Gps;
-                let rt = &trains[views[o.view].index].rt;
-                ahead[fi] = Some((
-                    o.view,
-                    Gap {
-                        trip_id: if rt.trip_id.is_empty() {
-                            rt.train_number.clone()
-                        } else {
-                            rt.trip_id.clone()
-                        },
-                        distance_m: (at - along).max(0.0).round() as u32,
-                        time_secs: (reach - now as f64).max(0.0).round() as u32,
-                        source: if estimated {
-                            PositionSource::Interpolated
-                        } else {
-                            PositionSource::Gps
-                        },
-                    },
-                ));
-                break;
-            }
-        }
-    }
-
-    // The follower nearest behind each train is its "behind" neighbour.
-    for (fi, a) in ahead.iter().enumerate() {
-        let Some((li, gap)) = a else { continue };
-        let rt = &trains[views[fi].index].rt;
-        let behind = Gap {
-            trip_id: if rt.trip_id.is_empty() {
-                rt.train_number.clone()
-            } else {
-                rt.trip_id.clone()
-            },
-            ..gap.clone()
-        };
-        let slot = &mut views[*li].behind;
-        if slot
-            .as_ref()
-            .is_none_or(|g| behind.distance_m < g.distance_m)
-        {
-            *slot = Some(behind);
-        }
-        views[fi].ahead = Some(gap.clone());
+    let gaps: Vec<_> = (0..views.len())
+        .map(|i| for_train(net, trains, views, i, now))
+        .collect();
+    for (v, (a, b)) in views.iter_mut().zip(gaps) {
+        v.ahead = a;
+        v.behind = b;
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::live::Live;
     use crate::network::tests::{local, sample_network};
     use crate::source::{FeedData, RtVehicle};
 
-    fn v(trip: &str, lat: f64, ts: i64) -> RtVehicle {
+    fn v(trip: &str, number: &str, lat: f64, ts: i64) -> RtVehicle {
         RtVehicle {
             trip_id: trip.into(),
-            train_number: String::new(),
+            train_number: number.into(),
             line: "C3".into(),
             platform: None,
             lat,
@@ -149,42 +152,94 @@ mod tests {
         }
     }
 
+    fn by_trip<'a>(live: &Live, views: &'a [TrainView], trip: &str) -> &'a TrainView {
+        views
+            .iter()
+            .find(|x| live.trains[x.index].rt.trip_id == trip)
+            .unwrap()
+    }
+
     #[test]
     fn finds_train_ahead_and_behind() {
         let net = sample_network();
         let mut live = Live::default();
         let now = local(8, 15);
         // Trip 100 (08:00) is past B at 40.25; trip 102 (08:10) is between
-        // A and B at 40.35. Both on time-ish, fresh fixes.
+        // A and B at 40.35. Both southbound on the same track.
         live.ingest(
             &net,
             "vp_cer",
             FeedData::Vehicles(vec![
-                v("1004D100C3", 40.25, now),
-                v("1004D102C3", 40.35, now),
+                v("1004D100C3", "100", 40.25, now),
+                v("1004D102C3", "102", 40.35, now),
             ]),
             now,
         );
         let views = live.views(&net, now, true);
-        let i100 = views
-            .iter()
-            .position(|x| live.trains[x.index].rt.trip_id == "1004D100C3")
-            .unwrap();
-        let i102 = 1 - i100;
-        let gap = views[i102].ahead.as_ref().expect("102 has 100 ahead");
+        let t102 = by_trip(&live, &views, "1004D102C3");
+        let gap = t102.ahead.as_ref().expect("102 has 100 ahead");
         assert_eq!(gap.trip_id, "1004D100C3");
-        // 40.35 → 40.25 is ~11.1 km along the line.
         assert!(
             (10_900..11_300).contains(&gap.distance_m),
             "{}",
             gap.distance_m
         );
-        // 102 reaches 40.25 about 10 min (+ dwell) after 08:15 at its pace.
         assert!((500..800).contains(&gap.time_secs), "{}", gap.time_secs);
-        assert!(views[i100].ahead.is_none(), "nobody ahead of the leader");
-        assert_eq!(
-            views[i100].behind.as_ref().map(|g| g.trip_id.as_str()),
-            Some("1004D102C3")
+        let t100 = by_trip(&live, &views, "1004D100C3");
+        assert!(t100.ahead.is_none(), "nobody ahead of the leader");
+        let b = t100.behind.as_ref().expect("102 is behind 100");
+        assert_eq!(b.trip_id, "1004D102C3");
+        assert_eq!(b.distance_m, gap.distance_m);
+        // 102 reaches 100's current spot ~11 min later.
+        assert!((500..800).contains(&b.time_secs), "{}", b.time_secs);
+    }
+
+    #[test]
+    fn links_trains_with_different_stopping_patterns_far_apart() {
+        // Trip 190 (an AV/LD-style trip on the same pattern) 09:00, and an
+        // unknown train on the same line ahead: matched by position only.
+        let net = sample_network();
+        let mut live = Live::default();
+        let now = local(9, 5);
+        let mut other = v("SPECIAL_1", "777", 40.22, now);
+        other.bearing = Some(180.0); // southbound, like the line
+        let mut opposite = v("SPECIAL_2", "888", 40.30, now);
+        opposite.bearing = Some(0.0); // northbound: never a neighbour
+        live.ingest(
+            &net,
+            "vp_ld",
+            FeedData::Vehicles(vec![
+                v("0019012026-10-31", "190", 40.36, now),
+                other,
+                opposite,
+            ]),
+            now,
         );
+        let views = live.views(&net, now, true);
+        let t = by_trip(&live, &views, "0019012026-10-31");
+        let g = t
+            .ahead
+            .as_ref()
+            .expect("unknown train ahead on the same track");
+        assert_eq!(g.trip_id, "SPECIAL_1");
+        assert!((15_000..16_000).contains(&g.distance_m), "{}", g.distance_m);
+    }
+
+    #[test]
+    fn ignores_trains_off_the_track() {
+        let net = sample_network();
+        let mut live = Live::default();
+        let now = local(8, 15);
+        let mut far = v("X", "9", 40.25, now);
+        far.lon = -3.60; // ~8.5 km east of the line
+        far.bearing = Some(180.0);
+        live.ingest(
+            &net,
+            "vp_cer",
+            FeedData::Vehicles(vec![v("1004D102C3", "102", 40.35, now), far]),
+            now,
+        );
+        let views = live.views(&net, now, true);
+        assert!(by_trip(&live, &views, "1004D102C3").ahead.is_none());
     }
 }

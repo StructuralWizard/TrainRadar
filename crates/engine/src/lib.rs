@@ -148,10 +148,16 @@ impl Engine {
     /// Details for the popup of train `index` (as in `positions`), as JSON.
     #[wasm_bindgen(js_name = trainJson)]
     pub fn train_json(&self, index: usize, now_ms: f64) -> String {
-        let views = self.live.views(&self.net, secs(now_ms), true);
-        views
-            .get(index)
-            .map_or_else(|| "null".into(), |v| self.view_json(v))
+        let now = secs(now_ms);
+        let views = self.live.views(&self.net, now, false);
+        let Some(v) = views.get(index) else {
+            return "null".into();
+        };
+        let (ahead, behind) = spacing::for_train(&self.net, &self.live.trains, &views, index, now);
+        let mut v = v.clone();
+        v.ahead = ahead;
+        v.behind = behind;
+        self.view_json(&v)
     }
 
     /// Stats bar: `{trains, delayed, median_delay}`.
