@@ -16,15 +16,27 @@ await page.waitForFunction(() => window.__trainradar.engine.positions(Date.now()
 await page.evaluate(() => window.__trainradar.map.jumpTo({ center: [-3.68, 40.42], zoom: 10.2 }));
 await page.waitForTimeout(8000); // núcleo timetable, lines and tiles
 // Open the popup of a delayed train near the middle, if any, else any train.
-const pt = await page.evaluate(() => {
+const target = await page.evaluate(() => {
   const { map } = window.__trainradar;
   const { width, height } = map.getCanvas().getBoundingClientRect();
   const feats = map.queryRenderedFeatures([[width * 0.3, height * 0.25], [width * 0.7, height * 0.6]], { layers: ["trains"] });
   feats.sort((a, b) => b.properties.c - a.properties.c);
   const live = feats.filter((x) => x.properties.sch !== 1); // not a timetable-only OUIGO
   const f = live.find((x) => x.properties.c === 1 || x.properties.c === 2) || live[0];
-  return f ? map.project(f.geometry.coordinates) : null;
+  return f ? f.geometry.coordinates : null;
 });
+// Put that train in the upper quarter first, so opening its popup doesn't
+// scroll the map (headless Chrome leaves a stale patch when it does).
+let pt = null;
+if (target) {
+  pt = await page.evaluate(async (c) => {
+    const { map } = window.__trainradar;
+    const h = map.getCanvas().getBoundingClientRect().height;
+    map.easeTo({ center: c, offset: [0, -h * 0.25], duration: 0 });
+    await new Promise((r) => setTimeout(r, 4000));
+    return map.project(c);
+  }, target);
+}
 if (pt) {
   await page.mouse.click(pt.x, pt.y);
   await page.waitForTimeout(6000); // pan + tiles under the popup
