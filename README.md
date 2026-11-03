@@ -4,7 +4,7 @@
 
 
 
-![Screenshot placeholder](docs/screenshot-placeholder.svg)
+![TrainRadar: trenes de Cercanías y AV/LD/MD en directo en Madrid, coloreados por retraso](docs/screenshot.jpg)
 
 **Live:** https://trainradar.pages.dev · installable on your phone's home screen
 
