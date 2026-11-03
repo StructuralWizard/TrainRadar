@@ -9,6 +9,7 @@ Source: https://api-features.idee.es/collections/railwaylink (OGC API
 Features). © Instituto Geográfico Nacional (SCNE, IGR-RT), CC BY 4.0.
 """
 import json
+import os
 import sys
 import time
 import urllib.request
@@ -31,7 +32,8 @@ def get(url):
 
 def main(out):
     url, kept, seen = BASE, 0, 0
-    with open(out, "w", encoding="utf-8") as f:
+    tmp = out + ".part"  # only a complete download replaces (and gets cached as) `out`
+    with open(tmp, "w", encoding="utf-8") as f:
         while url:
             page = get(url)
             for feat in page["features"]:
@@ -46,9 +48,10 @@ def main(out):
             url = next((l["href"] for l in page["links"] if l["rel"] == "next"), None)
             if url and "f=json" not in url:
                 url += "&f=json"
-    print(f"{out}: {kept} of {seen} railway links with attributes")
     if kept < 1000:
         sys.exit("too few railway links: the API probably changed")
+    os.replace(tmp, out)
+    print(f"{out}: {kept} of {seen} railway links with attributes")
 
 
 if __name__ == "__main__":
