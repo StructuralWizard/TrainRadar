@@ -1,5 +1,7 @@
 # Builds the reference data (.bin files) from Renfe's static GTFS and reports
-# sizes. Runs on PRs that touch the builder, and manually.
+# sizes. Runs on PRs that touch the builder, and manually. (Not on every
+# branch push too: a push plus its PR's run plus a manual run on the same
+# branch kept cancelling each other.)
 name: Refdata
 
 on:
@@ -9,12 +11,6 @@ on:
       - crates/**
       - web/**
       - tools/**
-      - .github/workflows/refdata.yml
-  push:
-    branches-ignore: [main]
-    paths:
-      - crates/**
-      - web/**
       - .github/workflows/refdata.yml
 
 permissions:
