@@ -94,6 +94,24 @@ Downloaded at most weekly (GitHub Actions cache), filtered to `railway=rail`.
 Attribution: "© OpenStreetMap contributors". Approved by the maintainer on
 2026-11-01.
 
+## Copernicus DEM (track heights, built in CI)
+
+| What | Where | Licence |
+|---|---|---|
+| Copernicus DEM GLO-30, 1°×1° COG tiles | `https://copernicus-dem-30m.s3.amazonaws.com/` (AWS Open Data, no key) | Copernicus WorldDEM-30 licence, free for the general public |
+
+- Only the tiles with rail in them are downloaded, in CI, at most weekly. Only
+  heights under rail nodes are kept, as height profiles of the track legs.
+- Required notice for modified data, shown in the README and in the popup:
+  *"produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus
+  Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European
+  Union and ESA; all rights reserved"*, plus the disclaimer *"The organisations
+  in charge of the Copernicus programme by law or by delegation do not incur
+  any liability for any use of the Copernicus WorldDEM-30."*
+- Licence PDF: [License-COPDEM-30](https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/Data/DEM/resources/license/License-COPDEM-30.pdf).
+  This session couldn't open it; the wording above comes from the dataset's
+  catalogue pages and should be checked against the PDF.
+
 ## OUIGO timetable (NAP, approved 2026-11-02)
 
 | What | Where | Notes |
@@ -122,6 +140,11 @@ Attribution: "© OpenStreetMap contributors". Approved by the maintainer on
 - Services: `https://ideadif.adif.es/services/wfs` and `/services/wms`. On
   2026-11-02 both returned **HTTP 503** to GitHub's servers, so nothing is
   integrated yet. Next step: a manual download from IDEAdif, or a retry later.
+- The same WFS is catalogued on idee.es ("WFS de la Red de Transporte
+  Ferroviario de Adif") and on datos.gob.es, where the licence is given as
+  **CC BY 4.0**. The RFIG (Red Ferroviaria de Interés General) is the network
+  Adif manages, so this WFS is the RFIG source. The idee.es record points to
+  the IDEAdif download centre for files.
 
 ## Adif network status (researched 2026-11-01)
 

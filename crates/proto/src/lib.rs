@@ -10,7 +10,7 @@ pub mod time;
 use serde::{Deserialize, Serialize};
 
 /// Version of the `.bin` format. Bump when a stored type changes shape.
-pub const FORMAT_VERSION: u16 = 4;
+pub const FORMAT_VERSION: u16 = 5;
 
 /// WGS84 coordinate in degrees.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]

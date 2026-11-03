@@ -10,7 +10,7 @@
 | A6 | Incidents (Renfe alerts), Adif status research ✅ (v0.6.0) |
 | A7 | Cloudflare Pages deploy, nightly refdata rebuild, PWA, v1.0.0 ✅ |
 | B1 | Spacing by track projection, arrows, route highlight, stopped trains, speed/gauge/line speed/♿, OUIGO by timetable, coloured lines, official links ✅ |
-| B2 | Slope from Copernicus DEM; IDEAdif design speed and track count (once reachable) |
+| B2 | Gradient and height profile from the Copernicus DEM ✅; IDEAdif design speed and track count (once reachable) |
 
 ## Train spacing (previous / following train)
 

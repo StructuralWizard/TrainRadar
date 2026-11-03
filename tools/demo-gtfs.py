@@ -2,7 +2,8 @@
 """Write a small synthetic GTFS (two AV/LD/MD lines and Cercanías Madrid C3)
 for offline development and UI tests. Not real timetables.
 
-    python3 tools/demo-gtfs.py OUT_DIR   # writes OUT_DIR/{ld,cercanias,ouigo}.zip
+    python3 tools/demo-gtfs.py OUT_DIR   # writes OUT_DIR/{ld,cercanias,ouigo}.zip,
+                                         # rail.geojsonseq and heights.txt
 """
 import math
 import sys
@@ -62,14 +63,15 @@ def write(path, files):
 
 def main(out):
     out.mkdir(parents=True, exist_ok=True)
-    # AV/LD/MD: hourly 06:00–21:00 both ways, 250 km/h, 2 min stops.
+    # AV/LD/MD: hourly round the clock both ways (so browser tests always
+    # have long-distance trains running), 250 km/h, 2 min stops.
     routes, trips, times, all_stops = [], [], [], []
     number = 3000
     for rid, (name, stops) in LD_LINES.items():
         all_stops += stops
         routes.append(f"{rid},{name},2")
         for direction, seq in ((0, stops), (1, stops[::-1])):
-            for hour in range(6, 22):
+            for hour in range(24):
                 number += 1
                 tid = f"{number:05d}1DEMO"
                 trips.append(f"{rid},ALL,{tid},{number:05d}")
@@ -141,6 +143,39 @@ def write_ouigo(out):
     })
 
 
+def terrain(lat, lon):
+    """Made-up terrain (m): rolling hills, a ridge near Calatayud."""
+    ridge = 500 * math.exp(-(((lon + 1.9) / 0.12) ** 2))
+    return 650 + 120 * math.sin(lon * 2.1) + 60 * math.cos(lat * 3.3) + ridge
+
+
+def write_rail(out):
+    """OSM-like railway=rail ways along the AV/LD lines (a point every ~1 km,
+    one tunnel through the ridge) and DEM-like heights for every node."""
+    ways, heights = [], {}
+    def node(lat, lon):
+        lat, lon = round(lat, 7), round(lon, 7)
+        heights[(round(lat * 1e7), round(lon * 1e7))] = terrain(lat, lon)
+        return [lon, lat]
+    for kind, stops in LD_LINES.values():
+        for a, b in zip(stops, stops[1:]):
+            n = max(2, int(km(a, b)))
+            pts = [node(a[2] + (b[2] - a[2]) * i / n, a[3] + (b[3] - a[3]) * i / n) for i in range(n + 1)]
+            # Split where the line crosses the ridge: tunnel=yes in between.
+            inside = [i for i, p in enumerate(pts) if abs(p[0] + 1.9) < 0.15]
+            cuts = [0, inside[0], inside[-1], n] if len(inside) > 2 else [0, n]
+            for k, (i, j) in enumerate(zip(cuts, cuts[1:])):
+                props = {"railway": "rail", "gauge": "1435" if kind == "AVE" else "1668", "maxspeed": "300"}
+                if len(cuts) == 4 and k == 1:
+                    props["tunnel"] = "yes"
+                ways.append({"type": "Feature", "geometry": {"type": "LineString", "coordinates": pts[i:j + 1]},
+                             "properties": props})
+    import json
+    (out / "rail.geojsonseq").write_text("".join("\x1e" + json.dumps(w) + "\n" for w in ways))
+    (out / "heights.txt").write_text("".join(f"{k[0]} {k[1]} {round(h * 10)}\n" for k, h in heights.items()))
+
+
 if __name__ == "__main__":
     main(Path(sys.argv[1]))
     write_ouigo(Path(sys.argv[1]))
+    write_rail(Path(sys.argv[1]))

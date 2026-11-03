@@ -36,27 +36,34 @@ try {
     console.log("SCREENSHOT-END");
   }
 
-  // Open the popup of a train that has a timetable match if there is one.
+  // Open the popup of a train with a gradient (track height known), else
+  // one with a timetable match, else any.
   const pt = await page.evaluate(async () => {
     const { engine, map } = window.__trainradar;
     const n = engine.positions(Date.now()).length / 6;
-    let pick = 0;
+    let pick = -1;
+    let graded = false;
     for (let i = 0; i < n; i++) {
-      if (JSON.parse(engine.trainJson(i, Date.now())).origin) {
+      const info = JSON.parse(engine.trainJson(i, Date.now()));
+      if (info.grade_permille !== undefined) {
         pick = i;
+        graded = true;
         break;
       }
+      if (info.origin && pick < 0) pick = i;
     }
+    pick = Math.max(pick, 0);
     const p = engine.positions(Date.now());
     map.jumpTo({ center: [p[pick * 6], p[pick * 6 + 1]], zoom: 11 });
     await new Promise((r) => setTimeout(r, 2000));
     const q = engine.positions(Date.now());
-    return map.project([q[pick * 6], q[pick * 6 + 1]]);
+    return { ...map.project([q[pick * 6], q[pick * 6 + 1]]), graded };
   });
   await page.mouse.click(pt.x, pt.y);
   await page.waitForSelector(".popup", { timeout: 5000 }).catch(() => fail("popup did not open"));
   console.log("popup:", (await page.textContent(".popup")).replace(/\s+/g, " "));
   await page.screenshot({ path: `${out}/popup.png` });
+  if (pt.graded && !(await page.$(".popup svg.profile path"))) await fail("graded train's popup has no height profile");
 
   await page.click("#delayed-btn");
   const rows = await page.$$eval("#delayed-list li", (l) => l.length);

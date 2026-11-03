@@ -22,6 +22,8 @@ and draws them on a MapLibre map. There is no TrainRadar server.
   the other trains on its line.
 - Spacing to the train ahead and behind on the same track, in minutes and km.
 - Speed (measured or timetabled), gauge and line speed, accessibility.
+- Track gradient and altitude at the train, with a height profile of the route
+  (AV/LD/MD and OUIGO; from the Copernicus terrain model, approximate).
 - Trains stopped between stations, with likely problem sections.
 - OUIGO trains placed by timetable (OUIGO publishes no live data), clearly marked.
 - Cercanías lines in their official colours; lines named in notices highlighted.
@@ -121,6 +123,10 @@ cd tools/feed-check && npm ci && npx playwright install chromium && npm run chec
 - Track geometry for AV/LD/MD trains: © [OpenStreetMap](https://www.openstreetmap.org/copyright)
   contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/). The derived
   `geo-*.bin` files are published with the site under the same licence.
+- Track heights (gradients): produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and
+  © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union
+  and ESA; all rights reserved. The organisations in charge of the Copernicus programme by
+  law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.
 - Base map: [OpenFreeMap](https://openfreemap.org) (free, no API key),
   © [OpenMapTiles](https://www.openmaptiles.org/), data © OpenStreetMap contributors.
 - Map library: [MapLibre GL JS](https://maplibre.org) (BSD-3-Clause), vendored at build time.

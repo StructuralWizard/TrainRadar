@@ -46,6 +46,30 @@ pub fn run(dir: &Path) -> Result<()> {
                     format!("{}: leg {} is malformed", tt.region, s.id)
                 })?;
             }
+            ensure(g.info.len() == g.legs.len(), || {
+                format!(
+                    "{}: {} leg facts for {} legs",
+                    tt.region,
+                    g.info.len(),
+                    g.legs.len()
+                )
+            })?;
+            ensure(g.profiles.len() == g.legs.len(), || {
+                format!(
+                    "{}: {} profiles for {} legs",
+                    tt.region,
+                    g.profiles.len(),
+                    g.legs.len()
+                )
+            })?;
+            for (i, p) in g.profiles.iter().enumerate() {
+                let h = p.heights_m();
+                ensure(
+                    h.is_empty()
+                        || (h.len() >= 2 && h.iter().all(|z| (-500.0..9000.0).contains(z))),
+                    || format!("{}: profile of leg {i} is malformed", tt.region),
+                )?;
+            }
             g.legs.len()
         };
         check_timetable(&tt, legs)?;

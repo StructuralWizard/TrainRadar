@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, HashMap};
 use trainradar_proto::LatLon;
 use trainradar_proto::geo::{Polyline, haversine_m, simplify};
 use trainradar_proto::refdata::{
-    GridIndex, Header, LegInfo, NO_LEG, PatternRec, RegionRec, RouteRec, SERVICE_COMMUTER,
+    GridIndex, Header, LegInfo, NO_LEG, PatternRec, Profile, RegionRec, RouteRec, SERVICE_COMMUTER,
     SERVICE_LONG_DISTANCE, ShapeRec, StationRec, StationsFile, StopRec, TimetableFile, TripRec,
     to_e5,
 };
@@ -106,6 +106,8 @@ pub struct RegionStats {
     pub patterns_on_shape: usize,
     pub patterns_on_osm: usize,
     pub patterns_straight: usize,
+    /// OpenStreetMap legs with a height profile (DEM heights given).
+    pub legs_with_profile: usize,
 }
 
 /// Build one region's timetable from a subset of a feed's trips.
@@ -115,8 +117,12 @@ pub fn build_timetable(
     region: &str,
     header: Header,
     mut router: Option<&mut Router<'_>>,
-) -> (TimetableFile, Vec<(ShapeRec, LegInfo)>, RegionStats) {
-    let mut legs_out: Vec<(ShapeRec, LegInfo)> = Vec::new();
+) -> (
+    TimetableFile,
+    Vec<(ShapeRec, LegInfo, Profile)>,
+    RegionStats,
+) {
+    let mut legs_out: Vec<(ShapeRec, LegInfo, Profile)> = Vec::new();
     let mut st = RegionStats::default();
     let mut tt = TimetableFile {
         header,
@@ -220,8 +226,12 @@ pub fn build_timetable(
                     for i in 1..coords.len() {
                         let key = (stop_ids[i - 1], stop_ids[i]);
                         let leg = *leg_map.entry(key).or_insert_with(|| {
-                            let (pts, info) =
+                            let (pts, info, heights) =
                                 router.route_pair(key.0, key.1, coords[i - 1], coords[i])?;
+                            let profile = crate::profile::leg_profile(&pts, &heights);
+                            if !profile.deltas.is_empty() {
+                                st.legs_with_profile += 1;
+                            }
                             let simple = simplify(&pts, OSM_SIMPLIFY_TOLERANCE_M);
                             let rec = ShapeRec::encode(
                                 format!("{}>{}", feed.stops[key.0].id, feed.stops[key.1].id),
@@ -231,7 +241,7 @@ pub fn build_timetable(
                             let len = Polyline::new(rec.points()).length_m();
                             st.shape_points_in += pts.len();
                             st.shape_points_out += simple.len();
-                            legs_out.push((rec, info));
+                            legs_out.push((rec, info, profile));
                             Some(((legs_out.len() - 1) as u32, len))
                         });
                         match leg {

@@ -53,10 +53,23 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y osmium-tool
           tools/fetch-osm-rail.sh
+      # Terrain heights for gradients: the rail nodes only change with the
+      # OSM file, so sample the Copernicus DEM at most weekly too.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: dem
+        with:
+          path: gtfs/rail-heights.txt
+          key: dem-heights-v1-${{ steps.week.outputs.week }}
+      - name: Terrain heights of the rail nodes (Copernicus DEM)
+        if: steps.dem.outputs.cache-hit != 'true'
+        continue-on-error: true # without heights the build just has no gradients
+        run: |
+          tools/fetch-dem-heights.sh
       - name: Build .bin files
         run: |
           target/release/refdata-build build --out web/data \
             --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
+            $([ -s gtfs/rail-heights.txt ] && echo --rail-heights gtfs/rail-heights.txt) \
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data

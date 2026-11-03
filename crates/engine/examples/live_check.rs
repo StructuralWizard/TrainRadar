@@ -198,6 +198,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         s.trains, s.delayed, s.median_delay
     );
 
+    // Gradients from the DEM profiles: plausible values are within ±40 ‰.
+    let mut slopes: Vec<(f32, f32, String)> = views
+        .iter()
+        .filter_map(|v| {
+            let t = &live.trains[v.index];
+            let (alt, g) = net.slope_at(t.matched?.trip, v.along?)?;
+            Some((g, alt, t.rt.train_number.clone()))
+        })
+        .collect();
+    slopes.sort_by(|a, b| a.0.abs().total_cmp(&b.0.abs()));
+    let abs: Vec<i64> = slopes.iter().map(|s| s.0.abs().round() as i64).collect();
+    println!(
+        "\nGradients: {} of {} trains have one; |grade| ‰ median {:?}, p90 {:?}, max {:?}; {} over 40 ‰",
+        slopes.len(),
+        views.len(),
+        pct(&abs, 0.5),
+        pct(&abs, 0.9),
+        abs.last(),
+        abs.iter().filter(|&&g| g > 40).count()
+    );
+    for (g, alt, n) in slopes.iter().rev().take(5) {
+        println!("- train {n}: {g:+.0} ‰ at {alt:.0} m");
+    }
+
     // Incidents (alerts feed): what they refer to and how many are active.
     let inc = &live.incidents;
     let active = inc

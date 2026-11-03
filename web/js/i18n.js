@@ -55,6 +55,13 @@ export const STRINGS = {
     gaugeDual: "ancho mixto",
     maxSpeed: "máx. {v} km/h",
     trackSource: "(OpenStreetMap)",
+    grade: "Pendiente",
+    gradeUp: "subida {v} ‰",
+    gradeDown: "bajada {v} ‰",
+    gradeLevel: "llano",
+    altitude: "{v} m de altitud",
+    profile: "Perfil de alturas del recorrido",
+    gradeSource: "Pendiente aproximada (modelo del terreno Copernicus, túneles y puentes interpolados)",
     accessibleYes: "♿ Accesible",
     accessibleNo: "No accesible en silla de ruedas",
     stoppedConfirmed: "⏸ Detenido entre {a} y {b} desde hace {t}",
@@ -126,7 +133,7 @@ export const STRINGS = {
     confLow: "confianza baja",
     showTrain: "Ver tren",
     attribution:
-      'Datos: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Sin relación con Renfe, Adif ni OUIGO',
+      'Datos: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Alturas: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sin relación con Renfe, Adif ni OUIGO',
   },
   en: {
     title: "TrainRadar · live Renfe trains",
@@ -180,6 +187,13 @@ export const STRINGS = {
     gaugeDual: "dual gauge",
     maxSpeed: "max {v} km/h",
     trackSource: "(OpenStreetMap)",
+    grade: "Gradient",
+    gradeUp: "{v} ‰ uphill",
+    gradeDown: "{v} ‰ downhill",
+    gradeLevel: "level",
+    altitude: "{v} m above sea level",
+    profile: "Height profile of the route",
+    gradeSource: "Approximate gradient (Copernicus terrain model, tunnels and bridges interpolated)",
     accessibleYes: "♿ Accessible",
     accessibleNo: "Not wheelchair accessible",
     stoppedConfirmed: "⏸ Stopped between {a} and {b} for {t}",
@@ -251,7 +265,7 @@ export const STRINGS = {
     confLow: "low confidence",
     showTrain: "Show train",
     attribution:
-      'Data: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Not affiliated with Renfe, Adif or OUIGO',
+      'Data: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Heights: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Not affiliated with Renfe, Adif or OUIGO',
   },
 };
 

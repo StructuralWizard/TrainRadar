@@ -318,6 +318,43 @@ impl Engine {
         out
     }
 
+    /// Track height profile of train `index`'s trip, for a small chart:
+    /// `{"km":[…],"h":[…|null],"at":km}` (heights in metres, `null` where a
+    /// section has no profile), or `null` when nothing is known.
+    #[wasm_bindgen(js_name = profileJson)]
+    pub fn profile_json(&self, index: usize, now_ms: f64) -> String {
+        let Some(m) = self.live.trains.get(index).and_then(|t| t.matched) else {
+            return "null".into();
+        };
+        let total = self
+            .net
+            .schedule(m.trip)
+            .last()
+            .map_or(0.0, |s| f64::from(s.dist_m));
+        // About 300 points whatever the trip length, at least every 200 m.
+        let prof = self.net.trip_profile(m.trip, (total / 300.0).max(200.0));
+        if prof.is_empty() {
+            return "null".into();
+        }
+        let km: Vec<String> = prof
+            .iter()
+            .map(|p| format!("{:.2}", p.0 / 1000.0))
+            .collect();
+        let h: Vec<String> = prof
+            .iter()
+            .map(|p| p.1.map_or("null".into(), |h| format!("{h:.0}")))
+            .collect();
+        let views = self.live.views(&self.net, secs(now_ms), false);
+        let at = views.get(index).and_then(|v| v.along);
+        let mut out = String::new();
+        json::Obj::new(&mut out)
+            .raw("km", &format!("[{}]", km.join(",")))
+            .raw("h", &format!("[{}]", h.join(",")))
+            .on("at", at.map(|d| format!("{:.2}", d / 1000.0)))
+            .end();
+        out
+    }
+
     /// Lines of the loaded Cercanías núcleos in their official colours, as a
     /// GeoJSON FeatureCollection: `{line, region, color, notice}`; `notice`
     /// is true when an active Renfe notice names the line.
@@ -709,6 +746,10 @@ impl Engine {
                 .s("operator", &r.tt.operator);
             if let Some(info) = v.along.and_then(|d| self.net.track_info(m.trip, d)) {
                 o.n("gauge_mm", info.gauge_mm).n("max_kmh", info.max_kmh);
+            }
+            if let Some((alt, grade)) = v.along.and_then(|d| self.net.slope_at(m.trip, d)) {
+                o.n("altitude_m", alt.round())
+                    .n("grade_permille", grade.round());
             }
             o.b("timetable_only", !r.tt.live)
                 .s("route_id", &route.id)
