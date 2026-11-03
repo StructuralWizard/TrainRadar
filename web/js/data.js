@@ -71,6 +71,27 @@ export class RefData {
     return p;
   }
 
+  /** Load every Cercanías núcleo not loaded yet, one at a time when the
+   * browser is idle, so trains everywhere get their colour (delay) and
+   * direction, not only where the user has zoomed in. Skipped when the
+   * browser asks to save data. `onEach(code)` runs after each one. */
+  async loadAllInBackground(onEach) {
+    if (navigator.connection?.saveData) return;
+    const idle = () => new Promise((r) => (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(r));
+    const rest = (this.manifest?.regions || []).filter((r) => r.code !== "ld" && r.live !== false);
+    rest.sort((a, b) => a.bytes - b.bytes); // small ones first: more colour sooner
+    for (const r of rest) {
+      if (this.loaded.has(r.code)) continue;
+      await idle();
+      try {
+        await this.loadRegion(r.code);
+        onEach?.(r.code);
+      } catch (e) {
+        console.warn("region", r.code, e);
+      }
+    }
+  }
+
   /** Cercanías núcleos whose bounding box overlaps the given map bounds. */
   regionsIn(bounds) {
     const [w, s, e, n] = bounds;

@@ -173,3 +173,13 @@ details.small summary { cursor: pointer; }
 #f-tav + .track-key { background: #4338ca; }
 #f-tld + .track-key { background: #0f766e; }
 #f-tmd + .track-key { background: #94a3b8; }
+/* Train kind keys in Capas: a green arrow with the kind's border colour. */
+.train-key { width: 0; height: 0; flex: none; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 12px solid #1a9850; filter: drop-shadow(0 0 1.5px var(--k, #fff)) drop-shadow(0 0 1px var(--k, #fff)); }
+#f-av + .train-key { --k: #4338ca; }
+#f-ld + .train-key { --k: #0f766e; }
+#f-md + .train-key { --k: #475569; }
+#f-commuter + .train-key { --k: #94a3b8; }
+#f-scheduled + .train-key { border-bottom-color: #7c3aed; }
+#f-av + .train-key { border-left-width: 4px; border-right-width: 4px; border-bottom-width: 14px; }
+#f-md + .train-key { border-bottom-width: 10px; border-left-width: 7px; border-right-width: 7px; }
+#f-commuter + .train-key { border-bottom-width: 10px; border-left-width: 5px; border-right-width: 5px; }

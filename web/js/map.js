@@ -75,6 +75,34 @@ function addIcons(map) {
     g.closePath();
   };
   map.addImage("arrow", make((g) => (arrow(g), g.fill())), { sdf: true, pixelRatio: 2 });
+  // High speed: slimmer and more pointed. Medium distance: flat tip.
+  map.addImage(
+    "arrow-av",
+    make((g) => {
+      g.beginPath();
+      g.moveTo(24, 1);
+      g.lineTo(38, 46);
+      g.lineTo(24, 37);
+      g.lineTo(10, 46);
+      g.closePath();
+      g.fill();
+    }),
+    { sdf: true, pixelRatio: 2 },
+  );
+  map.addImage(
+    "arrow-md",
+    make((g) => {
+      g.beginPath();
+      g.moveTo(17, 6);
+      g.lineTo(31, 6);
+      g.lineTo(43, 42);
+      g.lineTo(24, 33);
+      g.lineTo(5, 42);
+      g.closePath();
+      g.fill();
+    }),
+    { sdf: true, pixelRatio: 2 },
+  );
   map.addImage(
     "arrow-hollow",
     make((g) => {
@@ -315,7 +343,12 @@ export function addLayers(map) {
     type: "symbol",
     source: "trains",
     layout: {
-      "icon-image": ["case", ["==", ["get", "sch"], 1], "arrow-hollow", ["has", "b"], "arrow", "dot"],
+      "icon-image": [
+        "case",
+        ["==", ["get", "sch"], 1], "arrow-hollow",
+        ["!", ["has", "b"]], "dot",
+        ["match", ["get", "t"], "av", "arrow-av", "md", "arrow-md", "arrow"],
+      ],
       "icon-rotate": ["coalesce", ["get", "b"], 0],
       "icon-rotation-alignment": "map",
       "icon-allow-overlap": true,
@@ -325,10 +358,10 @@ export function addLayers(map) {
       "icon-size": [
         "interpolate", ["linear"], ["zoom"],
         // Big enough to spot and tap with all of Spain on screen.
-        4, ["case", ["==", ["get", "sch"], 1], 0.9, 1.1],
-        7, ["case", ["==", ["get", "sch"], 1], 1.0, 1.25],
-        12, ["case", ["==", ["get", "sch"], 1], 1.2, 1.5],
-        15, ["case", ["==", ["get", "sch"], 1], 1.4, 1.8],
+        4, ["match", ["get", "t"], "ouigo", 0.9, "cer", 0.95, 1.15],
+        7, ["match", ["get", "t"], "ouigo", 1.0, "cer", 1.05, 1.3],
+        12, ["match", ["get", "t"], "ouigo", 1.2, "cer", 1.3, 1.55],
+        15, ["match", ["get", "t"], "ouigo", 1.4, "cer", 1.55, 1.85],
       ],
       "symbol-sort-key": ["get", "c"],
     },
@@ -339,8 +372,9 @@ export function addLayers(map) {
         SCHEDULED_COLOR,
         ["match", ["get", "c"], 0, COLORS[0], 1, COLORS[1], 2, COLORS[2], COLORS[3]],
       ],
-      "icon-halo-color": "#ffffff",
-      "icon-halo-width": 1.2,
+      // Fill = delay; border = kind of train (same colours as its track).
+      "icon-halo-color": ["match", ["get", "t"], "av", TRACK_COLORS.av, "ld", TRACK_COLORS.ld, "md", "#475569", "#ffffff"],
+      "icon-halo-width": ["match", ["get", "t"], "cer", 1.2, "ouigo", 1.2, 2.2],
       // Old GPS fixes fade a little; trains outside a highlighted line fade a lot.
       "icon-opacity": ["case", ["==", ["get", "dim"], 1], 0.18, [">", ["get", "a"], 600], 0.65, 1],
     },
@@ -362,6 +396,8 @@ export function trainsGeoJson(flat, highlight = null, hidden = () => false) {
       s: flags & FLAG.stopped ? 1 : 0,
       l: flags & FLAG.likely ? 1 : 0,
       sch: flags & FLAG.scheduled ? 1 : 0,
+      // Kind of train, for the border colour.
+      t: flags & FLAG.scheduled ? "ouigo" : flags & FLAG.commuter ? "cer" : flags & FLAG.highSpeed ? "av" : flags & FLAG.medium ? "md" : "ld",
       dim: highlight && !highlight.has(i) ? 1 : 0,
     };
     if (!Number.isNaN(flat[o + 3])) props.b = flat[o + 3];

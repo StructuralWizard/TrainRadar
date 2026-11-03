@@ -727,6 +727,12 @@ async function main() {
   renderIncidents();
   fillJump();
   refreshLines();
+  // After the first view: the other núcleos' timetables, so distant
+  // Cercanías trains show their delay colour and direction too.
+  setTimeout(() => ref.loadAllInBackground(() => {
+    refreshLines();
+    render(true);
+  }), 3000);
   map.on("mouseenter", "incidents", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "incidents", () => (map.getCanvas().style.cursor = ""));
   for (const l of ["stations", "stations-ld"]) {

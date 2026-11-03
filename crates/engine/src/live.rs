@@ -44,6 +44,9 @@ pub struct LiveTrain {
     pub last_fix: i64,
     /// Speed measured between the last two different fixes, m/s.
     pub measured_speed: Option<f32>,
+    /// Direction of travel from the last two different GPS fixes (degrees),
+    /// for trains we can't place on a timetabled route.
+    pub moved_heading: Option<f32>,
     /// Wheelchair accessible, if Renfe says.
     pub accessible: Option<bool>,
     /// No live data: placed by timetable (operators that publish none).
@@ -203,6 +206,7 @@ fn scheduled_trains(net: &Network, now: i64) -> Vec<LiveTrain> {
                     still_since: now,
                     last_fix: now,
                     measured_speed: None,
+                    moved_heading: None,
                     accessible: None,
                     scheduled: true,
                 });
@@ -243,6 +247,23 @@ const MAX_SPAN_S: i64 = 360;
 pub const MAX_PLAUSIBLE_MS: f32 = 340.0 / 3.6;
 
 impl Seen {
+    /// Heading from the previous different position to this one, when the
+    /// train moved far enough for GPS noise not to decide it (≥ 40 m) and
+    /// recently (≤ 10 min).
+    fn heading(&self) -> Option<f32> {
+        let &(plat, plon, pt) = self.hist.last()?;
+        if self.since - pt > 600 {
+            return None;
+        }
+        let a = LatLon::new(f64::from(plat) / 1e5, f64::from(plon) / 1e5);
+        let b = LatLon::new(f64::from(self.lat) / 1e5, f64::from(self.lon) / 1e5);
+        if haversine_m(a, b) < 40.0 {
+            return None;
+        }
+        let (x, y) = ((b.lon - a.lon) * a.lat.to_radians().cos(), b.lat - a.lat);
+        Some(x.atan2(y).to_degrees().rem_euclid(360.0) as f32)
+    }
+
     /// Average speed (m/s) from the oldest usable earlier position to this
     /// one: the distance between several fixes over 45 s–6 min, so one
     /// jittery GPS fix or a late poll barely changes the result.
@@ -383,6 +404,7 @@ impl Live {
                     still_since: seen.map_or(fix_time, |s| s.since),
                     last_fix: seen.map_or(fix_time, |s| s.last),
                     measured_speed: seen.and_then(|s| s.speed()),
+                    moved_heading: seen.and_then(|s| s.heading()),
                     accessible: tu.and_then(|u| u.accessible),
                     scheduled: false,
                 });
@@ -415,7 +437,7 @@ fn view(net: &Network, index: usize, t: &LiveTrain, now: i64) -> TrainView {
     let raw = TrainView {
         index,
         coord: gps,
-        bearing: t.rt.bearing,
+        bearing: t.rt.bearing.or(t.moved_heading),
         delay: t.delay.map(Delay),
         along: None,
         fix_age_secs: fix_age,
@@ -687,6 +709,25 @@ mod tests {
         let (kmh, measured) = live.views(&net, t0 + 70, false)[0].speed.unwrap();
         assert!(measured);
         assert!((kmh - 66.7).abs() < 1.0, "{kmh}");
+    }
+
+    #[test]
+    fn unplaced_trains_point_where_their_gps_moved() {
+        let net = sample_network();
+        let mut live = Live::default();
+        let t0 = local(8, 3);
+        let feed = |lat| FeedData::Vehicles(vec![vehicle("NOT_IN_TIMETABLE", lat, Some(t0))]);
+        live.ingest(&net, "vp_cer", feed(40.500), t0);
+        assert_eq!(
+            live.views(&net, t0, false)[0].bearing,
+            None,
+            "one fix: no direction"
+        );
+        live.ingest(&net, "vp_cer", feed(40.502), t0 + 30); // 220 m north
+        let b = live.views(&net, t0 + 31, false)[0]
+            .bearing
+            .expect("heading from GPS");
+        assert!(!(1.0..359.0).contains(&b), "{b}");
     }
 
     #[test]
