@@ -106,6 +106,9 @@ jobs:
         with:
           path: gtfs/rail-heights.txt
           key: dem-heights-v1-${{ steps.week.outputs.week }}
+      - name: Track count and electrification (IGN IGR-RT)
+        continue-on-error: true # without it the build just lacks those facts
+        run: python3 -I tools/fetch-igr-rail.py gtfs/igr-rail.geojsonseq
       - name: Terrain heights of the rail nodes (Copernicus DEM)
         if: steps.dem.outputs.cache-hit != 'true'
         continue-on-error: true # without heights the build just has no gradients
@@ -117,6 +120,7 @@ jobs:
           cargo run --release -q -p trainradar-refdata-build -- build --out build/data --gzip \
             --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
             $([ -s gtfs/rail-heights.txt ] && echo --rail-heights gtfs/rail-heights.txt) \
+            $([ -s gtfs/igr-rail.geojsonseq ] && echo --rail-attrs gtfs/igr-rail.geojsonseq) \
             --sources gtfs/sources.tsv --report refdata.md
           cargo run --release -q -p trainradar-refdata-build -- verify build/data
           cat refdata.md >> "$GITHUB_STEP_SUMMARY"

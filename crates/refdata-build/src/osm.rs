@@ -314,6 +314,7 @@ impl RailGraph {
                 let info = LegInfo {
                     gauge_mm: most_common(&gauge),
                     max_kmh: most_common(&speed),
+                    ..LegInfo::default()
                 };
                 let path = ids.iter().map(|&i| self.nodes[i as usize]).collect();
                 let heights = ids

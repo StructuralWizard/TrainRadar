@@ -695,6 +695,8 @@ pub mod tests {
             info: vec![trainradar_proto::refdata::LegInfo {
                 gauge_mm: 1435,
                 max_kmh: 300,
+                tracks: 2,
+                electrified: 2,
             }],
         };
         assert_eq!(n.load_geometry(&encode(&geo).unwrap()).unwrap(), "10");

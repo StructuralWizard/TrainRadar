@@ -6,6 +6,7 @@ mod build;
 mod calendar;
 mod dem;
 mod gtfs_io;
+mod igr;
 mod inspect;
 mod load;
 mod osm;
@@ -34,7 +35,8 @@ usage:
   refdata-build dem-sample --rail FILE.geojsonseq --dem DIR --out FILE
   refdata-build build --out DIR [--ld ZIP] [--cercanias ZIP] [--ouigo ZIP]
                       [--rail FILE.geojsonseq] [--date YYYY-MM-DD] [--days N]
-                      [--rail-heights FILE] [--sources FILE.tsv] [--report FILE.md]
+                      [--rail-heights FILE] [--rail-attrs FILE]
+                      [--sources FILE.tsv] [--report FILE.md]
                       [--gzip]
 
 build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
@@ -46,6 +48,8 @@ build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
              draw trips that have no usable GTFS shape (all of AV/LD/MD)
   --rail-heights  terrain heights of the --rail nodes (from dem-sample): adds a
              height profile to every OpenStreetMap leg, for gradients
+  --rail-attrs  IGN railway links (from tools/fetch-igr-rail.py): adds the
+             number of tracks and electrification to every OpenStreetMap leg
 
 dem-tiles: prints the URLs of the Copernicus DEM tiles covering the rail nodes.
 dem-sample: looks up every rail node in the tiles in DIR (<name>.tif) and writes
@@ -59,6 +63,7 @@ struct BuildArgs {
     ouigo: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
+    rail_attrs: Option<PathBuf>,
     date: Option<String>,
     days: u8,
     sources: Option<PathBuf>,
@@ -74,6 +79,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         ouigo: None,
         rail: None,
         rail_heights: None,
+        rail_attrs: None,
         date: None,
         days: 8,
         sources: None,
@@ -93,6 +99,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--cercanias" => a.cercanias = Some(val()?.into()),
             "--rail" => a.rail = Some(val()?.into()),
             "--rail-heights" => a.rail_heights = Some(val()?.into()),
+            "--rail-attrs" => a.rail_attrs = Some(val()?.into()),
             "--ouigo" => a.ouigo = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
@@ -270,6 +277,27 @@ fn run_build(a: BuildArgs) -> Result<()> {
             r.stats.pairs_routed,
             r.stats.pairs_failed
         ));
+    }
+    if let Some(p) = &a.rail_attrs {
+        let f = std::fs::File::open(p).map_err(|e| format!("{}: {e}", p.display()))?;
+        let attrs = igr::TrackAttrs::from_lines(std::io::BufReader::new(f))?;
+        let (mut legs, mut tracks, mut elec, mut single) = (0, 0, 0, 0);
+        for b in &mut built {
+            for (shape, info, _) in &mut b.2 {
+                (info.tracks, info.electrified) = attrs.along(&shape.points());
+                legs += 1;
+                tracks += usize::from(info.tracks > 0);
+                single += usize::from(info.tracks == 1);
+                elec += usize::from(info.electrified > 0);
+            }
+        }
+        let note = format!(
+            "- IGN network (IGR-RT): {} link segments; of {legs} legs, {tracks} have a track \
+             count ({single} single track) and {elec} know their electrification\n",
+            attrs.len()
+        );
+        eprint!("{note}");
+        report.push_str(&note);
     }
     if let Some(n) = &heights_note {
         let with: usize = built.iter().map(|b| b.3.legs_with_profile).sum();

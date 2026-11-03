@@ -3,7 +3,7 @@
 for offline development and UI tests. Not real timetables.
 
     python3 tools/demo-gtfs.py OUT_DIR   # writes OUT_DIR/{ld,cercanias,ouigo}.zip,
-                                         # rail.geojsonseq and heights.txt
+                                         # rail.geojsonseq, heights.txt, igr-rail.geojsonseq
 """
 import math
 import sys
@@ -151,8 +151,10 @@ def terrain(lat, lon):
 
 def write_rail(out):
     """OSM-like railway=rail ways along the AV/LD lines (a point every ~1 km,
-    one tunnel through the ridge) and DEM-like heights for every node."""
-    ways, heights = [], {}
+    one tunnel through the ridge), DEM-like heights for every node, and
+    IGN-like railway links (double track and electrified on the AVE line,
+    single track and diesel on the other)."""
+    ways, heights, igr = [], {}, []
     def node(lat, lon):
         lat, lon = round(lat, 7), round(lon, 7)
         heights[(round(lat * 1e7), round(lon * 1e7))] = terrain(lat, lon)
@@ -161,6 +163,8 @@ def write_rail(out):
         for a, b in zip(stops, stops[1:]):
             n = max(2, int(km(a, b)))
             pts = [node(a[2] + (b[2] - a[2]) * i / n, a[3] + (b[3] - a[3]) * i / n) for i in range(n + 1)]
+            ave = kind == "AVE"
+            igr.append({"p": {"t": 2 if ave else 1, "e": "true" if ave else "false", "g": 1435 if ave else 1668}, "c": pts})
             # Split where the line crosses the ridge: tunnel=yes in between.
             inside = [i for i, p in enumerate(pts) if abs(p[0] + 1.9) < 0.15]
             cuts = [0, inside[0], inside[-1], n] if len(inside) > 2 else [0, n]
@@ -172,6 +176,7 @@ def write_rail(out):
                              "properties": props})
     import json
     (out / "rail.geojsonseq").write_text("".join("\x1e" + json.dumps(w) + "\n" for w in ways))
+    (out / "igr-rail.geojsonseq").write_text("".join(json.dumps(x) + "\n" for x in igr))
     (out / "heights.txt").write_text("".join(f"{k[0]} {k[1]} {round(h * 10)}\n" for k, h in heights.items()))
 
 

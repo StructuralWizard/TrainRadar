@@ -55,6 +55,12 @@ export const STRINGS = {
     gaugeDual: "ancho mixto",
     maxSpeed: "máx. {v} km/h",
     trackSource: "(OpenStreetMap)",
+    trackSourceIgn: "(OpenStreetMap, IGN)",
+    trackSingle: "vía única",
+    trackDouble: "vía doble",
+    trackMany: "{n} vías",
+    electrified: "electrificada",
+    notElectrified: "sin electrificar",
     grade: "Pendiente",
     gradeUp: "subida {v} ‰",
     gradeDown: "bajada {v} ‰",
@@ -133,7 +139,7 @@ export const STRINGS = {
     confLow: "confianza baja",
     showTrain: "Ver tren",
     attribution:
-      'Datos: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Alturas: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sin relación con Renfe, Adif ni OUIGO',
+      'Datos: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Alturas: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sin relación con Renfe, Adif ni OUIGO',
   },
   en: {
     title: "TrainRadar · live Renfe trains",
@@ -187,6 +193,12 @@ export const STRINGS = {
     gaugeDual: "dual gauge",
     maxSpeed: "max {v} km/h",
     trackSource: "(OpenStreetMap)",
+    trackSourceIgn: "(OpenStreetMap, IGN)",
+    trackSingle: "single track",
+    trackDouble: "double track",
+    trackMany: "{n} tracks",
+    electrified: "electrified",
+    notElectrified: "not electrified",
     grade: "Gradient",
     gradeUp: "{v} ‰ uphill",
     gradeDown: "{v} ‰ downhill",
@@ -265,7 +277,7 @@ export const STRINGS = {
     confLow: "low confidence",
     showTrain: "Show train",
     attribution:
-      'Data: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Heights: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Not affiliated with Renfe, Adif or OUIGO',
+      'Data: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Heights: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Not affiliated with Renfe, Adif or OUIGO',
   },
 };
 

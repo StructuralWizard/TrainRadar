@@ -197,12 +197,15 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
       row(t(lang, "speed"), t(lang, info.speed_measured ? "speedMeasured" : "speedScheduled", { v: info.speed_kmh })),
     );
   }
-  if (info.gauge_mm || info.max_kmh) {
+  if (info.gauge_mm || info.max_kmh || info.tracks || info.electrified) {
     const parts = [];
+    if (info.tracks) parts.push(t(lang, info.tracks === 1 ? "trackSingle" : info.tracks === 2 ? "trackDouble" : "trackMany", { n: info.tracks }));
+    if (info.electrified) parts.push(t(lang, info.electrified === 2 ? "electrified" : "notElectrified"));
     const g = gaugeName(lang, info.gauge_mm);
     if (g) parts.push(t(lang, g));
     if (info.max_kmh) parts.push(t(lang, "maxSpeed", { v: info.max_kmh }));
-    rows.push(row(t(lang, "track"), parts.join(" · "), el("span", { class: "muted" }, ` ${t(lang, "trackSource")}`)));
+    const src = info.tracks || info.electrified ? "trackSourceIgn" : "trackSource";
+    rows.push(row(t(lang, "track"), parts.join(" · "), el("span", { class: "muted" }, ` ${t(lang, src)}`)));
   }
   if (info.grade_permille !== undefined) {
     rows.push(

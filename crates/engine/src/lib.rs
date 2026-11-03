@@ -745,7 +745,10 @@ impl Engine {
                 .b("matched_exact", m.exact)
                 .s("operator", &r.tt.operator);
             if let Some(info) = v.along.and_then(|d| self.net.track_info(m.trip, d)) {
-                o.n("gauge_mm", info.gauge_mm).n("max_kmh", info.max_kmh);
+                o.n("gauge_mm", info.gauge_mm)
+                    .n("max_kmh", info.max_kmh)
+                    .n("tracks", info.tracks)
+                    .n("electrified", info.electrified);
             }
             if let Some((alt, grade)) = v.along.and_then(|d| self.net.slope_at(m.trip, d)) {
                 o.n("altitude_m", alt.round())
