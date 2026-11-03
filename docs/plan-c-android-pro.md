@@ -18,7 +18,7 @@ GitHub Actions secrets or Cloudflare Worker secrets.
 ## 0. Target architecture
 
 ```
-                 every ~20 s (one fetch per feed, ETag/If-Modified-Since)
+        each feed on its own cadence (15–20 s, alerts 2–5 min), conditional GETs
 Renfe GTFS-RT ─────────────► Poller (Durable Object alarm, fallback: cron loop)
                                │  writes raw .pb bytes unchanged
                                ├──► R2 bucket "trainradar-live"  /rt/<feed>.pb
@@ -47,12 +47,30 @@ run cleanly for 14 days, then decide with the maintainer.
 
 - New `backend/` folder (Cloudflare Workers, TypeScript or JS, tested with
   `node --test`/`vitest` + Miniflare). Keep `worker/` untouched.
-- **Poller**: a Durable Object whose alarm fires every 20 s (±2 s jitter). For each of the
-  five feed paths already allow-listed in `worker/src/index.js`: conditional GET to
-  `gtfsrt.renfe.com` (send `If-None-Match`/`If-Modified-Since`); on 200 write the bytes to
-  R2 `rt/<name>.pb` with `Cache-Control: public, max-age=10`; on 304 do nothing.
-  Exponential backoff per feed on errors (max 10 min). Alerts feed every 2 min.
-  A cron trigger every minute only (re)arms the alarm if it died.
+- **Poller**: a Durable Object with one alarm schedule **per feed**, matched to how often
+  Renfe actually changes it (from `docs/data-sources.md`, verified 2026-11-01):
+
+  | Feed | Renfe official refresh | Measured change gap | Poll |
+  |---|---|---|---|
+  | `vehicle_positions_LD.pb` | 15 s | ~17 s | every 15 s |
+  | `trip_updates_LD.pb` | — | ~15 s | every 15 s |
+  | `vehicle_positions.pb` (Cercanías) | 20 s | ~21–25 s | every 20 s |
+  | `trip_updates.pb` (Cercanías) | 20 s | ~18–21 s | every 20 s |
+  | `alerts.pb` | 20 s (in practice stalls for days/weeks) | no change in 3 min | every 2 min; every 5 min after 1 h unchanged |
+
+  Rules: conditional GET (`If-None-Match`/`If-Modified-Since`; Renfe sends `Last-Modified`)
+  so unchanged feeds cost a 304 and no R2 write; **phase-lock** to Renfe: once a few
+  `Last-Modified` values are known, schedule the next fetch ~2 s after the expected change
+  instead of a blind timer; never faster than 15 s per feed; ±1 s jitter; exponential
+  backoff per feed on errors (max 10 min). On 200 write the bytes unchanged to R2
+  `rt/<name>.pb` with `Cache-Control: public, max-age=10`.
+  This is one client for all users: ~4 requests per 15–20 s, about the same as **one** open
+  browser tab today, and far below Renfe's own `Cache-Control: max-age=30` per client.
+  Log the measured change gaps weekly to `status.json` and adjust if Renfe changes cadence.
+- **Other sources are not polled live**: OUIGO is timetable-only (NAP GTFS, nightly CI);
+  Renfe GTFS timetables nightly (ETag check, existing deploy job); OSM, IGN and Copernicus
+  at most weekly in CI. No Adif realtime feed is used.
+- A cron trigger every minute only (re)arms the alarms if they died.
 - Write `rt/status.json` every cycle: `{feed: {renfeLastModified, fetchedAt, ok, error?}}`.
   This replaces reading `Last-Modified` from the proxy response.
 - R2 bucket CORS: `GET` from the site origins only (same list as `ALLOWED_ORIGINS`), plus
@@ -69,8 +87,10 @@ run cleanly for 14 days, then decide with the maintainer.
 - `web/js/config.js`: `rtBase` → live host; `rtFallback` → current proxy; `feeds.js` switches
   to the fallback after 3 consecutive failures and back after 10 min. Feed age from
   `status.json` instead of the `Last-Modified` header. Update CSP `connect-src`.
-- Lower client poll interval floor to 20 s now that it hits the CDN (keep jitter, keep pause
-  when hidden).
+- Client polling: fetch `status.json` every 10 s (tiny, CDN-cached) and download a `.pb`
+  only when its `renfeLastModified` changed, instead of fixed 30 s timers. Users see new
+  positions within ~10–15 s of Renfe publishing them, and unchanged feeds aren't
+  re-downloaded. Keep the pause when the tab is hidden.
 - **App promotion** (no cookies, no tracking): "Get the Android app" button in About;
   in the train popup a small "Delay alerts for this train → Android app" link; a one-time
   dismissible banner from the 3rd visit (visit counter in `localStorage`, wrapped in
@@ -162,13 +182,19 @@ accepted by the maintainer). Products:
 
 | Product id | Type | Price (ES) |
 |---|---|---|
-| `pro_monthly` | auto-renewing subscription | €1.99 |
-| `pro_yearly` | auto-renewing subscription, 7-day free trial | €14.99 |
-| `pro_lifetime` | one-time, non-consumable | €29.99 |
+| `pro_monthly` | auto-renewing monthly subscription, **no free trial at launch** | €1.99 |
 | `tip_small` / `tip_medium` / `tip_large` | consumable, unlocks nothing | €1.99 / €4.99 / €9.99 |
 
-Entitlement cached in Preferences, refreshed from Play on start; "Restore purchases" in
-Settings. Pro screen lists features honestly, shows price from Play, links to the store's
+**Launch with monthly only.** Yearly and lifetime are **not** created in Play Console and not
+shown in the app until phase C8 (see below). Monthly keeps the exposure on closure to at most
+one month per subscriber. Code the paywall and entitlement logic so more products can be
+added later from a config list without UI changes (`CONFIG.products`), but ship only
+`pro_monthly` + tips. Prices are set in Play Console (Spain €1.99 incl. VAT; UK and other
+markets via Play's local price templates, maintainer to confirm).
+
+Entitlement cached in Preferences, refreshed from Play on start and on resume; "Restore
+purchases" in Settings (a Pro purchase follows the user's Google account to any phone).
+Grace period / account hold handled per Play states. Pro screen lists features honestly, shows price from Play, links to the store's
 subscription management. **No external payment or donation links inside the app.**
 
 **Pro features** (all run on the device; no new server cost except reading `summary.json`):
@@ -196,9 +222,35 @@ subscription management. **No external payment or donation links inside the app.
    up to 12 months Pro).
 9. Themes, alternative app icons, custom delay colour thresholds.
 
-**Tests**: entitlement state machine (none → trial → active → grace → expired; lifetime;
-restore), Play Billing test tracks with licence testers, trips-log matching on fixtures,
-CSV/summary formatting, notification threshold logic.
+**On-device storage and backup** (applies to Free and Pro data):
+
+- All user data lives in native storage that Android backs up: trips log, favourites,
+  commute routes and alert rules in SQLite (`@capacitor-community/sqlite`, database
+  domain); settings and cached entitlement in Capacitor Preferences (shared prefs).
+  **Do not** keep user data only in the WebView's `localStorage`/IndexedDB (not reliably
+  backed up). Cache files (map tiles, `.bin` data, `summary.json`) go in cache dirs and are
+  excluded.
+- **Android Auto Backup** enabled explicitly: `android:allowBackup="true"`,
+  `android:dataExtractionRules` (API 31+) and `android:fullBackupContent` (API ≤ 30), both
+  including the SQLite database and shared prefs and excluding caches. Backups go to the
+  user's own Google Drive (private app folder, not counted in their quota, end-to-end
+  encrypted on Android 9+ with a screen lock), about once a day, and are restored
+  automatically on reinstall or a new phone. Keep user data well under the 25 MB per-app
+  limit (expected: a few hundred KB after years of trips).
+- **Manual Export/Import** in Settings (Free and Pro): one versioned JSON file
+  (`trainradar-backup-YYYYMMDD.json`, schema version, trips, favourites, commutes, alert
+  rules, settings; no location samples) saved through the Android share sheet / Storage
+  Access Framework, so the user can put it in Drive or move phones immediately. Import
+  validates the schema and merges without duplicates.
+- Settings shows "Last automatic backup: managed by Android" info text and the
+  Export/Import buttons; "Delete all my data" wipes SQLite + prefs.
+- Schema migrations for the SQLite database from day one (restored backups may be older).
+
+**Tests**: entitlement state machine (none → active → grace → on hold → expired;
+restore on a new install), Play Billing test track with licence testers, trips-log matching
+on fixtures, CSV/summary formatting, notification threshold logic, export → wipe → import
+round trip, `adb shell bmgr backupnow` + reinstall restore test, migration from an older
+backup schema.
 
 ## C6 — Store release prep (branch `phase/c6-release`)
 
@@ -212,6 +264,15 @@ CSV/summary formatting, notification threshold logic.
   "Metranos Ltd" in the listing and in the app's About screen.
 - In-app "About & licences" screen with all attributions from `docs/data-sources.md`.
 - Versioning: `versionCode` from tag, release notes from CHANGELOG.
+
+## C8 — Later: yearly and lifetime (only after ≥ 2 months of stable paid service)
+
+Not part of the first release. Start only when the maintainer says go, and only if: the
+backend has run ≥ 2 months with ≥ 99% uptime, costs match section 8, and there are no open
+billing or entitlement bugs. Then add `pro_yearly` (e.g. €14.99, optional 7-day trial) and
+possibly `pro_lifetime` (e.g. €29.99) via `CONFIG.products`, update the Pro screen, terms
+(lifetime = for as long as the service is offered, see wind-down clause) and the DMCC
+checks (end-of-trial and renewal reminders). Re-run the billing tests with the new products.
 
 ## C7 — Optional, only if the maintainer says go: ads in the free Android app
 
@@ -250,10 +311,11 @@ store accounts, Cloudflare billing, domain and insurance are all in the company'
   Paid Pro must be of satisfactory quality and as described (UK Consumer Rights Act 2015;
   EU digital-content rules apply to Spanish buyers). Consumers' statutory rights can't be
   excluded; the "data may be wrong, not for safety-critical use" notice still applies.
-- **UK subscription rules (DMCC Act) from January 2027**: before launching `pro_monthly`
-  / `pro_yearly` to UK users, check pre-contract information, reminder notices before
-  renewals and end of trial, and easy cancellation. Play Billing covers much of this; the
-  Pro screen must show price, renewal period, trial terms and how to cancel.
+- **UK subscription rules (DMCC Act) from January 2027**: before selling `pro_monthly` to
+  UK users after that date, check pre-contract information, renewal reminders and easy
+  cancellation (end-of-trial reminders become relevant only if a trial is added in C8).
+  Play Billing covers much of this; the Pro screen must show price, renewal period and how
+  to cancel.
 - 👤 Check the name "TrainRadar" on UKIPO, EUIPO and in the Play Store for conflicts
   before launch.
 - **Provider identification** page (UK E-Commerce Regulations 2002 and Companies Act
@@ -264,7 +326,15 @@ store accounts, Cloudflare billing, domain and insurance are all in the company'
   none kept by TrainRadar; contact for rights requests.
 - **Terms of use**: information only, data may be wrong or late, never for safety-critical
   use; not affiliated with Renfe, Adif, OUIGO; subscriptions handled by Google Play
-  (cancellation, refunds per Play policy); open-source licence notice.
+  (cancellation, refunds per Play policy); open-source licence notice; **wind-down
+  clause**: if the service closes or Pro is withdrawn, at least 60 days' notice in the app
+  and on the website, renewals cancelled, and pro-rata refunds of unused paid time.
+- **Wind-down procedure** (`docs/wind-down.md`, Claude Code drafts it): stop new sales →
+  in-app and web notice (≥ 60 days) → cancel all subscriptions in Play Console so they don't
+  renew → partial refunds of unused time per order (Play supports partial refunds for
+  subscriptions; refunded share reduces payout and Google's fee proportionally) → final
+  app release whose on-device features (trips log, export, favourites) keep working and
+  which can fall back to the open-source proxy → publish the history archive as open data.
 - **Trademarks**: no Renfe/Adif logos or names in the app name or icon; "datos abiertos de
   Renfe" only in descriptions with the not-affiliated statement.
 - **Data licences**: keep every attribution (Renfe CC BY 4.0 with "processed by
@@ -276,8 +346,11 @@ store accounts, Cloudflare billing, domain and insurance are all in the company'
 
 ## 7. Data management
 
-- **Personal data**: none on servers by design. Trips log, favourites, location: device
-  only, deletable in Settings. Uninstall deletes everything.
+- **Personal data**: none on TrainRadar's servers by design. Trips log, favourites,
+  location: device only, deletable in Settings. Lost or new phone: Android Auto Backup
+  restores the data from the user's own Google Drive (encrypted, managed by Android, not
+  readable by Metranos Ltd), plus manual Export/Import; the Pro purchase is restored from
+  Google Play. The privacy policy explains this.
 - **History data**: D1 schema above; 12 months of trips in D1, older months archived to
   R2 as monthly gz files, aggregates kept in D1; weekly R2 backup (90 days); D1 Time Travel
   as short-term restore. Expected 4–8 MB/day (see C3).
@@ -316,7 +389,8 @@ Controls (implement in C1/C3):
 
 ## 9. Order and hand-off
 
-C1 → C2 (feeds switch) → C3 → C2b (history teaser) → C4 → C5 → C6 → (C7 optional).
+C1 → C2 (feeds switch) → C3 → C2b (history teaser) → C4 → C5 → C6 → launch with
+`pro_monthly` + tips → ≥ 2 months → C8 (yearly/lifetime) → (C7 optional, any time after C6).
 Each phase: its own branch and PR, tests and docs updated, `docs/roadmap.md` gets a
 "C" section, stop for maintainer review before merging. Ask before any irreversible or
 paid step (buying the domain, enabling Workers Paid, creating Play products, adding secrets).
