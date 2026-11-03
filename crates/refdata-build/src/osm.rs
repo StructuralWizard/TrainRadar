@@ -314,6 +314,7 @@ impl RailGraph {
                 let info = LegInfo {
                     gauge_mm: most_common(&gauge),
                     max_kmh: most_common(&speed),
+                    ..LegInfo::default()
                 };
                 let path = ids.iter().map(|&i| self.nodes[i as usize]).collect();
                 let heights = ids
@@ -386,10 +387,14 @@ fn most_common(by_len: &HashMap<u16, f64>) -> u16 {
 pub type RoutedLeg = (Vec<LatLon>, LegInfo, Vec<f32>);
 
 /// Routes stop sequences along the rail graph, caching each stop pair.
+///
+/// The cache is shared by every feed (AV/LD/MD, Cercanías, OUIGO), so it's
+/// keyed by the stops' coordinates, never by a feed's own stop numbers:
+/// stop 5 of one feed is a different place from stop 5 of another.
 #[derive(Debug)]
 pub struct Router<'g> {
     graph: &'g RailGraph,
-    cache: HashMap<(usize, usize), Option<RoutedLeg>>,
+    cache: HashMap<[i64; 4], Option<RoutedLeg>>,
     pub stats: RouteStats,
 }
 
@@ -402,19 +407,14 @@ impl<'g> Router<'g> {
         }
     }
 
-    /// Track path between two stops (cached per stop pair), with at least two
-    /// points, or `None` if they can't be routed.
-    pub fn route_pair(
-        &mut self,
-        a_id: usize,
-        b_id: usize,
-        a: LatLon,
-        b: LatLon,
-    ) -> Option<RoutedLeg> {
+    /// Track path between two stops (cached per pair of places), with at
+    /// least two points, or `None` if they can't be routed.
+    pub fn route_pair(&mut self, a: LatLon, b: LatLon) -> Option<RoutedLeg> {
+        let (ka, kb) = (node_key(a), node_key(b));
         let graph = self.graph;
         let stats = &mut self.stats;
         self.cache
-            .entry((a_id, b_id))
+            .entry([ka.0, ka.1, kb.0, kb.1])
             .or_insert_with(|| {
                 let r = graph.route(a, b).filter(|p| p.0.len() >= 2);
                 if r.is_some() {
@@ -513,10 +513,16 @@ pub mod tests {
         let mut r = Router::new(&g);
         let (a, b) = (LatLon::new(40.0, -3.70), LatLon::new(40.0, -3.65));
         let off = LatLon::new(41.0, -3.65);
-        assert_eq!(r.route_pair(0, 1, a, b).unwrap().0, vec![a, b]);
-        assert!(r.route_pair(1, 2, b, off).is_none());
+        assert_eq!(r.route_pair(a, b).unwrap().0, vec![a, b]);
+        assert!(r.route_pair(b, off).is_none());
         assert_eq!((r.stats.pairs_routed, r.stats.pairs_failed), (1, 1));
-        r.route_pair(0, 1, a, b);
+        r.route_pair(a, b);
         assert_eq!(r.stats.pairs_routed, 1, "cached");
+        // Another feed's pair (in another feed it could be "stops 0 and 1"
+        // too) is a different place: routed afresh, never the cached path.
+        let (c, d) = (LatLon::new(40.02, -3.60), LatLon::new(40.02, -3.70));
+        let p = r.route_pair(c, d).unwrap().0;
+        assert_eq!((p[0], p[p.len() - 1]), (c, d));
+        assert_eq!(r.stats.pairs_routed, 2);
     }
 }

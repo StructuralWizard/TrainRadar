@@ -15,6 +15,7 @@ import {
   emptyGeoJson,
   maplibregl,
   pointGeoJson,
+  setBasemap,
   setMapLanguage,
   trainsGeoJson,
 } from "./js/map.js";
@@ -26,6 +27,7 @@ import {
   legend,
   nearPanel,
   onboardBlock,
+  stationPopup,
   statsText,
   trainPopup,
   trainTitle,
@@ -63,7 +65,16 @@ let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
 const SHEETS = ["delayed", "near", "incidents"];
-const show = { commuter: true, long: true, scheduled: true, lines: true };
+const show = { commuter: true, long: true, scheduled: true, lines: true, track: true, stations: true, notices: true };
+// Map layers each "Capas" checkbox shows or hides (trains are filtered in render()).
+const LAYER_IDS = {
+  lines: ["lines", "lines-notice"],
+  track: ["track"],
+  stations: ["stations", "stations-ld", "station-labels"],
+  notices: ["incidents", "lines-notice"],
+};
+let stationPop = null;
+let dragOffset = [0, 0]; // where the user dragged the train popup to
 let highlight = null; // Set of train indexes on the selected train's line
 
 function applyLang() {
@@ -82,9 +93,20 @@ function applyLang() {
   $("inc-title").textContent = t(lang, "incidentsTitle");
   $("inc-close").setAttribute("aria-label", t(lang, "close"));
   $("layers-title").textContent = t(lang, "layers");
-  for (const [id, k] of [["f-commuter-l", "showCommuter"], ["f-long-l", "showLong"], ["f-scheduled-l", "showScheduled"], ["f-lines-l", "showLines"]]) {
+  for (const [id, k] of [
+    ["f-commuter-l", "showCommuter"],
+    ["f-long-l", "showLong"],
+    ["f-scheduled-l", "showScheduled"],
+    ["f-lines-l", "showLines"],
+    ["f-track-l", "showTrack"],
+    ["f-stations-l", "showStations"],
+    ["f-notices-l", "showNotices"],
+    ["b-standard-l", "baseStandard"],
+    ["b-satellite-l", "baseSatellite"],
+  ]) {
     $(id).textContent = t(lang, k);
   }
+  $("search-q").placeholder = t(lang, "searchPlaceholder");
   fillJump();
   renderIncidents();
   $("near-off").textContent = t(lang, "locationOff");
@@ -388,7 +410,11 @@ function showPopup(open = false) {
         label: i.route,
         test: (x) => x.lines.includes(i.route) && (!i.region || x.nucleos.includes(i.region)),
       }),
-    { napDate: ref?.napDate(), profile: info.altitude_m === undefined ? null : selectedProfile(now) },
+    {
+      napDate: ref?.napDate(),
+      profile: info.altitude_m === undefined ? null : selectedProfile(now),
+      onTrain: (i) => selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true }),
+    },
   );
   if (!popup) {
     // On small screens fold the credits into their ⓘ button while a popup is
@@ -396,10 +422,12 @@ function showPopup(open = false) {
     if (window.innerWidth < 720) {
       document.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact-show")?.classList.remove("maplibregl-compact-show");
     }
+    dragOffset = [0, 0];
     popup = new maplibregl.Popup({ closeButton: true, maxWidth: "300px", offset: 12, focusAfterOpen: false })
       .setLngLat([info.lon, info.lat])
       .setDOMContent(body)
       .addTo(map);
+    makeDraggable(popup, () => dragOffset, (o) => (dragOffset = o));
     popup.on("close", () => {
       popup = null;
       selected = null;
@@ -410,6 +438,101 @@ function showPopup(open = false) {
   } else {
     popup.setDOMContent(body);
   }
+}
+
+/** Let the user drag a popup out of the way by its title. It then keeps
+ * that offset from the train (or station) as the map moves. */
+function makeDraggable(p, get, set) {
+  const box = p.getElement();
+  let start = null;
+  box.addEventListener("pointerdown", (e) => {
+    if (!e.target.closest(".popup-title")) return;
+    const [ox, oy] = get();
+    start = { x: e.clientX, y: e.clientY, ox, oy };
+    box.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  box.addEventListener("pointermove", (e) => {
+    if (!start) return;
+    const o = [start.ox + e.clientX - start.x, start.oy + e.clientY - start.y];
+    set(o);
+    box.classList.add("dragged");
+    const at = (x, y) => [x + o[0], y + o[1]];
+    p.setOffset({
+      center: at(0, 0), top: at(0, 12), bottom: at(0, -12), left: at(12, 0), right: at(-12, 0),
+      "top-left": at(9, 9), "top-right": at(-9, 9), "bottom-left": at(9, -9), "bottom-right": at(-9, -9),
+    });
+  });
+  const end = () => (start = null);
+  box.addEventListener("pointerup", end);
+  box.addEventListener("pointercancel", end);
+}
+
+/** Popup with a station's next departures and approaching trains. */
+function showStation(f) {
+  const { id, name } = f.properties;
+  const [lon, lat] = f.geometry.coordinates;
+  const now = Date.now();
+  // Its núcleo's timetable may not be loaded yet: load, then refresh.
+  const d = 0.05;
+  for (const r of ref?.regionsIn([lon - d, lat - d, lon + d, lat + d]) || []) {
+    if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(() => stationPop?.isOpen() && showStation(f));
+  }
+  const body = stationPopup(
+    lang,
+    { id, name },
+    JSON.parse(engine.stationBoardJson(id, now, 90 * 60, 10)),
+    JSON.parse(engine.approachingJson(id, now, 30 * 60)).slice(0, 6),
+    (a) => {
+      stationPop?.remove();
+      selectTrain(a, { fly: true });
+    },
+  );
+  if (stationPop?.isOpen()) return stationPop.setLngLat([lon, lat]).setDOMContent(body);
+  clearSelection();
+  let off = [0, 0];
+  stationPop = new maplibregl.Popup({ closeButton: true, maxWidth: "300px", offset: 10, focusAfterOpen: false })
+    .setLngLat([lon, lat])
+    .setDOMContent(body)
+    .addTo(map);
+  makeDraggable(stationPop, () => off, (o) => (off = o));
+}
+
+function refreshTrack() {
+  if (engine && map?.getSource("track")) map.getSource("track").setData(JSON.parse(engine.trackGeoJson()));
+}
+
+function renderSearch() {
+  const q = $("search-q").value.trim();
+  const ul = $("search-results");
+  if (!q || !engine) {
+    ul.hidden = true;
+    return;
+  }
+  const hits = JSON.parse(engine.searchJson(q, 8));
+  ul.hidden = false;
+  if (!hits.length) return ul.replaceChildren(el("li", { class: "muted" }, t(lang, "searchNone")));
+  ul.replaceChildren(
+    ...hits.map((h) =>
+      el(
+        "li",
+        {},
+        el(
+          "button",
+          {
+            class: "link",
+            onclick: () => {
+              ul.hidden = true;
+              $("search-q").value = "";
+              selectTrain(JSON.parse(engine.trainJson(h.i, Date.now())), { fly: true });
+            },
+          },
+          el("strong", {}, trainTitle(h)),
+          h.destination ? ` → ${h.destination}` : "",
+        ),
+      ),
+    ),
+  );
 }
 
 function renderDelayedList() {
@@ -476,6 +599,10 @@ async function main() {
   await init();
   engine = new Engine();
   ref = new RefData(engine, CONFIG.dataBase);
+  ref.onGeometry = () => {
+    refreshLines();
+    refreshTrack();
+  };
   try {
     await ref.start();
   } catch (e) {
@@ -496,6 +623,10 @@ async function main() {
   await mapReady;
   setMapLanguage(map, lang);
   addLayers(map);
+  if (store.get("basemap") === "satellite") {
+    setBasemap(map, "satellite");
+    document.querySelector('input[name="basemap"][value="satellite"]').checked = true;
+  }
   setUserLayers();
   map.getSource("stations").setData(JSON.parse(engine.stationsGeoJson()));
   map.on("moveend", loadVisibleRegions);
@@ -520,6 +651,15 @@ async function main() {
         const { id, name } = inc[0].properties;
         return showIncidents({ label: name, test: (x) => x.stops.some((s) => s.id === id) });
       }
+      const st = map.queryRenderedFeatures(
+        [
+          [e.point.x - pad, e.point.y - pad],
+          [e.point.x + pad, e.point.y + pad],
+        ],
+        { layers: ["stations", "stations-ld"].filter((l) => map.getLayer(l)) },
+      );
+      if (st.length) return showStation(st[0]);
+      stationPop?.remove();
       return clearSelection();
     }
     const info = JSON.parse(engine.trainJson(hits[0].properties.i, Date.now()));
@@ -530,6 +670,11 @@ async function main() {
   refreshLines();
   map.on("mouseenter", "incidents", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "incidents", () => (map.getCanvas().style.cursor = ""));
+  for (const l of ["stations", "stations-ld"]) {
+    map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
+  }
+  refreshTrack();
   map.on("mouseenter", "trains", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "trains", () => (map.getCanvas().style.cursor = ""));
   render(true);
@@ -557,15 +702,40 @@ $("jump").addEventListener("change", (e) => {
   const r = ref?.region(v);
   if (r) map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: 40, maxZoom: 11 });
 });
-for (const [id, key] of [["f-commuter", "commuter"], ["f-long", "long"], ["f-scheduled", "scheduled"], ["f-lines", "lines"]]) {
-  $(id).addEventListener("change", (e) => {
-    show[key] = e.target.checked;
-    if (key === "lines") {
-      for (const l of ["lines", "lines-notice"]) map?.setLayoutProperty(l, "visibility", show.lines ? "visible" : "none");
+function applyLayerVisibility() {
+  if (!map?.getLayer("trains")) return;
+  const on = new Set();
+  for (const [key, ids] of Object.entries(LAYER_IDS)) if (show[key]) for (const id of ids) on.add(id);
+  for (const ids of Object.values(LAYER_IDS)) {
+    for (const id of ids) {
+      // lines-notice needs both its line layer and notices on.
+      const visible = id === "lines-notice" ? show.lines && show.notices : on.has(id);
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
     }
+  }
+}
+for (const key of ["commuter", "long", "scheduled", "lines", "track", "stations", "notices"]) {
+  $(`f-${key}`).addEventListener("change", (e) => {
+    show[key] = e.target.checked;
+    applyLayerVisibility();
     render(true);
   });
 }
+for (const r of document.querySelectorAll('input[name="basemap"]')) {
+  r.addEventListener("change", (e) => {
+    if (!e.target.checked || !map?.getLayer("track")) return;
+    setBasemap(map, e.target.value);
+    store.set("basemap", e.target.value);
+  });
+}
+$("search-q").addEventListener("input", renderSearch);
+$("search-q").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") $("search-results").querySelector("button")?.click();
+  if (e.key === "Escape") {
+    e.target.value = "";
+    renderSearch();
+  }
+});
 $("loc-btn").addEventListener("click", () => (locator?.active ? stopLocation() : startLocation()));
 $("near-close").addEventListener("click", () => ($("near").hidden = true));
 $("inc-btn").addEventListener("click", () => ($("incidents").hidden ? showIncidents() : ($("incidents").hidden = true)));

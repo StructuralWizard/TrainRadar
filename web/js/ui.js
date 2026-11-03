@@ -59,16 +59,44 @@ function row(label, ...value) {
   return el("div", { class: "row" }, el("span", { class: "label" }, label), el("span", { class: "value" }, ...value));
 }
 
-function gapText(lang, g) {
+/** "C3 20111 · 2 min · 3,2 km", the train name a button when we can show it. */
+function gapText(lang, g, onTrain) {
   if (!g) return t(lang, "none");
   const s = t(lang, "gap", { time: formatDuration(lang, g.time_secs), dist: formatDistance(lang, g.distance_m) });
-  return `${g.title ? `${g.title} · ` : ""}${g.estimated ? "≈ " : ""}${s}`;
+  const rest = `${g.estimated ? "≈ " : ""}${s}`;
+  if (!g.title) return rest;
+  const name = g.i !== undefined && onTrain ? el("button", { class: "link", onclick: () => onTrain(g.i) }, g.title) : g.title;
+  return [name, ` · ${rest}`];
+}
+
+/** Next train the other way: "AVE 03112 · cruce en ≈ 4 min · 9,1 km". */
+function oncomingText(lang, o, onTrain) {
+  const name = onTrain ? el("button", { class: "link", onclick: () => onTrain(o.i) }, o.title || "?") : o.title;
+  const when = o.time_secs !== undefined && o.time_secs !== null
+    ? t(lang, "meetIn", { time: formatDuration(lang, o.time_secs) })
+    : "";
+  return [name, ` · ${[when, formatDistance(lang, o.distance_m)].filter(Boolean).join(" · ")}`];
+}
+
+/** Where each figure in the popup comes from, and the official live page. */
+function sourceNote(lang, info) {
+  const parts = [];
+  parts.push(t(lang, info.feed === "vp_cer" ? "srcPosCer" : "srcPosLd"));
+  if (info.delay_source === "renfe") parts.push(t(lang, "srcDelayRenfe"));
+  else if (info.delay_source) parts.push(t(lang, "srcDelayEstimated"));
+  if (info.origin) parts.push(t(lang, "srcTimetable"));
+  const site = info.feed === "vp_cer" ? "https://tiempo-real.renfe.com/" : "https://tiempo-real.largorecorrido.renfe.com/";
+  return [
+    el("div", { class: "small muted" }, parts.join(" ")),
+    el("a", { class: "small", href: site, target: "_blank", rel: "noopener" }, t(lang, info.feed === "vp_cer" ? "linkRenfe" : "linkRenfeLd") + " ↗"),
+  ];
 }
 
 /** Official pages for live information we can't reuse. */
 export const OFFICIAL_LINKS = [
   ["linkAdif", "https://www.adif.es/viajeros/estado-de-la-red"],
   ["linkRenfe", "https://tiempo-real.renfe.com/"],
+  ["linkRenfeLd", "https://tiempo-real.largorecorrido.renfe.com/"],
   ["linkOuigo", "https://www.ouigo.com/es/"],
   ["linkIryo", "https://iryo.eu/es"],
   ["linkAdifMap", "https://www.adif.es/sobre-adif/red-ferroviaria/mapa"],
@@ -148,7 +176,7 @@ export function profileChart(lang, p) {
   );
 }
 
-export function trainPopup(lang, info, regionName, onIncidents, { napDate, profile } = {}) {
+export function trainPopup(lang, info, regionName, onIncidents, { napDate, profile, onTrain } = {}) {
   const title = el(
     "div",
     { class: "popup-title", style: info.timetable_only ? `color:${SCHEDULED_COLOR}` : null },
@@ -197,12 +225,15 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
       row(t(lang, "speed"), t(lang, info.speed_measured ? "speedMeasured" : "speedScheduled", { v: info.speed_kmh })),
     );
   }
-  if (info.gauge_mm || info.max_kmh) {
+  if (info.gauge_mm || info.max_kmh || info.tracks || info.electrified) {
     const parts = [];
+    if (info.tracks) parts.push(t(lang, info.tracks === 1 ? "trackSingle" : info.tracks === 2 ? "trackDouble" : "trackMany", { n: info.tracks }));
+    if (info.electrified) parts.push(t(lang, info.electrified === 2 ? "electrified" : "notElectrified"));
     const g = gaugeName(lang, info.gauge_mm);
     if (g) parts.push(t(lang, g));
     if (info.max_kmh) parts.push(t(lang, "maxSpeed", { v: info.max_kmh }));
-    rows.push(row(t(lang, "track"), parts.join(" · "), el("span", { class: "muted" }, ` ${t(lang, "trackSource")}`)));
+    const src = info.tracks || info.electrified ? "trackSourceIgn" : "trackSource";
+    rows.push(row(t(lang, "track"), parts.join(" · "), el("span", { class: "muted" }, ` ${t(lang, src)}`)));
   }
   if (info.grade_permille !== undefined) {
     rows.push(
@@ -232,9 +263,11 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
     ),
   );
   if (info.origin) {
-    rows.push(row(t(lang, "ahead"), gapText(lang, info.ahead)));
-    rows.push(row(t(lang, "behind"), gapText(lang, info.behind)));
+    rows.push(row(t(lang, "ahead"), gapText(lang, info.ahead, onTrain)));
+    rows.push(row(t(lang, "behind"), gapText(lang, info.behind, onTrain)));
+    if (info.oncoming) rows.push(row(t(lang, "oncoming"), oncomingText(lang, info.oncoming, onTrain)));
   }
+  if (!info.timetable_only) rows.push(...sourceNote(lang, info));
   if (info.incidents > 0 && onIncidents) {
     rows.push(
       el(
@@ -291,33 +324,7 @@ export function nearPanel(lang, { stations, board, approaching, onStation, onTra
   if (stations.length) {
     const s0 = stations[0];
     out.push(el("h3", {}, t(lang, "nextTrains", { station: s0.name })));
-    out.push(
-      board.length
-        ? el(
-            "ul",
-            { class: "board" },
-            board.map((r) =>
-              el(
-                "li",
-                { class: r.canceled ? "canceled" : "" },
-                el("span", { class: "board-time" }, formatClock(r.sched)),
-                el(
-                  "span",
-                  { class: "board-main" },
-                  el("strong", {}, `${r.route} ${r.number}`.trim()),
-                  " ",
-                  r.terminates ? t(lang, "fromOrigin", { origin: r.other_end }) : t(lang, "toDest", { dest: r.other_end }),
-                ),
-                el(
-                  "span",
-                  { class: "board-delay", style: `color:${COLORS[r.delay === null ? 3 : r.delay < 300 ? 0 : r.delay < 900 ? 1 : 2]}` },
-                  r.canceled ? t(lang, "canceled") : formatDelay(lang, r.delay),
-                ),
-              ),
-            ),
-          )
-        : el("p", { class: "muted" }, t(lang, "noTrainsSoon")),
-    );
+    out.push(boardList(lang, board));
     out.push(el("h3", {}, t(lang, "approaching", { station: s0.name })));
     out.push(
       approaching.length
@@ -353,6 +360,62 @@ export function nearPanel(lang, { stations, board, approaching, onStation, onTra
     );
   }
   return out;
+}
+
+/** Departures board rows (engine.stationBoardJson). */
+function boardList(lang, board) {
+  return board.length
+    ? el(
+        "ul",
+        { class: "board" },
+        board.map((r) =>
+          el(
+            "li",
+            { class: r.canceled ? "canceled" : "" },
+            el("span", { class: "board-time" }, formatClock(r.sched)),
+            el(
+              "span",
+              { class: "board-main" },
+              el("strong", {}, `${r.route} ${r.number}`.trim()),
+              " ",
+              r.terminates ? t(lang, "fromOrigin", { origin: r.other_end }) : t(lang, "toDest", { dest: r.other_end }),
+            ),
+            el(
+              "span",
+              { class: "board-delay", style: `color:${COLORS[r.delay === null ? 3 : r.delay < 300 ? 0 : r.delay < 900 ? 1 : 2]}` },
+              r.canceled ? t(lang, "canceled") : formatDelay(lang, r.delay),
+            ),
+          ),
+        ),
+      )
+    : el("p", { class: "muted" }, t(lang, "noTrainsSoon"));
+}
+
+/** Popup for a station: next trains, and trains on their way. */
+export function stationPopup(lang, station, board, approaching, onTrain) {
+  return el(
+    "div",
+    { class: "popup" },
+    el("div", { class: "popup-title" }, station.name),
+    el("h3", {}, t(lang, "departuresNext")),
+    boardList(lang, board),
+    el("h3", {}, t(lang, "approachingShort")),
+    approaching.length
+      ? el(
+          "ul",
+          { class: "board" },
+          approaching.map((a) =>
+            el(
+              "li",
+              {},
+              el("button", { class: "link", onclick: () => onTrain(a) }, el("strong", {}, trainTitle(a))),
+              el("span", { class: "board-main muted" }, ` ${minutesUntil(lang, a.eta)} · ${formatDistance(lang, a.distance_m)}`),
+              el("span", { class: "board-delay" }, formatDelay(lang, a.delay)),
+            ),
+          ),
+        )
+      : el("p", { class: "muted" }, t(lang, "noneApproaching")),
+  );
 }
 
 /** One row of the delayed-arrivals list. */

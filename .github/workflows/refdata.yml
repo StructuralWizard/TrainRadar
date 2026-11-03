@@ -60,6 +60,16 @@ jobs:
         with:
           path: gtfs/rail-heights.txt
           key: dem-heights-v1-${{ steps.week.outputs.week }}
+      # The IGN API is slow and drops connections: fetch at most weekly.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: igr
+        with:
+          path: gtfs/igr-rail.geojsonseq
+          key: igr-rail-v1-${{ steps.week.outputs.week }}
+      - name: Track count and electrification (IGN IGR-RT)
+        if: steps.igr.outputs.cache-hit != 'true'
+        continue-on-error: true # without it the build just lacks those facts
+        run: python3 -I tools/fetch-igr-rail.py gtfs/igr-rail.geojsonseq
       - name: Terrain heights of the rail nodes (Copernicus DEM)
         if: steps.dem.outputs.cache-hit != 'true'
         continue-on-error: true # without heights the build just has no gradients
@@ -70,6 +80,7 @@ jobs:
           target/release/refdata-build build --out web/data \
             --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
             $([ -s gtfs/rail-heights.txt ] && echo --rail-heights gtfs/rail-heights.txt) \
+            $([ -s gtfs/igr-rail.geojsonseq ] && echo --rail-attrs gtfs/igr-rail.geojsonseq) \
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data

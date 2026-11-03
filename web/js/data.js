@@ -60,6 +60,7 @@ export class RefData {
         idle(async () => {
           try {
             this.engine.loadGeometry(await fetchBytes(this.base + r.geometry.file));
+            this.onGeometry?.(code);
           } catch (e) {
             console.warn("geometry", code, e); // trains stay on straight lines
           }

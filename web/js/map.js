@@ -84,10 +84,58 @@ function addIcons(map) {
     }),
     { sdf: true, pixelRatio: 2 },
   );
+  // Stations: white squares with a dark border (not SDF: two colours).
+  map.addImage(
+    "station",
+    (() => {
+      const c = document.createElement("canvas");
+      c.width = c.height = 24;
+      const g = c.getContext("2d");
+      g.fillStyle = "#334155";
+      g.fillRect(2, 2, 20, 20);
+      g.fillStyle = "#ffffff";
+      g.fillRect(6, 6, 12, 12);
+      return g.getImageData(0, 0, 24, 24);
+    })(),
+    { pixelRatio: 2 },
+  );
+}
+
+/** IGN orthophoto (PNOA, CC BY 4.0): the "satellite" base map. */
+export const SATELLITE_TILES = "https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/{z}/{x}/{y}.jpeg";
+
+/** Show the satellite imagery over the vector base map, or hide it. It
+ * sits under all of TrainRadar's own layers. */
+export function setBasemap(map, kind) {
+  if (!map.getSource("satellite")) {
+    map.addSource("satellite", {
+      type: "raster",
+      tiles: [SATELLITE_TILES],
+      scheme: "tms",
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: 'Ortofoto: <a href="https://pnoa.ign.es/" target="_blank" rel="noopener">PNOA</a> © IGN (CC BY 4.0)',
+    });
+    map.addLayer({ id: "satellite", type: "raster", source: "satellite", layout: { visibility: "none" } }, "track");
+  }
+  map.setLayoutProperty("satellite", "visibility", kind === "satellite" ? "visible" : "none");
 }
 
 export function addLayers(map) {
   addIcons(map);
+  // AV/LD/MD track we have geometry for: dark for standard gauge (high
+  // speed), grey otherwise; dashed where single track.
+  map.addSource("track", { type: "geojson", data: empty() });
+  map.addLayer({
+    id: "track",
+    type: "line",
+    source: "track",
+    paint: {
+      "line-color": ["case", ["==", ["get", "gauge"], 1435], "#334155", "#94a3b8"],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 5, 1, 10, 2.5],
+      "line-opacity": 0.7,
+    },
+  });
   // Cercanías lines in their colours (dashed orange when a notice names them),
   // and the selected train's route.
   map.addSource("lines", { type: "geojson", data: empty() });
@@ -154,18 +202,23 @@ export function addLayers(map) {
   map.addSource("trains", { type: "geojson", data: empty() });
   map.addSource("selected", { type: "geojson", data: empty() });
 
+  // Stations as squares: long-distance ones from zoom 6, all from zoom 9.
+  const stationLayout = {
+    "icon-image": "station",
+    "icon-size": ["interpolate", ["linear"], ["zoom"], 6, 0.45, 10, 0.7, 14, 1],
+    "icon-allow-overlap": true,
+    "icon-ignore-placement": true,
+  };
   map.addLayer({
-    id: "stations",
-    type: "circle",
+    id: "stations-ld",
+    type: "symbol",
     source: "stations",
-    minzoom: 9,
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 2, 14, 5],
-      "circle-color": "#ffffff",
-      "circle-stroke-color": "#555",
-      "circle-stroke-width": 1,
-    },
+    minzoom: 6,
+    maxzoom: 9,
+    filter: ["==", ["%", ["get", "services"], 2], 1], // SERVICE_LONG_DISTANCE bit
+    layout: stationLayout,
   });
+  map.addLayer({ id: "stations", type: "symbol", source: "stations", minzoom: 9, layout: stationLayout });
   map.addLayer({
     id: "station-labels",
     type: "symbol",
@@ -252,7 +305,15 @@ export function addLayers(map) {
       "icon-rotation-alignment": "map",
       "icon-allow-overlap": true,
       "icon-ignore-placement": true,
-      "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.45, 8, 0.6, 12, 0.85, 15, 1.1],
+      // Filled arrows read smaller than the hollow OUIGO ones (no outline):
+      // draw them a third bigger.
+      "icon-size": [
+        "interpolate", ["linear"], ["zoom"],
+        4, ["case", ["==", ["get", "sch"], 1], 0.45, 0.62],
+        8, ["case", ["==", ["get", "sch"], 1], 0.6, 0.82],
+        12, ["case", ["==", ["get", "sch"], 1], 0.85, 1.1],
+        15, ["case", ["==", ["get", "sch"], 1], 1.1, 1.4],
+      ],
       "symbol-sort-key": ["get", "c"],
     },
     paint: {

@@ -33,6 +33,60 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("### Live check\n\nLoaded {} regions.\n", net.regions.len());
 
+    // Drawn lines must not jump: report trips whose line has a segment over
+    // 20 km in Cercanías núcleos (where stops are a few km apart).
+    let mut bad = 0;
+    for (ri, r) in net.regions.iter().enumerate() {
+        if r.tt.region == "ld" || !r.tt.live {
+            continue;
+        }
+        let mut seen_pat = std::collections::HashSet::new();
+        for (ti, trip) in r.tt.trips.iter().enumerate() {
+            if !seen_pat.insert(trip.pattern) {
+                continue;
+            }
+            let t = trainradar_engine::network::TripRef {
+                region: ri as u16,
+                trip: ti as u32,
+            };
+            let line = net.trip_line(t);
+            if let Some((k, d)) = line
+                .windows(2)
+                .map(|w| haversine_m(w[0], w[1]))
+                .enumerate()
+                .max_by(|a, b| a.1.total_cmp(&b.1))
+                .filter(|x| x.1 > 20_000.0)
+            {
+                bad += 1;
+                if bad <= 15 {
+                    let kind = match &r.geom[trip.pattern as usize] {
+                        trainradar_engine::network::PatternGeom::Shape { shape, start_m } => {
+                            format!(
+                                "shape {} ({}) from {start_m:.0} m",
+                                shape, r.tt.shapes[*shape as usize].id
+                            )
+                        }
+                        trainradar_engine::network::PatternGeom::Straight(_) => "straight".into(),
+                        trainradar_engine::network::PatternGeom::Legs(l) => {
+                            format!("legs {:?}", l.iter().map(|x| x.shared).collect::<Vec<_>>())
+                        }
+                    };
+                    println!(
+                        "- ⚠ line jump {:.0} km in {} route {} trip {} at point {k}/{}: {:?} → {:?}; {kind}",
+                        d / 1000.0,
+                        r.tt.region,
+                        r.tt.routes[trip.route as usize].short_name,
+                        r.tt.trip_id(trip),
+                        line.len(),
+                        line[k],
+                        line[k + 1]
+                    );
+                }
+            }
+        }
+    }
+    println!("Cercanías patterns with a line jump over 20 km: {bad}\n");
+
     let mut live = Live::default();
     for spec in Renfe.feeds() {
         let bytes = std::fs::read(rt.join(spec.path))?;

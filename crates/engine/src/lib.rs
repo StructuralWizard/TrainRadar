@@ -182,7 +182,29 @@ impl Engine {
         let mut v = v.clone();
         v.ahead = ahead;
         v.behind = behind;
-        self.view_json(&v)
+        let mut s = self.view_json(&v);
+        if let Some((j, gap, secs)) = spacing::oncoming(&self.net, &self.live.trains, &views, index)
+        {
+            let o = &self.live.trains[views[j].index];
+            let id = if o.rt.trip_id.is_empty() {
+                &o.rt.train_number
+            } else {
+                &o.rt.trip_id
+            };
+            let mut x = String::new();
+            json::Obj::new(&mut x)
+                .n("i", views[j].index)
+                .s("title", &self.title_of(id))
+                .n("distance_m", gap.round())
+                .on("time_secs", secs.map(f64::round))
+                .end();
+            // view_json ends with '}': add the field before it.
+            s.pop();
+            s.push_str(",\"oncoming\":");
+            s.push_str(&x);
+            s.push('}');
+        }
+        s
     }
 
     /// Stats bar: `{trains, delayed, median_delay}`.
@@ -263,6 +285,70 @@ impl Engine {
             .iter()
             .position(|t| t.rt.trip_id == trip_id && t.rt.train_number == number)
             .map_or(-1, |i| i as i32)
+    }
+
+    /// Trains on the map whose number, trip id or line matches `query`
+    /// (case-insensitive; numbers match from the start): up to `limit` of
+    /// `{i, number, route, origin, destination}`, exact numbers first.
+    #[wasm_bindgen(js_name = searchJson)]
+    pub fn search_json(&self, query: &str, limit: usize) -> String {
+        let q = query.trim().to_lowercase();
+        let mut hits: Vec<(u8, usize)> = Vec::new();
+        if !q.is_empty() {
+            for (i, t) in self.live.trains.iter().enumerate() {
+                let number = t.rt.train_number.trim_start_matches('0').to_lowercase();
+                let qn = q.trim_start_matches('0');
+                let route = t.matched.map(|m| {
+                    let r = &self.net.regions[m.trip.region as usize];
+                    r.tt.routes[self.net.trip(m.trip).route as usize]
+                        .short_name
+                        .to_lowercase()
+                });
+                let rank = if !qn.is_empty() && number == qn {
+                    0
+                } else if !qn.is_empty() && number.starts_with(qn) {
+                    1
+                } else if t.rt.trip_id.to_lowercase().contains(&q) {
+                    2
+                } else if route.as_deref() == Some(q.as_str())
+                    || t.rt.line.to_lowercase() == q
+                    || format!("{} {number}", route.as_deref().unwrap_or("")).trim() == q
+                {
+                    3
+                } else {
+                    continue;
+                };
+                hits.push((rank, i));
+            }
+        }
+        hits.sort();
+        let mut s = String::from("[");
+        for (k, (_, i)) in hits.iter().take(limit).enumerate() {
+            if k > 0 {
+                s.push(',');
+            }
+            let t = &self.live.trains[*i];
+            let mut o = String::new();
+            let mut obj = json::Obj::new(&mut o);
+            obj.n("i", i)
+                .s("number", &t.rt.train_number)
+                .s("trip_id", &t.rt.trip_id)
+                .s("line", &t.rt.line);
+            if let Some(m) = t.matched {
+                let r = &self.net.regions[m.trip.region as usize];
+                let n = self.net.schedule(m.trip).len();
+                obj.s(
+                    "route",
+                    &r.tt.routes[self.net.trip(m.trip).route as usize].short_name,
+                )
+                .s("origin", self.net.stop_name(m.trip, 0))
+                .s("destination", self.net.stop_name(m.trip, n - 1));
+            }
+            obj.end();
+            s.push_str(&o);
+        }
+        s.push(']');
+        s
     }
 
     /// Route of train `index` for highlighting: `{line: [[lon, lat]…],
@@ -417,6 +503,55 @@ impl Engine {
                         "notice",
                         noticed.contains(&(r.tt.region.clone(), name.to_owned())),
                     )
+                    .end();
+                s.push('}');
+            }
+        }
+        s.push_str("]}");
+        s
+    }
+
+    /// The AV/LD/MD (and OUIGO) track we have geometry for, once each:
+    /// `{gauge, tracks, electrified, max_kmh}` per OpenStreetMap leg, for the
+    /// long-distance lines layer. Grows as geometry files load.
+    #[wasm_bindgen(js_name = trackGeoJson)]
+    pub fn track_geojson(&self) -> String {
+        use std::collections::HashSet;
+        let mut seen: HashSet<[i64; 4]> = HashSet::new();
+        let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
+        let mut first = true;
+        for (ri, legs) in self.net.legs.iter().enumerate() {
+            for (li, line) in legs.iter().enumerate() {
+                let pts = line.points();
+                let (Some(a), Some(b)) = (pts.first(), pts.last()) else {
+                    continue;
+                };
+                // The same stop pair in either direction, or in two regions.
+                let k = |p: &trainradar_proto::LatLon| {
+                    ((p.lat * 1e4).round() as i64, (p.lon * 1e4).round() as i64)
+                };
+                let (ka, kb) = (k(a), k(b));
+                let (lo, hi) = if ka <= kb { (ka, kb) } else { (kb, ka) };
+                if !seen.insert([lo.0, lo.1, hi.0, hi.1]) {
+                    continue;
+                }
+                let info = self.net.leg_info[ri].get(li).copied().unwrap_or_default();
+                if !first {
+                    s.push(',');
+                }
+                first = false;
+                s.push_str(r#"{"type":"Feature","geometry":{"type":"LineString","coordinates":["#);
+                let coords: Vec<String> = pts
+                    .iter()
+                    .map(|p| format!("[{:.5},{:.5}]", p.lon, p.lat))
+                    .collect();
+                s.push_str(&coords.join(","));
+                s.push_str("]},\"properties\":");
+                json::Obj::new(&mut s)
+                    .n("gauge", info.gauge_mm)
+                    .n("tracks", info.tracks)
+                    .n("electrified", info.electrified)
+                    .n("max_kmh", info.max_kmh)
                     .end();
                 s.push('}');
             }
@@ -667,6 +802,13 @@ impl Engine {
 
 impl Engine {
     /// "AVE 3071" / "C3 21096" for a train identified by trip id or number.
+    /// Index of the train with this spacing label (trip id, or number).
+    fn index_of(&self, id: &str) -> Option<usize> {
+        self.live.trains.iter().position(|t| {
+            t.rt.trip_id == id || (t.rt.trip_id.is_empty() && t.rt.train_number == id)
+        })
+    }
+
     fn title_of(&self, id: &str) -> String {
         let Some(t) =
             self.live.trains.iter().find(|t| {
@@ -745,7 +887,10 @@ impl Engine {
                 .b("matched_exact", m.exact)
                 .s("operator", &r.tt.operator);
             if let Some(info) = v.along.and_then(|d| self.net.track_info(m.trip, d)) {
-                o.n("gauge_mm", info.gauge_mm).n("max_kmh", info.max_kmh);
+                o.n("gauge_mm", info.gauge_mm)
+                    .n("max_kmh", info.max_kmh)
+                    .n("tracks", info.tracks)
+                    .n("electrified", info.electrified);
             }
             if let Some((alt, grade)) = v.along.and_then(|d| self.net.slope_at(m.trip, d)) {
                 o.n("altitude_m", alt.round())
@@ -775,6 +920,7 @@ impl Engine {
                     json::Obj::new(&mut x)
                         .s("trip_id", &g.trip_id)
                         .s("title", &self.title_of(&g.trip_id))
+                        .on("i", self.index_of(&g.trip_id))
                         .n("distance_m", g.distance_m)
                         .n("time_secs", g.time_secs)
                         .b("estimated", g.source == PositionSource::Interpolated)
@@ -894,6 +1040,14 @@ mod tests {
             serde_json::from_str(&e.approaching_json("B", ms, 1800)).unwrap();
         assert_eq!(a[0]["trip_id"], "1004D100C3");
         assert_eq!(a[0]["eta"], local(8, 10));
+        for q in ["100", "0100", "C3 100", "1004d100"] {
+            let r: serde_json::Value = serde_json::from_str(&e.search_json(q, 5)).unwrap();
+            assert_eq!(r[0]["number"], "100", "{q}");
+        }
+        let r: serde_json::Value = serde_json::from_str(&e.search_json("999", 5)).unwrap();
+        assert_eq!(r.as_array().unwrap().len(), 0);
+        let t: serde_json::Value = serde_json::from_str(&e.track_geojson()).unwrap();
+        assert_eq!(t["type"], "FeatureCollection");
         let b: serde_json::Value =
             serde_json::from_str(&e.station_board_json("B", ms, 7200, 5)).unwrap();
         assert_eq!(b[0]["route"], "C3");

@@ -66,7 +66,8 @@ jobs:
           python3 tools/demo-gtfs.py demo/gtfs
           cargo run --release -q -p trainradar-refdata-build -- build --out demo/data \
             --ld demo/gtfs/ld.zip --cercanias demo/gtfs/cercanias.zip --ouigo demo/gtfs/ouigo.zip \
-            --rail demo/gtfs/rail.geojsonseq --rail-heights demo/gtfs/heights.txt
+            --rail demo/gtfs/rail.geojsonseq --rail-heights demo/gtfs/heights.txt \
+            --rail-attrs demo/gtfs/igr-rail.geojsonseq
           cargo run --release -q -p trainradar-engine --example fixture -- demo/data demo/rt
       - name: Browser test
         run: |
@@ -76,6 +77,7 @@ jobs:
           mkdir -p shots && node tools/feed-check/web-smoke.mjs http://localhost:8080/ shots
           node tools/feed-check/location-smoke.mjs http://localhost:8080/ shots
           node tools/feed-check/incidents-smoke.mjs http://localhost:8080/ shots
+          node tools/feed-check/features-smoke.mjs http://localhost:8080/ shots
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

@@ -213,7 +213,7 @@ fn scheduled_trains(net: &Network, now: i64) -> Vec<LiveTrain> {
 }
 
 /// What we remember about one vehicle's recent positions.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 struct Seen {
     lat: i32,
     lon: i32,
@@ -221,20 +221,57 @@ struct Seen {
     since: i64,
     /// Latest fix time at this position.
     last: i64,
-    /// Previous different position and its last fix time.
-    prev: Option<(i32, i32, i64)>,
+    /// Whether the feed timestamps its fixes (Cercanías) or we only know
+    /// when we saw them (AV/LD/MD).
+    timed: bool,
+    /// Earlier different positions with their last fix time, oldest first
+    /// (at most [`SPEED_HISTORY`]).
+    hist: Vec<(i32, i32, i64)>,
 }
 
+/// Positions kept per vehicle for measuring speed.
+const SPEED_HISTORY: usize = 6;
+/// Speed is measured over at least this span of fixes: a timestamped fix is
+/// accurate to a second or two, but untimestamped AV/LD/MD fixes only to
+/// our polling interval (~30 s), so they need a longer baseline.
+const MIN_SPAN_TIMED_S: i64 = 45;
+const MIN_SPAN_UNTIMED_S: i64 = 120;
+/// ...and at most this span, so it's still the current speed.
+const MAX_SPAN_S: i64 = 360;
+/// Faster than any train in Spain (AVE max 310 km/h, plus GPS error): a
+/// measurement above this is wrong and is dropped.
+pub const MAX_PLAUSIBLE_MS: f32 = 340.0 / 3.6;
+
 impl Seen {
+    /// Average speed (m/s) from the oldest usable earlier position to this
+    /// one: the distance between several fixes over 45 s–6 min, so one
+    /// jittery GPS fix or a late poll barely changes the result.
     fn speed(&self) -> Option<f32> {
-        let (plat, plon, pt) = self.prev?;
+        let min_span = if self.timed {
+            MIN_SPAN_TIMED_S
+        } else {
+            MIN_SPAN_UNTIMED_S
+        };
+        let &(_, _, pt) = self.hist.iter().find(|h| self.since - h.2 <= MAX_SPAN_S)?;
         let dt = self.since - pt;
-        if !(5..=300).contains(&dt) {
+        if dt < min_span {
             return None;
         }
-        let a = LatLon::new(f64::from(plat) / 1e5, f64::from(plon) / 1e5);
-        let b = LatLon::new(f64::from(self.lat) / 1e5, f64::from(self.lon) / 1e5);
-        Some((haversine_m(a, b) / dt as f64) as f32)
+        // Sum the hops so curves count (a chord would read slow).
+        let mut pts: Vec<(i32, i32)> = self
+            .hist
+            .iter()
+            .filter(|h| h.2 >= pt)
+            .map(|h| (h.0, h.1))
+            .collect();
+        pts.push((self.lat, self.lon));
+        let ll = |p: (i32, i32)| LatLon::new(f64::from(p.0) / 1e5, f64::from(p.1) / 1e5);
+        let dist: f64 = pts
+            .windows(2)
+            .map(|w| haversine_m(ll(w[0]), ll(w[1])))
+            .sum();
+        let v = (dist / dt as f64) as f32;
+        (v <= MAX_PLAUSIBLE_MS).then_some(v)
     }
 }
 
@@ -258,16 +295,19 @@ impl Live {
                         lon,
                         since: ft,
                         last: ft,
-                        prev: None,
+                        timed: x.timestamp.is_some(),
+                        hist: Vec::new(),
                     };
-                    let e = self.seen.entry(key(x)).or_insert(fresh);
+                    let e = self.seen.entry(key(x)).or_insert(fresh.clone());
                     if (e.lat, e.lon) == (lat, lon) {
                         e.last = e.last.max(ft);
                     } else {
-                        *e = Seen {
-                            prev: Some((e.lat, e.lon, e.last)),
-                            ..fresh
-                        };
+                        let mut hist = std::mem::take(&mut e.hist);
+                        hist.push((e.lat, e.lon, e.last));
+                        if hist.len() > SPEED_HISTORY {
+                            hist.remove(0);
+                        }
+                        *e = Seen { hist, ..fresh };
                     }
                 }
                 self.vehicles.insert(feed, v);
@@ -304,7 +344,7 @@ impl Live {
         let mut trains = Vec::new();
         for (&feed, list) in &self.vehicles {
             for v in list {
-                let seen = self.seen.get(&key(v)).copied();
+                let seen = self.seen.get(&key(v));
                 let fix_time = v
                     .timestamp
                     .filter(|t| (t - now).abs() <= MAX_CLOCK_SKEW_SECS)
@@ -647,6 +687,33 @@ mod tests {
         let (kmh, measured) = live.views(&net, t0 + 70, false)[0].speed.unwrap();
         assert!(measured);
         assert!((kmh - 66.7).abs() < 1.0, "{kmh}");
+    }
+
+    #[test]
+    fn untimestamped_speed_needs_a_long_baseline_and_drops_the_implausible() {
+        let net = sample_network();
+        let mut live = Live::default();
+        let t0 = local(8, 3);
+        let feed = |lat| FeedData::Vehicles(vec![vehicle("1004D100C3", lat, None)]);
+        // AV/LD-style fixes (no timestamps), seen at each 30 s poll.
+        live.ingest(&net, "vp_ld", feed(40.380), t0);
+        live.ingest(&net, "vp_ld", feed(40.375), t0 + 30);
+        assert!(
+            !live.views(&net, t0 + 31, false)[0].speed.unwrap().1,
+            "30 s isn't enough: timetabled speed instead"
+        );
+        // A jump of 0.03° (3.3 km) in 30 s would read 400 km/h; over the
+        // whole 2 min baseline it's (0.005+0.03+0.005+0.005)° ≈ 5 km / 120 s.
+        live.ingest(&net, "vp_ld", feed(40.345), t0 + 60);
+        live.ingest(&net, "vp_ld", feed(40.340), t0 + 90);
+        live.ingest(&net, "vp_ld", feed(40.335), t0 + 120);
+        let (kmh, measured) = live.views(&net, t0 + 121, false)[0].speed.unwrap();
+        assert!(measured);
+        assert!((kmh - 150.1).abs() < 2.0, "{kmh}");
+        // A 20 km jump in the next poll is impossible: not measured.
+        live.ingest(&net, "vp_ld", feed(40.155), t0 + 150);
+        let v = &live.views(&net, t0 + 151, false)[0];
+        assert!(v.speed.is_none_or(|s| !s.1), "{:?}", v.speed);
     }
 
     #[test]

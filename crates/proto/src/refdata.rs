@@ -343,6 +343,10 @@ pub struct LegInfo {
     pub gauge_mm: u16,
     /// Maximum line speed in km/h.
     pub max_kmh: u16,
+    /// Number of tracks (1 single, 2 double, ...), from the IGN network.
+    pub tracks: u8,
+    /// 1 not electrified, 2 electrified, from the IGN network.
+    pub electrified: u8,
 }
 
 impl HasHeader for GeometryFile {

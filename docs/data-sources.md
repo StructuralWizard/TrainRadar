@@ -140,11 +140,39 @@ Attribution: "© OpenStreetMap contributors". Approved by the maintainer on
 - Services: `https://ideadif.adif.es/services/wfs` and `/services/wms`. On
   2026-11-02 both returned **HTTP 503** to GitHub's servers, so nothing is
   integrated yet. Next step: a manual download from IDEAdif, or a retry later.
+- 2026-11-03: still **HTTP 503** (an Akamai error page) from this project's
+  cloud sandbox too, while idee.es itself answers: the IDEAdif server is down
+  or refuses outside clients, not a network setting on our side.
 - The same WFS is catalogued on idee.es ("WFS de la Red de Transporte
   Ferroviario de Adif") and on datos.gob.es, where the licence is given as
   **CC BY 4.0**. The RFIG (Red Ferroviaria de Interés General) is the network
   Adif manages, so this WFS is the RFIG source. The idee.es record points to
   the IDEAdif download centre for files.
+
+## IGN transport network, IGR-RT (used from 2026-11-03)
+
+"Redes de Transporte de España" (IDEE record `spaign_IGR_Transporte`, metadata
+of 11 Sep 2026): the national reference transport network by the IGN, INSPIRE
+Transport Networks model, version of July 2026. Its rail network is built from
+**ADIF** data (plus BTN25/BTN100 and TEN-T), so it covers the RFIG.
+
+| What | Where | Licence |
+|---|---|---|
+| Railway links (60,018; 38,256 with attributes) | `https://api-features.idee.es/collections/railwaylink` (OGC API Features, no key) | **CC BY 4.0** ("IGR-RT 2026 CC-BY 4.0 scne.es"), no access or use conditions |
+
+- **Used:** number of tracks and electrification, matched onto our OSM legs
+  in CI (`tools/fetch-igr-rail.py`, `refdata-build build --rail-attrs`) and shown
+  in the popup ("vía única · sin electrificar"). Attribution: "© Instituto
+  Geográfico Nacional (SCNE, IGR-RT), CC BY 4.0", in the README and map credits.
+- **Not used:** heights. The links are 3D, but the heights follow the terrain:
+  the Guadarrama base tunnel goes up to 2,166 m over the mountain, and some
+  points are 0. Copernicus with OSM tunnels/bridges stays the height source.
+- **Not available:** design speed and line names (`railwayLineCode` and
+  `geographicalName` are empty). The WFS (`servicios.idee.es/wfs-inspire/transportes`)
+  also has `tn:VerticalPosition` and `tn:ConditionOfFacility`, but for every
+  network (~10 million features), so it isn't worth paging through.
+- The CNIG download centre (`centrodedescargas.cnig.es`) dropped our
+  connections on 2026-11-03; the API is enough.
 
 ## Adif network status (researched 2026-11-01)
 

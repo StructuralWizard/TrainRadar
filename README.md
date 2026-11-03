@@ -21,7 +21,8 @@ and draws them on a MapLibre map. There is no TrainRadar server.
 - Arrows showing each train's direction; tap a train to highlight its route, stops and
   the other trains on its line.
 - Spacing to the train ahead and behind on the same track, in minutes and km.
-- Speed (measured or timetabled), gauge and line speed, accessibility.
+- Speed (measured or timetabled), gauge, line speed, single/double track and
+  electrification, accessibility.
 - Track gradient and altitude at the train, with a height profile of the route
   (AV/LD/MD and OUIGO; from the Copernicus terrain model, approximate).
 - Trains stopped between stations, with likely problem sections.
@@ -123,6 +124,9 @@ cd tools/feed-check && npm ci && npx playwright install chromium && npm run chec
 - Track geometry for AV/LD/MD trains: © [OpenStreetMap](https://www.openstreetmap.org/copyright)
   contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/). The derived
   `geo-*.bin` files are published with the site under the same licence.
+- Track count and electrification: © Instituto Geográfico Nacional (SCNE,
+  [IGR-RT](https://www.idee.es/csw-codsi-idee/srv/api/records/spaign_IGR_Transporte)),
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); rail data from ADIF.
 - Track heights (gradients): produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and
   © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union
   and ESA; all rights reserved. The organisations in charge of the Copernicus programme by
