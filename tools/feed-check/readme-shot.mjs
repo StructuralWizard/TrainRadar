@@ -21,7 +21,8 @@ const target = await page.evaluate(() => {
   const { width, height } = map.getCanvas().getBoundingClientRect();
   const feats = map.queryRenderedFeatures([[width * 0.3, height * 0.25], [width * 0.7, height * 0.6]], { layers: ["trains"] });
   feats.sort((a, b) => b.properties.c - a.properties.c);
-  const live = feats.filter((x) => x.properties.sch !== 1); // not a timetable-only OUIGO
+  // A live train with a known delay (so a timetable match and a full popup).
+  const live = feats.filter((x) => x.properties.sch !== 1 && x.properties.c !== 3);
   const f = live.find((x) => x.properties.c === 1 || x.properties.c === 2) || live[0];
   return f ? f.geometry.coordinates : null;
 });

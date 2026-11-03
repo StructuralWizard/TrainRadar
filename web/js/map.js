@@ -54,17 +54,60 @@ export function createMap(container, config, attribution) {
   return { map, attr };
 }
 
-/** Draw the train icons once (SDF, so the colour comes from the data). */
+/** Turn a drawn shape into a signed distance field, the format MapLibre's
+ * SDF icons expect (edge at alpha 192, about 24 per pixel), so the halo
+ * (the train-kind border) can be several pixels wide instead of the
+ * one-pixel fringe a hard-edged image allows. */
+function toSdf(img) {
+  const { width: w, height: h, data } = img;
+  const inside = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) inside[i] = data[i * 4 + 3] > 127 ? 1 : 0;
+  // Edge pixels: inside pixels next to an outside one, and vice versa.
+  const edges = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const v = inside[y * w + x];
+      if ((x > 0 && inside[y * w + x - 1] !== v) || (x < w - 1 && inside[y * w + x + 1] !== v) ||
+          (y > 0 && inside[(y - 1) * w + x] !== v) || (y < h - 1 && inside[(y + 1) * w + x] !== v)) {
+        edges.push(x, y);
+      }
+    }
+  }
+  const out = new ImageData(w, h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let best = Infinity;
+      for (let k = 0; k < edges.length; k += 2) {
+        const dx = edges[k] - x, dy = edges[k + 1] - y;
+        const d = dx * dx + dy * dy;
+        if (d < best) best = d;
+      }
+      const dist = Math.sqrt(best) * (inside[y * w + x] ? 1 : -1);
+      const o = (y * w + x) * 4;
+      out.data[o] = out.data[o + 1] = out.data[o + 2] = 0;
+      out.data[o + 3] = Math.max(0, Math.min(255, Math.round(192 + dist * 24)));
+    }
+  }
+  return out;
+}
+
+/** Draw the train icons once (SDF, so the colour comes from the data).
+ * Names start with "tr-": the base map's own sprite has images called
+ * "dot" and "arrow", and ours would replace them (big black town dots). */
 function addIcons(map) {
-  const size = 48;
+  // Shapes are drawn on a 48 px design grid inside a 64 px image: the
+  // margin leaves room for the border (halo) around them.
+  const PAD = 8;
+  const size = 48 + 2 * PAD;
   const make = (draw) => {
     const c = document.createElement("canvas");
     c.width = c.height = size;
     const g = c.getContext("2d");
     g.fillStyle = "#000";
     g.strokeStyle = "#000";
+    g.translate(PAD, PAD);
     draw(g);
-    return g.getImageData(0, 0, size, size);
+    return toSdf(g.getImageData(0, 0, size, size));
   };
   const arrow = (g) => {
     g.beginPath();
@@ -74,10 +117,10 @@ function addIcons(map) {
     g.lineTo(6, 42);
     g.closePath();
   };
-  map.addImage("arrow", make((g) => (arrow(g), g.fill())), { sdf: true, pixelRatio: 2 });
+  map.addImage("tr-arrow", make((g) => (arrow(g), g.fill())), { sdf: true, pixelRatio: 2 });
   // High speed: slimmer and more pointed. Medium distance: flat tip.
   map.addImage(
-    "arrow-av",
+    "tr-arrow-av",
     make((g) => {
       g.beginPath();
       g.moveTo(24, 1);
@@ -90,7 +133,7 @@ function addIcons(map) {
     { sdf: true, pixelRatio: 2 },
   );
   map.addImage(
-    "arrow-md",
+    "tr-arrow-md",
     make((g) => {
       g.beginPath();
       g.moveTo(17, 6);
@@ -104,7 +147,7 @@ function addIcons(map) {
     { sdf: true, pixelRatio: 2 },
   );
   map.addImage(
-    "arrow-hollow",
+    "tr-arrow-hollow",
     make((g) => {
       arrow(g);
       g.lineWidth = 6;
@@ -114,7 +157,7 @@ function addIcons(map) {
     { sdf: true, pixelRatio: 2 },
   );
   map.addImage(
-    "dot",
+    "tr-dot",
     make((g) => {
       g.beginPath();
       g.arc(24, 24, 15, 0, 2 * Math.PI);
@@ -124,7 +167,7 @@ function addIcons(map) {
   );
   // Stations: white squares with a dark border (not SDF: two colours).
   map.addImage(
-    "station",
+    "tr-station",
     (() => {
       const c = document.createElement("canvas");
       c.width = c.height = 24;
@@ -247,7 +290,7 @@ export function addLayers(map) {
 
   // Stations as squares: long-distance ones from zoom 6, all from zoom 9.
   const stationLayout = {
-    "icon-image": "station",
+    "icon-image": "tr-station",
     "icon-size": ["interpolate", ["linear"], ["zoom"], 6, 0.45, 10, 0.7, 14, 1],
     "icon-allow-overlap": true,
     "icon-ignore-placement": true,
@@ -345,9 +388,9 @@ export function addLayers(map) {
     layout: {
       "icon-image": [
         "case",
-        ["==", ["get", "sch"], 1], "arrow-hollow",
-        ["!", ["has", "b"]], "dot",
-        ["match", ["get", "t"], "av", "arrow-av", "md", "arrow-md", "arrow"],
+        ["==", ["get", "sch"], 1], "tr-arrow-hollow",
+        ["!", ["has", "b"]], "tr-dot",
+        ["match", ["get", "t"], "av", "tr-arrow-av", "md", "tr-arrow-md", "tr-arrow"],
       ],
       "icon-rotate": ["coalesce", ["get", "b"], 0],
       "icon-rotation-alignment": "map",
@@ -374,7 +417,7 @@ export function addLayers(map) {
       ],
       // Fill = delay; border = kind of train (same colours as its track).
       "icon-halo-color": ["match", ["get", "t"], "av", TRACK_COLORS.av, "ld", TRACK_COLORS.ld, "md", "#475569", "#ffffff"],
-      "icon-halo-width": ["match", ["get", "t"], "cer", 1.2, "ouigo", 1.2, 2.2],
+      "icon-halo-width": ["match", ["get", "t"], "cer", 1.2, "ouigo", 1.2, 3],
       // Old GPS fixes fade a little; trains outside a highlighted line fade a lot.
       "icon-opacity": ["case", ["==", ["get", "dim"], 1], 0.18, [">", ["get", "a"], 600], 0.65, 1],
     },
