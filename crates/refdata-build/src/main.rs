@@ -299,6 +299,19 @@ fn run_build(a: BuildArgs) -> Result<()> {
         eprint!("{note}");
         report.push_str(&note);
     }
+    for b in &built {
+        if b.0.code == LONG_DISTANCE || b.1.operator != "Renfe" || b.3.jumps.is_empty() {
+            continue;
+        }
+        report.push_str(&format!(
+            "- ⚠ {}: consecutive stops over {} km apart (bad stop data?):\n",
+            b.0.code,
+            build::JUMP_M / 1000.0
+        ));
+        for j in &b.3.jumps {
+            report.push_str(&format!("  - {j}\n"));
+        }
+    }
     if let Some(n) = &heights_note {
         let with: usize = built.iter().map(|b| b.3.legs_with_profile).sum();
         report.push_str(&format!(

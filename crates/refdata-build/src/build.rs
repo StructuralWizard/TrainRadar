@@ -108,7 +108,14 @@ pub struct RegionStats {
     pub patterns_straight: usize,
     /// OpenStreetMap legs with a height profile (DEM heights given).
     pub legs_with_profile: usize,
+    /// Consecutive stops further apart than [`JUMP_M`]: in a commuter
+    /// network that's bad data (data-quality report only).
+    #[serde(skip)]
+    pub jumps: Vec<String>,
 }
+
+/// Consecutive Cercanías stops further apart than this are reported.
+pub const JUMP_M: f64 = 60_000.0;
 
 /// Build one region's timetable from a subset of a feed's trips.
 pub fn build_timetable(
@@ -183,6 +190,30 @@ pub fn build_timetable(
             .map(|&(s, _, _)| feed.stops[s].coord)
             .collect();
         let stop_ids: Vec<usize> = trip.stop_times.iter().map(|s| s.0).collect();
+        for i in 1..coords.len() {
+            let d = haversine_m(coords[i - 1], coords[i]);
+            if d > JUMP_M && st.jumps.len() < 20 {
+                let (a, b) = (&feed.stops[stop_ids[i - 1]], &feed.stops[stop_ids[i]]);
+                let msg = format!(
+                    "{} km: {} {} ({:.4},{:.4}) → {} {} ({:.4},{:.4}) on route {} trip {}",
+                    (d / 1000.0).round(),
+                    a.id,
+                    a.name,
+                    a.coord.lat,
+                    a.coord.lon,
+                    b.id,
+                    b.name,
+                    b.coord.lat,
+                    b.coord.lon,
+                    feed.routes[trip.route].id,
+                    trip.id
+                );
+                let key = format!("{}>{}", a.id, b.id);
+                if !st.jumps.iter().any(|j| j.contains(&key)) {
+                    st.jumps.push(format!("{key} {msg}"));
+                }
+            }
+        }
 
         // Place stops on the trip's shape, trying it forwards then reversed.
         let placed = if feed.shapes.contains_key(&trip.shape_id) {
