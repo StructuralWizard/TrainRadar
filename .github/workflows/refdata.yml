@@ -60,7 +60,14 @@ jobs:
         with:
           path: gtfs/rail-heights.txt
           key: dem-heights-v1-${{ steps.week.outputs.week }}
+      # The IGN API is slow and drops connections: fetch at most weekly.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: igr
+        with:
+          path: gtfs/igr-rail.geojsonseq
+          key: igr-rail-v1-${{ steps.week.outputs.week }}
       - name: Track count and electrification (IGN IGR-RT)
+        if: steps.igr.outputs.cache-hit != 'true'
         continue-on-error: true # without it the build just lacks those facts
         run: python3 -I tools/fetch-igr-rail.py gtfs/igr-rail.geojsonseq
       - name: Terrain heights of the rail nodes (Copernicus DEM)
