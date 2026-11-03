@@ -116,6 +116,8 @@ pub struct RegionStats {
 
 /// Consecutive Cercanías stops further apart than this are reported.
 pub const JUMP_M: f64 = 60_000.0;
+/// Consecutive GTFS shape points further apart than this are reported.
+pub const SHAPE_JUMP_M: f64 = 20_000.0;
 
 /// Build one region's timetable from a subset of a feed's trips.
 pub fn build_timetable(
@@ -228,6 +230,18 @@ pub fn build_timetable(
                                 pts.reverse();
                             }
                             st.shape_points_in += pts.len();
+                            if !rev {
+                                for (i, w) in pts.windows(2).enumerate() {
+                                    let d = haversine_m(w[0], w[1]);
+                                    if d > SHAPE_JUMP_M && st.jumps.len() < 40 {
+                                        st.jumps.push(format!(
+                                            "shape {} point {}/{}: {} km jump ({:.4},{:.4}) → ({:.4},{:.4})",
+                                            trip.shape_id, i + 1, pts.len(), (d / 1000.0).round(),
+                                            w[0].lat, w[0].lon, w[1].lat, w[1].lon
+                                        ));
+                                    }
+                                }
+                            }
                             let simple = simplify(&pts, SIMPLIFY_TOLERANCE_M);
                             st.shape_points_out += simple.len();
                             let id = if rev {

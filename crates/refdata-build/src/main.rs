@@ -304,7 +304,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
             continue;
         }
         report.push_str(&format!(
-            "- ⚠ {}: consecutive stops over {} km apart (bad stop data?):\n",
+            "- ⚠ {}: stops or shape points far apart (bad data?), over {} km:\n",
             b.0.code,
             build::JUMP_M / 1000.0
         ));

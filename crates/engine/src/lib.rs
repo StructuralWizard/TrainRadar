@@ -425,6 +425,55 @@ impl Engine {
         s
     }
 
+    /// The AV/LD/MD (and OUIGO) track we have geometry for, once each:
+    /// `{gauge, tracks, electrified, max_kmh}` per OpenStreetMap leg, for the
+    /// long-distance lines layer. Grows as geometry files load.
+    #[wasm_bindgen(js_name = trackGeoJson)]
+    pub fn track_geojson(&self) -> String {
+        use std::collections::HashSet;
+        let mut seen: HashSet<[i64; 4]> = HashSet::new();
+        let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
+        let mut first = true;
+        for (ri, legs) in self.net.legs.iter().enumerate() {
+            for (li, line) in legs.iter().enumerate() {
+                let pts = line.points();
+                let (Some(a), Some(b)) = (pts.first(), pts.last()) else {
+                    continue;
+                };
+                // The same stop pair in either direction, or in two regions.
+                let k = |p: &trainradar_proto::LatLon| {
+                    ((p.lat * 1e4).round() as i64, (p.lon * 1e4).round() as i64)
+                };
+                let (ka, kb) = (k(a), k(b));
+                let (lo, hi) = if ka <= kb { (ka, kb) } else { (kb, ka) };
+                if !seen.insert([lo.0, lo.1, hi.0, hi.1]) {
+                    continue;
+                }
+                let info = self.net.leg_info[ri].get(li).copied().unwrap_or_default();
+                if !first {
+                    s.push(',');
+                }
+                first = false;
+                s.push_str(r#"{"type":"Feature","geometry":{"type":"LineString","coordinates":["#);
+                let coords: Vec<String> = pts
+                    .iter()
+                    .map(|p| format!("[{:.5},{:.5}]", p.lon, p.lat))
+                    .collect();
+                s.push_str(&coords.join(","));
+                s.push_str("]},\"properties\":");
+                json::Obj::new(&mut s)
+                    .n("gauge", info.gauge_mm)
+                    .n("tracks", info.tracks)
+                    .n("electrified", info.electrified)
+                    .n("max_kmh", info.max_kmh)
+                    .end();
+                s.push('}');
+            }
+        }
+        s.push_str("]}");
+        s
+    }
+
     /// Up to `k` stations within `max_m` of a point, nearest first:
     /// `[{id, name, lat, lon, distance_m, services}]`.
     #[wasm_bindgen(js_name = nearestStationsJson)]
