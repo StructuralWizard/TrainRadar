@@ -21,12 +21,13 @@ const pt = await page.evaluate(() => {
   const { width, height } = map.getCanvas().getBoundingClientRect();
   const feats = map.queryRenderedFeatures([[width * 0.3, height * 0.25], [width * 0.7, height * 0.6]], { layers: ["trains"] });
   feats.sort((a, b) => b.properties.c - a.properties.c);
-  const f = feats.find((x) => x.properties.c === 1 || x.properties.c === 2) || feats[0];
+  const live = feats.filter((x) => x.properties.sch !== 1); // not a timetable-only OUIGO
+  const f = live.find((x) => x.properties.c === 1 || x.properties.c === 2) || live[0];
   return f ? map.project(f.geometry.coordinates) : null;
 });
 if (pt) {
   await page.mouse.click(pt.x, pt.y);
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(6000); // pan + tiles under the popup
 }
 await page.screenshot({ path: `${out}/readme.jpg`, type: "jpeg", quality: 82 });
 console.log("README-SHOT-BEGIN");

@@ -44,6 +44,26 @@ fn along_route_of(net: &Network, f: &TrainView, ft: &LiveTrain, o: &TrainView) -
     along_route_heading(net, f, ft, o, false)
 }
 
+/// Whether two trains can share a track: Cercanías only with Cercanías,
+/// AV/LD/MD and OUIGO among themselves (in cities the lines run side by
+/// side, metres apart), and never across gauges (high-speed standard gauge
+/// vs Iberian) when both are known.
+fn same_network(net: &Network, a: (&TrainView, &LiveTrain), b: (&TrainView, &LiveTrain)) -> bool {
+    if (a.1.feed == "vp_cer") != (b.1.feed == "vp_cer") {
+        return false;
+    }
+    let gauge = |(v, t): (&TrainView, &LiveTrain)| {
+        let m = t.matched?;
+        let g = net.track_info(m.trip, v.along?)?.gauge_mm;
+        // 0 unknown, 1 dual gauge: compatible with anything.
+        (g > 1).then_some(g)
+    };
+    match (gauge(a), gauge(b)) {
+        (Some(x), Some(y)) => x == y,
+        _ => true,
+    }
+}
+
 fn along_route_heading(
     net: &Network,
     f: &TrainView,
@@ -106,6 +126,9 @@ pub fn for_train(
             continue;
         }
         let ot = &trains[o.index];
+        if !same_network(net, (f, ft), (o, ot)) {
+            continue;
+        }
         // Is o ahead of f, on f's track?
         if let Some(d) = along_route_of(net, f, ft, o) {
             let gap = d - f_along;
@@ -151,7 +174,10 @@ pub fn oncoming(
     let f_along = f.along?;
     let mut best: Option<(f64, usize)> = None;
     for (j, o) in views.iter().enumerate() {
-        if j == i || haversine_m(f.coord, o.coord) > MAX_LOOKAHEAD_M {
+        if j == i
+            || haversine_m(f.coord, o.coord) > MAX_LOOKAHEAD_M
+            || !same_network(net, (f, ft), (o, &trains[o.index]))
+        {
             continue;
         }
         if let Some(d) = along_route_heading(net, f, ft, o, true) {
@@ -272,6 +298,26 @@ mod tests {
             .expect("unknown train ahead on the same track");
         assert_eq!(g.trip_id, "SPECIAL_1");
         assert!((15_000..16_000).contains(&g.distance_m), "{}", g.distance_m);
+    }
+
+    #[test]
+    fn cercanias_trains_are_not_neighbours_of_long_distance_ones() {
+        // Same track, but one comes from the Cercanías feed: in cities the
+        // lines run side by side, so position alone can't pair them.
+        let net = sample_network();
+        let mut live = Live::default();
+        let now = local(9, 5);
+        let mut cer = v("SPECIAL_1", "777", 40.22, now);
+        cer.bearing = Some(180.0);
+        live.ingest(
+            &net,
+            "vp_ld",
+            FeedData::Vehicles(vec![v("0019012026-10-31", "190", 40.36, now)]),
+            now,
+        );
+        live.ingest(&net, "vp_cer", FeedData::Vehicles(vec![cer]), now);
+        let views = live.views(&net, now, true);
+        assert!(by_trip(&live, &views, "0019012026-10-31").ahead.is_none());
     }
 
     #[test]
