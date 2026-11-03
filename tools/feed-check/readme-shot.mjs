@@ -38,6 +38,11 @@ if (target) {
     return map.project(c);
   }, target);
 }
+// The map alone first (no popup), as a second option for the README.
+await page.screenshot({ path: `${out}/readme-map.jpg`, type: "jpeg", quality: 82 });
+console.log("README-MAP-BEGIN");
+console.log((await readFile(`${out}/readme-map.jpg`)).toString("base64"));
+console.log("README-MAP-END");
 if (pt) {
   await page.mouse.click(pt.x, pt.y);
   await page.waitForTimeout(6000); // pan + tiles under the popup
