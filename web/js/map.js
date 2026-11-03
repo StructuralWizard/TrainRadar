@@ -5,6 +5,8 @@ export const COLORS = ["#1a9850", "#f39c12", "#d7301f", "#8c8c8c"]; // on time, 
 export const SCHEDULED_COLOR = "#7c3aed"; // timetable-only trains (OUIGO)
 export const STRIDE = 6; // engine.positions(): lon, lat, class, bearing, fix age, flags
 export const FLAG = { stopped: 1, likely: 2, scheduled: 4, commuter: 8, highSpeed: 16, medium: 32 };
+/** Track colour per kind of train using it. */
+export const TRACK_COLORS = { av: "#4338ca", ld: "#0f766e", md: "#94a3b8" };
 /** Marker colour per kind of Renfe notice (engine incidents::Kind). */
 export const KIND_COLORS = {
   disruption: "#dc2626",
@@ -124,26 +126,31 @@ export function setBasemap(map, kind) {
       maxzoom: 19,
       attribution: 'Ortofoto: <a href="https://pnoa.ign.es/" target="_blank" rel="noopener">PNOA</a> © IGN (CC BY 4.0)',
     });
-    map.addLayer({ id: "satellite", type: "raster", source: "satellite", layout: { visibility: "none" } }, "track");
+    map.addLayer({ id: "satellite", type: "raster", source: "satellite", layout: { visibility: "none" } }, "track-md");
   }
   map.setLayoutProperty("satellite", "visibility", kind === "satellite" ? "visible" : "none");
 }
 
 export function addLayers(map) {
   addIcons(map);
-  // AV/LD/MD track we have geometry for: dark for standard gauge (high
-  // speed), grey otherwise; dashed where single track.
+  // AV/LD/MD track we have geometry for (OpenStreetMap legs).
   map.addSource("track", { type: "geojson", data: empty() });
-  map.addLayer({
-    id: "track",
-    type: "line",
-    source: "track",
-    paint: {
-      "line-color": ["case", ["==", ["get", "gauge"], 1435], "#334155", "#94a3b8"],
-      "line-width": ["interpolate", ["linear"], ["zoom"], 5, 1, 10, 2.5],
-      "line-opacity": 0.7,
-    },
-  });
+  // One layer per kind of train using the track (a section used by several
+  // kinds is in each; the high-speed one is drawn on top).
+  for (const [kind, prop] of [["md", "md"], ["ld", "ld"], ["av", "av"]]) {
+    map.addLayer({
+      id: `track-${kind}`,
+      type: "line",
+      source: "track",
+      filter: ["==", ["get", prop], true],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": TRACK_COLORS[kind],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 5, 3, 10, 7.5],
+        "line-opacity": 0.75,
+      },
+    });
+  }
   // Cercanías lines in their colours (dashed orange when a notice names them),
   // and the selected train's route.
   map.addSource("lines", { type: "geojson", data: empty() });
@@ -154,7 +161,7 @@ export function addLayers(map) {
     source: "lines",
     paint: {
       "line-color": ["get", "color"],
-      "line-width": ["interpolate", ["linear"], ["zoom"], 7, 1.2, 12, 3],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 7, 3.6, 12, 9],
       "line-opacity": 0.6,
     },
   });
@@ -165,7 +172,7 @@ export function addLayers(map) {
     filter: ["==", ["get", "notice"], true],
     paint: {
       "line-color": "#ea580c",
-      "line-width": ["interpolate", ["linear"], ["zoom"], 7, 2, 12, 5],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 7, 3.6, 12, 9],
       "line-dasharray": [1.5, 1.5],
       "line-opacity": 0.85,
     },
@@ -176,7 +183,7 @@ export function addLayers(map) {
     source: "route",
     filter: ["==", ["geometry-type"], "LineString"],
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#1d4ed8", "line-width": ["interpolate", ["linear"], ["zoom"], 5, 3, 12, 6], "line-opacity": 0.75 },
+    paint: { "line-color": "#1d4ed8", "line-width": ["interpolate", ["linear"], ["zoom"], 5, 6, 12, 12], "line-opacity": 0.6 },
   });
   map.addLayer({
     id: "route-stops",
@@ -318,10 +325,10 @@ export function addLayers(map) {
       "icon-size": [
         "interpolate", ["linear"], ["zoom"],
         // Big enough to spot and tap with all of Spain on screen.
-        4, ["case", ["==", ["get", "sch"], 1], 0.6, 0.8],
-        7, ["case", ["==", ["get", "sch"], 1], 0.7, 0.9],
-        12, ["case", ["==", ["get", "sch"], 1], 0.9, 1.15],
-        15, ["case", ["==", ["get", "sch"], 1], 1.1, 1.4],
+        4, ["case", ["==", ["get", "sch"], 1], 0.9, 1.1],
+        7, ["case", ["==", ["get", "sch"], 1], 1.0, 1.25],
+        12, ["case", ["==", ["get", "sch"], 1], 1.2, 1.5],
+        15, ["case", ["==", ["get", "sch"], 1], 1.4, 1.8],
       ],
       "symbol-sort-key": ["get", "c"],
     },

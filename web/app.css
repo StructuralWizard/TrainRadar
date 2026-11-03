@@ -169,3 +169,7 @@ details.small summary { cursor: pointer; }
 .search-results button { display: block; padding: 8px 10px; line-height: 1.3; }
 .sources summary { cursor: pointer; }
 .sources { margin-top: 6px; }
+.track-key { width: 14px; height: 4px; border-radius: 2px; flex: none; }
+#f-tav + .track-key { background: #4338ca; }
+#f-tld + .track-key { background: #0f766e; }
+#f-tmd + .track-key { background: #94a3b8; }

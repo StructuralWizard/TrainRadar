@@ -67,12 +67,14 @@ let incFilter = null; // { label, test }
 const SHEETS = ["delayed", "near", "incidents"];
 const show = {
   commuter: true, av: true, ld: true, md: true, scheduled: true,
-  lines: true, track: true, stations: true, stopped: true,
+  lines: true, tav: true, tld: true, tmd: true, stations: true, stopped: true,
 };
 // Map layers each "Capas" checkbox shows or hides (trains are filtered in render()).
 const LAYER_IDS = {
   lines: ["lines", "lines-notice"],
-  track: ["track"],
+  tav: ["track-av"],
+  tld: ["track-ld"],
+  tmd: ["track-md"],
   stations: ["stations", "stations-ld", "station-labels"],
   stopped: ["stopped-ring"],
 };
@@ -117,7 +119,9 @@ function applyLang() {
     ["f-k-other-l", "kind_other"],
     ["f-stopped-l", "showStopped"],
     ["f-lines-l", "showLines"],
-    ["f-track-l", "showTrack"],
+    ["f-tav-l", "showTrackAv"],
+    ["f-tld-l", "showTrackLd"],
+    ["f-tmd-l", "showTrackMd"],
     ["f-stations-l", "showStations"],
     ["b-standard-l", "baseStandard"],
     ["b-satellite-l", "baseSatellite"],
@@ -774,7 +778,7 @@ for (const key of Object.keys(KINDS)) {
     renderIncidents();
   });
 }
-for (const key of ["commuter", "av", "ld", "md", "scheduled", "lines", "track", "stations", "stopped"]) {
+for (const key of ["commuter", "av", "ld", "md", "scheduled", "lines", "tav", "tld", "tmd", "stations", "stopped"]) {
   $(`f-${key}`).addEventListener("change", (e) => {
     show[key] = e.target.checked;
     applyLayerVisibility();
@@ -783,7 +787,7 @@ for (const key of ["commuter", "av", "ld", "md", "scheduled", "lines", "track", 
 }
 for (const r of document.querySelectorAll('input[name="basemap"]')) {
   r.addEventListener("change", (e) => {
-    if (!e.target.checked || !map?.getLayer("track")) return;
+    if (!e.target.checked || !map?.getLayer("track-av")) return;
     setBasemap(map, e.target.value);
     store.set("basemap", e.target.value);
   });

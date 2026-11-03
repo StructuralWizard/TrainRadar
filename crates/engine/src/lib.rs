@@ -535,42 +535,80 @@ impl Engine {
     }
 
     /// The AV/LD/MD (and OUIGO) track we have geometry for, once each:
-    /// `{gauge, tracks, electrified, max_kmh}` per OpenStreetMap leg, for the
-    /// long-distance lines layer. Grows as geometry files load.
+    /// `{av, ld, md, gauge, tracks, electrified, max_kmh}` per OpenStreetMap
+    /// leg (`av`/`ld`/`md`: which kinds of train run on it), for the track
+    /// layers. Grows as geometry files load.
     #[wasm_bindgen(js_name = trackGeoJson)]
     pub fn track_geojson(&self) -> String {
-        use std::collections::HashSet;
-        let mut seen: HashSet<[i64; 4]> = HashSet::new();
+        use std::collections::HashMap;
+        // The same stop pair in either direction, or in two regions.
+        let key = |line: &trainradar_proto::geo::Polyline| -> Option<[i64; 4]> {
+            let pts = line.points();
+            let k = |p: &trainradar_proto::LatLon| {
+                ((p.lat * 1e4).round() as i64, (p.lon * 1e4).round() as i64)
+            };
+            let (a, b) = (k(pts.first()?), k(pts.last()?));
+            let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
+            Some([lo.0, lo.1, hi.0, hi.1])
+        };
+        // Which kinds of train run on each section: bit 1 high speed, 2 long
+        // distance, 4 medium distance (from the trips' products; OUIGO is
+        // high speed). Sections only Cercanías use aren't drawn here.
+        let mut uses: HashMap<[i64; 4], u8> = HashMap::new();
+        for (ri, r) in self.net.regions.iter().enumerate() {
+            if r.tt.live && r.tt.region != "ld" {
+                continue; // Cercanías: drawn as coloured lines
+            }
+            for (pi, g) in r.geom.iter().enumerate() {
+                let network::PatternGeom::Legs(legs) = g else {
+                    continue;
+                };
+                let Some(&ti) = r.pattern_trips[pi].first() else {
+                    continue;
+                };
+                let bit = if r.tt.operator == "OUIGO" {
+                    1
+                } else {
+                    let route = &r.tt.routes[r.tt.trips[ti as usize].route as usize];
+                    match products::group_of(&route.short_name) {
+                        products::Group::HighSpeed => 1,
+                        products::Group::LongDistance => 2,
+                        products::Group::MediumDistance => 4,
+                    }
+                };
+                for l in legs.iter().filter_map(|l| l.shared) {
+                    if let Some(k) = self.net.legs[ri].get(l as usize).and_then(key) {
+                        *uses.entry(k).or_default() |= bit;
+                    }
+                }
+            }
+        }
         let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
         let mut first = true;
         for (ri, legs) in self.net.legs.iter().enumerate() {
             for (li, line) in legs.iter().enumerate() {
-                let pts = line.points();
-                let (Some(a), Some(b)) = (pts.first(), pts.last()) else {
+                let Some(k) = key(line) else { continue };
+                // Each section once, with every kind that uses it.
+                let Some(kinds) = uses.remove(&k) else {
                     continue;
                 };
-                // The same stop pair in either direction, or in two regions.
-                let k = |p: &trainradar_proto::LatLon| {
-                    ((p.lat * 1e4).round() as i64, (p.lon * 1e4).round() as i64)
-                };
-                let (ka, kb) = (k(a), k(b));
-                let (lo, hi) = if ka <= kb { (ka, kb) } else { (kb, ka) };
-                if !seen.insert([lo.0, lo.1, hi.0, hi.1]) {
-                    continue;
-                }
                 let info = self.net.leg_info[ri].get(li).copied().unwrap_or_default();
                 if !first {
                     s.push(',');
                 }
                 first = false;
                 s.push_str(r#"{"type":"Feature","geometry":{"type":"LineString","coordinates":["#);
-                let coords: Vec<String> = pts
+                let coords: Vec<String> = line
+                    .points()
                     .iter()
                     .map(|p| format!("[{:.5},{:.5}]", p.lon, p.lat))
                     .collect();
                 s.push_str(&coords.join(","));
                 s.push_str("]},\"properties\":");
                 json::Obj::new(&mut s)
+                    .b("av", kinds & 1 != 0)
+                    .b("ld", kinds & 2 != 0)
+                    .b("md", kinds & 4 != 0)
                     .n("gauge", info.gauge_mm)
                     .n("tracks", info.tracks)
                     .n("electrified", info.electrified)

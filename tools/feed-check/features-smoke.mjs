@@ -17,7 +17,7 @@ const fail = async (msg) => {
 };
 
 await page.goto(url);
-await page.waitForFunction(() => window.__trainradar?.map?.getLayer("track"), null, { timeout: 30000 });
+await page.waitForFunction(() => window.__trainradar?.map?.getLayer("track-av"), null, { timeout: 30000 });
 await page.waitForFunction(() => window.__trainradar.engine.positions(Date.now()).length > 0, null, { timeout: 30000 });
 
 // Search by train number: pick a live train's number, type it, choose it.
@@ -74,7 +74,7 @@ await page.screenshot({ path: `${out}/station.png` });
 
 // Layer switches hide and show their layers; the satellite choice adds imagery.
 await page.click("#layers summary");
-for (const [box, layer] of [["#f-track", "track"], ["#f-stations", "stations"], ["#f-stopped", "stopped-ring"]]) {
+for (const [box, layer] of [["#f-tav", "track-av"], ["#f-tld", "track-ld"], ["#f-tmd", "track-md"], ["#f-stations", "stations"], ["#f-stopped", "stopped-ring"]]) {
   await page.uncheck(box);
   const v = await page.evaluate((l) => window.__trainradar.map.getLayoutProperty(l, "visibility"), layer);
   if (v !== "none") await fail(`${layer} still visible`);
