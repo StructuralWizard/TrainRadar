@@ -157,6 +157,16 @@ function addIcons(map) {
     { sdf: true, pixelRatio: 2 },
   );
   map.addImage(
+    "tr-dot-hollow",
+    make((g) => {
+      g.beginPath();
+      g.arc(24, 24, 13, 0, 2 * Math.PI);
+      g.lineWidth = 6;
+      g.stroke();
+    }),
+    { sdf: true, pixelRatio: 2 },
+  );
+  map.addImage(
     "tr-dot",
     make((g) => {
       g.beginPath();
@@ -181,6 +191,9 @@ function addIcons(map) {
     { pixelRatio: 2 },
   );
 }
+
+/** Zoom from which trains are arrows (below: dots). */
+export const ARROW_ZOOM = 9;
 
 /** IGN orthophoto (PNOA, CC BY 4.0): the "satellite" base map. */
 export const SATELLITE_TILES = "https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/{z}/{x}/{y}.jpeg";
@@ -386,11 +399,18 @@ export function addLayers(map) {
     type: "symbol",
     source: "trains",
     layout: {
+      // Zoomed out (all of Spain, a region): coloured dots, easier to read
+      // in a crowd. From zoom 9 (a city): arrows showing the direction.
       "icon-image": [
-        "case",
-        ["==", ["get", "sch"], 1], "tr-arrow-hollow",
-        ["!", ["has", "b"]], "tr-dot",
-        ["match", ["get", "t"], "av", "tr-arrow-av", "md", "tr-arrow-md", "tr-arrow"],
+        "step", ["zoom"],
+        ["case", ["==", ["get", "sch"], 1], "tr-dot-hollow", "tr-dot"],
+        ARROW_ZOOM,
+        [
+          "case",
+          ["==", ["get", "sch"], 1], "tr-arrow-hollow",
+          ["!", ["has", "b"]], "tr-dot",
+          ["match", ["get", "t"], "av", "tr-arrow-av", "md", "tr-arrow-md", "tr-arrow"],
+        ],
       ],
       "icon-rotate": ["coalesce", ["get", "b"], 0],
       "icon-rotation-alignment": "map",
