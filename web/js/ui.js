@@ -194,6 +194,17 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
     const vars = { a: info.stopped.after, b: info.stopped.before, t: formatDuration(lang, Date.now() / 1000 - info.stopped.since) };
     rows.push(el("div", { class: "badge badge-red" }, t(lang, info.stopped.confirmed ? "stoppedConfirmed" : "stoppedLikely", vars)));
   }
+  // Notices first: they matter more than the details below, and the end of
+  // a long popup can sit behind the bottom buttons on a phone.
+  if (info.incidents > 0 && onIncidents) {
+    rows.push(
+      el(
+        "button",
+        { class: "link warn", onclick: () => onIncidents(info) },
+        info.incidents === 1 ? t(lang, "trainIncident") : t(lang, "trainIncidents", { n: info.incidents }),
+      ),
+    );
+  }
   if (info.origin) {
     rows.push(row(t(lang, "from"), info.origin));
     rows.push(row(t(lang, "to"), info.destination));
@@ -268,15 +279,6 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
     if (info.oncoming) rows.push(row(t(lang, "oncoming"), oncomingText(lang, info.oncoming, onTrain)));
   }
   if (!info.timetable_only) rows.push(...sourceNote(lang, info));
-  if (info.incidents > 0 && onIncidents) {
-    rows.push(
-      el(
-        "button",
-        { class: "link warn", onclick: () => onIncidents(info) },
-        info.incidents === 1 ? t(lang, "trainIncident") : t(lang, "trainIncidents", { n: info.incidents }),
-      ),
-    );
-  }
   return el("div", { class: "popup" }, title, sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null, rows);
 }
 
