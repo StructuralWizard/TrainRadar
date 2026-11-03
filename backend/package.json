@@ -1,0 +1,9 @@
+{
+  "name": "trainradar-live",
+  "private": true,
+  "type": "module",
+  "description": "Central poller: fetches Renfe GTFS-RT once for everyone and stores the bytes in R2",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

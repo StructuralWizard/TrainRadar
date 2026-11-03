@@ -1,5 +1,6 @@
-# Deploys TrainRadar to Cloudflare: the CORS pass-through Worker and the
-# static site on Pages, with freshly built reference data.
+# Deploys TrainRadar to Cloudflare: the CORS pass-through Worker, the central
+# live poller (phase C1, only once the repository variable LIVE_ENABLED is
+# "true") and the static site on Pages, with freshly built reference data.
 #   - on every merge to main
 #   - nightly, only if Renfe's timetables changed (ETag) or the 7-day data
 #     window needs moving forward
@@ -187,3 +188,32 @@ jobs:
           name: live-site-screenshots
           path: shots
           retention-days: 14
+
+  live:
+    # Central poller (backend/): Renfe fetched once for everyone, bytes in R2.
+    # Off until the maintainer sets the repository variable LIVE_ENABLED=true
+    # (the API token needs R2 and Durable Objects rights first: docs/deploy.md).
+    name: deploy the live poller
+    if: vars.LIVE_ENABLED == 'true' && github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: node --test backend/test/*.test.mjs
+      - name: R2 bucket and its CORS rules
+        run: |
+          if ! npx --yes "$WRANGLER" r2 bucket list | grep -q "trainradar-live"; then
+            npx --yes "$WRANGLER" r2 bucket create trainradar-live
+          fi
+          npx --yes "$WRANGLER" r2 bucket cors set trainradar-live --file backend/r2-cors.json --force
+      - name: Deploy the poller Worker
+        run: npx --yes "$WRANGLER" deploy --config backend/wrangler.toml

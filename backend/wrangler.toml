@@ -1,0 +1,30 @@
+# TrainRadar live backend (phase C1): one central poller for Renfe's GTFS-RT
+# feeds. A Durable Object alarm fetches each feed on its own cadence and writes
+# the bytes UNCHANGED to the R2 bucket, which clients read through a custom
+# domain (CDN-cached). No secrets here.
+name = "trainradar-live"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Re-arm the poller's alarm every minute in case it ever stops.
+[triggers]
+crons = ["* * * * *"]
+
+[[durable_objects.bindings]]
+name = "POLLER"
+class_name = "Poller"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Poller"]
+
+[[r2_buckets]]
+binding = "LIVE"
+bucket_name = "trainradar-live"
+
+[vars]
+# Kill switch: anything but "true" stops all fetching from Renfe.
+POLLER_ENABLED = "true"
+# Origins allowed to read /rt/* through this Worker (the staging path, before
+# the bucket's custom domain exists). The deploy job sets the real list.
+ALLOWED_ORIGINS = "https://trainradar.pages.dev,http://localhost:8080,capacitor://localhost,https://localhost"
