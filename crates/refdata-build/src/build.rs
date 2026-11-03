@@ -272,7 +272,7 @@ pub fn build_timetable(
                         let key = (stop_ids[i - 1], stop_ids[i]);
                         let leg = *leg_map.entry(key).or_insert_with(|| {
                             let (pts, info, heights) =
-                                router.route_pair(key.0, key.1, coords[i - 1], coords[i])?;
+                                router.route_pair(coords[i - 1], coords[i])?;
                             let profile = crate::profile::leg_profile(&pts, &heights);
                             if !profile.deltas.is_empty() {
                                 st.legs_with_profile += 1;
