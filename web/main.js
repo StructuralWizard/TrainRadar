@@ -449,6 +449,10 @@ function makeDraggable(p, get, set) {
     if (!e.target.closest(".popup-title")) return;
     const [ox, oy] = get();
     start = { x: e.clientX, y: e.clientY, ox, oy };
+    // Keep the popup on the side of the train it's on now: otherwise the
+    // map may flip it to the other side mid-drag, and it jumps.
+    const side = [...box.classList].find((c) => c.startsWith("maplibregl-popup-anchor-"));
+    if (side) p.options.anchor = side.slice("maplibregl-popup-anchor-".length);
     box.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
