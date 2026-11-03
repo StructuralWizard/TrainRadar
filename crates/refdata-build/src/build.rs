@@ -65,7 +65,7 @@ const NUCLEO_NAMES: &[(&str, &str)] = &[
     ("45", "Cartagena"),
     ("46", "Ferrol"),
     ("47", "León"),
-    ("51", "Rodalies de Catalunya"),
+    ("51", "Barcelona (Rodalies)"),
     ("60", "Bilbao"),
     ("61", "San Sebastián"),
     ("62", "Santander"),
@@ -574,7 +574,7 @@ mod tests {
         assert_eq!(nucleo_of("10T0001C1"), Some("10"));
         assert_eq!(nucleo_of("51T0001R1"), Some("51"));
         assert_eq!(nucleo_of("T1"), None);
-        assert_eq!(region_name("51"), "Rodalies de Catalunya");
+        assert_eq!(region_name("51"), "Barcelona (Rodalies)");
         assert_eq!(region_name("99"), "Núcleo 99");
     }
 

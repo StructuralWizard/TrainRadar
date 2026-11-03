@@ -17,7 +17,7 @@ const fail = async (msg) => {
 };
 
 await page.goto(url);
-await page.waitForFunction(() => window.__trainradar?.map?.getLayer("track"), null, { timeout: 30000 });
+await page.waitForFunction(() => window.__trainradar?.map?.getLayer("track-av"), null, { timeout: 30000 });
 await page.waitForFunction(() => window.__trainradar.engine.positions(Date.now()).length > 0, null, { timeout: 30000 });
 
 // Search by train number: pick a live train's number, type it, choose it.
@@ -51,13 +51,21 @@ if (!(await page.$(".maplibregl-popup.dragged"))) await fail("dragged popup stil
 await page.screenshot({ path: `${out}/dragged.png` });
 await page.click(".maplibregl-popup-close-button");
 
-// Station popup: click a station square.
+// Station popup: click a C3 station square that no train or notice marker
+// covers right now (trains and notices take the tap first, by design).
 const pt = await page.evaluate(async () => {
   const { map } = window.__trainradar;
-  map.jumpTo({ center: [-3.7186, 40.3115], zoom: 13 }); // Getafe Industrial (no notice marker)
-  await new Promise((r) => setTimeout(r, 1500));
-  return map.project([-3.7186, 40.3115]);
+  const stops = [[-3.7110, 40.3460], [-3.7186, 40.3115], [-3.6763, 40.1905], [-3.6157, 40.0358]];
+  for (const c of stops) {
+    map.jumpTo({ center: c, zoom: 13 });
+    await new Promise((r) => setTimeout(r, 1200));
+    const p = map.project(c);
+    const box = [[p.x - 16, p.y - 16], [p.x + 16, p.y + 16]];
+    if (!map.queryRenderedFeatures(box, { layers: ["trains", "incidents"] }).length) return p;
+  }
+  return null;
 });
+if (!pt) await fail("every C3 station had a train on it");
 await page.mouse.click(pt.x, pt.y);
 await page.waitForFunction(() => /Próximas salidas/.test(document.querySelector(".maplibregl-popup")?.textContent || ""), null, { timeout: 5000 })
   .catch(() => fail("station popup didn't open"));
@@ -66,12 +74,27 @@ await page.screenshot({ path: `${out}/station.png` });
 
 // Layer switches hide and show their layers; the satellite choice adds imagery.
 await page.click("#layers summary");
-for (const [box, layer] of [["#f-track", "track"], ["#f-stations", "stations"], ["#f-notices", "incidents"]]) {
+for (const [box, layer] of [["#f-tav", "track-av"], ["#f-tld", "track-ld"], ["#f-tmd", "track-md"], ["#f-stations", "stations"], ["#f-stopped", "stopped-ring"]]) {
   await page.uncheck(box);
   const v = await page.evaluate((l) => window.__trainradar.map.getLayoutProperty(l, "visibility"), layer);
   if (v !== "none") await fail(`${layer} still visible`);
   await page.check(box);
 }
+// Notice kinds: the demo's Pinto marker is a works notice.
+const markers = () => page.evaluate(() => window.__trainradar.map.getSource("incidents").serialize().data.features.length);
+if ((await markers()) < 1) await fail("no notice marker");
+await page.uncheck("#f-k-works");
+if ((await markers()) !== 0) await fail("works notices still on the map");
+await page.check("#f-k-works");
+// Train types: hiding high speed removes the AVE trains.
+const count = () => page.evaluate(() => window.__trainradar.map.getSource("trains").serialize().data.features.length);
+const before = await count();
+await page.uncheck("#f-av");
+await page.waitForTimeout(1500);
+const after = await count();
+console.log("trains with / without AV:", before, after);
+if (!(after < before)) await fail("hiding AV didn't hide any train");
+await page.check("#f-av");
 await page.check('input[name="basemap"][value="satellite"]');
 const sat = await page.evaluate(() => window.__trainradar.map.getLayoutProperty("satellite", "visibility"));
 if (sat !== "visible") await fail("satellite layer not shown");

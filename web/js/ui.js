@@ -87,7 +87,12 @@ function sourceNote(lang, info) {
   if (info.origin) parts.push(t(lang, "srcTimetable"));
   const site = info.feed === "vp_cer" ? "https://tiempo-real.renfe.com/" : "https://tiempo-real.largorecorrido.renfe.com/";
   return [
-    el("div", { class: "small muted" }, parts.join(" ")),
+    el(
+      "details",
+      { class: "small muted sources" },
+      el("summary", {}, t(lang, "dataSources")),
+      parts.join(" "),
+    ),
     el("a", { class: "small", href: site, target: "_blank", rel: "noopener" }, t(lang, info.feed === "vp_cer" ? "linkRenfe" : "linkRenfeLd") + " ↗"),
   ];
 }
@@ -485,6 +490,7 @@ export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onS
           el(
             "div",
             { class: "incident-meta" },
+            i.kind ? el("span", { class: `chip chip-kind kind-${i.kind}` }, t(lang, `kind_${i.kind}`)) : null,
             i.nucleos.map((n) => el("span", { class: "chip chip-region" }, regionName(n) || n)),
             i.lines.map((l) => el("span", { class: "chip" }, l)),
             el(

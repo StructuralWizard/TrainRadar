@@ -65,14 +65,23 @@ let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
 const SHEETS = ["delayed", "near", "incidents"];
-const show = { commuter: true, long: true, scheduled: true, lines: true, track: true, stations: true, notices: true };
+const show = {
+  commuter: true, av: true, ld: true, md: true, scheduled: true,
+  lines: true, tav: true, tld: true, tmd: true, stations: true, stopped: true,
+};
 // Map layers each "Capas" checkbox shows or hides (trains are filtered in render()).
 const LAYER_IDS = {
   lines: ["lines", "lines-notice"],
-  track: ["track"],
+  tav: ["track-av"],
+  tld: ["track-ld"],
+  tmd: ["track-md"],
   stations: ["stations", "stations-ld", "station-labels"],
-  notices: ["incidents", "lines-notice"],
+  stopped: ["stopped-ring"],
 };
+// Kinds of Renfe notice (engine incidents::Kind bits), each with a switch.
+const KINDS = { strike: 1, accessibility: 2, works: 4, disruption: 8, other: 16 };
+const showKind = { strike: true, accessibility: true, works: true, disruption: true, other: true };
+const kindMask = () => Object.entries(KINDS).reduce((m, [k, bit]) => (showKind[k] ? m | bit : m), 0);
 let stationPop = null;
 let dragOffset = [0, 0]; // where the user dragged the train popup to
 let highlight = null; // Set of train indexes on the selected train's line
@@ -94,13 +103,26 @@ function applyLang() {
   $("inc-close").setAttribute("aria-label", t(lang, "close"));
   $("layers-title").textContent = t(lang, "layers");
   for (const [id, k] of [
+    ["g-trains", "groupTrains"],
+    ["g-map", "groupMap"],
+    ["g-incidents", "groupIncidents"],
+    ["g-base", "groupBase"],
     ["f-commuter-l", "showCommuter"],
-    ["f-long-l", "showLong"],
+    ["f-av-l", "showAv"],
+    ["f-ld-l", "showLd"],
+    ["f-md-l", "showMd"],
     ["f-scheduled-l", "showScheduled"],
+    ["f-k-disruption-l", "kind_disruption"],
+    ["f-k-works-l", "kind_works"],
+    ["f-k-accessibility-l", "kind_accessibility"],
+    ["f-k-strike-l", "kind_strike"],
+    ["f-k-other-l", "kind_other"],
+    ["f-stopped-l", "showStopped"],
     ["f-lines-l", "showLines"],
-    ["f-track-l", "showTrack"],
+    ["f-tav-l", "showTrackAv"],
+    ["f-tld-l", "showTrackLd"],
+    ["f-tmd-l", "showTrackMd"],
     ["f-stations-l", "showStations"],
-    ["f-notices-l", "showNotices"],
     ["b-standard-l", "baseStandard"],
     ["b-satellite-l", "baseSatellite"],
   ]) {
@@ -124,15 +146,32 @@ function applyLang() {
 }
 
 /** Fly to a point, keeping it clear of the bottom sheet if one is open. */
-function flyToVisible(lon, lat, zoom) {
+/** Fold the map credits into their ⓘ button (still one tap away), so they
+ * don't cover a popup or, on a phone, the bottom of the map. */
+function foldCredits() {
+  document.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact-show")?.classList.remove("maplibregl-compact-show");
+}
+
+/** If a point is low on the screen, pan it up so the popup that opens below
+ * it fits above the bottom buttons. */
+function makeRoomBelow(lon, lat) {
+  const h = map.getContainer().clientHeight;
+  const y = map.project([lon, lat]).y;
+  if (y > h * 0.35) map.panBy([0, y - h * 0.25], { duration: 300 });
+}
+
+/** Fly to a point so it lands in the visible part of the map: above a
+ * bottom sheet, or (`forPopup`) in the upper third, leaving room for the
+ * popup that opens below it. */
+function flyToVisible(lon, lat, zoom, { forPopup = false } = {}) {
   const sheet = SHEETS.map($).find((x) => !x.hidden);
   const covered = sheet && sheet.getBoundingClientRect().width >= window.innerWidth - 1;
+  const h = map.getContainer().clientHeight;
   map.flyTo({
     center: [lon, lat],
     zoom: Math.max(map.getZoom(), zoom),
-    // Shift up by half the sheet so the point lands in the visible part.
     // The sheet can grow to 55% of the screen once its content loads.
-    offset: [0, covered ? -(window.innerHeight * 0.55) / 2 : 0],
+    offset: [0, covered ? -(h * 0.55) / 2 : forPopup ? -h * 0.25 : 0],
   });
 }
 
@@ -259,7 +298,9 @@ function renderNear(force = false) {
 function hiddenByFilter(flags) {
   if (flags & FLAG.scheduled) return !show.scheduled;
   if (flags & FLAG.commuter) return !show.commuter;
-  return !show.long;
+  if (flags & FLAG.highSpeed) return !show.av;
+  if (flags & FLAG.medium) return !show.md;
+  return !show.ld;
 }
 
 /** Draw the selected train's route and highlight its line's trains. */
@@ -286,16 +327,27 @@ function updateRoute() {
 }
 
 function refreshLines() {
-  if (engine && map?.getSource("lines")) map.getSource("lines").setData(JSON.parse(engine.linesGeoJson(Date.now())));
+  if (!engine || !map?.getSource("lines")) return;
+  const data = JSON.parse(engine.linesGeoJson(Date.now()));
+  const mask = kindMask();
+  for (const f of data.features) f.properties.notice = (f.properties.notice_kinds & mask) !== 0;
+  map.getSource("lines").setData(data);
 }
 
+/** "Ir a…": the whole country, then each Cercanías network (núcleo) A–Z.
+ * AV/LD/MD trains run all over Spain, so they only need "Toda España". */
 function fillJump() {
   const sel = $("jump");
-  const opts = [["", t(lang, "goTo")], ["es", t(lang, "allSpain")]];
-  for (const r of ref?.manifest?.regions || []) {
-    if (r.code !== "ld" && r.live !== false) opts.push([r.code, r.name]);
-  }
-  sel.replaceChildren(...opts.map(([v, label]) => el("option", { value: v }, label)));
+  const nucleos = (ref?.manifest?.regions || [])
+    .filter((r) => r.code !== "ld" && r.live !== false)
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  sel.replaceChildren(
+    el("option", { value: "" }, t(lang, "goTo")),
+    el("option", { value: "es" }, t(lang, "allSpain")),
+    nucleos.length
+      ? el("optgroup", { label: t(lang, "cercaniasNetworks") }, nucleos.map((r) => el("option", { value: r.code }, r.name)))
+      : null,
+  );
 }
 
 /** Show one bottom sheet and hide the others. */
@@ -308,19 +360,22 @@ function renderIncidents() {
   if (engine) incidents = JSON.parse(engine.incidentsJson(Date.now()));
   refreshLines();
   $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}${incidents.length ? ` (${incidents.length})` : ""}`;
-  const seen = new Set();
-  const features = [];
+  // One marker per station, coloured by its most serious shown notice.
+  const rank = ["disruption", "strike", "works", "accessibility", "other"];
+  const byStop = new Map();
   for (const i of incidents) {
+    if (!showKind[i.kind]) continue;
     for (const s of i.stops) {
-      if (s.lat === null || seen.has(s.id)) continue;
-      seen.add(s.id);
-      features.push({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [s.lon, s.lat] },
-        properties: { id: s.id, name: s.name },
-      });
+      if (s.lat === null) continue;
+      const prev = byStop.get(s.id);
+      if (!prev || rank.indexOf(i.kind) < rank.indexOf(prev.kind)) byStop.set(s.id, { s, kind: i.kind });
     }
   }
+  const features = [...byStop.values()].map(({ s, kind }) => ({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+    properties: { id: s.id, name: s.name, kind },
+  }));
   map?.getSource("incidents")?.setData({ type: "FeatureCollection", features });
   if ($("incidents").hidden) return;
   $("inc-body").replaceChildren(
@@ -357,7 +412,7 @@ function selectTrain(info, { fly = false } = {}) {
   selected = { trip_id: info.trip_id, number: info.number };
   updateRoute();
   render(true);
-  if (fly) flyToVisible(info.lon, info.lat, 10);
+  if (fly) flyToVisible(info.lon, info.lat, 10, { forPopup: true });
   showPopup(true);
 }
 
@@ -417,11 +472,8 @@ function showPopup(open = false) {
     },
   );
   if (!popup) {
-    // On small screens fold the credits into their ⓘ button while a popup is
-    // open, so they don't cover it (they stay one tap away).
-    if (window.innerWidth < 720) {
-      document.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact-show")?.classList.remove("maplibregl-compact-show");
-    }
+    foldCredits();
+    if (!map.isMoving()) makeRoomBelow(info.lon, info.lat);
     dragOffset = [0, 0];
     popup = new maplibregl.Popup({ closeButton: true, maxWidth: "300px", offset: 12, focusAfterOpen: false })
       .setLngLat([info.lon, info.lat])
@@ -494,6 +546,8 @@ function showStation(f) {
   );
   if (stationPop?.isOpen()) return stationPop.setLngLat([lon, lat]).setDOMContent(body);
   clearSelection();
+  foldCredits();
+  makeRoomBelow(lon, lat);
   let off = [0, 0];
   stationPop = new maplibregl.Popup({ closeButton: true, maxWidth: "300px", offset: 10, focusAfterOpen: false })
     .setLngLat([lon, lat])
@@ -627,6 +681,7 @@ async function main() {
   await mapReady;
   setMapLanguage(map, lang);
   addLayers(map);
+  if (window.innerWidth < 720) map.once("idle", foldCredits);
   if (store.get("basemap") === "satellite") {
     setBasemap(map, "satellite");
     document.querySelector('input[name="basemap"][value="satellite"]').checked = true;
@@ -672,6 +727,12 @@ async function main() {
   renderIncidents();
   fillJump();
   refreshLines();
+  // After the first view: the other núcleos' timetables, so distant
+  // Cercanías trains show their delay colour and direction too.
+  setTimeout(() => ref.loadAllInBackground(() => {
+    refreshLines();
+    render(true);
+  }), 3000);
   map.on("mouseenter", "incidents", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "incidents", () => (map.getCanvas().style.cursor = ""));
   for (const l of ["stations", "stations-ld"]) {
@@ -712,13 +773,18 @@ function applyLayerVisibility() {
   for (const [key, ids] of Object.entries(LAYER_IDS)) if (show[key]) for (const id of ids) on.add(id);
   for (const ids of Object.values(LAYER_IDS)) {
     for (const id of ids) {
-      // lines-notice needs both its line layer and notices on.
-      const visible = id === "lines-notice" ? show.lines && show.notices : on.has(id);
+      const visible = on.has(id);
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
     }
   }
 }
-for (const key of ["commuter", "long", "scheduled", "lines", "track", "stations", "notices"]) {
+for (const key of Object.keys(KINDS)) {
+  $(`f-k-${key}`).addEventListener("change", (e) => {
+    showKind[key] = e.target.checked;
+    renderIncidents();
+  });
+}
+for (const key of ["commuter", "av", "ld", "md", "scheduled", "lines", "tav", "tld", "tmd", "stations", "stopped"]) {
   $(`f-${key}`).addEventListener("change", (e) => {
     show[key] = e.target.checked;
     applyLayerVisibility();
@@ -727,7 +793,7 @@ for (const key of ["commuter", "long", "scheduled", "lines", "track", "stations"
 }
 for (const r of document.querySelectorAll('input[name="basemap"]')) {
   r.addEventListener("change", (e) => {
-    if (!e.target.checked || !map?.getLayer("track")) return;
+    if (!e.target.checked || !map?.getLayer("track-av")) return;
     setBasemap(map, e.target.value);
     store.set("basemap", e.target.value);
   });

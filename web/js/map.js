@@ -4,7 +4,17 @@ import * as maplibregl from "../vendor/maplibre/maplibre-gl.mjs";
 export const COLORS = ["#1a9850", "#f39c12", "#d7301f", "#8c8c8c"]; // on time, 5–14, 15+, unknown
 export const SCHEDULED_COLOR = "#7c3aed"; // timetable-only trains (OUIGO)
 export const STRIDE = 6; // engine.positions(): lon, lat, class, bearing, fix age, flags
-export const FLAG = { stopped: 1, likely: 2, scheduled: 4, commuter: 8 };
+export const FLAG = { stopped: 1, likely: 2, scheduled: 4, commuter: 8, highSpeed: 16, medium: 32 };
+/** Track colour per kind of train using it. */
+export const TRACK_COLORS = { av: "#4338ca", ld: "#0f766e", md: "#94a3b8" };
+/** Marker colour per kind of Renfe notice (engine incidents::Kind). */
+export const KIND_COLORS = {
+  disruption: "#dc2626",
+  strike: "#7c3aed",
+  works: "#f59e0b",
+  accessibility: "#2563eb",
+  other: "#64748b",
+};
 
 const empty = () => ({ type: "FeatureCollection", features: [] });
 
@@ -44,17 +54,60 @@ export function createMap(container, config, attribution) {
   return { map, attr };
 }
 
-/** Draw the train icons once (SDF, so the colour comes from the data). */
+/** Turn a drawn shape into a signed distance field, the format MapLibre's
+ * SDF icons expect (edge at alpha 192, about 24 per pixel), so the halo
+ * (the train-kind border) can be several pixels wide instead of the
+ * one-pixel fringe a hard-edged image allows. */
+function toSdf(img) {
+  const { width: w, height: h, data } = img;
+  const inside = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) inside[i] = data[i * 4 + 3] > 127 ? 1 : 0;
+  // Edge pixels: inside pixels next to an outside one, and vice versa.
+  const edges = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const v = inside[y * w + x];
+      if ((x > 0 && inside[y * w + x - 1] !== v) || (x < w - 1 && inside[y * w + x + 1] !== v) ||
+          (y > 0 && inside[(y - 1) * w + x] !== v) || (y < h - 1 && inside[(y + 1) * w + x] !== v)) {
+        edges.push(x, y);
+      }
+    }
+  }
+  const out = new ImageData(w, h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let best = Infinity;
+      for (let k = 0; k < edges.length; k += 2) {
+        const dx = edges[k] - x, dy = edges[k + 1] - y;
+        const d = dx * dx + dy * dy;
+        if (d < best) best = d;
+      }
+      const dist = Math.sqrt(best) * (inside[y * w + x] ? 1 : -1);
+      const o = (y * w + x) * 4;
+      out.data[o] = out.data[o + 1] = out.data[o + 2] = 0;
+      out.data[o + 3] = Math.max(0, Math.min(255, Math.round(192 + dist * 24)));
+    }
+  }
+  return out;
+}
+
+/** Draw the train icons once (SDF, so the colour comes from the data).
+ * Names start with "tr-": the base map's own sprite has images called
+ * "dot" and "arrow", and ours would replace them (big black town dots). */
 function addIcons(map) {
-  const size = 48;
+  // Shapes are drawn on a 48 px design grid inside a 64 px image: the
+  // margin leaves room for the border (halo) around them.
+  const PAD = 8;
+  const size = 48 + 2 * PAD;
   const make = (draw) => {
     const c = document.createElement("canvas");
     c.width = c.height = size;
     const g = c.getContext("2d");
     g.fillStyle = "#000";
     g.strokeStyle = "#000";
+    g.translate(PAD, PAD);
     draw(g);
-    return g.getImageData(0, 0, size, size);
+    return toSdf(g.getImageData(0, 0, size, size));
   };
   const arrow = (g) => {
     g.beginPath();
@@ -64,9 +117,37 @@ function addIcons(map) {
     g.lineTo(6, 42);
     g.closePath();
   };
-  map.addImage("arrow", make((g) => (arrow(g), g.fill())), { sdf: true, pixelRatio: 2 });
+  map.addImage("tr-arrow", make((g) => (arrow(g), g.fill())), { sdf: true, pixelRatio: 2 });
+  // High speed: slimmer and more pointed. Medium distance: flat tip.
   map.addImage(
-    "arrow-hollow",
+    "tr-arrow-av",
+    make((g) => {
+      g.beginPath();
+      g.moveTo(24, 1);
+      g.lineTo(38, 46);
+      g.lineTo(24, 37);
+      g.lineTo(10, 46);
+      g.closePath();
+      g.fill();
+    }),
+    { sdf: true, pixelRatio: 2 },
+  );
+  map.addImage(
+    "tr-arrow-md",
+    make((g) => {
+      g.beginPath();
+      g.moveTo(17, 6);
+      g.lineTo(31, 6);
+      g.lineTo(43, 42);
+      g.lineTo(24, 33);
+      g.lineTo(5, 42);
+      g.closePath();
+      g.fill();
+    }),
+    { sdf: true, pixelRatio: 2 },
+  );
+  map.addImage(
+    "tr-arrow-hollow",
     make((g) => {
       arrow(g);
       g.lineWidth = 6;
@@ -76,7 +157,7 @@ function addIcons(map) {
     { sdf: true, pixelRatio: 2 },
   );
   map.addImage(
-    "dot",
+    "tr-dot",
     make((g) => {
       g.beginPath();
       g.arc(24, 24, 15, 0, 2 * Math.PI);
@@ -86,7 +167,7 @@ function addIcons(map) {
   );
   // Stations: white squares with a dark border (not SDF: two colours).
   map.addImage(
-    "station",
+    "tr-station",
     (() => {
       const c = document.createElement("canvas");
       c.width = c.height = 24;
@@ -116,26 +197,31 @@ export function setBasemap(map, kind) {
       maxzoom: 19,
       attribution: 'Ortofoto: <a href="https://pnoa.ign.es/" target="_blank" rel="noopener">PNOA</a> © IGN (CC BY 4.0)',
     });
-    map.addLayer({ id: "satellite", type: "raster", source: "satellite", layout: { visibility: "none" } }, "track");
+    map.addLayer({ id: "satellite", type: "raster", source: "satellite", layout: { visibility: "none" } }, "track-md");
   }
   map.setLayoutProperty("satellite", "visibility", kind === "satellite" ? "visible" : "none");
 }
 
 export function addLayers(map) {
   addIcons(map);
-  // AV/LD/MD track we have geometry for: dark for standard gauge (high
-  // speed), grey otherwise; dashed where single track.
+  // AV/LD/MD track we have geometry for (OpenStreetMap legs).
   map.addSource("track", { type: "geojson", data: empty() });
-  map.addLayer({
-    id: "track",
-    type: "line",
-    source: "track",
-    paint: {
-      "line-color": ["case", ["==", ["get", "gauge"], 1435], "#334155", "#94a3b8"],
-      "line-width": ["interpolate", ["linear"], ["zoom"], 5, 1, 10, 2.5],
-      "line-opacity": 0.7,
-    },
-  });
+  // One layer per kind of train using the track (a section used by several
+  // kinds is in each; the high-speed one is drawn on top).
+  for (const [kind, prop] of [["md", "md"], ["ld", "ld"], ["av", "av"]]) {
+    map.addLayer({
+      id: `track-${kind}`,
+      type: "line",
+      source: "track",
+      filter: ["==", ["get", prop], true],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": TRACK_COLORS[kind],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 5, 3, 10, 7.5],
+        "line-opacity": 0.75,
+      },
+    });
+  }
   // Cercanías lines in their colours (dashed orange when a notice names them),
   // and the selected train's route.
   map.addSource("lines", { type: "geojson", data: empty() });
@@ -146,7 +232,7 @@ export function addLayers(map) {
     source: "lines",
     paint: {
       "line-color": ["get", "color"],
-      "line-width": ["interpolate", ["linear"], ["zoom"], 7, 1.2, 12, 3],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 7, 3.6, 12, 9],
       "line-opacity": 0.6,
     },
   });
@@ -157,7 +243,7 @@ export function addLayers(map) {
     filter: ["==", ["get", "notice"], true],
     paint: {
       "line-color": "#ea580c",
-      "line-width": ["interpolate", ["linear"], ["zoom"], 7, 2, 12, 5],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 7, 3.6, 12, 9],
       "line-dasharray": [1.5, 1.5],
       "line-opacity": 0.85,
     },
@@ -168,7 +254,7 @@ export function addLayers(map) {
     source: "route",
     filter: ["==", ["geometry-type"], "LineString"],
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#1d4ed8", "line-width": ["interpolate", ["linear"], ["zoom"], 5, 3, 12, 6], "line-opacity": 0.75 },
+    paint: { "line-color": "#1d4ed8", "line-width": ["interpolate", ["linear"], ["zoom"], 5, 6, 12, 12], "line-opacity": 0.6 },
   });
   map.addLayer({
     id: "route-stops",
@@ -204,7 +290,7 @@ export function addLayers(map) {
 
   // Stations as squares: long-distance ones from zoom 6, all from zoom 9.
   const stationLayout = {
-    "icon-image": "station",
+    "icon-image": "tr-station",
     "icon-size": ["interpolate", ["linear"], ["zoom"], 6, 0.45, 10, 0.7, 14, 1],
     "icon-allow-overlap": true,
     "icon-ignore-placement": true,
@@ -242,8 +328,8 @@ export function addLayers(map) {
     minzoom: 6,
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 5, 12, 9],
-      "circle-color": "#f59e0b",
-      "circle-stroke-color": "#7c2d12",
+      "circle-color": ["match", ["get", "kind"], ...Object.entries(KIND_COLORS).flat(), KIND_COLORS.other],
+      "circle-stroke-color": "#ffffff",
       "circle-stroke-width": 1.5,
       "circle-opacity": 0.9,
     },
@@ -300,7 +386,12 @@ export function addLayers(map) {
     type: "symbol",
     source: "trains",
     layout: {
-      "icon-image": ["case", ["==", ["get", "sch"], 1], "arrow-hollow", ["has", "b"], "arrow", "dot"],
+      "icon-image": [
+        "case",
+        ["==", ["get", "sch"], 1], "tr-arrow-hollow",
+        ["!", ["has", "b"]], "tr-dot",
+        ["match", ["get", "t"], "av", "tr-arrow-av", "md", "tr-arrow-md", "tr-arrow"],
+      ],
       "icon-rotate": ["coalesce", ["get", "b"], 0],
       "icon-rotation-alignment": "map",
       "icon-allow-overlap": true,
@@ -309,10 +400,11 @@ export function addLayers(map) {
       // draw them a third bigger.
       "icon-size": [
         "interpolate", ["linear"], ["zoom"],
-        4, ["case", ["==", ["get", "sch"], 1], 0.45, 0.62],
-        8, ["case", ["==", ["get", "sch"], 1], 0.6, 0.82],
-        12, ["case", ["==", ["get", "sch"], 1], 0.85, 1.1],
-        15, ["case", ["==", ["get", "sch"], 1], 1.1, 1.4],
+        // Big enough to spot and tap with all of Spain on screen.
+        4, ["match", ["get", "t"], "ouigo", 0.9, "cer", 0.95, 1.15],
+        7, ["match", ["get", "t"], "ouigo", 1.0, "cer", 1.05, 1.3],
+        12, ["match", ["get", "t"], "ouigo", 1.2, "cer", 1.3, 1.55],
+        15, ["match", ["get", "t"], "ouigo", 1.4, "cer", 1.55, 1.85],
       ],
       "symbol-sort-key": ["get", "c"],
     },
@@ -323,8 +415,9 @@ export function addLayers(map) {
         SCHEDULED_COLOR,
         ["match", ["get", "c"], 0, COLORS[0], 1, COLORS[1], 2, COLORS[2], COLORS[3]],
       ],
-      "icon-halo-color": "#ffffff",
-      "icon-halo-width": 1.2,
+      // Fill = delay; border = kind of train (same colours as its track).
+      "icon-halo-color": ["match", ["get", "t"], "av", TRACK_COLORS.av, "ld", TRACK_COLORS.ld, "md", "#475569", "#ffffff"],
+      "icon-halo-width": ["match", ["get", "t"], "cer", 1.2, "ouigo", 1.2, 3],
       // Old GPS fixes fade a little; trains outside a highlighted line fade a lot.
       "icon-opacity": ["case", ["==", ["get", "dim"], 1], 0.18, [">", ["get", "a"], 600], 0.65, 1],
     },
@@ -346,6 +439,8 @@ export function trainsGeoJson(flat, highlight = null, hidden = () => false) {
       s: flags & FLAG.stopped ? 1 : 0,
       l: flags & FLAG.likely ? 1 : 0,
       sch: flags & FLAG.scheduled ? 1 : 0,
+      // Kind of train, for the border colour.
+      t: flags & FLAG.scheduled ? "ouigo" : flags & FLAG.commuter ? "cer" : flags & FLAG.highSpeed ? "av" : flags & FLAG.medium ? "md" : "ld",
       dim: highlight && !highlight.has(i) ? 1 : 0,
     };
     if (!Number.isNaN(flat[o + 3])) props.b = flat[o + 3];
