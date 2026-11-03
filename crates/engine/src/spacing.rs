@@ -35,9 +35,22 @@ fn label(t: &LiveTrain) -> String {
     }
 }
 
+/// Headings at least this far apart count as opposite directions.
+pub const MIN_ONCOMING_DIFF: f32 = 120.0;
+
 /// Position of train `o` measured along train `f`'s route, if `o` is on
 /// `f`'s track and heading the same way.
 fn along_route_of(net: &Network, f: &TrainView, ft: &LiveTrain, o: &TrainView) -> Option<f64> {
+    along_route_heading(net, f, ft, o, false)
+}
+
+fn along_route_heading(
+    net: &Network,
+    f: &TrainView,
+    ft: &LiveTrain,
+    o: &TrainView,
+    opposite: bool,
+) -> Option<f64> {
     let m = ft.matched?;
     let (d, off) = net.project(m.trip, o.coord)?;
     if off > MAX_OFF_TRACK_M {
@@ -46,7 +59,12 @@ fn along_route_of(net: &Network, f: &TrainView, ft: &LiveTrain, o: &TrainView) -
     // Same direction: the other train's heading must follow F's line there.
     let (_, line_bearing) = net.point_at(m.trip, d)?;
     match (o.bearing, line_bearing) {
-        (Some(ob), Some(lb)) if heading_diff(ob, lb) <= MAX_HEADING_DIFF => Some(d),
+        (Some(ob), Some(lb))
+            if (!opposite && heading_diff(ob, lb) <= MAX_HEADING_DIFF)
+                || (opposite && heading_diff(ob, lb) >= MIN_ONCOMING_DIFF) =>
+        {
+            Some(d)
+        }
         _ => None,
     }
     .filter(|_| f.index != o.index)
@@ -116,6 +134,37 @@ pub fn for_train(
         source: estimated(f, &views[j]),
     });
     (ahead, behind)
+}
+
+/// The next train coming the other way on train `i`'s track (or the
+/// parallel one): `(view index, metres apart along the track, seconds until
+/// they pass each other)`. The time uses both trains' current speeds
+/// (measured or timetabled), so it's a rough guide.
+pub fn oncoming(
+    net: &Network,
+    trains: &[LiveTrain],
+    views: &[TrainView],
+    i: usize,
+) -> Option<(usize, f64, Option<f64>)> {
+    let f = &views[i];
+    let ft = &trains[f.index];
+    let f_along = f.along?;
+    let mut best: Option<(f64, usize)> = None;
+    for (j, o) in views.iter().enumerate() {
+        if j == i || haversine_m(f.coord, o.coord) > MAX_LOOKAHEAD_M {
+            continue;
+        }
+        if let Some(d) = along_route_heading(net, f, ft, o, true) {
+            let gap = d - f_along;
+            if gap > 20.0 && gap <= MAX_LOOKAHEAD_M && best.is_none_or(|b| gap < b.0) {
+                best = Some((gap, j));
+            }
+        }
+    }
+    let (gap, j) = best?;
+    let kmh = |v: &TrainView| v.speed.map_or(0.0, |s| f64::from(s.0));
+    let closing = (kmh(f) + kmh(&views[j])) / 3.6;
+    Some((j, gap, (closing > 1.0).then(|| gap / closing)))
 }
 
 /// Fill spacing for every train (diagnostics; the app asks per train).
@@ -223,6 +272,29 @@ mod tests {
             .expect("unknown train ahead on the same track");
         assert_eq!(g.trip_id, "SPECIAL_1");
         assert!((15_000..16_000).contains(&g.distance_m), "{}", g.distance_m);
+    }
+
+    #[test]
+    fn finds_the_oncoming_train() {
+        let net = sample_network();
+        let mut live = Live::default();
+        let now = local(9, 5);
+        let mut other = v("SPECIAL_2", "888", 40.25, now);
+        other.bearing = Some(0.0); // northbound, towards trip 190
+        live.ingest(
+            &net,
+            "vp_ld",
+            FeedData::Vehicles(vec![v("0019012026-10-31", "190", 40.36, now), other]),
+            now,
+        );
+        let views = live.views(&net, now, false);
+        let i = views
+            .iter()
+            .position(|x| live.trains[x.index].rt.trip_id == "0019012026-10-31")
+            .unwrap();
+        let (j, gap, _) = oncoming(&net, &live.trains, &views, i).expect("oncoming");
+        assert_eq!(live.trains[views[j].index].rt.train_number, "888");
+        assert!((11_000.0..13_500.0).contains(&gap), "{gap}");
     }
 
     #[test]

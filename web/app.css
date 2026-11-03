@@ -121,3 +121,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .profile-train { fill: #2563eb; stroke: #fff; stroke-width: 1.5; }
 .profile-scale { display: flex; justify-content: space-between; }
 details.small summary { cursor: pointer; }
+
+/* Map credits (ⓘ): opaque white when open, so they're readable over the map. */
+.maplibregl-ctrl-attrib.maplibregl-compact-show,
+.maplibregl-ctrl-attrib:not(.maplibregl-compact) { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+
+/* Train search. */
+.search { position: relative; }
+#search-q { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid #d0d5dd; border-radius: 10px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.search-results { position: absolute; z-index: 6; left: 0; right: 0; top: 100%; margin: 4px 0 0; padding: 4px 0; list-style: none; background: #fff; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.18); max-height: 50vh; overflow: auto; }
+.search-results li { padding: 6px 10px; font-size: 14px; }
+.search-results button { text-align: left; width: 100%; }
+
+/* Base map choice inside "Capas". */
+.basemap { display: flex; gap: 10px; border-top: 1px solid #eaecf0; margin-top: 6px; padding-top: 6px; }
+
+/* A popup the user dragged away from its train: no pointer tip. */
+.maplibregl-popup.dragged .maplibregl-popup-tip { display: none; }
+.popup-title { cursor: grab; touch-action: none; user-select: none; }
+.search { width: 220px; }
+.maplibregl-popup-content { max-height: min(60vh, 520px); overflow: auto; }
