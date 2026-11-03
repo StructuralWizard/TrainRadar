@@ -29,6 +29,9 @@ if (pt) {
   await page.mouse.click(pt.x, pt.y);
   await page.waitForTimeout(6000); // pan + tiles under the popup
 }
+// Headless Chrome can leave the old popup area unpainted: repaint first.
+await page.evaluate(() => window.__trainradar.map.triggerRepaint());
+await page.waitForTimeout(1000);
 await page.screenshot({ path: `${out}/readme.jpg`, type: "jpeg", quality: 82 });
 console.log("README-SHOT-BEGIN");
 console.log((await readFile(`${out}/readme.jpg`)).toString("base64"));

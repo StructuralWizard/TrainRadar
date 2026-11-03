@@ -35,6 +35,11 @@ fn label(t: &LiveTrain) -> String {
     }
 }
 
+/// A train closer than this (along the track) can't be on the same track
+/// as F (trains are 100–400 m long): it's on a parallel one, as on the
+/// four-track sections around Madrid. Not a train ahead or behind.
+pub const MIN_GAP_M: f64 = 150.0;
+
 /// Headings at least this far apart count as opposite directions.
 pub const MIN_ONCOMING_DIFF: f32 = 120.0;
 
@@ -48,7 +53,11 @@ fn along_route_of(net: &Network, f: &TrainView, ft: &LiveTrain, o: &TrainView) -
 /// AV/LD/MD and OUIGO among themselves (in cities the lines run side by
 /// side, metres apart), and never across gauges (high-speed standard gauge
 /// vs Iberian) when both are known.
-fn same_network(net: &Network, a: (&TrainView, &LiveTrain), b: (&TrainView, &LiveTrain)) -> bool {
+pub fn same_network(
+    net: &Network,
+    a: (&TrainView, &LiveTrain),
+    b: (&TrainView, &LiveTrain),
+) -> bool {
     if (a.1.feed == "vp_cer") != (b.1.feed == "vp_cer") {
         return false;
     }
@@ -132,14 +141,14 @@ pub fn for_train(
         // Is o ahead of f, on f's track?
         if let Some(d) = along_route_of(net, f, ft, o) {
             let gap = d - f_along;
-            if gap > 20.0 && gap <= MAX_LOOKAHEAD_M && ahead.is_none_or(|a| gap < a.0) {
+            if gap > MIN_GAP_M && gap <= MAX_LOOKAHEAD_M && ahead.is_none_or(|a| gap < a.0) {
                 ahead = Some((gap, j));
             }
         }
         // Is f ahead of o, on o's track? Then o is behind f.
         if let (Some(o_along), Some(d)) = (o.along, along_route_of(net, o, ot, f)) {
             let gap = d - o_along;
-            if gap > 20.0 && gap <= MAX_LOOKAHEAD_M && behind.is_none_or(|b| gap < b.0) {
+            if gap > MIN_GAP_M && gap <= MAX_LOOKAHEAD_M && behind.is_none_or(|b| gap < b.0) {
                 behind = Some((gap, j, d));
             }
         }

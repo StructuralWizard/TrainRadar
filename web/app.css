@@ -140,7 +140,7 @@ details.small summary { cursor: pointer; }
 .maplibregl-popup.dragged .maplibregl-popup-tip { display: none; }
 .popup-title { cursor: grab; touch-action: none; user-select: none; }
 .search { width: 220px; }
-.maplibregl-popup-content { max-height: min(60vh, 520px); overflow: auto; }
+.maplibregl-popup-content { max-height: min(55vh, 470px); overflow: auto; }
 
 /* "Capas" sections and the notice-kind colour keys. */
 #layers h4 { margin: 8px 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted, #667085); }

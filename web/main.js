@@ -153,7 +153,7 @@ function foldCredits() {
 function makeRoomBelow(lon, lat) {
   const h = map.getContainer().clientHeight;
   const y = map.project([lon, lat]).y;
-  if (y > h * 0.45) map.panBy([0, y - h * 0.3], { duration: 300 });
+  if (y > h * 0.35) map.panBy([0, y - h * 0.25], { duration: 300 });
 }
 
 /** Fly to a point so it lands in the visible part of the map: above a
@@ -167,7 +167,7 @@ function flyToVisible(lon, lat, zoom, { forPopup = false } = {}) {
     center: [lon, lat],
     zoom: Math.max(map.getZoom(), zoom),
     // The sheet can grow to 55% of the screen once its content loads.
-    offset: [0, covered ? -(h * 0.55) / 2 : forPopup ? -h * 0.2 : 0],
+    offset: [0, covered ? -(h * 0.55) / 2 : forPopup ? -h * 0.25 : 0],
   });
 }
 
