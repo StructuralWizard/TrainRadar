@@ -22,6 +22,91 @@ pub struct Resolved<'a> {
     pub nucleos: Vec<String>,
     /// Stations named, with coordinates when known.
     pub stops: Vec<(String, String, Option<LatLon>)>,
+    /// What kind of notice it is, guessed from its text.
+    pub kind: Kind,
+}
+
+/// Kind of a Renfe notice. Renfe's alerts don't fill GTFS-RT's cause and
+/// effect, so it's read from the Spanish text; the first match in this
+/// order wins (a strike or works notice usually also describes changes).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Kind {
+    /// Huelga, servicios mínimos.
+    Strike = 1,
+    /// Lifts, escalators, step-free access.
+    Accessibility = 2,
+    /// Obras, trabajos, mantenimiento.
+    Works = 4,
+    /// Incidencias, retrasos, supresiones, cortes, autobuses.
+    Disruption = 8,
+    /// Anything else: timetable changes, information.
+    Other = 16,
+}
+
+impl Kind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Kind::Strike => "strike",
+            Kind::Accessibility => "accessibility",
+            Kind::Works => "works",
+            Kind::Disruption => "disruption",
+            Kind::Other => "other",
+        }
+    }
+}
+
+/// Guess a notice's kind from its header and description.
+pub fn kind_of(text: &str) -> Kind {
+    let t = text.to_lowercase();
+    let any = |words: &[&str]| words.iter().any(|w| t.contains(w));
+    if any(&[
+        "huelga",
+        "servicios mínimos",
+        "servicios minimos",
+        "paros parciales",
+    ]) {
+        Kind::Strike
+    } else if any(&[
+        "ascensor",
+        "escalera mecánica",
+        "escaleras mecánicas",
+        "escalera mecanica",
+        "accesib",
+        "movilidad reducida",
+        "rampa",
+    ]) {
+        Kind::Accessibility
+    } else if any(&[
+        "obra",
+        "trabajos",
+        "mantenimiento",
+        "renovación",
+        "renovacion",
+        "mejora de",
+    ]) {
+        Kind::Works
+    } else if any(&[
+        "incidencia",
+        "retras",
+        "suprim",
+        "cancel",
+        "alteraci",
+        "interrump",
+        "avería",
+        "averia",
+        "no efectúa",
+        "no efectuará",
+        "sin servicio",
+        "corte",
+        "transbordo",
+        "autobús",
+        "autobuses",
+        "por carretera",
+    ]) {
+        Kind::Disruption
+    } else {
+        Kind::Other
+    }
 }
 
 /// `10T0011C4` → (`10`, `C4`). Renfe Cercanías route ids are núcleo digits,
@@ -88,8 +173,10 @@ pub fn resolve<'a>(net: &Network, i: &'a Incident) -> Resolved<'a> {
             )
         })
         .collect();
+    let kind = kind_of(&text);
     Resolved {
         incident: i,
+        kind,
         text,
         tags,
         lines,
@@ -137,6 +224,27 @@ mod tests {
             route_ids: routes.iter().map(|s| (*s).into()).collect(),
             stop_ids: stops.iter().map(|s| (*s).into()).collect(),
         }
+    }
+
+    #[test]
+    fn kinds_from_text() {
+        assert_eq!(
+            kind_of("Huelga convocada: servicios mínimos del 60 %"),
+            Kind::Strike
+        );
+        assert_eq!(
+            kind_of("Ascensor fuera de servicio en el andén 2"),
+            Kind::Accessibility
+        );
+        assert_eq!(
+            kind_of("Por obras en la estación de Pinto, los trenes no efectúan parada"),
+            Kind::Works
+        );
+        assert_eq!(
+            kind_of("Retrasos por incidencia en la infraestructura"),
+            Kind::Disruption
+        );
+        assert_eq!(kind_of("Nuevos horarios a partir del lunes"), Kind::Other);
     }
 
     #[test]

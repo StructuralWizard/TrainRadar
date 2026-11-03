@@ -32,7 +32,13 @@ and draws them on a MapLibre map. There is no TrainRadar server.
   stations with their next trains and delays, trains approaching your station, and
   "Am I on this train?" (with a confidence level, never a guess).
 - Renfe notices (incidents) with lines, stations on the map, and the feed's age, plus a
-  link to Adif's network status page.
+  link to Adif's network status page. Notices are sorted by kind (service disruption,
+  works, accessibility, strikes, other) from their text, since Renfe doesn't tag them.
+- Layers to show or hide each kind of train (Cercanías, high speed, long distance,
+  medium distance, OUIGO), lines, track, stations, each kind of notice and stopped
+  trains; standard map or satellite (IGN PNOA orthophoto).
+- Train search by number or line, station popups with next departures, and the next
+  oncoming train in each popup.
 - Spanish (default) and English.
 
 Phase plan and design notes: [docs/roadmap.md](docs/roadmap.md). How the engine works:

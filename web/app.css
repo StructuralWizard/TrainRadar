@@ -141,3 +141,31 @@ details.small summary { cursor: pointer; }
 .popup-title { cursor: grab; touch-action: none; user-select: none; }
 .search { width: 220px; }
 .maplibregl-popup-content { max-height: min(60vh, 520px); overflow: auto; }
+
+/* "Capas" sections and the notice-kind colour keys. */
+#layers h4 { margin: 8px 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted, #667085); }
+#layers h4:first-of-type { margin-top: 6px; }
+.kind-dot, .kind-ring { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+#f-k-disruption + .kind-dot { background: #dc2626; }
+#f-k-works + .kind-dot { background: #f59e0b; }
+#f-k-accessibility + .kind-dot { background: #2563eb; }
+#f-k-strike + .kind-dot { background: #7c3aed; }
+#f-k-other + .kind-dot { background: #64748b; }
+.kind-ring { border: 2px solid #b91c1c; box-sizing: border-box; }
+.chip-kind { color: #fff; }
+.chip-kind.kind-disruption { background: #dc2626; }
+.chip-kind.kind-works { background: #b45309; }
+.chip-kind.kind-accessibility { background: #2563eb; }
+.chip-kind.kind-strike { background: #7c3aed; }
+.chip-kind.kind-other { background: #64748b; }
+
+/* Layout fixes from the visual review. */
+/* "Capas" can be long: scroll inside it instead of running under the buttons. */
+#layers[open] { max-height: calc(100vh - 260px - var(--safe-top) - var(--safe-bottom)); overflow: auto; }
+/* Desktop side panels start below the zoom buttons. */
+@media (min-width: 720px) { .sheet { top: 84px; } }
+/* Search results: even rows. */
+.search-results li { padding: 0; }
+.search-results button { display: block; padding: 8px 10px; line-height: 1.3; }
+.sources summary { cursor: pointer; }
+.sources { margin-top: 6px; }

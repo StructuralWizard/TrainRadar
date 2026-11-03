@@ -13,6 +13,7 @@ pub mod network;
 pub mod onboard;
 pub mod places;
 pub mod poll;
+pub mod products;
 pub mod renfe;
 pub mod schedule;
 pub mod source;
@@ -47,10 +48,23 @@ fn class_code(d: Option<Delay>) -> u8 {
     }
 }
 
-fn flags(v: &TrainView, t: &live::LiveTrain) -> u32 {
+fn flags(net: &Network, v: &TrainView, t: &live::LiveTrain) -> u32 {
     let mut f = 0;
     if t.feed == "vp_cer" {
         f |= FLAG_COMMUTER;
+    } else {
+        // AV/LD/MD: the product of the matched trip, else the feed's label.
+        let name = t.matched.map_or(t.rt.line.as_str(), |m| {
+            let r = &net.regions[m.trip.region as usize];
+            r.tt.routes[net.trip(m.trip).route as usize]
+                .short_name
+                .as_str()
+        });
+        f |= match products::group_of(name) {
+            products::Group::HighSpeed => FLAG_HIGH_SPEED,
+            products::Group::MediumDistance => FLAG_MEDIUM_DISTANCE,
+            products::Group::LongDistance => 0,
+        };
     }
     if let Some(s) = v.stopped {
         f |= FLAG_STOPPED;
@@ -76,6 +90,10 @@ pub const FLAG_STOPPED: u32 = 1;
 pub const FLAG_STOPPED_LIKELY: u32 = 2;
 pub const FLAG_SCHEDULED_ONLY: u32 = 4;
 pub const FLAG_COMMUTER: u32 = 8;
+/// AV/LD/MD trains: high speed (AVE, AVLO, Avant…) or medium distance (MD,
+/// Regional…); neither means long distance (Alvia, Intercity…).
+pub const FLAG_HIGH_SPEED: u32 = 16;
+pub const FLAG_MEDIUM_DISTANCE: u32 = 32;
 
 /// Everything the browser needs, behind one handle.
 #[wasm_bindgen]
@@ -164,7 +182,7 @@ impl Engine {
                 f64::from(class_code(v.delay)),
                 v.bearing.map_or(f64::NAN, f64::from),
                 v.fix_age_secs as f64,
-                f64::from(flags(v, &self.live.trains[v.index])),
+                f64::from(flags(&self.net, v, &self.live.trains[v.index])),
             ]);
         }
         out
@@ -442,20 +460,22 @@ impl Engine {
     }
 
     /// Lines of the loaded Cercanías núcleos in their official colours, as a
-    /// GeoJSON FeatureCollection: `{line, region, color, notice}`; `notice`
-    /// is true when an active Renfe notice names the line.
+    /// GeoJSON FeatureCollection: `{line, region, color, notice_kinds}`;
+    /// `notice_kinds` is the bit set of the kinds ([`incidents::Kind`]) of the
+    /// active Renfe notices naming the line (0 if none).
     #[wasm_bindgen(js_name = linesGeoJson)]
     pub fn lines_geojson(&self, now_ms: f64) -> String {
-        use std::collections::{BTreeMap, HashSet};
+        use std::collections::{BTreeMap, HashMap};
         let active = incidents::active(&self.net, &self.live.incidents, secs(now_ms));
-        let noticed: HashSet<(String, String)> = active
-            .iter()
-            .flat_map(|r| {
-                r.nucleos
-                    .iter()
-                    .flat_map(move |n| r.lines.iter().map(move |l| (n.clone(), l.clone())))
-            })
-            .collect();
+        // (núcleo, line) → bit set of the kinds of the notices naming it.
+        let mut noticed: HashMap<(String, String), u32> = HashMap::new();
+        for r in &active {
+            for n in &r.nucleos {
+                for l in &r.lines {
+                    *noticed.entry((n.clone(), l.clone())).or_default() |= r.kind as u32;
+                }
+            }
+        }
         let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
         let mut first = true;
         for (ri, r) in self.net.regions.iter().enumerate() {
@@ -499,9 +519,12 @@ impl Engine {
                     .s("line", name)
                     .s("region", &r.tt.region)
                     .s("color", &color)
-                    .b(
-                        "notice",
-                        noticed.contains(&(r.tt.region.clone(), name.to_owned())),
+                    .n(
+                        "notice_kinds",
+                        noticed
+                            .get(&(r.tt.region.clone(), name.to_owned()))
+                            .copied()
+                            .unwrap_or(0),
                     )
                     .end();
                 s.push('}');
@@ -786,6 +809,7 @@ impl Engine {
             stops.push(']');
             json::Obj::new(&mut s)
                 .s("id", &r.incident.id)
+                .s("kind", r.kind.as_str())
                 .s("text", &r.text)
                 .raw("tags", &strs(&r.tags))
                 .raw("lines", &strs(&r.lines))
@@ -801,7 +825,6 @@ impl Engine {
 }
 
 impl Engine {
-    /// "AVE 3071" / "C3 21096" for a train identified by trip id or number.
     /// Index of the train with this spacing label (trip id, or number).
     fn index_of(&self, id: &str) -> Option<usize> {
         self.live.trains.iter().position(|t| {
@@ -809,6 +832,7 @@ impl Engine {
         })
     }
 
+    /// "AVE 3071" / "C3 21096" for a train identified by trip id or number.
     fn title_of(&self, id: &str) -> String {
         let Some(t) =
             self.live.trains.iter().find(|t| {
@@ -1091,6 +1115,11 @@ mod tests {
         assert!(r["line"].as_array().unwrap().len() >= 2);
         let l: serde_json::Value = serde_json::from_str(&e.lines_geojson(ms)).unwrap();
         assert_eq!(l["features"][0]["properties"]["line"], "C3");
-        assert_eq!(l["features"][0]["properties"]["notice"], true);
+        // "Obras entre A y B": a works notice.
+        assert_eq!(i[0]["kind"], "works");
+        assert_eq!(
+            l["features"][0]["properties"]["notice_kinds"],
+            incidents::Kind::Works as u32
+        );
     }
 }

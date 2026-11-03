@@ -4,7 +4,15 @@ import * as maplibregl from "../vendor/maplibre/maplibre-gl.mjs";
 export const COLORS = ["#1a9850", "#f39c12", "#d7301f", "#8c8c8c"]; // on time, 5–14, 15+, unknown
 export const SCHEDULED_COLOR = "#7c3aed"; // timetable-only trains (OUIGO)
 export const STRIDE = 6; // engine.positions(): lon, lat, class, bearing, fix age, flags
-export const FLAG = { stopped: 1, likely: 2, scheduled: 4, commuter: 8 };
+export const FLAG = { stopped: 1, likely: 2, scheduled: 4, commuter: 8, highSpeed: 16, medium: 32 };
+/** Marker colour per kind of Renfe notice (engine incidents::Kind). */
+export const KIND_COLORS = {
+  disruption: "#dc2626",
+  strike: "#7c3aed",
+  works: "#f59e0b",
+  accessibility: "#2563eb",
+  other: "#64748b",
+};
 
 const empty = () => ({ type: "FeatureCollection", features: [] });
 
@@ -242,8 +250,8 @@ export function addLayers(map) {
     minzoom: 6,
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 5, 12, 9],
-      "circle-color": "#f59e0b",
-      "circle-stroke-color": "#7c2d12",
+      "circle-color": ["match", ["get", "kind"], ...Object.entries(KIND_COLORS).flat(), KIND_COLORS.other],
+      "circle-stroke-color": "#ffffff",
       "circle-stroke-width": 1.5,
       "circle-opacity": 0.9,
     },
