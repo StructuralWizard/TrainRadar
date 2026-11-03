@@ -317,9 +317,10 @@ export function addLayers(map) {
       // draw them a third bigger.
       "icon-size": [
         "interpolate", ["linear"], ["zoom"],
-        4, ["case", ["==", ["get", "sch"], 1], 0.45, 0.62],
-        8, ["case", ["==", ["get", "sch"], 1], 0.6, 0.82],
-        12, ["case", ["==", ["get", "sch"], 1], 0.85, 1.1],
+        // Big enough to spot and tap with all of Spain on screen.
+        4, ["case", ["==", ["get", "sch"], 1], 0.6, 0.8],
+        7, ["case", ["==", ["get", "sch"], 1], 0.7, 0.9],
+        12, ["case", ["==", ["get", "sch"], 1], 0.9, 1.15],
         15, ["case", ["==", ["get", "sch"], 1], 1.1, 1.4],
       ],
       "symbol-sort-key": ["get", "c"],

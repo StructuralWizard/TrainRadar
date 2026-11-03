@@ -304,6 +304,81 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    // AV/LD/MD trains without a neighbour: why? For each, count the other
+    // trains within 400 km that sit on its track (≤ 250 m) and how their
+    // headings compare (same way / opposite / other / unknown).
+    {
+        let ld: Vec<_> = views
+            .iter()
+            .filter(|v| live.trains[v.index].feed != "vp_cer")
+            .collect();
+        let lonely: Vec<_> = ld
+            .iter()
+            .filter(|v| v.ahead.is_none() && v.behind.is_none())
+            .collect();
+        println!(
+            "\nAV/LD/MD spacing: {} trains, {} with a train ahead, {} behind, {} with neither",
+            ld.len(),
+            ld.iter().filter(|v| v.ahead.is_some()).count(),
+            ld.iter().filter(|v| v.behind.is_some()).count(),
+            lonely.len()
+        );
+        let (mut no_match, mut no_along) = (0, 0);
+        let mut shown = 0;
+        for v in &lonely {
+            let t = &live.trains[v.index];
+            let Some(m) = t.matched else {
+                no_match += 1;
+                continue;
+            };
+            let Some(along) = v.along else {
+                no_along += 1;
+                continue;
+            };
+            let (mut on, mut same, mut opp, mut other, mut unknown) = (0, 0, 0, 0, 0);
+            for o in &views {
+                if o.index == v.index || haversine_m(o.coord, v.coord) > 400_000.0 {
+                    continue;
+                }
+                let Some((d, off)) = net.project(m.trip, o.coord) else {
+                    continue;
+                };
+                if off > 250.0 {
+                    continue;
+                }
+                on += 1;
+                let lb = net.point_at(m.trip, d).and_then(|x| x.1);
+                match (o.bearing, lb) {
+                    (Some(a), Some(b)) => {
+                        let diff = (a - b).rem_euclid(360.0);
+                        let diff = diff.min(360.0 - diff);
+                        if diff <= 60.0 {
+                            same += 1
+                        } else if diff >= 120.0 {
+                            opp += 1
+                        } else {
+                            other += 1
+                        }
+                    }
+                    _ => unknown += 1,
+                }
+            }
+            if shown < 12 || t.rt.train_number.trim_start_matches('0') == "5072" {
+                shown += 1;
+                let total = net.schedule(m.trip).last().map_or(0, |x| x.dist_m);
+                println!(
+                    "- {} {}: at {:.0}/{} km, bearing {:?}; others on its track: {on} (same way {same}, opposite {opp}, crossing {other}, no heading {unknown})",
+                    t.rt.line,
+                    t.rt.train_number,
+                    along / 1000.0,
+                    total / 1000,
+                    v.bearing
+                );
+            }
+        }
+        println!("  unmatched: {no_match}, not placed on their trip: {no_along}");
+    }
+
     let with_ahead: Vec<_> = views.iter().filter(|v| v.ahead.is_some()).collect();
     println!(
         "\nSpacing: {} of {} trains have a train ahead on the same line. Examples:\n",

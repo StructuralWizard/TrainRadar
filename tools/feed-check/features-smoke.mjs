@@ -51,13 +51,21 @@ if (!(await page.$(".maplibregl-popup.dragged"))) await fail("dragged popup stil
 await page.screenshot({ path: `${out}/dragged.png` });
 await page.click(".maplibregl-popup-close-button");
 
-// Station popup: click a station square.
+// Station popup: click a C3 station square that no train or notice marker
+// covers right now (trains and notices take the tap first, by design).
 const pt = await page.evaluate(async () => {
   const { map } = window.__trainradar;
-  map.jumpTo({ center: [-3.7186, 40.3115], zoom: 13 }); // Getafe Industrial (no notice marker)
-  await new Promise((r) => setTimeout(r, 1500));
-  return map.project([-3.7186, 40.3115]);
+  const stops = [[-3.7110, 40.3460], [-3.7186, 40.3115], [-3.6763, 40.1905], [-3.6157, 40.0358]];
+  for (const c of stops) {
+    map.jumpTo({ center: c, zoom: 13 });
+    await new Promise((r) => setTimeout(r, 1200));
+    const p = map.project(c);
+    const box = [[p.x - 16, p.y - 16], [p.x + 16, p.y + 16]];
+    if (!map.queryRenderedFeatures(box, { layers: ["trains", "incidents"] }).length) return p;
+  }
+  return null;
 });
+if (!pt) await fail("every C3 station had a train on it");
 await page.mouse.click(pt.x, pt.y);
 await page.waitForFunction(() => /Próximas salidas/.test(document.querySelector(".maplibregl-popup")?.textContent || ""), null, { timeout: 5000 })
   .catch(() => fail("station popup didn't open"));
