@@ -63,7 +63,12 @@ try {
   await page.waitForSelector(".popup", { timeout: 5000 }).catch(() => fail("popup did not open"));
   console.log("popup:", (await page.textContent(".popup")).replace(/\s+/g, " "));
   await page.screenshot({ path: `${out}/popup.png` });
-  if (pt.graded && !(await page.$(".popup svg.profile path"))) await fail("graded train's popup has no height profile");
+  // The tap can land on a neighbouring train, so check the popup that
+  // opened: if it shows a gradient, it must also show the height profile.
+  const shown = await page.textContent(".popup");
+  if (/Pendiente|Gradient/.test(shown) && !(await page.$(".popup svg.profile path"))) {
+    await fail("popup shows a gradient but no height profile");
+  }
 
   await page.click("#delayed-btn");
   const rows = await page.$$eval("#delayed-list li", (l) => l.length);
