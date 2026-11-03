@@ -117,8 +117,19 @@ run cleanly for 14 days, then decide with the maintainer.
   `GET /v1/history/station/:stopId?days=…`. No personal data exists in this database.
 - Data rules: record only what Renfe publishes; mark estimated delays; skip trains whose
   feed is older than 10 min; alerts feed stale >24 h → don't store alerts.
-- Retention: `trips` 24 months (monthly cron deletes older), `line_daily` forever. Weekly
-  export of D1 to R2 `backups/` (gz NDJSON), R2 lifecycle deletes backups after 90 days.
+- **Expected volume** (estimate, verify in the first week): ~6,000–7,000 runs/day at
+  ~0.6–1 KB each with stop delays → **4–8 MB/day, 0.15–0.25 GB/month, 1.5–3 GB/year** in
+  D1. ~10–15k rows written/day. Add a daily job that logs D1 size and row counts to
+  `rt/status.json` so growth is visible.
+- **Tiered retention** (a single D1 database is capped at 10 GB; the paid plan includes
+  5 GB): keep `trips` in D1 for the **last 12 months**. A monthly cron exports each month
+  older than 12 months to R2 `archive/trips/YYYY-MM.ndjson.gz` (~1/5 of the D1 size) and
+  then deletes those rows. `line_daily` stays in D1 forever (tiny). The API serves `days`
+  ≤ 365 from D1 only; older months are downloadable archives (later: open dataset).
+  Alert at 4 GB D1 size (80% of included storage).
+- Backups: weekly export of D1 to R2 `backups/` (gz NDJSON), R2 lifecycle deletes backups
+  after 90 days; D1 Time Travel for short-term restore. Archives in `archive/` are never
+  auto-deleted.
 - **Tests**: recorder on fixture feeds (reuse `demo/` fake feeds), trip finalisation,
   aggregates, API pagination/limits. **Acceptance**: 7 days of data; `line_daily` for C5
   Madrid matches a hand check of 20 trips.
@@ -196,7 +207,9 @@ CSV/summary formatting, notification threshold logic.
 - **Data safety form** answers in `docs/play-data-safety.md` (expected: no data collected
   or shared; location processed on device only; purchases handled by Google Play).
 - Content rating questionnaire answers, target audience 18+ not required (general).
-- Closed test track: checklist for the testers requirement for new personal accounts.
+- Closed test track with real testers (useful even though an organisation account
+  should be exempt from the personal-account testing requirement); publisher name
+  "Metranos Ltd" in the listing and in the app's About screen.
 - In-app "About & licences" screen with all attributions from `docs/data-sources.md`.
 - Versioning: `versionCode` from tag, release notes from CHANGELOG.
 
@@ -213,15 +226,38 @@ collected/shared). Web stays ad-free. Off by default behind `CONFIG.ads = false`
 Claude Code drafts the pages and listings; **the maintainer** does the items marked 👤 and
 should have the drafts checked by a professional. Not legal advice.
 
-- 👤 Register as a sole trader with HMRC (self-assessment) before income; keep records of
-  store payouts. Stores are merchant of record and handle VAT on sales.
-- 👤 Google Play payments profile and **trader status** declaration (EU Digital Services
-  Act): as a trader, your name, address, email and phone are shown to EU users. Consider a
-  business address service and a dedicated email/phone.
+**Publisher: Metranos Ltd** (UK limited company, maintainer's existing company). The app,
+store accounts, Cloudflare billing, domain and insurance are all in the company's name.
+
+- 👤 Open the Google Play developer account as an **organisation** (Metranos Ltd), not a
+  personal account; D-U-N-S number needed. Payments profile and payouts to the company
+  bank account. Organisation accounts are exempt from the personal-account closed-testing
+  requirement (verify at sign-up).
+- 👤 **Trader status** declaration (EU Digital Services Act): use the company's registered
+  office address and a business email/phone, never a home address.
+- 👤 **Tax**: store payouts are company trading income in the Corporation Tax return.
+  Google is the seller to consumers and accounts for UK/EU VAT on store sales, so no
+  Spanish or EU VAT registration is expected; confirm treatment of Google payouts and of
+  web tips (Buy Me a Coffee) with the company's accountant.
+- 👤 **Insurance** (not legally required unless the company employs someone; recommended
+  once paid features launch): professional indemnity £250k–£1m plus legal expenses,
+  territory including Spain/EU, covering software supplied to consumers. Typical small
+  policies ~£100–£250/year. Public liability and cyber cover are low priority because the
+  servers hold no personal data.
+- 👤 **ICO data-protection fee**: check whether Metranos Ltd must pay it (likely if the
+  company processes any personal data, e.g. support emails); low annual fee.
+- **Free vs paid, consumer law**: the free app and web carry little consumer-law exposure.
+  Paid Pro must be of satisfactory quality and as described (UK Consumer Rights Act 2015;
+  EU digital-content rules apply to Spanish buyers). Consumers' statutory rights can't be
+  excluded; the "data may be wrong, not for safety-critical use" notice still applies.
+- **UK subscription rules (DMCC Act) from January 2027**: before launching `pro_monthly`
+  / `pro_yearly` to UK users, check pre-contract information, reminder notices before
+  renewals and end of trial, and easy cancellation. Play Billing covers much of this; the
+  Pro screen must show price, renewal period, trial terms and how to cancel.
 - 👤 Check the name "TrainRadar" on UKIPO, EUIPO and in the Play Store for conflicts
   before launch.
-- **Provider identification** page (UK E-Commerce Regulations 2002: name, geographic
-  address, email).
+- **Provider identification** page (UK E-Commerce Regulations 2002 and Companies Act
+  disclosure): Metranos Ltd, company number, registered office, email.
 - **Privacy policy** (UK GDPR / EU GDPR): what the app does *not* collect; location on
   device only; trips log on device only; purchases processed by Google (link to its
   policy); history API holds no personal data; server logs: Cloudflare request logs only,
@@ -242,8 +278,10 @@ should have the drafts checked by a professional. Not legal advice.
 
 - **Personal data**: none on servers by design. Trips log, favourites, location: device
   only, deletable in Settings. Uninstall deletes everything.
-- **History data**: D1 schema above; 24-month retention for trips, aggregates kept;
-  weekly R2 backup (90 days); D1 Time Travel as short-term restore.
+- **History data**: D1 schema above; 12 months of trips in D1, older months archived to
+  R2 as monthly gz files, aggregates kept in D1; weekly R2 backup (90 days); D1 Time Travel
+  as short-term restore. Expected 4–8 MB/day (see C3).
+- **Live data**: ~100 KB of feed files in R2, overwritten every cycle (no growth).
 - **Quality**: store `source_quality`, skip stale feeds, flag OUIGO as timetable-only and
   never record it as live; document known Renfe quirks (alerts feed stalls, LD header
   timestamp offset) in `docs/data-sources.md`.
@@ -256,12 +294,13 @@ should have the drafts checked by a professional. Not legal advice.
 |---|---|---|
 | Google Play developer account | $25 once | |
 | Domain for `live.` / `api.` | ~£10/year | needed for cached R2 access |
-| Cloudflare Workers Paid | $5/month | Durable Object alarms, headroom on requests and CPU; may fit free tier at first: measure in C1 |
-| R2 | ~£0 | ~650k writes/month (within 1M free Class A); storage < 1 GB/year; CDN-cached reads are free |
-| D1 | ~£0 | ~15k rows written/day, well inside included limits |
+| Cloudflare Workers Paid | $5/month | includes 10M Worker requests, 1M Durable Object requests + 5 GB DO storage, D1 5 GB storage + 50M rows written/month. Enable at dash.cloudflare.com → Workers & Pages → Plans. May fit the free tier at first: measure in C1 |
+| R2 | ~£0 | free tier 10 GB storage, 1M writes, 10M reads/month; ~650k writes/month for live feeds; archives ~0.3–0.6 GB/year; CDN-cached reads are free |
+| D1 | ~£0 for ~2 years | 4–8 MB/day; 12-month window ≈ 1.5–3 GB, inside the 5 GB included; extra storage $0.75/GB-month |
+| Professional indemnity + legal expenses insurance | ~£100–£250/year | Metranos Ltd policy, see section 6 |
 | Pages, OpenFreeMap tiles | £0 | |
 | Apple developer (future iOS) | $99/year | not in this plan |
-| **Running total** | **≈ £5/month + £10/year** | flat regardless of user count |
+| **Running total** | **≈ £5/month + £10/year domain + insurance** | flat regardless of user count |
 
 Controls (implement in C1/C3):
 - Cloudflare billing/usage notifications at 50% and 80% of included limits (👤 set in
