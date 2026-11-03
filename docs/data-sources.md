@@ -140,11 +140,32 @@ Attribution: "© OpenStreetMap contributors". Approved by the maintainer on
 - Services: `https://ideadif.adif.es/services/wfs` and `/services/wms`. On
   2026-11-02 both returned **HTTP 503** to GitHub's servers, so nothing is
   integrated yet. Next step: a manual download from IDEAdif, or a retry later.
+- 2026-11-03: still **HTTP 503** (an Akamai error page) from this project's
+  cloud sandbox too, while idee.es itself answers: the IDEAdif server is down
+  or refuses outside clients, not a network setting on our side.
 - The same WFS is catalogued on idee.es ("WFS de la Red de Transporte
   Ferroviario de Adif") and on datos.gob.es, where the licence is given as
   **CC BY 4.0**. The RFIG (Red Ferroviaria de Interés General) is the network
   Adif manages, so this WFS is the RFIG source. The idee.es record points to
   the IDEAdif download centre for files.
+
+## IGN transport network, IGR-RT (candidate, found 2026-11-03)
+
+"Redes de Transporte de España" (IDEE record `spaign_IGR_Transporte`, metadata
+of 11 Sep 2026): the national reference transport network by the IGN, INSPIRE
+Transport Networks model, 3D, version of July 2026. Its rail network is built
+from **ADIF** data (plus BTN25/BTN100 and TEN-T), so it covers the RFIG.
+
+- **Licence: CC BY 4.0** ("IGR-RT 2026 CC-BY 4.0 scne.es"); no access or use
+  conditions.
+- Access: OGC API Features, `https://api-features.idee.es/collections/railwaylink`
+  (also `railwaynode`, `railwaystationnode`, `markerpost`), WFS
+  `https://servicios.idee.es/wfs-inspire/transportes`, and national files at
+  `https://centrodedescargas.cnig.es/CentroDescargas/redes-transporte`.
+- INSPIRE rail links can carry design speed, nominal gauge, number of tracks,
+  electrification and vertical position (tunnel/bridge), and 3D geometry.
+  Which of these IGR-RT fills in is still to be checked.
+- Not yet reachable from the cloud sandbox (hosts not allowed yet).
 
 ## Adif network status (researched 2026-11-01)
 
