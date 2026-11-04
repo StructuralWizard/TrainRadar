@@ -20,6 +20,7 @@ import {
   trainsGeoJson,
 } from "./js/map.js";
 import { formatClock } from "./js/format.js";
+import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import {
   delayedItem,
   el,
@@ -28,6 +29,7 @@ import {
   nearPanel,
   onboardBlock,
   stationPopup,
+  aboutPanel,
   statsText,
   trainPopup,
   trainTitle,
@@ -64,7 +66,7 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents"];
+const SHEETS = ["delayed", "near", "incidents", "about"];
 const show = {
   commuter: true, av: true, ld: true, md: true, scheduled: true,
   lines: true, tav: true, tld: true, tmd: true, stations: true, stopped: true,
@@ -129,6 +131,13 @@ function applyLang() {
     $(id).textContent = t(lang, k);
   }
   $("search-q").placeholder = t(lang, "searchPlaceholder");
+  $("about-btn").setAttribute("aria-label", t(lang, "about"));
+  $("about-btn").title = t(lang, "about");
+  $("about-title").textContent = t(lang, "about");
+  $("about-close").setAttribute("aria-label", t(lang, "close"));
+  $("app-banner-link").textContent = `📱 ${t(lang, "appBanner")}`;
+  $("app-banner-close").setAttribute("aria-label", t(lang, "close"));
+  if (!$("about").hidden) renderAbout();
   fillJump();
   renderIncidents();
   $("near-off").textContent = t(lang, "locationOff");
@@ -469,6 +478,7 @@ function showPopup(open = false) {
       napDate: ref?.napDate(),
       profile: info.altitude_m === undefined ? null : selectedProfile(now),
       onTrain: (i) => selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true }),
+      appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
     },
   );
   if (!popup) {
@@ -593,6 +603,35 @@ function renderSearch() {
   );
 }
 
+function renderAbout() {
+  $("about-body").replaceChildren(
+    ...aboutPanel(lang, {
+      playUrl: CONFIG.playUrl,
+      coffeeUrl: CONFIG.coffeeUrl,
+      platform: CONFIG.platform,
+      feedMode: feeds?.mode() || "fallback",
+    }),
+  );
+}
+
+/** One-time "get the app" banner from the 3rd visit (only with a listing). */
+function setupAppBanner() {
+  let storage;
+  try {
+    storage = window.localStorage;
+  } catch {
+    storage = undefined;
+  }
+  const visit = countVisit(storage);
+  if (!showAppBanner(storage, visit, CONFIG)) return;
+  $("app-banner-link").href = CONFIG.playUrl;
+  $("app-banner").hidden = false;
+  $("app-banner-close").addEventListener("click", () => {
+    dismissAppBanner(storage);
+    $("app-banner").hidden = true;
+  });
+}
+
 function renderDelayedList() {
   const list = JSON.parse(engine.delayedJson(Date.now(), 50));
   const ul = $("delayed-list");
@@ -670,6 +709,7 @@ async function main() {
     return;
   }
   feeds = new Feeds(engine, CONFIG.rtBase, {
+    live: CONFIG.liveBase,
     onUpdate: (key) => {
       if (key === "alerts") renderIncidents();
       render(true);
@@ -747,6 +787,14 @@ async function main() {
   window.__trainradar = { engine, map, ref, feeds }; // for tests and debugging
 }
 
+$("about-btn").addEventListener("click", () => {
+  if ($("about").hidden) {
+    openSheet("about");
+    renderAbout();
+  } else $("about").hidden = true;
+});
+$("about-close").addEventListener("click", () => ($("about").hidden = true));
+setupAppBanner();
 $("lang").addEventListener("click", () => {
   lang = lang === "es" ? "en" : "es";
   store.set("lang", lang);

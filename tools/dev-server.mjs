@@ -48,6 +48,22 @@ async function sendFile(res, base, rel) {
   }
 }
 
+const FEED_FILES = ["vehicle_positions_LD.pb", "trip_updates_LD.pb", "vehicle_positions.pb", "trip_updates.pb", "alerts.pb"];
+
+async function sendStatus(res) {
+  const feeds = {};
+  for (const name of FEED_FILES) {
+    try {
+      const st = await stat(join(FIXTURES, name));
+      feeds[name] = { renfeLastModified: st.mtime.toUTCString(), fetchedAt: new Date().toISOString(), ok: true, bytes: st.size };
+    } catch {
+      feeds[name] = { renfeLastModified: null, fetchedAt: null, ok: false, error: "missing" };
+    }
+  }
+  res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+  res.end(JSON.stringify({ generatedAt: new Date().toISOString(), pollerEnabled: true, feeds }));
+}
+
 function send(res, status, text) {
   res.writeHead(status, { "Content-Type": "text/plain" });
   res.end(text);
@@ -57,6 +73,9 @@ createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   if (url.pathname.startsWith("/rt/")) {
     const path = url.pathname.slice(4);
+    // Like the central poller's status.json (backend/), from the fixtures'
+    // modification times, so the app's live mode runs locally too.
+    if (path === "status.json" && FIXTURES) return sendStatus(res);
     if (FIXTURES) return sendFile(res, FIXTURES, path);
     const r = await worker.fetch(new Request(`http://localhost/${path}`), {
       ALLOWED_ORIGINS: `http://localhost:${PORT}`,
@@ -65,6 +84,12 @@ createServer(async (req, res) => {
     return res.end(Buffer.from(await r.arrayBuffer()));
   }
   if (url.pathname.startsWith("/data/")) return sendFile(res, DATA, url.pathname.slice(6));
+  // Tests only: TEST_PLAY_URL fills CONFIG.playUrl, to test the app links.
+  if (process.env.TEST_PLAY_URL && url.pathname === "/js/config.js") {
+    const js = (await readFile(join(ROOT, "js/config.js"), "utf8")).replace('playUrl: ""', `playUrl: ${JSON.stringify(process.env.TEST_PLAY_URL)}`);
+    res.writeHead(200, { "Content-Type": TYPES[".js"], "Cache-Control": "no-store" });
+    return res.end(js);
+  }
   return sendFile(res, ROOT, decodeURIComponent(url.pathname));
 }).listen(PORT, () => {
   console.log(`TrainRadar dev server: http://localhost:${PORT}/`);

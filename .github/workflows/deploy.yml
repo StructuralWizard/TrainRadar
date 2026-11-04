@@ -164,6 +164,9 @@ jobs:
       - name: Build the site
         env:
           RT_BASE: ${{ steps.urls.outputs.proxy }}
+          # Public URL of the central poller's bucket (custom domain). Empty:
+          # the site stays on the pass-through. See docs/deploy.md.
+          LIVE_BASE: ${{ vars.LIVE_PUBLIC_URL }}
           DIST: dist
           DATA_DIR: build/data
           VERSION: ${{ github.sha }}

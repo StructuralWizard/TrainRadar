@@ -116,3 +116,34 @@ when the repository variable `LIVE_ENABLED` is `true`. Steps, in order:
 or delete the `LIVE_ENABLED` variable and remove the Worker in the dashboard. The site
 keeps using the old pass-through Worker until phase C2 switches it, and it stays
 deployed as the fallback.
+
+## Site reads the live poller (phase C2)
+
+The site reads the central poller's bucket only once it has a public, CDN-cached URL:
+set the repository variable **`LIVE_PUBLIC_URL`** to the bucket's custom domain
+(e.g. `https://live.<your-domain>`, step 6 above) and run Deploy. The site then:
+
+- reads `rt/status.json` every 10 s and downloads a feed only when Renfe changed it;
+- falls back to the pass-through Worker after 3 failures in a row, for 10 minutes;
+- allows exactly those two origins in its Content-Security-Policy (the build checks).
+
+Without `LIVE_PUBLIC_URL` the site keeps using the pass-through, as before. Don't point
+it at the `workers.dev` address: every client read there is a Worker request (more than
+the pass-through uses today), while reads through the custom domain come from the CDN.
+
+**Kill switch:** delete `LIVE_PUBLIC_URL` and run Deploy: the site goes back to the
+pass-through.
+
+### App and coffee links
+
+`web/js/config.js` has `playUrl` (Google Play listing) and `coffeeUrl` ("Invítame a un
+café", web only). Both are empty, which hides every link, the app banner and the
+"delay alerts → Android app" link in train popups. Fill them in once the listing / page
+exists.
+
+### Legal pages
+
+`web/legal/` holds drafts (ES + EN) of the privacy policy, terms, provider identification
+and data licences, linked from the About panel (ⓘ). Fill in the highlighted placeholders
+(company number, registered office, email, dates, governing law) and have them reviewed
+before publishing the Android app.
