@@ -59,7 +59,7 @@ jobs:
       - name: Build the test APKs
         run: |
           (cd app && npm ci --no-audit --no-fund && npx cap sync android)
-          cd app/android && ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest
+          cd app/android && ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
 
       - name: Emulator smoke test (map renders, a train popup opens)
         run: |
@@ -81,7 +81,7 @@ jobs:
           for s in window_animation_scale transition_animation_scale animator_duration_scale; do
             "$adb" shell settings put global "$s" 0
           done
-          cd app/android && ./gradlew --no-daemon connectedDebugAndroidTest
+          cd app/android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:

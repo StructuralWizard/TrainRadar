@@ -22,6 +22,17 @@ allprojects {
         google()
         mavenCentral()
     }
+    // Test libraries pull an old kotlin-stdlib-jdk7/jdk8 (1.6) next to
+    // kotlin-stdlib 1.8, whose classes they duplicate; from 1.8 on those two
+    // are empty, so align them.
+    configurations.all {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'org.jetbrains.kotlin' &&
+                    details.requested.name in ['kotlin-stdlib-jdk7', 'kotlin-stdlib-jdk8']) {
+                details.useVersion '1.8.22'
+            }
+        }
+    }
 }
 
 task clean(type: Delete) {
