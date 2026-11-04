@@ -15,6 +15,8 @@ crate-type = ["cdylib", "rlib"]
 trainradar-proto.workspace = true
 wasm-bindgen.workspace = true
 prost.workspace = true
+serde.workspace = true
+postcard.workspace = true
 
 [lints]
 workspace = true

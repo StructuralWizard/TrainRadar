@@ -41,7 +41,8 @@ jobs:
         with:
           node-version: 22
       - run: node --test worker/test/index.test.mjs
-      - run: node --test backend/test/*.test.mjs
+      # Without the engine built, the recorder tests skip here; the web job runs them.
+      - run: node --import ./backend/test/hooks.mjs --test backend/test/*.test.mjs
 
   web:
     name: web tests (unit + browser, demo data)
@@ -70,6 +71,8 @@ jobs:
             --rail demo/gtfs/rail.geojsonseq --rail-heights demo/gtfs/heights.txt \
             --rail-attrs demo/gtfs/igr-rail.geojsonseq
           cargo run --release -q -p trainradar-engine --example fixture -- demo/data demo/rt
+      - name: History recorder on the real engine and demo feeds
+        run: REQUIRE_ENGINE=1 node --import ./backend/test/hooks.mjs --test backend/test/recorder.test.mjs
       - name: Browser test
         run: |
           (cd tools/feed-check && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium)

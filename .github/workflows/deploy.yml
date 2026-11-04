@@ -193,14 +193,15 @@ jobs:
           retention-days: 14
 
   live:
-    # Central poller (backend/): Renfe fetched once for everyone, bytes in R2.
-    # Off until the maintainer sets the variable LIVE_ENABLED=true, on the
-    # repository or the "production" environment (the API token needs R2
-    # rights first: docs/deploy.md).
+    # Central poller and history recorder (backend/): Renfe fetched once for
+    # everyone, bytes in R2; delays recorded to D1. Off until the maintainer
+    # sets the variable LIVE_ENABLED=true (the API token needs R2 rights
+    # first: docs/deploy.md). The recorder stays off until RECORDER_ENABLED
+    # is also true (needs Workers Paid and D1 rights).
     name: deploy the live poller
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     environment: production
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -208,15 +209,22 @@ jobs:
     steps:
       # Read here, not in the job's `if`: a variable set on the "production"
       # environment is only visible once the job is running in it.
-      - name: Is the live poller enabled (LIVE_ENABLED)?
+      - name: Are the live poller and the recorder enabled?
         id: gate
         env:
           LIVE_ENABLED: ${{ vars.LIVE_ENABLED }}
+          RECORDER_ENABLED: ${{ vars.RECORDER_ENABLED }}
         run: |
-          if [ "$(printf %s "$LIVE_ENABLED" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')" = "true" ]; then
+          norm() { printf %s "$1" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]'; }
+          if [ "$(norm "$LIVE_ENABLED")" = "true" ]; then
             echo "on=true" >> "$GITHUB_OUTPUT"
           else
             echo "LIVE_ENABLED is not true: skipping the live poller." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$(norm "$RECORDER_ENABLED")" = "true" ]; then
+            echo "recorder=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "RECORDER_ENABLED is not true: the history recorder stays off." | tee -a "$GITHUB_STEP_SUMMARY"
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.on == 'true'
@@ -226,18 +234,60 @@ jobs:
         if: steps.gate.outputs.on == 'true'
         with:
           node-version: 22
-      - run: node --test backend/test/*.test.mjs
+      # The recorder runs the app's engine: build it (web/pkg).
+      - run: rustup show active-toolchain || rustup toolchain install
         if: steps.gate.outputs.on == 'true'
-      - name: R2 bucket and its CORS rules
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        if: steps.gate.outputs.on == 'true'
+      - name: Build the engine (WebAssembly)
         if: steps.gate.outputs.on == 'true'
         run: |
-          if ! npx --yes "$WRANGLER" r2 bucket list | grep -q "trainradar-live"; then
-            npx --yes "$WRANGLER" r2 bucket create trainradar-live
-          fi
+          v=$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name=="wasm-bindgen") | .version')
+          cargo install wasm-bindgen-cli --version "$v" --locked
+          sudo apt-get install -y binaryen
+          tools/build-wasm.sh
+      - run: node --import ./backend/test/hooks.mjs --test backend/test/*.test.mjs
+        if: steps.gate.outputs.on == 'true'
+      - name: R2 buckets, CORS and backup expiry
+        if: steps.gate.outputs.on == 'true'
+        run: |
+          buckets=$(npx --yes "$WRANGLER" r2 bucket list)
+          for b in trainradar-live trainradar-history; do
+            echo "$buckets" | grep -q "$b" || npx --yes "$WRANGLER" r2 bucket create "$b"
+          done
           npx --yes "$WRANGLER" r2 bucket cors set trainradar-live --file backend/r2-cors.json --force
+          if ! npx --yes "$WRANGLER" r2 bucket lifecycle list trainradar-history | grep -q backups-90d; then
+            npx --yes "$WRANGLER" r2 bucket lifecycle add trainradar-history backups-90d backups/ \
+              --expire-days 90 --force
+          fi
+      # Only with the recorder: the D1 database (created once) and its
+      # migrations; its binding is added to a copy of the config.
+      - name: History database (D1)
+        id: d1
+        if: steps.gate.outputs.on == 'true' && steps.gate.outputs.recorder == 'true'
+        run: |
+          id() { npx --yes "$WRANGLER" d1 list --json | jq -r '.[] | select(.name=="trainradar-history") | .uuid'; }
+          db=$(id)
+          if [ -z "$db" ]; then
+            npx --yes "$WRANGLER" d1 create trainradar-history
+            db=$(id)
+          fi
+          [ -n "$db" ] || { echo "::error::no D1 database id"; exit 1; }
+          cp backend/wrangler.toml backend/wrangler.deploy.toml
+          printf '\n[[d1_databases]]\nbinding = "HISTORY"\ndatabase_name = "trainradar-history"\ndatabase_id = "%s"\nmigrations_dir = "migrations"\n' "$db" \
+            >> backend/wrangler.deploy.toml
+          npx --yes "$WRANGLER" d1 migrations apply trainradar-history --remote --config backend/wrangler.deploy.toml
+          echo "config=backend/wrangler.deploy.toml" >> "$GITHUB_OUTPUT"
       - name: Deploy the poller Worker
         if: steps.gate.outputs.on == 'true'
+        env:
+          CONFIG: ${{ steps.d1.outputs.config || 'backend/wrangler.toml' }}
+          RECORDER: ${{ steps.gate.outputs.recorder == 'true' && 'true' || 'false' }}
         run: |
-          npx --yes "$WRANGLER" deploy --config backend/wrangler.toml | tee deploy.txt
+          npx --yes "$WRANGLER" deploy --config "$CONFIG" --var "RECORDER_ENABLED:$RECORDER" | tee deploy.txt
           url=$(grep -oE 'https://trainradar-live\.[a-z0-9-]+\.workers\.dev' deploy.txt | head -1)
           echo "Live poller: $url/rt/status.json" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RECORDER" = "true" ]; then
+            echo "History API: $url/v1/history/lines?days=7" >> "$GITHUB_STEP_SUMMARY"
+          fi

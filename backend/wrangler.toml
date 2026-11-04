@@ -1,26 +1,45 @@
-# TrainRadar live backend (phase C1): one central poller for Renfe's GTFS-RT
-# feeds. A Durable Object alarm fetches each feed on its own cadence and writes
-# the bytes UNCHANGED to the R2 bucket, which clients read through a custom
-# domain (CDN-cached). No secrets here.
+# TrainRadar live backend.
+# - C1: one central poller for Renfe's GTFS-RT feeds. A Durable Object alarm
+#   fetches each feed on its own cadence and writes the bytes UNCHANGED to
+#   the R2 bucket, which clients read through a custom domain (CDN-cached).
+# - C3: the history recorder (a second Durable Object running the app's
+#   engine), the D1 history database and the read-only /v1/history API. Off
+#   until RECORDER_ENABLED is "true"; the deploy job then adds the D1
+#   binding (docs/deploy.md).
+# No secrets here.
 name = "trainradar-live"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 
-# Re-arm the poller's alarm every minute in case it ever stops.
+# Every minute: re-arm the alarms in case they ever stop. 02:40 UTC: the
+# history's daily job (must match DAILY_CRON in src/index.js).
 [triggers]
-crons = ["* * * * *"]
+crons = ["* * * * *", "40 2 * * *"]
 
 [[durable_objects.bindings]]
 name = "POLLER"
 class_name = "Poller"
 
+[[durable_objects.bindings]]
+name = "RECORDER"
+class_name = "Recorder"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Poller"]
 
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Recorder"]
+
 [[r2_buckets]]
 binding = "LIVE"
 bucket_name = "trainradar-live"
+
+# Private: daily backups (deleted after 90 days) and monthly archives.
+[[r2_buckets]]
+binding = "ARCHIVE"
+bucket_name = "trainradar-history"
 
 [vars]
 # Kill switch: anything but "true" stops all fetching from Renfe.
@@ -28,3 +47,8 @@ POLLER_ENABLED = "true"
 # Origins allowed to read /rt/* through this Worker (the staging path, before
 # the bucket's custom domain exists). The deploy job sets the real list.
 ALLOWED_ORIGINS = "https://trainradar.pages.dev,http://localhost:8080,capacitor://localhost,https://localhost"
+# History recorder: the deploy job passes "true" when the repository
+# variable RECORDER_ENABLED is true (needs Workers Paid and D1 rights).
+RECORDER_ENABLED = "false"
+# Where the recorder reads the reference data (the deployed site).
+REFDATA_BASE = "https://trainradar.pages.dev/data/"

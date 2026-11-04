@@ -6,6 +6,7 @@
 //! interpolation, spacing, stats) happens here, in the browser.
 
 pub mod gtfs_rt;
+pub mod history;
 pub mod incidents;
 mod json;
 pub mod live;
@@ -102,6 +103,7 @@ pub struct Engine {
     net: Network,
     live: Live,
     onboard: onboard::Onboard,
+    recorder: history::Recorder,
 }
 
 #[wasm_bindgen]
@@ -806,6 +808,93 @@ impl Engine {
         list.sort_by_key(|v| v.stopped.map(|s| s.since));
         let items: Vec<String> = list.iter().map(|v| self.view_json(v)).collect();
         format!("[{}]", items.join(","))
+    }
+
+    /// Delay history (central recorder): take in the current live state and
+    /// return the runs that just finished, as JSON rows of the `trips` table.
+    #[wasm_bindgen(js_name = recordJson)]
+    pub fn record_json(&mut self, now_ms: f64) -> String {
+        let done = self.recorder.observe(&self.net, &self.live, secs(now_ms));
+        history::runs_json(&done)
+    }
+
+    /// Runs the recorder is following.
+    #[wasm_bindgen(js_name = recorderActive)]
+    pub fn recorder_active(&self) -> u32 {
+        self.recorder.active() as u32
+    }
+
+    /// Recorder state, to survive a restart.
+    #[wasm_bindgen(js_name = recorderSave)]
+    pub fn recorder_save(&self) -> Vec<u8> {
+        self.recorder.save()
+    }
+
+    /// Restore recorder state saved by `recorderSave` (unreadable → empty).
+    /// Returns the number of runs in progress.
+    #[wasm_bindgen(js_name = recorderLoad)]
+    pub fn recorder_load(&mut self, bytes: &[u8]) -> u32 {
+        self.recorder = history::Recorder::load(bytes);
+        self.recorder.active() as u32
+    }
+
+    /// Every live train in one small list, for the widget and alerts:
+    /// `[{trainNo, line, product, delayMin, nextStopId, status, updatedAt}]`,
+    /// status `running` | `stopped` | `cancelled`; `updatedAt` is the GPS
+    /// fix time (unix s). Timetable-only trains are left out.
+    #[wasm_bindgen(js_name = summaryJson)]
+    pub fn summary_json(&self, now_ms: f64) -> String {
+        let now = secs(now_ms);
+        let views = self.live.views(&self.net, now, false);
+        let mut s = String::from("[");
+        let mut first = true;
+        for v in &views {
+            let t = &self.live.trains[v.index];
+            if t.scheduled {
+                continue;
+            }
+            let (number, line, product) = match t.matched {
+                Some(m) => {
+                    let (line, product) = history::line_product(&self.net, m);
+                    (network::train_number(self.net.trip(m.trip)), line, product)
+                }
+                None => (
+                    t.rt.train_number.trim_start_matches('0').to_owned(),
+                    t.rt.line.clone(),
+                    String::new(),
+                ),
+            };
+            let next = t.matched.zip(v.next_stop).map(|(m, i)| {
+                let r = &self.net.regions[m.trip.region as usize];
+                let p = &r.tt.patterns[self.net.trip(m.trip).pattern as usize];
+                r.tt.stops[p.stops[i] as usize].id.clone()
+            });
+            let status = if t.canceled {
+                "cancelled"
+            } else if v.stopped.is_some() {
+                "stopped"
+            } else {
+                "running"
+            };
+            if !first {
+                s.push(',');
+            }
+            first = false;
+            json::Obj::new(&mut s)
+                .s("trainNo", &number)
+                .s("line", &line)
+                .s("product", &product)
+                .on(
+                    "delayMin",
+                    t.delay.map(|d| (f64::from(d) / 60.0).round() as i32),
+                )
+                .os("nextStopId", next.as_deref())
+                .s("status", status)
+                .n("updatedAt", t.fix_time)
+                .end();
+        }
+        s.push(']');
+        s
     }
 
     /// Active incidents, newest first: `[{id, text, tags, lines, nucleos,

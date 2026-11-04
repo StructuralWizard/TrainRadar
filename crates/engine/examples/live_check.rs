@@ -154,6 +154,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             cycle_ms[cycle_ms.len() / 2],
             cycle_ms[cycle_ms.len() - 1]
         );
+        // What the recorder would follow right now.
+        let mut rec = trainradar_engine::history::Recorder::new();
+        let t = std::time::Instant::now();
+        rec.observe(&net, &live, now);
+        let active = rec.active();
+        let runs = rec.drain();
+        let rows = trainradar_engine::history::runs_json(&runs);
+        println!(
+            "**Recorder:** following {active} runs ({:.1} ms); as trips rows {:.0} KB, \
+             {:.2} KB per run (D1 estimate before stops are filled in)\n",
+            t.elapsed().as_secs_f64() * 1000.0,
+            rows.len() as f64 / 1e3,
+            rows.len() as f64 / 1e3 / active.max(1) as f64
+        );
     }
 
     let mut by_feed: BTreeMap<&str, [usize; 6]> = BTreeMap::new();

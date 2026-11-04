@@ -134,6 +134,39 @@ the pass-through uses today), while reads through the custom domain come from th
 **Kill switch:** delete `LIVE_PUBLIC_URL` and run Deploy: the site goes back to the
 pass-through.
 
+## Delay history (phase C3)
+
+The same Worker also runs the **history recorder** (a second Durable Object running the
+app's engine), the D1 database `trainradar-history` and the public, read-only API
+`/v1/history/*` ([backend/README.md](../backend/README.md#delay-history-phase-c3)). It
+stays off until you turn it on, because it needs a paid plan:
+
+1. **Workers Paid ($5/month).** A recording cycle takes ~30–70 ms of CPU, over the free
+   plan's 10 ms. Dashboard → Workers & Pages → Plans → Workers Paid. It also includes
+   5 GB of D1, enough for the 12 months kept in the database.
+2. **API token rights.** Add `Account` · `D1` · `Edit` to the deploy token (the secret's
+   value doesn't change). R2 rights from C1 also cover the second, private bucket
+   `trainradar-history` (backups and archives).
+3. **Turn it on.** Repository variable `RECORDER_ENABLED` = `true`, then Actions →
+   Deploy → Run workflow. The job creates the database (once), applies
+   `backend/migrations/`, creates the private bucket with a 90-day expiry for
+   `backups/`, and deploys with the recorder on.
+4. **Check.** `https://live.<your-domain>/rt/recorder.json` shows `"ok": true` and an
+   `updatedAt` from the last 5 minutes; `rt/summary.json` lists every live train. The
+   "Live check" workflow also checks the recorder (stale over 15 min, an error, or the
+   database over 4 GB) once `RECORDER_ENABLED` is set.
+5. **API domain (optional).** Workers & Pages → `trainradar-live` → Settings → Domains &
+   Routes → Add → Custom domain → `api.<your-domain>`. The API then answers at
+   `https://api.<your-domain>/v1/history/lines?days=7` (also on the `workers.dev` URL).
+
+**Data kept:** every finished run in `trips` for 12 months (then moved to the archive),
+daily per-line and per-station figures forever. Daily backups in
+`trainradar-history/backups/days/` (kept 90 days), one archive file per month in
+`trainradar-history/archive/` (never deleted). D1 Time Travel restores the last 30 days.
+
+**Kill switch:** delete `RECORDER_ENABLED` (or set it to anything else) and run Deploy:
+the recorder stops after its next cycle; the API keeps serving what's stored.
+
 ### App and coffee links
 
 `web/js/config.js` has `playUrl` (Google Play listing) and `coffeeUrl` ("Invítame a un

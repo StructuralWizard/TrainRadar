@@ -349,6 +349,16 @@ impl Live {
             .find(|u| u.trip_id == trip_id)
     }
 
+    /// Trips Renfe lists as cancelled, matched to the timetable.
+    pub fn canceled_trips(&self, net: &Network, now: i64) -> Vec<Match> {
+        self.updates
+            .values()
+            .flatten()
+            .filter(|u| u.canceled)
+            .filter_map(|u| net.match_trip(&u.trip_id, "", now))
+            .collect()
+    }
+
     /// Re-match every vehicle (also call after loading a timetable).
     pub fn rebuild(&mut self, net: &Network, now: i64) {
         self.now = now;
