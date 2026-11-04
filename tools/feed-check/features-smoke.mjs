@@ -21,9 +21,17 @@ await page.waitForFunction(() => window.__trainradar?.map?.getLayer("track-av"),
 await page.waitForFunction(() => window.__trainradar.engine.positions(Date.now()).length > 0, null, { timeout: 30000 });
 
 // Search by train number: pick a live train's number, type it, choose it.
+// One that isn't about to finish its trip: its popup closes when it does.
 const first = await page.evaluate(() => {
   const { engine } = window.__trainradar;
-  return JSON.parse(engine.trainJson(0, Date.now()));
+  const n = engine.positions(Date.now()).length / 6;
+  let fallback = null;
+  for (let i = 0; i < n; i++) {
+    const t = JSON.parse(engine.trainJson(i, Date.now()));
+    fallback ??= t;
+    if (t.origin && !t.timetable_only && t.next_stop && t.next_stop !== t.destination) return t;
+  }
+  return fallback;
 });
 const number = first.number;
 await page.fill("#search-q", number);
