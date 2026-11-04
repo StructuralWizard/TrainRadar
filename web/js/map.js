@@ -18,6 +18,7 @@ export const KIND_COLORS = {
 
 const empty = () => ({ type: "FeatureCollection", features: [] });
 
+const STYLE_TIMEOUT_MS = 15_000;
 const BLANK_STYLE = {
   version: 8,
   sources: {},
@@ -41,13 +42,18 @@ export function createMap(container, config, attribution) {
   // If the tile server is unreachable, carry on with a plain background:
   // the trains matter more than the base map.
   let fellBack = false;
-  map.on("error", (e) => {
+  const fallBack = (why) => {
     if (fellBack || map.isStyleLoaded()) return;
-    if (!String(e?.error?.message || "").includes(config.style)) return;
     fellBack = true;
-    console.warn("Base map unavailable, using a blank background");
+    console.warn(`Base map ${why}, using a blank background`);
     map.setStyle(BLANK_STYLE);
+  };
+  map.on("error", (e) => {
+    if (String(e?.error?.message || "").includes(config.style)) fallBack("unavailable");
   });
+  // A style request that neither loads nor fails (a weak mobile connection)
+  // must not hold the trains back: they need no base map.
+  setTimeout(() => fallBack("too slow"), STYLE_TIMEOUT_MS);
   const attr = new maplibregl.AttributionControl({ compact: true, customAttribution: attribution });
   map.addControl(attr, "bottom-right");
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");

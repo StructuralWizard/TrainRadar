@@ -99,7 +99,12 @@ jobs:
           for s in window_animation_scale transition_animation_scale animator_duration_scale; do
             "$adb" shell settings put global "$s" 0
           done
-          cd app/android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
+          "$adb" logcat -c
+          if ! (cd app/android && ./gradlew --no-daemon :app:connectedDebugAndroidTest); then
+            echo "::error::app smoke test failed; the app's console and WebView messages:"
+            "$adb" logcat -d | grep -iE "Capacitor|chromium|Console|WebView|AndroidRuntime" | tail -n 150
+            exit 1
+          fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure() || cancelled()
         with:

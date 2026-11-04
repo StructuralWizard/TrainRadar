@@ -41,7 +41,15 @@ public class AppSmokeTest {
             }
             Thread.sleep(500);
         }
-        throw new AssertionError("timed out waiting for: " + condition);
+        String state;
+        try {
+            state = String.valueOf(eval("return JSON.stringify({ href: location.href, status: (document.getElementById('status') || {}).textContent,"
+                    + " stats: (document.getElementById('stats') || {}).textContent, engine: !!(window.__trainradar && window.__trainradar.engine),"
+                    + " wasm: typeof WebAssembly, ua: navigator.userAgent });"));
+        } catch (RuntimeException e) {
+            state = "page not reachable: " + e;
+        }
+        throw new AssertionError("timed out waiting for: " + condition + "\npage: " + state);
     }
 
     @Test
