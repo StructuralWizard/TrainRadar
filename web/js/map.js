@@ -42,8 +42,12 @@ export function createMap(container, config, attribution) {
   // If the tile server is unreachable, carry on with a plain background:
   // the trains matter more than the base map.
   let fellBack = false;
+  // Set once the first style is in. (map.isStyleLoaded() is also false
+  // while tiles load, so it can't tell a dead style from a busy map.)
+  let styled = false;
+  map.once("style.load", () => (styled = true));
   const fallBack = (why) => {
-    if (fellBack || map.isStyleLoaded()) return;
+    if (fellBack || styled) return;
     fellBack = true;
     console.warn(`Base map ${why}, using a blank background`);
     map.setStyle(BLANK_STYLE);
