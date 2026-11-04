@@ -36,7 +36,40 @@ export const prefs = {
       // private mode: not remembered
     }
   },
+  /** Delete everything this app stored (favourites, settings, caches). */
+  async clear() {
+    const p = plugin("Preferences");
+    if (p) await p.clear();
+    try {
+      localStorage.clear();
+    } catch {
+      // nothing stored
+    }
+  },
 };
+
+/** Save a text file the user chose to export: the Android share sheet
+ * (Drive, e-mail, Files…) or a download in the browser. */
+export async function exportFile(name, text) {
+  const fs = plugin("Filesystem");
+  const sh = plugin("Share");
+  if (fs && sh) {
+    const r = await fs.writeFile({ path: name, data: text, directory: "CACHE", encoding: "utf8" });
+    await sh.share({ title: name, files: [r.uri], dialogTitle: name });
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/** Run `handler` when the app comes back to the foreground. */
+export function onResume(handler) {
+  plugin("App")?.addListener("resume", handler);
+}
 
 /** Android back button: `handler()` returns true when it closed something;
  * otherwise the app goes to the background, like other apps. */

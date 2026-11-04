@@ -24,8 +24,17 @@ export const CONFIG = {
   siteUrl: "https://trainradar.pages.dev/",
   // "web" or "android" (tools/build-web.sh --target android, phase C4).
   platform: "web",
-  // TrainRadar Pro unlocked (Android, phase C5). Always false until then.
+  // TrainRadar Pro unlocked: set at run time from Google Play (Android app,
+  // phase C5, js/entitlement.js). Always false on the web.
   pro: false,
+  // Google Play products (Play Console ids). More (yearly, lifetime: phase
+  // C8) can be added here without changing the screens.
+  products: [
+    { id: "pro_monthly", kind: "subscription", pro: true },
+    { id: "tip_small", kind: "tip" },
+    { id: "tip_medium", kind: "tip" },
+    { id: "tip_large", kind: "tip" },
+  ],
   // Google Play listing of the Android app; "" hides every app link until
   // the listing is live.
   playUrl: "",
