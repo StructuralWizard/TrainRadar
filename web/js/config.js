@@ -1,7 +1,12 @@
-// Deployment settings. tools/build-web.sh rewrites RT_BASE for production
-// (the Cloudflare Worker URL); locally the dev server answers /rt/.
+// Deployment settings. tools/build-web.sh rewrites the URLs for production;
+// locally the dev server answers /rt/ (including a status.json like the
+// central poller's).
 export const CONFIG = {
-  // Base URL of the CORS pass-through for Renfe's GTFS-RT feeds.
+  // Central poller's bucket (rt/status.json + rt/<feed>.pb, CDN-cached).
+  // "" = not available: use the pass-through only.
+  liveBase: "/rt/",
+  // CORS pass-through for Renfe's GTFS-RT feeds: the fallback when the live
+  // bucket fails 3 times in a row (and the only source without one).
   rtBase: "/rt/",
   // Reference data built by refdata-build.
   dataBase: "data/",
@@ -12,4 +17,11 @@ export const CONFIG = {
   zoom: 5.2,
   // Load a Cercanías núcleo's timetable once this zoomed in over it.
   regionZoom: 8,
+  // "web" or "android" (tools/build-web.sh --target android, phase C4).
+  platform: "web",
+  // Google Play listing of the Android app; "" hides every app link until
+  // the listing is live.
+  playUrl: "",
+  // "Invítame a un café" page (web only, never in the Android app); "" hides it.
+  coffeeUrl: "",
 };

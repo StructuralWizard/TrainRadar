@@ -183,3 +183,9 @@ details.small summary { cursor: pointer; }
 #f-av + .train-key { border-left-width: 4px; border-right-width: 4px; border-bottom-width: 14px; }
 #f-md + .train-key { border-bottom-width: 10px; border-left-width: 7px; border-right-width: 7px; }
 #f-commuter + .train-key { border-bottom-width: 10px; border-left-width: 5px; border-right-width: 5px; }
+
+/* One-time "get the Android app" banner (only once a Play listing exists). */
+.app-banner { position: absolute; z-index: 4; left: 8px; right: 8px; bottom: calc(64px + var(--safe-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #fff; border-radius: 12px; box-shadow: var(--shadow); padding: 8px 10px; font-size: 14px; }
+.app-banner[hidden] { display: none; }
+@media (min-width: 720px) { .app-banner { left: auto; width: 380px; } }
+.app-link { display: inline-block; margin-top: 4px; }

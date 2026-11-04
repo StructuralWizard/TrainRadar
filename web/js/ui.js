@@ -181,7 +181,34 @@ export function profileChart(lang, p) {
   );
 }
 
-export function trainPopup(lang, info, regionName, onIncidents, { napDate, profile, onTrain } = {}) {
+/** About panel: what TrainRadar is, where the live data comes from, legal
+ * pages, licences, and (when configured) the app and coffee links. The
+ * coffee link is web only, never inside the Android app. */
+export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web", feedMode = "fallback" } = {}) {
+  const link = (href, text) => el("a", { href, target: "_blank", rel: "noopener" }, text);
+  const out = [el("p", {}, t(lang, "aboutText"))];
+  if (playUrl && platform === "web") out.push(el("p", {}, el("a", { class: "pill pill-strong", href: playUrl, target: "_blank", rel: "noopener" }, t(lang, "getApp"))));
+  if (coffeeUrl && platform === "web") out.push(el("p", {}, link(coffeeUrl, `☕ ${t(lang, "coffee")}`)));
+  out.push(el("p", { class: "small muted" }, t(lang, "feedSource", { source: t(lang, feedMode === "live" ? "feedLive" : "feedProxy") })));
+  out.push(el("h3", {}, t(lang, "legal")));
+  out.push(
+    el(
+      "ul",
+      { class: "links" },
+      [
+        ["legal/privacy.html", "legalPrivacy"],
+        ["legal/terms.html", "legalTerms"],
+        ["legal/provider.html", "legalProvider"],
+        ["legal/licences.html", "legalLicences"],
+      ].map(([href, k]) => el("li", {}, link(href, t(lang, k)))),
+    ),
+  );
+  out.push(...officialLinks(lang));
+  out.push(el("p", { class: "small" }, link("https://github.com/StructuralWizard/TrainRadar", `${t(lang, "sourceCode")} ↗`)));
+  return out;
+}
+
+export function trainPopup(lang, info, regionName, onIncidents, { napDate, profile, onTrain, appUrl } = {}) {
   const title = el(
     "div",
     { class: "popup-title", style: info.timetable_only ? `color:${SCHEDULED_COLOR}` : null },
@@ -284,6 +311,9 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
     if (info.oncoming) rows.push(row(t(lang, "oncoming"), oncomingText(lang, info.oncoming, onTrain)));
   }
   if (!info.timetable_only) rows.push(...sourceNote(lang, info));
+  if (appUrl && info.origin) {
+    rows.push(el("a", { class: "small app-link", href: appUrl, target: "_blank", rel: "noopener" }, `🔔 ${t(lang, "appAlerts")}`));
+  }
   return el("div", { class: "popup" }, title, sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null, rows);
 }
 

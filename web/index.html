@@ -24,6 +24,7 @@
       <div id="stats" aria-live="polite"></div>
       <div id="status" class="muted"></div>
     </div>
+    <button id="about-btn" class="pill" type="button">ⓘ</button>
     <button id="lang" class="pill" type="button">EN</button>
   </header>
 
@@ -72,6 +73,19 @@
       <button id="delayed-btn" class="pill pill-strong" type="button"></button>
     </div>
   </div>
+
+  <div id="app-banner" class="app-banner" hidden>
+    <a id="app-banner-link" target="_blank" rel="noopener"></a>
+    <button id="app-banner-close" class="pill" type="button">✕</button>
+  </div>
+
+  <section id="about" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="about-title"></h2>
+      <button id="about-close" class="pill" type="button">✕</button>
+    </div>
+    <div id="about-body"></div>
+  </section>
 
   <section id="incidents" class="sheet" hidden>
     <div class="sheet-head">
