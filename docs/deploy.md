@@ -79,3 +79,39 @@ browser, so phones download the small size however they're served.
   30 s plus alerts every 2 min, ≈ 510 requests an hour, so the free tier covers
   roughly 195 viewing hours a day. Polling pauses in hidden tabs. If that's
   ever not enough, the paid Workers plan starts at $5/month.
+
+## Central live poller (phase C1)
+
+`backend/` fetches Renfe's feeds once for everyone and stores them in the R2 bucket
+`trainradar-live`. It's deployed by `deploy.yml` (job "deploy the live poller") only
+when the repository variable `LIVE_ENABLED` is `true`. Steps, in order:
+
+1. **API token rights.** Cloudflare dashboard → My Profile → API Tokens → edit the
+   token used for `CLOUDFLARE_API_TOKEN` and add:
+   - `Account` · `Workers R2 Storage` · `Edit` (create the bucket, set its CORS rules)
+   - `Account` · `Workers Scripts` · `Edit` is already there (it also covers the
+     Durable Object).
+   The secret's value doesn't change.
+2. **R2.** Dashboard → R2 → enable R2 once (the free tier needs a card on file; usage
+   stays inside the free tier, see [costs.md](costs.md)).
+3. **Turn it on.** GitHub → Settings → Secrets and variables → Actions → Variables →
+   New repository variable `LIVE_ENABLED` = `true`, then run Actions → Deploy → Run
+   workflow. The job creates the bucket, sets its CORS rules from
+   `backend/r2-cors.json` and deploys the `trainradar-live` Worker.
+4. **Check.** Open `https://trainradar-live.<your-subdomain>.workers.dev/rt/status.json`:
+   every feed should show `"ok": true` and a `fetchedAt` from the last minute.
+5. **Monitoring.** Add the repository variable `LIVE_BASE` with that URL (later the
+   custom domain). The "Live check" workflow then runs every 30 min and fails (GitHub
+   emails you) if a feed hasn't been fetched for 5 minutes.
+6. **Custom domain (needs a domain, ~£10/year).** Once you've bought one and added it
+   to Cloudflare: R2 → `trainradar-live` → Settings → Custom Domains → Connect domain →
+   `live.<your-domain>`. Clients then read `https://live.<your-domain>/rt/...` from the
+   CDN; cached reads don't count as Worker requests or R2 operations. Don't use the
+   rate-limited `r2.dev` URL in production. Then set `LIVE_BASE` to the custom domain.
+7. **Usage alerts.** Billing → Notifications: alerts at 50 % and 80 % of the included
+   limits.
+
+**Kill switch:** set `POLLER_ENABLED = "false"` in `backend/wrangler.toml` and deploy,
+or delete the `LIVE_ENABLED` variable and remove the Worker in the dashboard. The site
+keeps using the old pass-through Worker until phase C2 switches it, and it stays
+deployed as the fallback.

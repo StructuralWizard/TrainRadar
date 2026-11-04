@@ -25,6 +25,12 @@ All responses: HTTP 200, `Cache-Control: max-age=30, public`, `Last-Modified` se
 backoff on errors, paused while the tab is hidden. Total ≈ 105 KB per 30 s with all feeds;
 Cercanías feeds will only be polled when a Cercanías region is on screen.
 
+**From phase C1 (plan approved 2026-11-03):** the feeds are fetched **once, centrally**
+by the poller in `backend/` (each feed on its own cadence, conditional GETs,
+phase-locked to Renfe's updates, never faster than 15 s) and served to all clients
+from R2. Renfe sees one client instead of one per open tab. See
+[backend/README.md](../backend/README.md).
+
 ### CORS and HTTPS
 
 | Check | Result |

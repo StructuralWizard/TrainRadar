@@ -41,6 +41,7 @@ jobs:
         with:
           node-version: 22
       - run: node --test worker/test/index.test.mjs
+      - run: node --test backend/test/*.test.mjs
 
   web:
     name: web tests (unit + browser, demo data)

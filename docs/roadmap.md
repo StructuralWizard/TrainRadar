@@ -44,3 +44,20 @@ minus now. This works for both moving and stopped trains, unlike dividing distan
 
 Unit tests (A3): ordering on a single shape, shared-trunk Cercanías lines, opposite
 direction ignored, stopped follower, end of line.
+
+## Phase C: central backend, web changes, Android Free + Pro
+
+Plan approved on 2026-11-03 (two design rules changed on the maintainer's decision:
+Renfe's feeds are fetched once, centrally; a backend recorder builds delay history).
+
+| Phase | Scope | Status |
+|---|---|---|
+| C1 | Central poller (Durable Object alarm) → R2 `rt/*.pb` + `status.json`; live check workflow | ✅ code, waiting for Cloudflare setup (docs/deploy.md) |
+| C2 | Web reads the live bucket (fallback: proxy), polls `status.json`; app promotion; legal pages | |
+| C3 | History recorder (engine in the Worker) → `summary.json`, D1 history, public API | |
+| C2b | Web history teaser (last 7 days) | |
+| C4 | Android app (Capacitor), Free | |
+| C5 | Pro subscription + tips (Play Billing), on-device features, backup | |
+| C6 | Store release prep, data safety, legal | |
+| C8 | Yearly / lifetime (later) | |
+| C7 | Optional ads (only if the maintainer says go) | |

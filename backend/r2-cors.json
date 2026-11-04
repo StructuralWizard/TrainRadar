@@ -1,0 +1,18 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": [
+          "https://trainradar.pages.dev",
+          "http://localhost:8080",
+          "capacitor://localhost",
+          "https://localhost"
+        ],
+        "methods": ["GET", "HEAD"],
+        "headers": ["*"]
+      },
+      "exposeHeaders": ["Last-Modified", "ETag", "Date"],
+      "maxAgeSeconds": 86400
+    }
+  ]
+}
