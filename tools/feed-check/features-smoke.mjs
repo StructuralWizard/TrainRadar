@@ -54,9 +54,22 @@ if (first.origin && !first.timetable_only) {
   if (!/85 % a su hora/.test(h) || !/en 7 días/.test(h)) await fail(`history teaser says "${h}"`);
 }
 
-// Drag the popup by its title: it moves and loses its pointer.
-const box = await page.locator(".maplibregl-popup").boundingBox();
-const tb = await page.locator(".popup .popup-title").boundingBox();
+// Drag the popup by its title: it moves and loses its pointer. The popup
+// is redrawn as the train moves, so measure once it's settled and visible.
+const boxOf = async (sel) => {
+  for (let k = 0; k < 20; k++) {
+    const b = await page.locator(sel).first().boundingBox().catch(() => null);
+    if (b && b.width > 0) return b;
+    await page.waitForTimeout(250);
+  }
+  return null;
+};
+const box = await boxOf(".maplibregl-popup");
+const tb = await boxOf(".popup .popup-title");
+if (!box || !tb) {
+  const state = await page.evaluate(() => ({ popups: document.querySelectorAll(".maplibregl-popup").length, html: document.querySelector(".maplibregl-popup")?.textContent?.slice(0, 120) }));
+  await fail(`train popup gone before the drag: ${JSON.stringify(state)}`);
+}
 await page.mouse.move(tb.x + 10, tb.y + 5);
 await page.mouse.down();
 await page.mouse.move(tb.x + 10, tb.y + 205, { steps: 5 });
