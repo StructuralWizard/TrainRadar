@@ -72,7 +72,11 @@ jobs:
           sdk="$ANDROID_HOME/cmdline-tools/latest/bin"
           image="system-images;android-34;google_apis;x86_64"
           "$sdk/sdkmanager" "emulator" "platform-tools" "platforms;android-34" "$image" > /dev/null
-          echo no | "$sdk/avdmanager" create avd -n ci -k "$image" --force
+          # One place for the virtual phone, for avdmanager and the emulator alike.
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | "$sdk/avdmanager" create avd -n ci -k "$image" -d pixel_6 --force
+          ls "$ANDROID_AVD_HOME"
           "$ANDROID_HOME/emulator/emulator" -list-avds
           "$ANDROID_HOME/emulator/emulator" -avd ci -no-window -no-audio -no-boot-anim \
             -gpu swiftshader_indirect -no-snapshot -memory 3072 -accel on > emulator.log 2>&1 &
