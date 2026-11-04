@@ -62,6 +62,10 @@ if [ -n "${DIST:-}" ]; then
     # Test builds: feeds from bundled fixtures, polled like the pass-through.
     mkdir -p "$DIST/rt" && cp "$RT_FIXTURES"/*.pb "$DIST/rt/"
     sed -i 's#liveBase: "[^"]*"#liveBase: ""#; s#rtBase: "[^"]*"#rtBase: "rt/"#; s#apiBase: "[^"]*"#apiBase: ""#' "$DIST/js/config.js"
+    # The Android smoke test (Espresso-web) reads the page with injected
+    # scripts, which need eval. Test builds only: real builds keep the CSP.
+    sed -i "s#script-src 'self' 'wasm-unsafe-eval'#script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'#" "$DIST/index.html"
+    grep -q "'unsafe-eval'" "$DIST/index.html" || { echo "test CSP not set" >&2; exit 1; }
   fi
   echo "dist ready in $DIST ($(du -sh "$DIST" | cut -f1))"
 fi
