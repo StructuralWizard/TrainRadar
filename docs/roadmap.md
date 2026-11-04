@@ -54,8 +54,8 @@ Renfe's feeds are fetched once, centrally; a backend recorder builds delay histo
 |---|---|---|
 | C1 | Central poller (Durable Object alarm) → R2 `rt/*.pb` + `status.json`; live check workflow | ✅ running since 2026-11-04 |
 | C2 | Web reads the live bucket (fallback: proxy), polls `status.json`; app promotion; legal pages | ✅ live on `live.mytrainradar.com` since 2026-11-04 |
-| C3 | History recorder (engine in the Worker) → `summary.json`, D1 history, public API | ✅ code; switches on with `RECORDER_ENABLED` (needs Workers Paid) |
-| C2b | Web history teaser (last 7 days) | |
+| C3 | History recorder (engine in the Worker) → `summary.json`, D1 history, public API | ✅ recording since 2026-11-04 |
+| C2b | Web history teaser (last 7 days) | ✅ code; shows with `API_PUBLIC_URL` |
 | C4 | Android app (Capacitor), Free | |
 | C5 | Pro subscription + tips (Play Billing), on-device features, backup | |
 | C6 | Store release prep, data safety, legal | |

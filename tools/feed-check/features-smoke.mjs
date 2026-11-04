@@ -21,10 +21,11 @@ await page.waitForFunction(() => window.__trainradar?.map?.getLayer("track-av"),
 await page.waitForFunction(() => window.__trainradar.engine.positions(Date.now()).length > 0, null, { timeout: 30000 });
 
 // Search by train number: pick a live train's number, type it, choose it.
-const number = await page.evaluate(() => {
+const first = await page.evaluate(() => {
   const { engine } = window.__trainradar;
-  return JSON.parse(engine.trainJson(0, Date.now())).number;
+  return JSON.parse(engine.trainJson(0, Date.now()));
 });
+const number = first.number;
 await page.fill("#search-q", number);
 await page.waitForSelector("#search-results li button", { timeout: 5000 }).catch(() => fail("no search results"));
 console.log("search:", number, "→", (await page.textContent("#search-results")).replace(/\s+/g, " "));
@@ -35,6 +36,14 @@ if (!title.includes(number)) await fail(`popup shows ${title}, not ${number}`);
 const popupText = (await page.textContent(".popup")).replace(/\s+/g, " ");
 for (const want of ["Posición: GPS de Renfe", "tiempo real"]) {
   if (!popupText.includes(want)) await fail(`popup lacks "${want}"`);
+}
+
+// Line punctuality, last 7 days (the dev server stands in for the API).
+if (first.origin && !first.timetable_only) {
+  await page.waitForSelector(".popup #history-box", { timeout: 5000 }).catch(() => fail("no history teaser"));
+  const h = (await page.textContent("#history-box")).replace(/\s+/g, " ");
+  console.log("history:", h);
+  if (!/85 % a su hora/.test(h) || !/en 7 días/.test(h)) await fail(`history teaser says "${h}"`);
 }
 
 // Drag the popup by its title: it moves and loses its pointer.

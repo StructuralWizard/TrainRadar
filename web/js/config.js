@@ -8,6 +8,9 @@ export const CONFIG = {
   // CORS pass-through for Renfe's GTFS-RT feeds: the fallback when the live
   // bucket fails 3 times in a row (and the only source without one).
   rtBase: "/rt/",
+  // Public delay-history API origin (backend/src/api.js), with a trailing
+  // slash; "" hides the history teaser. Locally the dev server answers.
+  apiBase: "/",
   // Reference data built by refdata-build.
   dataBase: "data/",
   // Free vector tiles, no API key (https://openfreemap.org).

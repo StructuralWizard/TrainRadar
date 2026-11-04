@@ -21,6 +21,7 @@ import {
 } from "./js/map.js";
 import { formatClock } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
+import { HistoryCache } from "./js/history.js";
 import {
   delayedItem,
   el,
@@ -58,6 +59,13 @@ let engine, ref, feeds, map, attr;
 let selected = null; // { trip_id, number }
 let popup = null;
 let popupKey = "";
+// Line punctuality for the train popup (public history API, phase C2b).
+const history = new HistoryCache(CONFIG.apiBase, {
+  // One redraw when the answer arrives, even under the pointer.
+  onLoad: () => {
+    if (popup) showPopup(true);
+  },
+});
 let popupAt = 0;
 let lastRender = 0;
 let locator = null;
@@ -479,6 +487,7 @@ function showPopup(open = false) {
       profile: info.altitude_m === undefined ? null : selectedProfile(now),
       onTrain: (i) => selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true }),
       appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
+      history: info.timetable_only ? null : history.get(info.history_line, info.history_product),
     },
   );
   if (!popup) {

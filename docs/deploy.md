@@ -167,6 +167,15 @@ daily per-line and per-station figures forever. Daily backups in
 **Kill switch:** delete `RECORDER_ENABLED` (or set it to anything else) and run Deploy:
 the recorder stops after its next cycle; the API keeps serving what's stored.
 
+### History teaser on the site (phase C2b)
+
+Train popups show the line's punctuality over the last 7 days (share on time, 5+ min
+late, median delay, runs recorded), read from the history API. Set the repository
+variable **`API_PUBLIC_URL`** = `https://api.<your-domain>` (step 5 of "Delay history")
+and run Deploy; the build adds that origin to the CSP. Without it the teaser stays
+hidden. It's also hidden for a line with fewer than 5 recorded runs, and when the API
+doesn't answer. One request per line per page load, cached for an hour at the edge.
+
 ### App and coffee links
 
 `web/js/config.js` has `playUrl` (Google Play listing) and `coffeeUrl` ("Invítame a un
