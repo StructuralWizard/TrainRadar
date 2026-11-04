@@ -208,7 +208,7 @@ export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web
   return out;
 }
 
-export function trainPopup(lang, info, regionName, onIncidents, { napDate, profile, onTrain, appUrl } = {}) {
+export function trainPopup(lang, info, regionName, onIncidents, { napDate, profile, onTrain, appUrl, history } = {}) {
   const title = el(
     "div",
     { class: "popup-title", style: info.timetable_only ? `color:${SCHEDULED_COLOR}` : null },
@@ -262,6 +262,7 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
         : "",
     ),
   );
+  if (history && info.origin) rows.push(historyBox(lang, history, appUrl));
   // A timetabled 0 km/h just means "dwelling at a station": not worth a row.
   if (info.speed_kmh !== null && info.speed_kmh !== undefined && (info.speed_measured || info.speed_kmh > 0)) {
     rows.push(
@@ -315,6 +316,24 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
     rows.push(el("a", { class: "small app-link", href: appUrl, target: "_blank", rel: "noopener" }, `🔔 ${t(lang, "appAlerts")}`));
   }
   return el("div", { class: "popup" }, title, sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null, rows);
+}
+
+/** The line's last 7 days (phase C2b), from the history API's summary. */
+export function historyBox(lang, h, proUrl) {
+  const n = (x) => x.toLocaleString(lang === "en" ? "en-GB" : "es-ES");
+  const parts = [t(lang, "histLine", { p: h.onTimePct, l: h.late5Pct })];
+  if (h.medianMin !== null && h.medianMin > 0) parts.push(t(lang, "histMedian", { m: h.medianMin }));
+  const runs = [t(lang, "histRuns", { n: n(h.trips), d: h.days })];
+  if (h.cancelled) runs.push(h.cancelled === 1 ? t(lang, "histCancelled1") : t(lang, "histCancelled", { n: n(h.cancelled) }));
+  return el(
+    "div",
+    { class: "history-box", id: "history-box" },
+    el("div", { class: "history-title" }, t(lang, "histTitle")),
+    el("div", {}, parts.join(" · ")),
+    el("div", { class: "small muted" }, runs.join(" · ")),
+    el("div", { class: "small muted" }, t(lang, "histNote")),
+    proUrl ? el("a", { class: "small", href: proUrl, target: "_blank", rel: "noopener" }, t(lang, "histPro")) : null,
+  );
 }
 
 function minutesUntil(lang, unix) {

@@ -106,6 +106,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .incident-text { margin: 6px 0 2px; white-space: pre-line; overflow-wrap: anywhere; }
 .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #f1f5f9; font-weight: 600; }
 .chip-region { background: #e0e7ff; }
+.history-box { background: #f0f9ff; color: #0c4a6e; border-radius: 8px; padding: 6px 8px; margin: 6px 0; font-size: 13px; }
+.history-box .history-title { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+.history-box .muted { color: #075985; opacity: 0.8; }
 .notice-box { background: #f5f3ff; color: #4c1d95; border-radius: 8px; padding: 6px 8px; margin: 4px 0; font-size: 12px; }
 .links { list-style: none; margin: 0; padding: 0; }
 .links li { padding: 6px 0; border-bottom: 1px solid var(--line); }

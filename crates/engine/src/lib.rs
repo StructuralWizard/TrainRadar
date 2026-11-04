@@ -1037,6 +1037,9 @@ impl Engine {
                 .on("next_arrival", v.next_arrival)
                 .b("matched_exact", m.exact)
                 .s("operator", &r.tt.operator);
+            // Keys of this train's line in the delay history (/v1/history).
+            let (hl, hp) = history::line_product(&self.net, m);
+            o.s("history_line", &hl).s("history_product", &hp);
             if let Some(info) = v.along.and_then(|d| self.net.track_info(m.trip, d)) {
                 o.n("gauge_mm", info.gauge_mm)
                     .n("max_kmh", info.max_kmh)
@@ -1235,6 +1238,8 @@ mod tests {
         assert_eq!(i[0]["stops"][0]["id"], "B");
         let t: serde_json::Value = serde_json::from_str(&e.train_json(0, ms)).unwrap();
         assert_eq!(t["incidents"], 1);
+        assert_eq!(t["history_line"], "10-C3", "key for /v1/history/line");
+        assert_eq!(t["history_product"], "CERCANIAS");
 
         // Route highlight and coloured lines.
         let r: serde_json::Value = serde_json::from_str(&e.trip_json(0)).unwrap();
