@@ -86,7 +86,9 @@ test("records demo trains: summary, runs in progress, finished runs in D1, resta
   assert.equal(r2.error, null);
   assert.equal(r2.res.active, 0);
   const rows = db.raw.prepare("SELECT * FROM trips").all();
-  assert.equal(rows.length, first.res.active);
+  // Runs finished in the first cycle (demo trips at their terminus) plus
+  // every run that was still in progress.
+  assert.equal(rows.length, first.res.finished + first.res.active);
   for (const r of rows) {
     assert.match(r.service_date, /^\d{4}-\d\d-\d\d$/);
     assert.ok(["renfe_tu", "gps_estimate"].includes(r.source_quality));
