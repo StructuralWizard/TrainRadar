@@ -1,6 +1,9 @@
-# Watches the central poller (phase C1): fails, and GitHub emails the
-# maintainer, if any feed hasn't been fetched for 5 minutes. Reads only the
-# public rt/status.json. Off until the repository variable LIVE_BASE is set
+# Watches the central poller (phase C1) and the history recorder (C3):
+# fails, and GitHub emails the maintainer, if any feed hasn't been fetched
+# for 5 minutes, or (with RECORDER_ENABLED) the recorder hasn't reported for
+# 15 minutes, reports an error, or the database passes 4 GB (80 % of what
+# Workers Paid includes). Reads only the public rt/status.json and
+# rt/recorder.json. Off until the repository variable LIVE_BASE is set
 # (e.g. https://live.example.org/ or the Worker's workers.dev URL).
 name: Live check
 
@@ -35,3 +38,26 @@ jobs:
             exit 1
           fi
           echo "All feeds fetched in the last 5 minutes." >> "$GITHUB_STEP_SUMMARY"
+      - name: Check rt/recorder.json
+        if: vars.RECORDER_ENABLED == 'true'
+        env:
+          LIVE_BASE: ${{ vars.LIVE_BASE }}
+        run: |
+          curl -fsS --retry 3 "${LIVE_BASE%/}/rt/recorder.json" -o recorder.json
+          jq . recorder.json | tee -a "$GITHUB_STEP_SUMMARY"
+          now=$(date -u +%s)
+          at=$(jq -r '.updatedAt | sub("\\.[0-9]+Z$"; "Z") | fromdate' recorder.json)
+          if [ $((now - at)) -gt 900 ]; then
+            echo "::error::The recorder hasn't reported for $(( (now - at) / 60 )) minutes."
+            exit 1
+          fi
+          if [ "$(jq -r .ok recorder.json)" != "true" ]; then
+            echo "::error::Recorder error: $(jq -r '.error // "unknown"' recorder.json | tr -cd '[:alnum:] .,_/()=-' | head -c 300)"
+            exit 1
+          fi
+          bytes=$(jq -r '.db.bytes // 0' recorder.json)
+          if [ "$bytes" -gt 4000000000 ]; then
+            echo "::error::History database is $((bytes / 1000000)) MB: over 4 GB, see docs/deploy.md (retention)."
+            exit 1
+          fi
+          echo "Recorder reporting; database $((bytes / 1000000)) MB." >> "$GITHUB_STEP_SUMMARY"

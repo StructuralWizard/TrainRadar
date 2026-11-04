@@ -494,7 +494,9 @@ dependencies = [
 name = "trainradar-engine"
 version = "0.1.0"
 dependencies = [
+ "postcard",
  "prost",
+ "serde",
  "serde_json",
  "trainradar-proto",
  "wasm-bindgen",

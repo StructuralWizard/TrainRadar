@@ -22,15 +22,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let manifest: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(data.join("manifest.json"))?)?;
+    let rss0 = proc_kb("VmRSS");
+    let t0 = std::time::Instant::now();
+    let mut loaded_bytes = 0usize;
     let mut net = Network::default();
     let file = |v: &serde_json::Value| std::fs::read(data.join(v["file"].as_str().unwrap()));
-    net.load_stations(&file(&manifest["stations"])?)?;
+    let st = file(&manifest["stations"])?;
+    loaded_bytes += st.len();
+    net.load_stations(&st)?;
     for r in manifest["regions"].as_array().unwrap() {
-        net.load_timetable(&file(r)?)?;
+        let tt = file(r)?;
+        loaded_bytes += tt.len();
+        net.load_timetable(&tt)?;
         if !r["geometry"].is_null() {
-            net.load_geometry(&file(&r["geometry"])?)?;
+            let g = file(&r["geometry"])?;
+            loaded_bytes += g.len();
+            net.load_geometry(&g)?;
         }
     }
+    let load_ms = t0.elapsed().as_secs_f64() * 1000.0;
+    let rss_loaded = proc_kb("VmRSS");
     println!("### Live check\n\nLoaded {} regions.\n", net.regions.len());
 
     // Drawn lines must not jump: report trips whose line has a segment over
@@ -98,6 +109,65 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         println!("- `{}`: {} bytes, {n} records", spec.path, bytes.len());
         live.ingest(&net, spec.key, data, now);
+    }
+
+    // C3 risk check: could a Worker (128 MB, limited CPU) hold every region
+    // and run a recording cycle? Native numbers; wasm is roughly similar in
+    // memory and 1.5–2x slower.
+    {
+        let feeds: Vec<_> = Renfe
+            .feeds()
+            .iter()
+            .map(|s| {
+                (
+                    s.key,
+                    s.kind,
+                    std::fs::read(rt.join(s.path)).unwrap_or_default(),
+                )
+            })
+            .collect();
+        let mut cycle_ms = Vec::new();
+        for k in 0..5 {
+            let t = std::time::Instant::now();
+            let mut l = Live::default();
+            for (key, kind, bytes) in &feeds {
+                if let Ok(d) = Renfe.decode(*kind, bytes) {
+                    l.ingest(&net, key, d, now + k);
+                }
+            }
+            let v = l.views(&net, now + k, false);
+            std::hint::black_box(v.len());
+            cycle_ms.push(t.elapsed().as_secs_f64() * 1000.0);
+        }
+        cycle_ms.sort_by(f64::total_cmp);
+        println!(
+            "\n**Resources (C3 risk check):** {} reference files {:.1} MB raw; load {:.0} ms; \
+             memory {:.0} MB with every region loaded (RSS {:.0} → {:.0} MB, peak {:.0} MB); \
+             decode + ingest + place all trains: median {:.1} ms, max {:.1} ms per cycle\n",
+            manifest["regions"].as_array().map_or(0, |a| a.len()) + 1,
+            loaded_bytes as f64 / 1e6,
+            load_ms,
+            (rss_loaded - rss0) / 1024.0,
+            rss0 / 1024.0,
+            rss_loaded / 1024.0,
+            proc_kb("VmHWM") / 1024.0,
+            cycle_ms[cycle_ms.len() / 2],
+            cycle_ms[cycle_ms.len() - 1]
+        );
+        // What the recorder would follow right now.
+        let mut rec = trainradar_engine::history::Recorder::new();
+        let t = std::time::Instant::now();
+        rec.observe(&net, &live, now);
+        let active = rec.active();
+        let runs = rec.drain();
+        let rows = trainradar_engine::history::runs_json(&runs);
+        println!(
+            "**Recorder:** following {active} runs ({:.1} ms); as trips rows {:.0} KB, \
+             {:.2} KB per run (D1 estimate before stops are filled in)\n",
+            t.elapsed().as_secs_f64() * 1000.0,
+            rows.len() as f64 / 1e3,
+            rows.len() as f64 / 1e3 / active.max(1) as f64
+        );
     }
 
     let mut by_feed: BTreeMap<&str, [usize; 6]> = BTreeMap::new();
@@ -410,4 +480,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
     Ok(())
+}
+
+/// A value in kB from /proc/self/status (Linux), 0 elsewhere.
+fn proc_kb(field: &str) -> f64 {
+    std::fs::read_to_string("/proc/self/status")
+        .ok()
+        .and_then(|s| {
+            s.lines()
+                .find(|l| l.starts_with(field))
+                .and_then(|l| l.split_whitespace().nth(1)?.parse().ok())
+        })
+        .unwrap_or(0.0)
 }
