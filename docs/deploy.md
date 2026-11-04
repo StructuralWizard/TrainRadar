@@ -95,7 +95,8 @@ when the repository variable `LIVE_ENABLED` is `true`. Steps, in order:
 2. **R2.** Dashboard → R2 → enable R2 once (the free tier needs a card on file; usage
    stays inside the free tier, see [costs.md](costs.md)).
 3. **Turn it on.** GitHub → Settings → Secrets and variables → Actions → Variables →
-   New repository variable `LIVE_ENABLED` = `true`, then run Actions → Deploy → Run
+   New repository variable `LIVE_ENABLED` = `true` (a variable on the `production`
+   environment works too), then run Actions → Deploy → Run
    workflow. The job creates the bucket, sets its CORS rules from
    `backend/r2-cors.json` and deploys the `trainradar-live` Worker.
 4. **Check.** Open `https://trainradar-live.<your-subdomain>.workers.dev/rt/status.json`:

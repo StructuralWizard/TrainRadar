@@ -191,10 +191,11 @@ jobs:
 
   live:
     # Central poller (backend/): Renfe fetched once for everyone, bytes in R2.
-    # Off until the maintainer sets the repository variable LIVE_ENABLED=true
-    # (the API token needs R2 and Durable Objects rights first: docs/deploy.md).
+    # Off until the maintainer sets the variable LIVE_ENABLED=true, on the
+    # repository or the "production" environment (the API token needs R2
+    # rights first: docs/deploy.md).
     name: deploy the live poller
-    if: vars.LIVE_ENABLED == 'true' && github.event_name != 'schedule'
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
@@ -202,18 +203,38 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
+      # Read here, not in the job's `if`: a variable set on the "production"
+      # environment is only visible once the job is running in it.
+      - name: Is the live poller enabled (LIVE_ENABLED)?
+        id: gate
+        env:
+          LIVE_ENABLED: ${{ vars.LIVE_ENABLED }}
+        run: |
+          if [ "$(printf %s "$LIVE_ENABLED" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')" = "true" ]; then
+            echo "on=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "LIVE_ENABLED is not true: skipping the live poller." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.gate.outputs.on == 'true'
         with:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.gate.outputs.on == 'true'
         with:
           node-version: 22
       - run: node --test backend/test/*.test.mjs
+        if: steps.gate.outputs.on == 'true'
       - name: R2 bucket and its CORS rules
+        if: steps.gate.outputs.on == 'true'
         run: |
           if ! npx --yes "$WRANGLER" r2 bucket list | grep -q "trainradar-live"; then
             npx --yes "$WRANGLER" r2 bucket create trainradar-live
           fi
           npx --yes "$WRANGLER" r2 bucket cors set trainradar-live --file backend/r2-cors.json --force
       - name: Deploy the poller Worker
-        run: npx --yes "$WRANGLER" deploy --config backend/wrangler.toml
+        if: steps.gate.outputs.on == 'true'
+        run: |
+          npx --yes "$WRANGLER" deploy --config backend/wrangler.toml | tee deploy.txt
+          url=$(grep -oE 'https://trainradar-live\.[a-z0-9-]+\.workers\.dev' deploy.txt | head -1)
+          echo "Live poller: $url/rt/status.json" >> "$GITHUB_STEP_SUMMARY"
