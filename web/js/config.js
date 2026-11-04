@@ -20,8 +20,12 @@ export const CONFIG = {
   zoom: 5.2,
   // Load a Cercanías núcleo's timetable once this zoomed in over it.
   regionZoom: 8,
+  // The public site, for shared links (…?train=03020).
+  siteUrl: "https://trainradar.pages.dev/",
   // "web" or "android" (tools/build-web.sh --target android, phase C4).
   platform: "web",
+  // TrainRadar Pro unlocked (Android, phase C5). Always false until then.
+  pro: false,
   // Google Play listing of the Android app; "" hides every app link until
   // the listing is live.
   playUrl: "",

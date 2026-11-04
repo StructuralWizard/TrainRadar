@@ -1,0 +1,77 @@
+# Android app (phase C4)
+
+TrainRadar for Android is the web app (`web/`) inside a [Capacitor](https://capacitorjs.com)
+shell (`app/`). The engine, the map and the reference data ship inside the APK, so the
+map opens without downloading them; live feeds come from the central bucket
+(`live.<domain>`), history from the API (`api.<domain>`).
+
+- **App id:** `com.metranos.trainradar` (permanent once published). Min Android 8.0
+  (SDK 26), target SDK 36.
+- **Build flag:** `TARGET=android tools/build-web.sh` sets `CONFIG.platform = "android"`
+  in the bundle: no "Invítame a un café" link, no service worker, no "get the app"
+  banner.
+- **Free edition:** everything the web has, minus the enthusiast details (track facts,
+  gradient and height profile, spacing to the trains ahead and behind), which come with
+  Pro (phase C5). Plus up to **2 favourites** (trains or stations, ★ in the header),
+  sharing a train or station, the Android back button (closes the open panel or popup,
+  then leaves the app) and links `trainradar://train/<number>`,
+  `trainradar://station/<stop id>`.
+- **Location:** only while the app is open, only after "Use my location"; Android asks
+  for permission then. It never leaves the phone.
+- **Your data:** favourites live in Android's shared preferences, included in Android's
+  own backup (Google Drive, `res/xml/data_extraction_rules.xml`); caches and the bundled
+  data are left out.
+
+## Builds in CI (no secrets)
+
+`.github/workflows/android.yml`, on every pull request and merge:
+
+1. **Test build**: demo data and fixture feeds inside the APK; an emulator runs
+   `AppSmokeTest` (the map renders with trains, a train popup opens through the app's
+   search, free-edition rows are hidden).
+2. **Try-out build**: the deployed site's data and the live feeds (needs the variable
+   `LIVE_PUBLIC_URL`). Download the **trainradar-debug-apk** artifact from the run's
+   summary page, copy it to your phone and open it (allow "install unknown apps" for
+   your file manager). Debug-signed: it can't be updated by a Play Store version later;
+   uninstall it first.
+
+The CI web job also runs `tools/feed-check/app-smoke.mjs` on the `TARGET=android`
+bundle in a browser (favourites and their limit, links, no coffee link).
+
+## Release build (maintainer, on your computer)
+
+The upload key never goes in the repository. Turn on **Play App Signing** when you
+create the app in Play Console, so Google holds the app signing key and your upload
+key can be replaced if lost.
+
+1. Install Java 21, Node 22, Rust (with `wasm32-unknown-unknown`), `wasm-bindgen-cli`
+   (the version in `Cargo.lock`), and Android Studio (or the command-line SDK).
+2. Create the upload key once and keep it, and its passwords, outside the repository
+   (e.g. in your password manager):
+   ```sh
+   keytool -genkeypair -v -keystore ~/keys/trainradar-upload.jks -alias upload \
+     -keyalg RSA -keysize 4096 -validity 10000
+   ```
+3. Build the bundle with live data and sign it:
+   ```sh
+   LIVE_BASE=https://live.mytrainradar.com API_BASE=https://api.mytrainradar.com tools/build-app.sh
+   cd app/android
+   ./gradlew bundleRelease
+   jarsigner -keystore ~/keys/trainradar-upload.jks \
+     app/build/outputs/bundle/release/app-release.aab upload
+   ```
+4. Raise `versionCode` (and `versionName`) in `app/android/app/build.gradle` for every
+   upload. Tag the commit (`v0.4.0`, …) so each store version matches the code.
+
+Later, with the maintainer's approval, the upload key can become a GitHub Actions secret
+for a `release-android.yml` that runs on tags only (plan C, phase C6).
+
+## Changing the app
+
+- Web code: as usual in `web/`; then `tools/build-app.sh` (or the test build in
+  `android.yml`) copies it into the app.
+- Native settings: `app/capacitor.config.json`, `app/android/app/src/main/AndroidManifest.xml`.
+- Plugins (`app/package.json`): App (back button, links), Preferences (favourites),
+  Share, Status Bar, Splash Screen. Reached from `web/js/native.js` through Capacitor's
+  bridge; the web falls back to the browser.
+- Icons and splash screens are generated from `web/icons/`.

@@ -4,7 +4,7 @@
   "type": "module",
   "description": "TrainRadar static site. MapLibre is vendored from npm at build time.",
   "scripts": {
-    "test": "node --test js/format.test.mjs js/i18n.test.mjs js/source.test.mjs js/history.test.mjs"
+    "test": "node --test js/format.test.mjs js/i18n.test.mjs js/source.test.mjs js/history.test.mjs js/native.test.mjs"
   },
   "devDependencies": {
     "maplibre-gl": "6.14.0"

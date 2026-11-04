@@ -74,6 +74,8 @@ Renfe open data ──► your browser
 | `web/` | Static site (Cloudflare Pages): `index.html`, MapLibre, `engine.wasm`, `.bin` data |
 | `tools/feed-check` | Browser-based CORS/HTTPS/refresh check of the Renfe endpoints |
 | `worker/` | Cloudflare Worker pass-through that adds CORS headers ([details](worker/README.md)) |
+| `backend/` | Central poller, history recorder and history API (Cloudflare Worker, R2, D1) ([details](backend/README.md)) |
+| `app/` | Android app: Capacitor shell around `web/` ([details](docs/android.md)) |
 | `docs/deploy.md` | How it's deployed (Cloudflare Pages + Worker, free tier) |
 
 ## Local development

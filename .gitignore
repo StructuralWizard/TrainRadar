@@ -34,3 +34,5 @@ Thumbs.db
 /web/vendor/
 /demo/
 /build/
+/app-www/
+/trainradar-debug.apk

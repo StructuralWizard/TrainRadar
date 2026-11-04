@@ -208,7 +208,13 @@ export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web
   return out;
 }
 
-export function trainPopup(lang, info, regionName, onIncidents, { napDate, profile, onTrain, appUrl, history } = {}) {
+export function trainPopup(
+  lang,
+  info,
+  regionName,
+  onIncidents,
+  { napDate, profile, onTrain, appUrl, history, enthusiast = true, fav = null, onShare = null } = {},
+) {
   const title = el(
     "div",
     { class: "popup-title", style: info.timetable_only ? `color:${SCHEDULED_COLOR}` : null },
@@ -269,7 +275,7 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
       row(t(lang, "speed"), t(lang, info.speed_measured ? "speedMeasured" : "speedScheduled", { v: info.speed_kmh })),
     );
   }
-  if (info.gauge_mm || info.max_kmh || info.tracks || info.electrified) {
+  if (enthusiast && (info.gauge_mm || info.max_kmh || info.tracks || info.electrified)) {
     const parts = [];
     if (info.tracks) parts.push(t(lang, info.tracks === 1 ? "trackSingle" : info.tracks === 2 ? "trackDouble" : "trackMany", { n: info.tracks }));
     if (info.electrified) parts.push(t(lang, info.electrified === 2 ? "electrified" : "notElectrified"));
@@ -279,7 +285,7 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
     const src = info.tracks || info.electrified ? "trackSourceIgn" : "trackSource";
     rows.push(row(t(lang, "track"), parts.join(" · "), el("span", { class: "muted" }, ` ${t(lang, src)}`)));
   }
-  if (info.grade_permille !== undefined) {
+  if (enthusiast && info.grade_permille !== undefined) {
     rows.push(
       row(
         t(lang, "grade"),
@@ -306,7 +312,7 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
       info.position === "gps" || info.fix_age < 60 ? t(lang, "gpsAgo", { age }) : t(lang, "estimatedPos", { age }),
     ),
   );
-  if (info.origin) {
+  if (enthusiast && info.origin) {
     rows.push(row(t(lang, "ahead"), gapText(lang, info.ahead, onTrain)));
     rows.push(row(t(lang, "behind"), gapText(lang, info.behind, onTrain)));
     if (info.oncoming) rows.push(row(t(lang, "oncoming"), oncomingText(lang, info.oncoming, onTrain)));
@@ -315,7 +321,59 @@ export function trainPopup(lang, info, regionName, onIncidents, { napDate, profi
   if (appUrl && info.origin) {
     rows.push(el("a", { class: "small app-link", href: appUrl, target: "_blank", rel: "noopener" }, `🔔 ${t(lang, "appAlerts")}`));
   }
-  return el("div", { class: "popup" }, title, sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null, rows);
+  return el(
+    "div",
+    { class: "popup" },
+    title,
+    sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null,
+    popupActions(lang, fav, onShare),
+    rows,
+  );
+}
+
+/** ☆ Save / ★ Saved and Share buttons under a popup's title. */
+function popupActions(lang, fav, onShare) {
+  if (!fav && !onShare) return null;
+  return el(
+    "div",
+    { class: "popup-actions" },
+    fav
+      ? el(
+          "button",
+          { class: "pill small fav-btn", type: "button", "aria-pressed": String(fav.on), onclick: fav.onToggle },
+          fav.on ? `★ ${t(lang, "favOn")}` : `☆ ${t(lang, "favAdd")}`,
+        )
+      : null,
+    onShare ? el("button", { class: "pill small", type: "button", onclick: onShare }, t(lang, "share")) : null,
+    fav?.full ? el("div", { class: "small muted fav-full" }, t(lang, "favFull", { n: fav.limit })) : null,
+  );
+}
+
+/** The favourites sheet: each train with its live state, each station. */
+export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onRemove, limit }) {
+  if (!list.length) return [el("p", { class: "muted" }, t(lang, "favEmpty"))];
+  const items = list.map((f) => {
+    const remove = el("button", { class: "pill small", type: "button", "aria-label": t(lang, "favRemove"), onclick: () => onRemove(f) }, "✕");
+    if (f.type === "station") {
+      return el("li", {}, el("button", { class: "link", onclick: () => onStation(f) }, el("strong", {}, `■ ${f.name}`)), " ", remove);
+    }
+    const info = trainInfo(f);
+    const state = info
+      ? el("span", { class: "board-delay" }, formatDelay(lang, info.delay))
+      : el("span", { class: "muted" }, ` ${t(lang, "favNotRunning")}`);
+    const name = el("strong", {}, info ? trainTitle(info) : f.label);
+    return el(
+      "li",
+      {},
+      info ? el("button", { class: "link", onclick: () => onTrain(info) }, name) : name,
+      info?.destination ? el("span", { class: "board-main muted" }, ` → ${info.destination}`) : null,
+      " ",
+      state,
+      " ",
+      remove,
+    );
+  });
+  return [el("ul", { class: "board" }, items), el("p", { class: "small muted" }, t(lang, "favNote", { n: limit }))];
 }
 
 /** The line's last 7 days (phase C2b), from the history API's summary. */
@@ -448,11 +506,12 @@ function boardList(lang, board) {
 }
 
 /** Popup for a station: next trains, and trains on their way. */
-export function stationPopup(lang, station, board, approaching, onTrain) {
+export function stationPopup(lang, station, board, approaching, onTrain, { fav = null, onShare = null } = {}) {
   return el(
     "div",
     { class: "popup" },
     el("div", { class: "popup-title" }, station.name),
+    popupActions(lang, fav, onShare),
     el("h3", {}, t(lang, "departuresNext")),
     boardList(lang, board),
     el("h3", {}, t(lang, "approachingShort")),

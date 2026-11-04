@@ -86,6 +86,11 @@ jobs:
           TEST_PLAY_URL=https://play.example/app PORT=8081 DATA=demo/data FIXTURES=demo/rt node tools/dev-server.mjs &
           sleep 1
           node tools/feed-check/live-smoke.mjs http://localhost:8081/ shots
+          # The Android app's bundle (TARGET=android) on the same demo data.
+          TARGET=android DIST=app-www DATA_DIR=demo/data RT_FIXTURES=demo/rt tools/build-web.sh
+          (cd app-www && python3 -m http.server 8090 > /dev/null 2>&1 &)
+          sleep 1
+          node tools/feed-check/app-smoke.mjs http://localhost:8090/ shots
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
