@@ -416,13 +416,13 @@ export function addLayers(map) {
       "icon-rotation-alignment": "map",
       "icon-allow-overlap": true,
       "icon-ignore-placement": true,
-      // Filled arrows read smaller than the hollow OUIGO ones (no outline):
-      // draw them a third bigger.
+      // Dots (zoomed out) are a third of the arrow size; arrows from ARROW_ZOOM.
       "icon-size": [
         "interpolate", ["linear"], ["zoom"],
-        // Big enough to spot and tap with all of Spain on screen.
-        4, ["match", ["get", "t"], "ouigo", 0.9, "cer", 0.95, 1.15],
-        7, ["match", ["get", "t"], "ouigo", 1.0, "cer", 1.05, 1.3],
+        4, ["match", ["get", "t"], "ouigo", 0.3, "cer", 0.32, 0.38],
+        7, ["match", ["get", "t"], "ouigo", 0.33, "cer", 0.35, 0.43],
+        ARROW_ZOOM - 0.01, ["match", ["get", "t"], "ouigo", 0.37, "cer", 0.39, 0.47],
+        ARROW_ZOOM, ["match", ["get", "t"], "ouigo", 1.1, "cer", 1.15, 1.4],
         12, ["match", ["get", "t"], "ouigo", 1.2, "cer", 1.3, 1.55],
         15, ["match", ["get", "t"], "ouigo", 1.4, "cer", 1.55, 1.85],
       ],
@@ -437,7 +437,12 @@ export function addLayers(map) {
       ],
       // Fill = delay; border = kind of train (same colours as its track).
       "icon-halo-color": ["match", ["get", "t"], "av", TRACK_COLORS.av, "ld", TRACK_COLORS.ld, "md", "#475569", "#ffffff"],
-      "icon-halo-width": ["match", ["get", "t"], "cer", 1.2, "ouigo", 1.2, 3],
+      // A thinner border on the small dots, so their colour still shows.
+      "icon-halo-width": [
+        "interpolate", ["linear"], ["zoom"],
+        ARROW_ZOOM - 0.01, ["match", ["get", "t"], "cer", 0.6, "ouigo", 0.6, 1.2],
+        ARROW_ZOOM, ["match", ["get", "t"], "cer", 1.2, "ouigo", 1.2, 3],
+      ],
       // Old GPS fixes fade a little; trains outside a highlighted line fade a lot.
       "icon-opacity": ["case", ["==", ["get", "dim"], 1], 0.18, [">", ["get", "a"], 600], 0.65, 1],
     },
