@@ -24,6 +24,7 @@
       <div id="stats" aria-live="polite"></div>
       <div id="status" class="muted"></div>
     </div>
+    <button id="fav-btn" class="pill" type="button">★</button>
     <button id="about-btn" class="pill" type="button">ⓘ</button>
     <button id="lang" class="pill" type="button">EN</button>
   </header>
@@ -85,6 +86,14 @@
       <button id="about-close" class="pill" type="button">✕</button>
     </div>
     <div id="about-body"></div>
+  </section>
+
+  <section id="favs" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="favs-title"></h2>
+      <button id="favs-close" class="pill" type="button">✕</button>
+    </div>
+    <div id="favs-body"></div>
   </section>
 
   <section id="incidents" class="sheet" hidden>

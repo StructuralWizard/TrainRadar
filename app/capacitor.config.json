@@ -1,0 +1,21 @@
+{
+  "appId": "com.metranos.trainradar",
+  "appName": "TrainRadar",
+  "webDir": "www",
+  "android": {
+    "path": "android",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "launchAutoHide": true,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false
+    }
+  }
+}

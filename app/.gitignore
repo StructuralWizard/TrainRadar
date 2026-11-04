@@ -1,0 +1,3 @@
+node_modules/
+# Built web bundle (tools/build-web.sh with TARGET=android DIST=app/www)
+www/

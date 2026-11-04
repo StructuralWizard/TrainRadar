@@ -1,0 +1,141 @@
+# Android app (phase C4, app/): builds the debug APK and runs the app's
+# smoke test on an emulator, on every pull request and merge. No secrets:
+# debug builds are signed with the runner's throwaway debug key. Release
+# builds (AAB, upload key) are made by the maintainer, see docs/android.md.
+name: Android
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  apk:
+    name: debug APK + emulator smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Java 21 and the Android SDK (preinstalled on the runner)
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+      - name: Install wasm-bindgen-cli (version from Cargo.lock)
+        run: |
+          v=$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name=="wasm-bindgen") | .version')
+          cargo install wasm-bindgen-cli --version "$v" --locked
+
+      # Test build: demo data and fixture feeds inside the APK, so the test
+      # needs no network and no real Renfe data.
+      - name: Demo data and fake feeds
+        run: |
+          python3 tools/demo-gtfs.py demo/gtfs
+          cargo run --release -q -p trainradar-refdata-build -- build --out demo/data \
+            --ld demo/gtfs/ld.zip --cercanias demo/gtfs/cercanias.zip --ouigo demo/gtfs/ouigo.zip \
+            --rail demo/gtfs/rail.geojsonseq --rail-heights demo/gtfs/heights.txt \
+            --rail-attrs demo/gtfs/igr-rail.geojsonseq
+          cargo run --release -q -p trainradar-engine --example fixture -- demo/data demo/rt
+      - name: Web bundle for the app (TARGET=android, demo data)
+        run: TARGET=android DIST=app/www DATA_DIR=demo/data RT_FIXTURES=demo/rt tools/build-web.sh
+      - name: Build the test APKs
+        id: apks
+        run: |
+          (cd app && npm ci --no-audit --no-fund && npx cap sync android)
+          cd app/android && ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+
+      - name: Emulator smoke test (map renders, a train popup opens)
+        timeout-minutes: 25
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules > /dev/null
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+          sdk="$ANDROID_HOME/cmdline-tools/latest/bin"
+          image="system-images;android-34;google_apis;x86_64"
+          "$sdk/sdkmanager" "emulator" "platform-tools" "platforms;android-34" "$image" > /dev/null
+          # One place for the virtual phone, for avdmanager and the emulator alike.
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | "$sdk/avdmanager" create avd -n ci -k "$image" -d pixel_6 --force
+          ls "$ANDROID_AVD_HOME"
+          "$ANDROID_HOME/emulator/emulator" -list-avds
+          "$ANDROID_HOME/emulator/emulator" -avd ci -no-window -no-audio -no-boot-anim \
+            -gpu swiftshader_indirect -no-snapshot -memory 3072 -accel on > emulator.log 2>&1 &
+          emu=$!
+          adb="$ANDROID_HOME/platform-tools/adb"
+          booted=""
+          for i in $(seq 1 60); do
+            if ! kill -0 "$emu" 2>/dev/null; then echo "::error::the emulator exited"; break; fi
+            if [ "$(timeout 10 "$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; then
+              booted=yes; break
+            fi
+            sleep 10
+          done
+          if [ -z "$booted" ]; then
+            echo "::error::the emulator didn't boot; its log:"
+            tail -n 80 emulator.log
+            exit 1
+          fi
+          echo "booted after about $((i * 10)) s"
+          for s in window_animation_scale transition_animation_scale animator_duration_scale; do
+            "$adb" shell settings put global "$s" 0
+          done
+          "$adb" logcat -c
+          if ! (cd app/android && ./gradlew --no-daemon :app:connectedDebugAndroidTest); then
+            echo "::error::app smoke test failed; the app's console and WebView messages:"
+            "$adb" logcat -d | grep -iE "Capacitor|chromium|Console|WebView|AndroidRuntime" | tail -n 150
+            exit 1
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() || cancelled()
+        with:
+          name: android-test-reports
+          path: |
+            app/android/app/build/reports/androidTests
+            emulator.log
+          retention-days: 7
+
+      # Try-out build: the deployed site's reference data and the live feeds,
+      # like the real app (debug-signed, for sideloading; not for Play).
+      - name: Web bundle for the app (live data)
+        id: live
+        # Also when only the emulator test failed: the try-out APK is still useful.
+        if: success() || (failure() && steps.apks.outcome == 'success')
+        env:
+          LIVE_BASE: ${{ vars.LIVE_PUBLIC_URL }}
+          API_BASE: ${{ vars.API_PUBLIC_URL }}
+        run: |
+          if [ -z "$LIVE_BASE" ]; then
+            echo "LIVE_PUBLIC_URL isn't set: no try-out APK." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          tools/build-app.sh
+          (cd app/android && ./gradlew --no-daemon assembleDebug)
+          cp app/android/app/build/outputs/apk/debug/app-debug.apk trainradar-debug.apk
+          echo "built=true" >> "$GITHUB_OUTPUT"
+          echo "Try-out APK: download the **trainradar-debug-apk** artifact of this run." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.live.outputs.built == 'true'
+        with:
+          name: trainradar-debug-apk
+          path: trainradar-debug.apk
+          retention-days: 14

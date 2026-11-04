@@ -22,8 +22,12 @@ import {
 import { formatClock } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { HistoryCache } from "./js/history.js";
+import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
+import { enthusiast } from "./js/features.js";
+import { canShare, isNative, onAppLink, onBackButton, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
 import {
   delayedItem,
+  favouritesPanel,
   el,
   incidentsPanel,
   legend,
@@ -74,7 +78,9 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs"];
+let favs = []; // favourite trains and stations (favourites.js)
+let favFull = null; // key of the item whose save just hit the limit
 const show = {
   commuter: true, av: true, ld: true, md: true, scheduled: true,
   lines: true, tav: true, tld: true, tmd: true, stations: true, stopped: true,
@@ -143,6 +149,10 @@ function applyLang() {
   $("about-btn").title = t(lang, "about");
   $("about-title").textContent = t(lang, "about");
   $("about-close").setAttribute("aria-label", t(lang, "close"));
+  $("fav-btn").setAttribute("aria-label", t(lang, "favourites"));
+  $("fav-btn").title = t(lang, "favourites");
+  $("favs-title").textContent = t(lang, "favourites");
+  $("favs-close").setAttribute("aria-label", t(lang, "close"));
   $("app-banner-link").textContent = `📱 ${t(lang, "appBanner")}`;
   $("app-banner-close").setAttribute("aria-label", t(lang, "close"));
   if (!$("about").hidden) renderAbout();
@@ -488,6 +498,11 @@ function showPopup(open = false) {
       onTrain: (i) => selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true }),
       appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
       history: info.timetable_only ? null : history.get(info.history_line, info.history_product),
+      enthusiast: enthusiast(CONFIG),
+      fav: favButton({ type: "train", number: info.number, label: trainTitle(info) }),
+      onShare: canShare()
+        ? () => share({ title: trainTitle(info), text: t(lang, "shareTrain", { train: trainTitle(info) }), url: `${CONFIG.siteUrl}?train=${encodeURIComponent(info.number)}` })
+        : null,
     },
   );
   if (!popup) {
@@ -562,6 +577,12 @@ function showStation(f) {
       stationPop?.remove();
       selectTrain(a, { fly: true });
     },
+    {
+      fav: favButton({ type: "station", id, name, lon, lat }, () => showStation(f)),
+      onShare: canShare()
+        ? () => share({ title: name, text: t(lang, "shareStation", { station: name }), url: `${CONFIG.siteUrl}?station=${encodeURIComponent(id)}` })
+        : null,
+    },
   );
   if (stationPop?.isOpen()) return stationPop.setLngLat([lon, lat]).setDOMContent(body);
   clearSelection();
@@ -577,6 +598,83 @@ function showStation(f) {
 
 function refreshTrack() {
   if (engine && map?.getSource("track")) map.getSource("track").setData(JSON.parse(engine.trackGeoJson()));
+}
+
+/** Star button state for a popup; `redraw` refreshes that popup. */
+function favButton(item, redraw = () => showPopup(true)) {
+  const k = JSON.stringify([item.type, item.number ?? item.id]);
+  return {
+    on: isFavourite(favs, item),
+    full: favFull === k,
+    limit: FREE_LIMIT,
+    onToggle: () => {
+      const r = toggleFavourite(favs, item, FREE_LIMIT);
+      favFull = r.full ? k : null;
+      if (!r.full) saveFavourites(r.list);
+      redraw();
+    },
+  };
+}
+
+function saveFavourites(list) {
+  favs = list;
+  prefs.set(STORAGE_KEY, JSON.stringify(list)).catch((e) => console.warn("favourites", e));
+  renderFavourites();
+}
+
+/** The live train for a favourite (by number), as popup info, or null. */
+function liveTrain(number) {
+  if (!engine) return null;
+  const n = String(number).replace(/^0+/, "");
+  const hit = JSON.parse(engine.searchJson(number, 8)).find((h) => h.number.replace(/^0+/, "") === n);
+  return hit ? JSON.parse(engine.trainJson(hit.i, Date.now())) : null;
+}
+
+function openStation(st) {
+  flyToVisible(st.lon, st.lat, 13, { forPopup: true });
+  map.once("moveend", () => showStation({ properties: { id: st.id, name: st.name }, geometry: { coordinates: [st.lon, st.lat] } }));
+}
+
+function renderFavourites() {
+  if ($("favs").hidden) return;
+  $("favs-body").replaceChildren(
+    ...favouritesPanel(lang, favs, {
+      trainInfo: (f) => liveTrain(f.number),
+      onTrain: (info) => {
+        $("favs").hidden = true;
+        selectTrain(info, { fly: true });
+      },
+      onStation: (st) => {
+        $("favs").hidden = true;
+        openStation(st);
+      },
+      onRemove: (f) => saveFavourites(toggleFavourite(favs, f).list),
+      limit: FREE_LIMIT,
+    }),
+  );
+}
+
+/** Open what a link asks for (app link or the web's ?train= / ?station=). */
+function openLink(link) {
+  if (!link || !engine) return;
+  if (link.type === "train") {
+    const info = liveTrain(link.number);
+    if (info) return selectTrain(info, { fly: true });
+    $("search-q").value = link.number; // not running now: show what search finds
+    return renderSearch();
+  }
+  const st = JSON.parse(engine.stationsGeoJson()).features.find((x) => x.properties.id === link.id);
+  if (st) openStation({ id: st.properties.id, name: st.properties.name, lon: st.geometry.coordinates[0], lat: st.geometry.coordinates[1] });
+}
+
+/** Android back button: close the top-most thing; false when nothing was open. */
+function goBack() {
+  const sheet = SHEETS.map($).find((x) => !x.hidden);
+  if (sheet) return (sheet.hidden = true), true;
+  if (popup) return popup.remove(), true;
+  if (stationPop?.isOpen()) return stationPop.remove(), true;
+  if (!$("search-results").hidden) return ($("search-results").hidden = true), true;
+  return false;
 }
 
 function renderSearch() {
@@ -679,6 +777,7 @@ function render(force = false) {
   if ((popup || selected) && map.getSource("selected")) showPopup();
   if (!$("delayed").hidden && force) renderDelayedList();
   renderNear(force);
+  if (force) renderFavourites();
 }
 
 function loop() {
@@ -794,6 +893,17 @@ async function main() {
   render(true);
   requestAnimationFrame(loop);
   window.__trainradar = { engine, map, ref, feeds }; // for tests and debugging
+  // Links: the web's ?train= / ?station=, and the app's trainradar://… Wait
+  // for the first trains so a train link finds its train.
+  const whenTrains = () =>
+    new Promise((resolve) => {
+      const t0 = Date.now();
+      const check = () => (engine.positions(Date.now()).length || Date.now() - t0 > 20_000 ? resolve() : setTimeout(check, 500));
+      check();
+    });
+  const first = parseLink(location.href);
+  if (first) whenTrains().then(() => openLink(first));
+  onAppLink((url) => whenTrains().then(() => openLink(parseLink(url))));
 }
 
 $("about-btn").addEventListener("click", () => {
@@ -803,6 +913,22 @@ $("about-btn").addEventListener("click", () => {
   } else $("about").hidden = true;
 });
 $("about-close").addEventListener("click", () => ($("about").hidden = true));
+$("fav-btn").addEventListener("click", () => {
+  if ($("favs").hidden) {
+    openSheet("favs");
+    renderFavourites();
+  } else $("favs").hidden = true;
+});
+$("favs-close").addEventListener("click", () => ($("favs").hidden = true));
+prefs
+  .get(STORAGE_KEY)
+  .then((v) => {
+    favs = parseFavourites(v);
+    renderFavourites();
+  })
+  .catch(() => {});
+onBackButton(goBack);
+styleStatusBar();
 setupAppBanner();
 $("lang").addEventListener("click", () => {
   lang = lang === "es" ? "en" : "es";
@@ -879,6 +1005,7 @@ $("center-btn").addEventListener("click", () => {
 main();
 
 // Installable app (PWA). Not on localhost, so development always gets fresh files.
-if ("serviceWorker" in navigator && !["localhost", "127.0.0.1"].includes(location.hostname)) {
+// Not in the app: its files are already on the phone.
+if ("serviceWorker" in navigator && !isNative() && !["localhost", "127.0.0.1"].includes(location.hostname)) {
   navigator.serviceWorker.register("sw.js").catch((e) => console.warn("service worker", e));
 }

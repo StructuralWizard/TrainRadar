@@ -63,11 +63,15 @@ await page.waitForTimeout(1000);
 const pick = await page.evaluate(() => {
   const { engine } = window.__trainradar;
   const p = engine.positions(Date.now());
+  // A moving Cercanías train, the one with the longest way to its next stop:
+  // following a train that dwells at a station makes the walker look stopped.
+  let best = null;
   for (let i = 0; i < p.length / 6; i++) {
     const info = JSON.parse(engine.trainJson(i, Date.now()));
-    if (info.feed === "vp_cer" && info.next_stop) return { i, number: info.number };
+    if (info.feed !== "vp_cer" || !info.next_stop || !(info.speed_kmh > 20)) continue;
+    if (!best || info.next_arrival > best.next) best = { i, number: info.number, next: info.next_arrival };
   }
-  return null;
+  return best;
 });
 if (!pick) await fail("no moving Cercanías train in the demo right now");
 const follow = async () => {
