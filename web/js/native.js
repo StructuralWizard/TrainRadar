@@ -180,3 +180,23 @@ export function parseLink(href) {
   if (station) return { type: "station", id: station };
   return null;
 }
+
+/** The app's own native plugin (app/android/…/TrainRadarPlugin.java):
+ * background delay alerts, notifications and the widget. No-ops on the web. */
+export const appNative = {
+  available: () => !!plugin("TrainRadar"),
+  async setAlerts(enabled, lang) {
+    await plugin("TrainRadar")?.setAlerts({ enabled, lang });
+  },
+  async requestNotifications() {
+    const p = plugin("TrainRadar");
+    if (!p) return false;
+    return !!(await p.requestNotifications()).granted;
+  },
+  async notify(trainNo, title, body) {
+    await plugin("TrainRadar")?.notify({ trainNo, title, body });
+  },
+  async refreshWidget() {
+    await plugin("TrainRadar")?.refreshWidget();
+  },
+};

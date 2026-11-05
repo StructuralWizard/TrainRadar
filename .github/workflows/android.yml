@@ -56,11 +56,11 @@ jobs:
           cargo run --release -q -p trainradar-engine --example fixture -- demo/data demo/rt
       - name: Web bundle for the app (TARGET=android, demo data)
         run: TARGET=android DIST=app/www DATA_DIR=demo/data RT_FIXTURES=demo/rt tools/build-web.sh
-      - name: Build the test APKs
+      - name: Unit tests (alert rules) and the test APKs
         id: apks
         run: |
           (cd app && npm ci --no-audit --no-fund && npx cap sync android)
-          cd app/android && ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+          cd app/android && ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest
 
       - name: Emulator smoke test (map renders, a train popup opens)
         timeout-minutes: 25

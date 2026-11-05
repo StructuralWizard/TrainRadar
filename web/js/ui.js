@@ -366,15 +366,25 @@ function popupActions(lang, fav, onShare) {
 /** Settings: TrainRadar Pro and tips (Android app), backup of the user's
  * own data (both). `pro`: entitlement.decide()'s result; `catalogue`:
  * Billing.catalogue() (null outside the app or before Play answers). */
-export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete, onTrips = null }) {
+export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete, onTrips = null, alerts = null }) {
   const out = [];
   if (platform === "android") {
     const sub = catalogue?.find((p) => p.kind === "subscription");
     out.push(el("h3", {}, "TrainRadar Pro"));
     out.push(el("p", { class: pro?.pro ? "pro-on" : "muted", id: "pro-state" }, t(lang, `proState_${pro?.state || "none"}`)));
     out.push(el("p", { class: "small" }, t(lang, "proIncludes")));
-    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails", "proTrips"].map((k) => el("li", {}, t(lang, k)))));
+    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails", "proTrips", "proAlerts", "proWidget"].map((k) => el("li", {}, t(lang, k)))));
     if (pro?.pro && onTrips) out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "trips-btn", onclick: onTrips }, `🧳 ${t(lang, "tripsTitle")}`)));
+    if (pro?.pro && alerts) {
+      out.push(
+        el(
+          "p",
+          {},
+          el("button", { class: "pill", type: "button", id: "alerts-btn", "aria-pressed": String(alerts.on), onclick: alerts.onToggle }, `🔔 ${t(lang, alerts.on ? "alertsOn" : "alertsOff")}`),
+        ),
+        el("p", { class: "small muted" }, t(lang, "alertsNote")),
+      );
+    }
     out.push(el("p", { class: "small muted" }, t(lang, "proSoon")));
     if (!pro?.pro) {
       out.push(

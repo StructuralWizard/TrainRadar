@@ -134,6 +134,22 @@ await pro.addInitScript(() => {
     },
   };
 });
+// …and for the app's own plugin (alerts, widget), recording its calls.
+await pro.addInitScript(() => {
+  const calls = [];
+  window.__nativeCalls = calls;
+  window.Capacitor = {
+    isNativePlatform: () => true,
+    Plugins: {
+      TrainRadar: {
+        setAlerts: async (o) => calls.push(["setAlerts", o]),
+        requestNotifications: async () => (calls.push(["requestNotifications"]), { granted: true }),
+        notify: async (o) => calls.push(["notify", o]),
+        refreshWidget: async () => calls.push(["refreshWidget"]),
+      },
+    },
+  };
+});
 const pp = await pro.newPage();
 pp.on("pageerror", (e) => errors.push(e.message));
 await pp.goto(url);
@@ -162,6 +178,15 @@ await pp.click("#about-btn");
 await pp.click("#settings-btn");
 await pp.waitForSelector("#pro-state.pro-on");
 console.log("pro:", await pp.textContent("#pro-state"));
+// Delay alerts: on → permission asked, background check scheduled, config
+// stored for it; favourites refreshed the widget.
+await pp.click("#alerts-btn");
+await pp.waitForSelector('#alerts-btn[aria-pressed="true"]', { timeout: 3000 }).catch(() => fail("alerts didn't turn on"));
+const native = await pp.evaluate(() => ({ calls: window.__nativeCalls.map((c) => c[0]), cfg: JSON.parse(localStorage.getItem("alert-config") || "{}") }));
+console.log("native:", JSON.stringify(native));
+if (!native.calls.includes("requestNotifications") || !native.calls.includes("setAlerts")) await fail("alerts not scheduled");
+if (!native.calls.includes("refreshWidget")) await fail("saving a favourite didn't refresh the widget");
+if (native.cfg.enabled !== true || native.cfg.minor !== 5 || native.cfg.major !== 15) await fail(`alert config ${JSON.stringify(native.cfg)}`);
 await pp.click("#trips-btn");
 await pp.waitForSelector(".trips-list li");
 console.log("trips:", (await pp.textContent("#trips-body")).replace(/\s+/g, " ").slice(0, 200));

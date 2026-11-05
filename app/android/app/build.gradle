@@ -36,7 +36,11 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // Delay alerts: the 15-minute background check (phase C5c).
+    implementation "androidx.work:work-runtime:2.10.0"
     testImplementation "junit:junit:$junitVersion"
+    // The real org.json for JVM unit tests (Android's is a stub there).
+    testImplementation "org.json:json:20250517"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     androidTestImplementation "androidx.test.espresso:espresso-web:$androidxEspressoCoreVersion"

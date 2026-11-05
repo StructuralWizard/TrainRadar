@@ -43,6 +43,22 @@ map opens without downloading them; live feeds come from the central bucket
   Preferences (backed up by Android, included in the export file) as a versioned JSON
   document with a migration step (`parseTrips`); the plan's SQLite isn't needed at this
   size (a few hundred KB after years).
+- **Delay alerts (Pro):** ⓘ → TrainRadar Pro y ajustes → 🔔. Android asks for the
+  notification permission then. Every 15 min (WorkManager, only with a network) the
+  app reads the public `rt/summary.json` and notifies a favourite train once per level
+  and day: 5+ min late, 15+ min late, cancelled. While the app is open the same check
+  runs every minute from the live engine. The rules exist twice with the same test
+  cases: `web/js/alerts.js` (in the app) and `AlertRules.java` (background,
+  `./gradlew :app:testDebugUnitTest`). Nothing about the user is sent anywhere.
+- **Widget (Pro):** long-press the home screen → Widgets → TrainRadar: up to four
+  favourite trains with their delay in the map's colours, refreshed with the alerts and
+  when the favourites change. A plain `AppWidgetProvider` with `RemoteViews` (Java),
+  not Jetpack Glance as the plan suggested: no Kotlin and Compose toolchain for one
+  small widget.
+- **Native code:** `app/android/app/src/main/java/com/metranos/trainradar/`:
+  `TrainRadarPlugin` (reached from `web/js/native.js` as `appNative`), `AlertsWorker`,
+  `AlertRules`, `Notifier`, `Widget`. They read the app's settings from Capacitor
+  Preferences (`CapacitorStorage`).
 - **Settings (ⓘ → TrainRadar Pro y ajustes):** the Pro screen, tips, Restore, Manage
   subscription (Play's page), and for everyone: export your data to a JSON file
   (`trainradar-backup-YYYYMMDD.json`, through the share sheet), import it (merged, no
