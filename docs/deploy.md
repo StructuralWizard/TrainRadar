@@ -185,7 +185,8 @@ exists.
 
 ### Legal pages
 
-`web/legal/` holds drafts (ES + EN) of the privacy policy, terms, provider identification
-and data licences, linked from the About panel (ⓘ). Fill in the highlighted placeholders
-(company number, registered office, email, dates, governing law) and have them reviewed
-before publishing the Android app.
+`web/legal/` holds the privacy policy, terms, provider identification and data licences
+(ES + EN), linked from the About panel (ⓘ), with Metranos Ltd's details (company
+16886706, 128 City Road, London EC1V 2NX; support@metranos.com; English law). They are
+drafts written without legal advice: have them reviewed before publishing the Android
+app, and update the "last updated" dates when they change.
