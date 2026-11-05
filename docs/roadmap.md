@@ -57,7 +57,7 @@ Renfe's feeds are fetched once, centrally; a backend recorder builds delay histo
 | C3 | History recorder (engine in the Worker) → `summary.json`, D1 history, public API | ✅ recording since 2026-11-04 |
 | C2b | Web history teaser (last 7 days) | ✅ code; shows with `API_PUBLIC_URL` |
 | C4 | Android app (Capacitor), Free: favourites (2), share, links, back button; CI debug APK + emulator test | ✅ code ([android.md](android.md)) |
-| C5 | Pro subscription + tips (Play Billing), on-device features, backup | C5a ✅ billing, Pro screen, tips, unlimited favourites, Pro details, export/import/delete · C5b ✅ my trips, claim helper, CSV and image · C5c ✅ code: delay alerts (background + in app), home-screen widget · next: C5d history + commute |
+| C5 | Pro subscription + tips (Play Billing), on-device features, backup | C5a ✅ billing, Pro screen, tips, unlimited favourites, Pro details, export/import/delete · C5b ✅ my trips, claim helper, CSV and image · C5c ✅ delay alerts (background + in app), home-screen widget · C5d ✅ code: full history (7 days free, up to 12 months Pro), commute mode · left: real purchases on Play's test track |
 | C6 | Store release prep, data safety, legal | |
 | C8 | Yearly / lifetime (later) | |
 | C7 | Optional ads (only if the maintainer says go) | |

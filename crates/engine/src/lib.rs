@@ -800,6 +800,50 @@ impl Engine {
         s
     }
 
+    /// Commute mode (Pro): next trains from `from` to `to` within
+    /// `horizon_secs`: `[{trip_id, route, number, dep, arr, delay,
+    /// expected_dep, expected_arr, canceled, live}]` (unix seconds).
+    #[wasm_bindgen(js_name = commuteJson)]
+    pub fn commute_json(
+        &self,
+        from: &str,
+        to: &str,
+        now_ms: f64,
+        horizon_secs: i32,
+        limit: usize,
+    ) -> String {
+        let rows = places::commute(
+            &self.net,
+            &self.live,
+            from,
+            to,
+            secs(now_ms),
+            i64::from(horizon_secs),
+            limit,
+        );
+        let mut s = String::from("[");
+        for (i, r) in rows.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            let b = &r.board;
+            json::Obj::new(&mut s)
+                .s("trip_id", &b.trip_id)
+                .s("route", &b.route)
+                .s("number", &b.number)
+                .n("dep", b.sched_dep)
+                .n("arr", r.sched_arr_to)
+                .on("delay", b.delay)
+                .n("expected_dep", b.expected())
+                .n("expected_arr", r.expected_arr())
+                .b("canceled", b.canceled)
+                .b("live", b.live)
+                .end();
+        }
+        s.push(']');
+        s
+    }
+
     /// Trains stopped between stations (longest first), as popup JSON.
     #[wasm_bindgen(js_name = stoppedJson)]
     pub fn stopped_json(&self, now_ms: f64) -> String {

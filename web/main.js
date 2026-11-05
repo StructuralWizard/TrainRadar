@@ -21,7 +21,7 @@ import {
 } from "./js/map.js";
 import { formatClock } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
-import { HistoryCache } from "./js/history.js";
+import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { enthusiast } from "./js/features.js";
 import { appNative, canShare, copyText, exportBlob, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
@@ -36,6 +36,8 @@ import {
   favouritesPanel,
   settingsPanel,
   tripsPanel,
+  historyPanel,
+  commutePanel,
   claimBox,
   el,
   incidentsPanel,
@@ -87,7 +89,11 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute"];
+const histApi = new HistoryApi(CONFIG.apiBase);
+let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
+let commute = { from: null, to: null }; // commute mode (Pro)
+const COMMUTE_KEY = "commute";
 let trips = []; // my trips (Pro), trips.js
 let claimFor = null; // the trip whose claim summary is shown
 let lastTripCheck = 0;
@@ -174,6 +180,10 @@ function applyLang() {
   $("settings-title").textContent = t(lang, CONFIG.platform === "android" ? "settingsPro" : "settings");
   $("settings-close").setAttribute("aria-label", t(lang, "close"));
   $("trips-title").textContent = t(lang, "tripsTitle");
+  $("history-title").textContent = t(lang, "historyTitle");
+  $("history-close").setAttribute("aria-label", t(lang, "close"));
+  $("commute-title").textContent = t(lang, "commuteTitle");
+  $("commute-close").setAttribute("aria-label", t(lang, "close"));
   $("trips-close").setAttribute("aria-label", t(lang, "close"));
   $("app-banner-link").textContent = `📱 ${t(lang, "appBanner")}`;
   $("app-banner-close").setAttribute("aria-label", t(lang, "close"));
@@ -527,6 +537,9 @@ function showPopup(open = false) {
       appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
       proLink: CONFIG.platform === "android" && !CONFIG.pro ? () => (openSheet("settings"), renderSettings()) : null,
       trip: CONFIG.platform === "android" && !info.timetable_only ? tripButton(info) : null,
+      onHistory: CONFIG.apiBase && info.history_line
+        ? () => openHistory({ kind: "train", trainNo: info.number, line: info.history_line, product: info.history_product, title: trainTitle(info), days: FREE_DAYS })
+        : null,
       history: info.timetable_only ? null : history.get(info.history_line, info.history_product),
       enthusiast: enthusiast(CONFIG),
       fav: favButton({ type: "train", number: info.number, label: trainTitle(info) }),
@@ -609,6 +622,16 @@ function showStation(f) {
     },
     {
       fav: favButton({ type: "station", id, name, lon, lat }, () => showStation(f)),
+      onHistory: CONFIG.apiBase ? () => openHistory({ kind: "station", id, title: t(lang, "histTitleStation", { name }), days: FREE_DAYS }) : null,
+      commute:
+        CONFIG.platform === "android" && CONFIG.pro
+          ? {
+              isFrom: commute.from?.id === id,
+              isTo: commute.to?.id === id,
+              setFrom: () => saveCommute({ ...commute, from: { id, name, lon, lat } }, () => showStation(f)),
+              setTo: () => saveCommute({ ...commute, to: { id, name, lon, lat } }, () => showStation(f)),
+            }
+          : null,
       onShare: canShare()
         ? () => share({ title: name, text: t(lang, "shareStation", { station: name }), url: `${CONFIG.siteUrl}?station=${encodeURIComponent(id)}` })
         : null,
@@ -734,6 +757,10 @@ function renderSettings() {
         renderTrips();
       },
       alerts: appNative.available() ? { on: alertsOn, onToggle: () => setAlerts(!alertsOn) } : null,
+      onCommute: () => {
+        openSheet("commute");
+        renderCommute();
+      },
       onExport: () =>
         exportFile(backupName(), makeBackup({ favourites: favs, trips, settings: { lang: store.get("lang"), basemap: store.get("basemap") } })).catch((e) => {
           settingsMsg = t(lang, "proError", { error: e.message });
@@ -841,6 +868,97 @@ function renderTrips() {
     }),
   );
   $("trips-body").replaceChildren(...body);
+}
+
+function openHistory(view) {
+  historyView = view;
+  stationPop?.remove();
+  openSheet("history");
+  renderHistory();
+}
+
+async function renderHistory() {
+  if ($("history").hidden || !historyView) return;
+  const v = historyView;
+  const ranges = RANGES.map((days) => ({ days, locked: days > FREE_DAYS && !CONFIG.pro }));
+  const draw = (state, series = [], runs = []) =>
+    $("history-body").replaceChildren(
+      ...historyPanel(lang, {
+        title: v.title,
+        series,
+        runs,
+        days: v.days,
+        ranges,
+        state,
+        onRange: (days) => {
+          historyView = { ...v, days };
+          renderHistory();
+        },
+        onPro: () => {
+          if (CONFIG.platform === "android") {
+            openSheet("settings");
+            renderSettings();
+          } else if (CONFIG.playUrl) {
+            window.open(CONFIG.playUrl, "_blank", "noopener");
+          }
+        },
+      }),
+    );
+  draw("loading");
+  try {
+    if (v.kind === "station") {
+      const r = await histApi.get("station", v.id, v.days);
+      if (historyView === v) draw("ok", dailySeries(r.days));
+    } else {
+      const [line, train] = await Promise.all([histApi.get("line", v.line, v.days), histApi.get("train", v.trainNo, v.days)]);
+      if (historyView === v) draw("ok", dailySeries(line.days, v.product), train.runs || []);
+    }
+  } catch {
+    if (historyView === v) draw("error");
+  }
+}
+
+function saveCommute(next, redraw = () => {}) {
+  commute = next;
+  prefs.set(COMMUTE_KEY, JSON.stringify(next)).catch(() => {});
+  redraw();
+  if (next.from && next.to) {
+    openSheet("commute");
+    renderCommute();
+  }
+}
+
+/** Commute mode (Pro): next trains between the two saved stations. */
+function renderCommute() {
+  if ($("commute").hidden || !engine) return;
+  const { from, to } = commute;
+  // Their Cercanías timetables may not be loaded yet: load, then redraw.
+  for (const st of [from, to].filter(Boolean)) {
+    const d = 0.05;
+    for (const r of ref?.regionsIn([st.lon - d, st.lat - d, st.lon + d, st.lat + d]) || []) {
+      if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(renderCommute).catch(() => {});
+    }
+  }
+  const rows = from && to ? JSON.parse(engine.commuteJson(from.id, to.id, Date.now(), 3 * 3600, 8)) : [];
+  $("commute-body").replaceChildren(
+    ...commutePanel(lang, {
+      from,
+      to,
+      rows,
+      onTrain: (r) => {
+        const info = liveTrain(r.number);
+        if (info) {
+          $("commute").hidden = true;
+          selectTrain(info, { fly: true });
+        }
+      },
+      onSwap: () => saveCommute({ from: commute.to, to: commute.from }),
+      onClear: () => {
+        saveCommute({ from: null, to: null });
+        renderCommute();
+      },
+    }),
+  );
 }
 
 /** Star button state for a popup; `redraw` refreshes that popup. */
@@ -1027,7 +1145,10 @@ function render(force = false) {
   if ((popup || selected) && map.getSource("selected")) showPopup();
   if (!$("delayed").hidden && force) renderDelayedList();
   renderNear(force);
-  if (force) renderFavourites();
+  if (force) {
+    renderFavourites();
+    renderCommute();
+  }
   trackTrips(now);
   checkAlertsLive(now);
 }
@@ -1155,6 +1276,14 @@ async function main() {
     });
   const first = parseLink(location.href);
   if (first) whenTrains().then(() => openLink(first));
+  // Commute mode (Pro): open on the next trains of the saved commute.
+  else
+    whenTrains().then(() => {
+      if (CONFIG.pro && commute.from && commute.to && SHEETS.every((x) => $(x).hidden)) {
+        openSheet("commute");
+        renderCommute();
+      }
+    });
   onAppLink((url) => whenTrains().then(() => openLink(parseLink(url))));
 }
 
@@ -1182,6 +1311,13 @@ prefs
   })
   .catch(() => {});
 prefs
+  .get(COMMUTE_KEY)
+  .then((v) => {
+    const c = JSON.parse(v || "null");
+    if (c && typeof c === "object") commute = { from: c.from || null, to: c.to || null };
+  })
+  .catch(() => {});
+prefs
   .get(ALERT_CONFIG_KEY)
   .then((v) => {
     alertsOn = !!JSON.parse(v || "{}").enabled;
@@ -1191,6 +1327,8 @@ prefs
   .get(TRIPS_KEY)
   .then((v) => (trips = parseTrips(v)))
   .catch(() => {});
+$("history-close").addEventListener("click", () => ($("history").hidden = true));
+$("commute-close").addEventListener("click", () => ($("commute").hidden = true));
 $("trips-close").addEventListener("click", () => {
   $("trips").hidden = true;
   claimFor = null;

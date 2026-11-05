@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { HistoryCache, summarize } from "./history.js";
+import { HistoryApi, HistoryCache, dailySeries, summarize } from "./history.js";
 
 const day = (date, product, o = {}) => ({ date, product, trips: 10, on_time: 8, late_5: 2, late_15: 1, cancelled: 0, median_delay: 2, p90_delay: 9, ...o });
 
@@ -33,4 +33,24 @@ test("one request per line; loading, then the summary; failures retried later", 
   assert.equal(calls.length, 3, "retried after 10 min");
 
   assert.equal(new HistoryCache("").get("10-C5", "CERCANIAS"), null, "no API configured");
+});
+
+test("daily series for charts; one cached request per range", async () => {
+  const rows = [
+    { date: "2026-11-02", product: "AVE", trips: 10, on_time: 9, late_5: 1 },
+    { date: "2026-11-01", product: "AVE", trips: 10, on_time: 5, late_5: 5 },
+    { date: "2026-11-01", product: "ALVIA", trips: 4, on_time: 0, late_5: 4 },
+    { date: "2026-11-03", product: "AVE", trips: 3, on_time: 0, late_5: 0 },
+  ];
+  assert.deepEqual(dailySeries(rows, "AVE"), [
+    { date: "2026-11-01", onTimePct: 50, runs: 10 },
+    { date: "2026-11-02", onTimePct: 90, runs: 10 },
+  ]);
+  assert.deepEqual(dailySeries([{ date: "2026-11-01", calls: 100, on_time: 80, late_5: 20 }]), [{ date: "2026-11-01", onTimePct: 80, runs: 100 }]);
+  const calls = [];
+  const api = new HistoryApi("https://api.example/", async (u) => (calls.push(u), { ok: true, json: async () => ({ runs: [] }) }));
+  await api.get("train", "03071", 30);
+  await api.get("train", "03071", 30);
+  assert.deepEqual(calls, ["https://api.example/v1/history/train/03071?days=30"]);
+  await assert.rejects(new HistoryApi("").get("line", "x", 7));
 });

@@ -139,9 +139,10 @@ function gradeText(lang, g) {
 }
 
 const SVG = "http://www.w3.org/2000/svg";
-function svg(tag, attrs) {
+function svg(tag, attrs, ...children) {
   const e = document.createElementNS(SVG, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  for (const c of children) if (c) e.append(c);
   return e;
 }
 
@@ -216,7 +217,7 @@ export function trainPopup(
   info,
   regionName,
   onIncidents,
-  { napDate, profile, onTrain, appUrl, history, enthusiast = true, fav = null, onShare = null, proLink = null, trip = null } = {},
+  { napDate, profile, onTrain, appUrl, history, enthusiast = true, fav = null, onShare = null, proLink = null, trip = null, onHistory = null } = {},
 ) {
   const title = el(
     "div",
@@ -271,7 +272,7 @@ export function trainPopup(
         : "",
     ),
   );
-  if (history && info.origin) rows.push(historyBox(lang, history, appUrl, proLink));
+  if (history && info.origin) rows.push(historyBox(lang, history, appUrl, proLink, onHistory));
   // A timetabled 0 km/h just means "dwelling at a station": not worth a row.
   if (info.speed_kmh !== null && info.speed_kmh !== undefined && (info.speed_measured || info.speed_kmh > 0)) {
     rows.push(
@@ -366,15 +367,16 @@ function popupActions(lang, fav, onShare) {
 /** Settings: TrainRadar Pro and tips (Android app), backup of the user's
  * own data (both). `pro`: entitlement.decide()'s result; `catalogue`:
  * Billing.catalogue() (null outside the app or before Play answers). */
-export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete, onTrips = null, alerts = null }) {
+export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete, onTrips = null, alerts = null, onCommute = null }) {
   const out = [];
   if (platform === "android") {
     const sub = catalogue?.find((p) => p.kind === "subscription");
     out.push(el("h3", {}, "TrainRadar Pro"));
     out.push(el("p", { class: pro?.pro ? "pro-on" : "muted", id: "pro-state" }, t(lang, `proState_${pro?.state || "none"}`)));
     out.push(el("p", { class: "small" }, t(lang, "proIncludes")));
-    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails", "proTrips", "proAlerts", "proWidget"].map((k) => el("li", {}, t(lang, k)))));
+    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails", "proTrips", "proAlerts", "proWidget", "proHistory", "proCommute"].map((k) => el("li", {}, t(lang, k)))));
     if (pro?.pro && onTrips) out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "trips-btn", onclick: onTrips }, `🧳 ${t(lang, "tripsTitle")}`)));
+    if (pro?.pro && onCommute) out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "commute-btn", onclick: onCommute }, `🏠 ${t(lang, "commuteTitle")}`)));
     if (pro?.pro && alerts) {
       out.push(
         el(
@@ -427,6 +429,109 @@ export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, 
   );
   out.push(el("p", {}, el("button", { class: "pill small danger", type: "button", id: "delete-all", onclick: onDelete }, t(lang, "deleteAll"))));
   if (message) out.push(el("p", { class: "small notice-box", id: "settings-msg", role: "status" }, message));
+  return out;
+}
+
+
+/** Bars of on-time share per day (green ≥ 80 %, amber ≥ 60 %, red below). */
+export function punctualityChart(lang, series) {
+  const w = 300;
+  const h = 90;
+  const n = Math.max(series.length, 1);
+  const bw = w / n;
+  const color = (p) => (p >= 80 ? "#16a34a" : p >= 60 ? "#f59e0b" : "#dc2626");
+  const bars = series.map((d, i) => {
+    const bh = Math.max(1, (d.onTimePct / 100) * h);
+    return svg("rect", { x: (i * bw).toFixed(2), y: (h - bh).toFixed(2), width: Math.max(bw - (n > 60 ? 0 : 1), 0.5).toFixed(2), height: bh.toFixed(2), fill: color(d.onTimePct) },
+      svg("title", {}, document.createTextNode(`${d.date}: ${d.onTimePct} % ${t(lang, "histOnTime")}`)));
+  });
+  return svg("svg", { viewBox: `0 0 ${w} ${h + 14}`, class: "history-chart", role: "img", "aria-label": t(lang, "histChart") },
+    svg("line", { x1: 0, y1: h * 0.2, x2: w, y2: h * 0.2, stroke: "#cbd5e1", "stroke-dasharray": "3 3" }),
+    ...bars,
+    svg("text", { x: 0, y: h + 12, "font-size": 9, fill: "#64748b" }, document.createTextNode(series[0]?.date || "")),
+    svg("text", { x: w, y: h + 12, "font-size": 9, fill: "#64748b", "text-anchor": "end" }, document.createTextNode(series[series.length - 1]?.date || "")));
+}
+
+/** The history screen: range buttons (longer ranges with Pro), the chart of
+ * the line or station, and for a train its runs. */
+export function historyPanel(lang, { title, series, runs, days, ranges, onRange, onPro, state }) {
+  const out = [el("p", {}, el("strong", {}, title))];
+  out.push(
+    el(
+      "p",
+      { class: "popup-actions" },
+      ranges.map((r) =>
+        el(
+          "button",
+          { class: "pill small", type: "button", "aria-pressed": String(r.days === days), onclick: () => (r.locked ? onPro?.() : onRange(r.days)) },
+          `${t(lang, "histDays", { n: r.days })}${r.locked ? " 🔒" : ""}`,
+        ),
+      ),
+    ),
+  );
+  if (state === "loading") return [...out, el("p", { class: "muted" }, t(lang, "loading"))];
+  if (state === "error") return [...out, el("p", { class: "muted" }, t(lang, "histUnavailable"))];
+  if (!series.length && !(runs || []).length) return [...out, el("p", { class: "muted" }, t(lang, "histNone"))];
+  if (series.length) {
+    const avg = Math.round(series.reduce((a, d) => a + d.onTimePct, 0) / series.length);
+    out.push(el("p", { class: "small" }, t(lang, "histAvg", { p: avg, d: series.length })), punctualityChart(lang, series));
+  }
+  if (runs?.length) {
+    out.push(el("h3", {}, t(lang, "histRuns2")));
+    out.push(
+      el(
+        "ul",
+        { class: "board" },
+        [...runs].reverse().slice(0, 30).map((r) => {
+          const d = r.arr_delay_min ?? r.last_delay_min ?? null;
+          return el(
+            "li",
+            {},
+            el("span", {}, r.date.split("-").reverse().join("/")),
+            " ",
+            el("span", { class: "board-delay" }, r.cancelled ? t(lang, "canceled") : d === null ? "—" : formatDelay(lang, d * 60)),
+          );
+        }),
+      ),
+    );
+  }
+  out.push(el("p", { class: "small muted" }, t(lang, "histNote")));
+  return out;
+}
+
+/** Commute mode (Pro): the next trains from one saved station to another. */
+export function commutePanel(lang, { from, to, rows, onTrain, onSwap, onClear }) {
+  if (!from || !to) return [el("p", { class: "muted" }, t(lang, "commuteHelp"))];
+  const clock = (u) => formatClock(u);
+  const out = [el("p", {}, el("strong", {}, `${from.name} → ${to.name}`))];
+  out.push(
+    rows.length
+      ? el(
+          "ul",
+          { class: "board" },
+          rows.map((r) =>
+            el(
+              "li",
+              {},
+              el("span", { class: "board-time" }, clock(r.expected_dep)),
+              " ",
+              r.live ? el("button", { class: "link", onclick: () => onTrain(r) }, el("strong", {}, `${r.route} ${r.number}`)) : el("strong", {}, `${r.route} ${r.number}`),
+              el("span", { class: "board-main muted" }, ` ${t(lang, "commuteArrives", { time: clock(r.expected_arr) })}`),
+              " ",
+              el("span", { class: "board-delay" }, r.canceled ? t(lang, "canceled") : formatDelay(lang, r.delay)),
+            ),
+          ),
+        )
+      : el("p", { class: "muted" }, t(lang, "commuteNone")),
+  );
+  out.push(
+    el(
+      "p",
+      { class: "popup-actions" },
+      el("button", { class: "pill small", type: "button", onclick: onSwap }, t(lang, "commuteSwap")),
+      el("button", { class: "pill small", type: "button", onclick: onClear }, t(lang, "commuteClear")),
+    ),
+  );
   return out;
 }
 
@@ -526,7 +631,7 @@ export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onR
 }
 
 /** The line's last 7 days (phase C2b), from the history API's summary. */
-export function historyBox(lang, h, proUrl, onPro = null) {
+export function historyBox(lang, h, proUrl, onPro = null, onHistory = null) {
   const n = (x) => x.toLocaleString(lang === "en" ? "en-GB" : "es-ES");
   const parts = [t(lang, "histLine", { p: h.onTimePct, l: h.late5Pct })];
   if (h.medianMin !== null && h.medianMin > 0) parts.push(t(lang, "histMedian", { m: h.medianMin }));
@@ -539,6 +644,7 @@ export function historyBox(lang, h, proUrl, onPro = null) {
     el("div", {}, parts.join(" · ")),
     el("div", { class: "small muted" }, runs.join(" · ")),
     el("div", { class: "small muted" }, t(lang, "histNote")),
+    onHistory ? el("button", { class: "link small", type: "button", id: "history-open", onclick: onHistory }, t(lang, "histOpen")) : null,
     onPro
       ? el("button", { class: "link small", type: "button", onclick: onPro }, t(lang, "histPro"))
       : proUrl
@@ -659,12 +765,21 @@ function boardList(lang, board) {
 }
 
 /** Popup for a station: next trains, and trains on their way. */
-export function stationPopup(lang, station, board, approaching, onTrain, { fav = null, onShare = null } = {}) {
+export function stationPopup(lang, station, board, approaching, onTrain, { fav = null, onShare = null, onHistory = null, commute = null } = {}) {
   return el(
     "div",
     { class: "popup" },
     el("div", { class: "popup-title" }, station.name),
     popupActions(lang, fav, onShare),
+    onHistory || commute
+      ? el(
+          "div",
+          { class: "popup-actions" },
+          onHistory ? el("button", { class: "pill small", type: "button", id: "station-history", onclick: onHistory }, `📊 ${t(lang, "histStation")}`) : null,
+          commute ? el("button", { class: "pill small", type: "button", id: "commute-from", onclick: commute.setFrom }, t(lang, commute.isFrom ? "commuteIsFrom" : "commuteFrom")) : null,
+          commute ? el("button", { class: "pill small", type: "button", id: "commute-to", onclick: commute.setTo }, t(lang, commute.isTo ? "commuteIsTo" : "commuteTo")) : null,
+        )
+      : null,
     el("h3", {}, t(lang, "departuresNext")),
     boardList(lang, board),
     el("h3", {}, t(lang, "approachingShort")),

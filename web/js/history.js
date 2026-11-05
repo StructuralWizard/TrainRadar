@@ -79,3 +79,50 @@ export class HistoryCache {
     this.onLoad(line);
   }
 }
+
+/** Ranges of the history screen: 7 days for everyone, longer with Pro. */
+export const RANGES = [7, 30, 90, 365];
+export const FREE_DAYS = 7;
+
+/** One history request (`kind`: line | train | station), cached per page. */
+export class HistoryApi {
+  constructor(base, fetchFn = (...a) => fetch(...a)) {
+    this.base = base;
+    this.fetchFn = fetchFn;
+    this.cache = new Map();
+  }
+
+  get(kind, id, days) {
+    if (!this.base) return Promise.reject(new Error("no history API"));
+    const key = `${kind}/${id}/${days}`;
+    if (!this.cache.has(key)) {
+      const url = `${this.base}v1/history/${kind}/${encodeURIComponent(id)}?days=${days}`;
+      const p = this.fetchFn(url).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      });
+      p.catch(() => this.cache.delete(key)); // try again next time
+      this.cache.set(key, p);
+    }
+    return this.cache.get(key);
+  }
+}
+
+/** Per day, for a chart: `[{date, onTimePct, runs}]` from line or station
+ * rows (line rows filtered to one product). Days without data are left out. */
+export function dailySeries(days, product = null) {
+  const by = new Map();
+  for (const d of days || []) {
+    if (product && d.product !== undefined && d.product !== product) continue;
+    const e = by.get(d.date) || { date: d.date, onTime: 0, known: 0, runs: 0 };
+    const known = (d.on_time ?? 0) + (d.late_5 ?? 0);
+    e.onTime += d.on_time ?? 0;
+    e.known += known;
+    e.runs += d.trips ?? d.calls ?? known;
+    by.set(d.date, e);
+  }
+  return [...by.values()]
+    .filter((e) => e.known > 0)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((e) => ({ date: e.date, onTimePct: Math.round((100 * e.onTime) / e.known), runs: e.runs }));
+}

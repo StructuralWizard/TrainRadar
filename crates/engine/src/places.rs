@@ -147,6 +147,63 @@ pub fn board(
     rows
 }
 
+/// A train from one station to another (commute mode, TrainRadar Pro).
+#[derive(Debug, Clone, PartialEq)]
+pub struct CommuteRow {
+    pub board: BoardRow,
+    /// Scheduled arrival at the destination (unix seconds).
+    pub sched_arr_to: i64,
+}
+
+impl CommuteRow {
+    pub fn expected_arr(&self) -> i64 {
+        self.sched_arr_to + i64::from(self.board.delay.unwrap_or(0))
+    }
+}
+
+/// Next trains leaving `from` that later call at `to`, with live delays.
+pub fn commute(
+    net: &Network,
+    live: &Live,
+    from: &str,
+    to: &str,
+    now: i64,
+    horizon_secs: i64,
+    limit: usize,
+) -> Vec<CommuteRow> {
+    if from == to {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for row in board(net, live, from, now, horizon_secs, usize::MAX) {
+        if row.terminates {
+            continue;
+        }
+        let r = &net.regions[row.trip.region as usize];
+        let pi = r.tt.trips[row.trip.trip as usize].pattern;
+        let (Some(fc), Some(tc)) = (r.calls.get(from), r.calls.get(to)) else {
+            continue;
+        };
+        let st = &r.sched[pi as usize];
+        // Its call at `from` (patterns visit a station once in practice),
+        // then a later call at `to` on the same pattern.
+        let Some(&(_, pf)) = fc.iter().find(|&&(p, _)| p == pi) else {
+            continue;
+        };
+        let start = row.sched_dep - i64::from(st[pf as usize].departure);
+        if let Some(&(_, pt)) = tc.iter().find(|&&(p, pos)| p == pi && pos > pf) {
+            out.push(CommuteRow {
+                sched_arr_to: start + i64::from(st[pt as usize].arrival),
+                board: row,
+            });
+        }
+        if out.len() >= limit {
+            break;
+        }
+    }
+    out
+}
+
 /// A train on the map heading for a station.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Approaching {
@@ -276,6 +333,30 @@ mod tests {
         // Departed trains drop off; the horizon limits the far end.
         let later = board(&net, &live, "B", local(8, 30), 15 * 60, 10);
         assert!(later.is_empty(), "{later:?}");
+    }
+
+    #[test]
+    fn commute_lists_trains_from_one_station_to_another() {
+        let net = with_stations();
+        let live = Live::default();
+        let now = local(7, 55);
+        // A→C: trips at 08:00 and 08:10 (arrive 08:21, 08:31); not the
+        // id-less 09:00 trip beyond the horizon.
+        let rows = commute(&net, &live, "A", "C", now, 30 * 60, 10);
+        let deps: Vec<_> = rows.iter().map(|r| r.board.sched_dep).collect();
+        assert_eq!(deps, [local(8, 0), local(8, 10)]);
+        assert_eq!(rows[0].sched_arr_to, local(8, 21));
+        assert_eq!(rows[1].expected_arr(), local(8, 31));
+        assert!(
+            commute(&net, &live, "C", "A", now, 3_600, 10).is_empty(),
+            "wrong way"
+        );
+        assert!(commute(&net, &live, "A", "A", now, 3_600, 10).is_empty());
+        assert_eq!(
+            commute(&net, &live, "B", "C", now, 3_600, 1).len(),
+            1,
+            "limit"
+        );
     }
 
     #[test]

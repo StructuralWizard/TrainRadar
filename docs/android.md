@@ -55,6 +55,14 @@ map opens without downloading them; live feeds come from the central bucket
   when the favourites change. A plain `AppWidgetProvider` with `RemoteViews` (Java),
   not Jetpack Glance as the plan suggested: no Kotlin and Compose toolchain for one
   small widget.
+- **Full history:** "See history →" in a train's punctuality box, or 📊 in a
+  station's popup: a chart of the share on time per day (line or station) and, for a
+  train, its runs day by day, from the history API. 7 days for everyone (the web too);
+  30, 90 and 365 days with Pro.
+- **Commute (Pro):** in a station popup "I leave from here", in another "I go here".
+  The app then opens on the next trains between them (`Engine.commuteJson`: trains
+  calling at the origin and later at the destination, with live delays); ⓘ → TrainRadar
+  Pro y ajustes → 🏠 opens it any time; swap or clear there.
 - **Native code:** `app/android/app/src/main/java/com/metranos/trainradar/`:
   `TrainRadarPlugin` (reached from `web/js/native.js` as `appNative`), `AlertsWorker`,
   `AlertRules`, `Notifier`, `Widget`. They read the app's settings from Capacitor
