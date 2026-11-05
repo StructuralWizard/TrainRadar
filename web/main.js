@@ -24,14 +24,18 @@ import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { HistoryCache } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { enthusiast } from "./js/features.js";
-import { canShare, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
-import { backupName, makeBackup, mergeFavourites, parseBackup } from "./js/backup.js";
+import { canShare, copyText, exportBlob, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
+import { backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./js/backup.js";
 import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
 import { decide, parseCache } from "./js/entitlement.js";
+import { tripCard } from "./js/card.js";
+import { CLAIMS_URL, TRIPS_KEY, activeTrip, claimText, monthlyStats, parseTrips, serializeTrips, startTrip, tripsCsv, updateTrip } from "./js/trips.js";
 import {
   delayedItem,
   favouritesPanel,
   settingsPanel,
+  tripsPanel,
+  claimBox,
   el,
   incidentsPanel,
   legend,
@@ -82,7 +86,10 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips"];
+let trips = []; // my trips (Pro), trips.js
+let claimFor = null; // the trip whose claim summary is shown
+let lastTripCheck = 0;
 let billing = null; // Google Play (Android app only)
 let entitlement = { pro: false, state: "none", checkedAt: 0 };
 let settingsMsg = "";
@@ -163,6 +170,8 @@ function applyLang() {
   $("favs-close").setAttribute("aria-label", t(lang, "close"));
   $("settings-title").textContent = t(lang, CONFIG.platform === "android" ? "settingsPro" : "settings");
   $("settings-close").setAttribute("aria-label", t(lang, "close"));
+  $("trips-title").textContent = t(lang, "tripsTitle");
+  $("trips-close").setAttribute("aria-label", t(lang, "close"));
   $("app-banner-link").textContent = `📱 ${t(lang, "appBanner")}`;
   $("app-banner-close").setAttribute("aria-label", t(lang, "close"));
   if (!$("about").hidden) renderAbout();
@@ -314,8 +323,14 @@ function renderNear(force = false) {
     const i = engine.findTrain(c.trip_id, c.number);
     return i >= 0 ? trainTitle(JSON.parse(engine.trainJson(i, now))) : c.number;
   };
+  const onboard = JSON.parse(engine.onboardJson());
+  // Sure you're on a train: log the trip (Pro).
+  const top = onboard.candidates?.[0];
+  if (CONFIG.pro && onboard.status === "match" && top?.confidence === "high" && top.index >= 0 && !activeTrip(trips, top.number)) {
+    logTrip(JSON.parse(engine.trainJson(top.index, now)), "onboard");
+  }
   $("onboard").replaceChildren(
-    onboardBlock(lang, JSON.parse(engine.onboardJson()), titles, (c) => {
+    onboardBlock(lang, onboard, titles, (c) => {
       selectTrain(JSON.parse(engine.trainJson(c.index, Date.now())), { fly: true });
     }),
   );
@@ -508,6 +523,7 @@ function showPopup(open = false) {
       onTrain: (i) => selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true }),
       appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
       proLink: CONFIG.platform === "android" && !CONFIG.pro ? () => (openSheet("settings"), renderSettings()) : null,
+      trip: CONFIG.platform === "android" && !info.timetable_only ? tripButton(info) : null,
       history: info.timetable_only ? null : history.get(info.history_line, info.history_product),
       enthusiast: enthusiast(CONFIG),
       fav: favButton({ type: "train", number: info.number, label: trainTitle(info) }),
@@ -668,8 +684,12 @@ function renderSettings() {
         refreshEntitlement();
       },
       onManage: () => billing?.manage(),
+      onTrips: () => {
+        openSheet("trips");
+        renderTrips();
+      },
       onExport: () =>
-        exportFile(backupName(), makeBackup({ favourites: favs, settings: { lang: store.get("lang"), basemap: store.get("basemap") } })).catch((e) => {
+        exportFile(backupName(), makeBackup({ favourites: favs, trips, settings: { lang: store.get("lang"), basemap: store.get("basemap") } })).catch((e) => {
           settingsMsg = t(lang, "proError", { error: e.message });
           renderSettings();
         }),
@@ -678,6 +698,7 @@ function renderSettings() {
           const b = parseBackup(await file.text());
           const m = mergeFavourites(favs, b.favourites, favLimit());
           saveFavourites(m.list);
+          if (b.trips.length) saveTrips(mergeTrips(trips, b.trips));
           for (const [k, v] of Object.entries(b.settings)) store.set(k, v);
           settingsMsg = t(lang, "backupDone", { added: m.added }) + (m.skipped ? t(lang, "backupSkipped", { skipped: m.skipped, limit: favLimit() }) : "");
         } catch (e) {
@@ -692,6 +713,88 @@ function renderSettings() {
       },
     }),
   );
+}
+
+/** "I'm on this train" in a train popup (Android): Pro logs the trip, the
+ * free edition opens the Pro screen. */
+function tripButton(info) {
+  const on = !!activeTrip(trips, info.number);
+  return {
+    on,
+    pro: CONFIG.pro,
+    onToggle: () => {
+      if (!CONFIG.pro) {
+        openSheet("settings");
+        return renderSettings();
+      }
+      if (on) {
+        const t = activeTrip(trips, info.number);
+        saveTrips(trips.map((x) => (x === t ? { ...x, endedAt: Date.now() } : x)));
+      } else {
+        logTrip(info, "manual");
+      }
+      showPopup(true);
+    },
+  };
+}
+
+function logTrip(info, how) {
+  const i = engine.findTrain(info.trip_id, info.number);
+  const route = i >= 0 ? JSON.parse(engine.tripJson(i)) : null;
+  const next = startTrip(trips, info, route, Date.now(), how);
+  if (next !== trips) saveTrips(next);
+}
+
+function saveTrips(list) {
+  trips = list;
+  prefs.set(TRIPS_KEY, serializeTrips(list)).catch((e) => console.warn("trips", e));
+  renderTrips();
+}
+
+/** Follow the trips in progress (every ~15 s). */
+function trackTrips(now) {
+  if (!CONFIG.pro || now - lastTripCheck < 15_000 || !trips.some((t) => !t.endedAt)) return;
+  lastTripCheck = now;
+  let changed = false;
+  const next = trips.map((t) => {
+    if (t.endedAt) return t;
+    const u = updateTrip(t, liveTrain(t.trainNo), now);
+    changed ||= u !== t && JSON.stringify(u.stops) + u.endedAt + u.lastDelayMin !== JSON.stringify(t.stops) + t.endedAt + t.lastDelayMin;
+    return u;
+  });
+  if (changed) saveTrips(next);
+  else trips = next;
+}
+
+function renderTrips() {
+  if ($("trips").hidden) return;
+  const body = [];
+  if (claimFor) body.push(...claimBox(lang, claimText(lang, claimFor), CLAIMS_URL[lang] || CLAIMS_URL.es, async () => {
+    if (!(await copyText(claimText(lang, claimFor)))) share({ title: claimFor.label, text: claimText(lang, claimFor) });
+  }));
+  body.push(
+    ...tripsPanel(lang, {
+      trips,
+      stats: monthlyStats(trips),
+      onClaim: (t) => {
+        claimFor = t;
+        renderTrips();
+        $("trips").scrollTop = 0;
+      },
+      onCard: async (t) => exportBlob(`trainradar-${t.day}-${t.trainNo}.png`, await tripCard(lang, t)).catch((e) => console.warn("card", e)),
+      onDelete: (t) => {
+        if (claimFor?.id === t.id) claimFor = null;
+        saveTrips(trips.filter((x) => x.id !== t.id));
+      },
+      onCsv: () => exportFile(`trainradar-trips-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.csv`, tripsCsv(trips), "text/csv").catch((e) => console.warn("csv", e)),
+      onDeleteAll: () => {
+        if (!window.confirm(t(lang, "tripsDeleteConfirm"))) return;
+        claimFor = null;
+        saveTrips([]);
+      },
+    }),
+  );
+  $("trips-body").replaceChildren(...body);
 }
 
 /** Star button state for a popup; `redraw` refreshes that popup. */
@@ -876,6 +979,7 @@ function render(force = false) {
   if (!$("delayed").hidden && force) renderDelayedList();
   renderNear(force);
   if (force) renderFavourites();
+  trackTrips(now);
 }
 
 function loop() {
@@ -1027,6 +1131,14 @@ prefs
     renderFavourites();
   })
   .catch(() => {});
+prefs
+  .get(TRIPS_KEY)
+  .then((v) => (trips = parseTrips(v)))
+  .catch(() => {});
+$("trips-close").addEventListener("click", () => {
+  $("trips").hidden = true;
+  claimFor = null;
+});
 onBackButton(goBack);
 styleStatusBar();
 setupAppBanner();

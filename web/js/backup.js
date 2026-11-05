@@ -3,6 +3,7 @@
 // location samples, ever. Import validates and merges without duplicates.
 
 import { favKey, parseFavourites } from "./favourites.js";
+import { parseTrips } from "./trips.js";
 
 export const BACKUP_SCHEMA = 1;
 const SETTINGS = ["lang", "basemap"];
@@ -11,9 +12,9 @@ export function backupName(now = new Date()) {
   return `trainradar-backup-${now.toISOString().slice(0, 10).replace(/-/g, "")}.json`;
 }
 
-export function makeBackup({ favourites = [], settings = {} }, now = new Date()) {
+export function makeBackup({ favourites = [], trips = [], settings = {} }, now = new Date()) {
   const s = Object.fromEntries(SETTINGS.filter((k) => typeof settings[k] === "string").map((k) => [k, settings[k]]));
-  return JSON.stringify({ app: "trainradar", schema: BACKUP_SCHEMA, exportedAt: now.toISOString(), favourites, settings: s }, null, 2);
+  return JSON.stringify({ app: "trainradar", schema: BACKUP_SCHEMA, exportedAt: now.toISOString(), favourites, trips, settings: s }, null, 2);
 }
 
 /** Parse a backup file. Throws with a short reason when it isn't one. */
@@ -29,7 +30,7 @@ export function parseBackup(text) {
   if (b.schema > BACKUP_SCHEMA) throw new Error("made by a newer version of the app");
   const settings = {};
   for (const k of SETTINGS) if (typeof b.settings?.[k] === "string" && b.settings[k].length < 20) settings[k] = b.settings[k];
-  return { favourites: parseFavourites(JSON.stringify(b.favourites || [])), settings };
+  return { favourites: parseFavourites(JSON.stringify(b.favourites || [])), trips: parseTrips(JSON.stringify({ schema: 1, trips: b.trips || [] })), settings };
 }
 
 /** Favourites after an import: current ones first, then new ones, up to
@@ -50,4 +51,10 @@ export function mergeFavourites(current, incoming, limit) {
     added += 1;
   }
   return { list, added, skipped };
+}
+
+/** Trips after an import: every trip once (by id), oldest first. */
+export function mergeTrips(current, incoming) {
+  const ids = new Set(current.map((t) => t.id));
+  return [...current, ...incoming.filter((t) => !ids.has(t.id))].sort((a, b) => a.startedAt - b.startedAt);
 }

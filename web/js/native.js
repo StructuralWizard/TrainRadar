@@ -50,7 +50,7 @@ export const prefs = {
 
 /** Save a text file the user chose to export: the Android share sheet
  * (Drive, e-mail, Files…) or a download in the browser. */
-export async function exportFile(name, text) {
+export async function exportFile(name, text, type = "application/json") {
   const fs = plugin("Filesystem");
   const sh = plugin("Share");
   if (fs && sh) {
@@ -58,12 +58,46 @@ export async function exportFile(name, text) {
     await sh.share({ title: name, files: [r.uri], dialogTitle: name });
     return;
   }
-  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const a = Object.assign(document.createElement("a"), { href: url, download: name });
   document.body.append(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/** Save or share a binary file (an image): the share sheet in the app, a
+ * download in the browser. */
+export async function exportBlob(name, blob) {
+  const fs = plugin("Filesystem");
+  const sh = plugin("Share");
+  if (fs && sh) {
+    const data = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result).split(",")[1]);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(blob);
+    });
+    const w = await fs.writeFile({ path: name, data, directory: "CACHE" });
+    await sh.share({ title: name, files: [w.uri], dialogTitle: name });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/** Copy text to the clipboard; false when that isn't possible. */
+export async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Run `handler` when the app comes back to the foreground. */

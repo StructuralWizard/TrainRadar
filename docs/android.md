@@ -33,6 +33,16 @@ map opens without downloading them; live feeds come from the central bucket
   not Pro). "Restore purchases" asks Play again (a new phone, a reinstall).
 - **Pro unlocks now:** unlimited favourites and the enthusiast details. The Pro screen
   lists what's coming as "coming in later versions", not as part of the purchase.
+- **My trips (Pro, `web/js/trips.js`):** "🧳 I'm on this train" in a train popup, or
+  "Am I on this train?" at high confidence, starts a trip. While the train is live the
+  delay at each stop it reaches is kept; it ends at the last stop or 15 min after the
+  train leaves the feed. Monthly figures (trips, late 5+ min, average delay); per trip a
+  **claim summary** (facts only, with a link to Renfe's punctuality commitment page,
+  never a statement about eligibility), an **image card** to share, and a **CSV**
+  export. Only the train and its times are stored, never the location. Stored with
+  Preferences (backed up by Android, included in the export file) as a versioned JSON
+  document with a migration step (`parseTrips`); the plan's SQLite isn't needed at this
+  size (a few hundred KB after years).
 - **Settings (ⓘ → TrainRadar Pro y ajustes):** the Pro screen, tips, Restore, Manage
   subscription (Play's page), and for everyone: export your data to a JSON file
   (`trainradar-backup-YYYYMMDD.json`, through the share sheet), import it (merged, no

@@ -152,10 +152,32 @@ for (const n of live.slice(0, 3)) {
   await pp.click(".popup .fav-btn");
   await pp.waitForSelector('.popup .fav-btn[aria-pressed="true"]', { timeout: 3000 }).catch(() => fail(`Pro couldn't save favourite ${n}`));
 }
+// My trips: log the open train, stop it, claim summary, CSV and image.
+await pp.click(".popup .trip-btn");
+await pp.waitForSelector('.popup .trip-btn[aria-pressed="true"]', { timeout: 3000 }).catch(() => fail("trip not logged"));
+await pp.click(".popup .trip-btn"); // stop: the trip ends
+await pp.waitForSelector('.popup .trip-btn[aria-pressed="false"]');
+await pp.click(".maplibregl-popup-close-button");
 await pp.click("#about-btn");
 await pp.click("#settings-btn");
 await pp.waitForSelector("#pro-state.pro-on");
 console.log("pro:", await pp.textContent("#pro-state"));
+await pp.click("#trips-btn");
+await pp.waitForSelector(".trips-list li");
+console.log("trips:", (await pp.textContent("#trips-body")).replace(/\s+/g, " ").slice(0, 200));
+await pp.click(".trips-list li button:text-is('Reclamar')");
+await pp.waitForSelector("#claim-text");
+const claim = await pp.textContent("#claim-text");
+if (!/^Tren .+ Llegada prevista/.test(claim)) await fail(`claim text: ${claim}`);
+if (!(await pp.$('a[href="https://www.renfe.com/es/es/ayuda/compromiso-puntualidad"]'))) await fail("no link to Renfe's punctuality commitment");
+const [csv] = await Promise.all([pp.waitForEvent("download"), pp.click("#trips-csv")]);
+await csv.saveAs(`${out}/trips.csv`);
+const csvText = await readFile(`${out}/trips.csv`, "utf8");
+if (csvText.trim().split("\n").length !== 2) await fail(`trips CSV: ${csvText}`);
+const [png] = await Promise.all([pp.waitForEvent("download"), pp.click(".trips-list li button:text-is('Imagen')")]);
+if (!png.suggestedFilename().endsWith(".png")) await fail(`card named ${png.suggestedFilename()}`);
+await png.saveAs(`${out}/trip-card.png`);
+await pp.screenshot({ path: `${out}/app-trips.png` });
 
 if (errors.length) await fail(`page errors: ${errors.join("; ")}`);
 console.log("OK");
