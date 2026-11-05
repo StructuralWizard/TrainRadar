@@ -4,4 +4,5 @@
     <string name="title_activity_main">TrainRadar</string>
     <string name="package_name">com.metranos.trainradar</string>
     <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Your favourite trains and their delay (TrainRadar Pro)</string>
 </resources>

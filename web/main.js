@@ -24,11 +24,12 @@ import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { HistoryCache } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { enthusiast } from "./js/features.js";
-import { canShare, copyText, exportBlob, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
+import { appNative, canShare, copyText, exportBlob, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
 import { backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./js/backup.js";
 import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
 import { decide, parseCache } from "./js/entitlement.js";
 import { tripCard } from "./js/card.js";
+import { ALERT_CONFIG_KEY, ALERT_STATE_KEY, MAJOR, MINOR, decideAlerts, liveState } from "./js/alerts.js";
 import { CLAIMS_URL, TRIPS_KEY, activeTrip, claimText, monthlyStats, parseTrips, serializeTrips, startTrip, tripsCsv, updateTrip } from "./js/trips.js";
 import {
   delayedItem,
@@ -90,6 +91,8 @@ const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "tr
 let trips = []; // my trips (Pro), trips.js
 let claimFor = null; // the trip whose claim summary is shown
 let lastTripCheck = 0;
+let alertsOn = false; // delay alerts (Pro), alerts.js
+let lastAlertCheck = 0;
 let billing = null; // Google Play (Android app only)
 let entitlement = { pro: false, state: "none", checkedAt: 0 };
 let settingsMsg = "";
@@ -638,8 +641,50 @@ async function refreshEntitlement() {
   if (changed) {
     popupKey = "";
     render(true);
+    if (!next.pro && alertsOn) setAlerts(false);
+    appNative.refreshWidget().catch(() => {});
   }
   renderSettings();
+}
+
+/** What the background check needs (read natively from Preferences). */
+function writeAlertConfig() {
+  const cfg = { enabled: alertsOn, lang, liveBase: CONFIG.liveBase, minor: MINOR, major: MAJOR };
+  return prefs.set(ALERT_CONFIG_KEY, JSON.stringify(cfg)).catch(() => {});
+}
+
+async function setAlerts(on) {
+  if (on && !(await appNative.requestNotifications().catch(() => false))) {
+    settingsMsg = t(lang, "alertsDenied");
+    return renderSettings();
+  }
+  alertsOn = on;
+  await writeAlertConfig();
+  await appNative.setAlerts(on, lang).catch((e) => console.warn("alerts", e));
+  settingsMsg = "";
+  renderSettings();
+}
+
+/** While the app is open: the same alerts, live from the engine (every minute). */
+async function checkAlertsLive(now) {
+  if (!alertsOn || !CONFIG.pro || now - lastAlertCheck < 60_000) return;
+  lastAlertCheck = now;
+  const trains = new Map();
+  for (const f of favs) {
+    if (f.type !== "train") continue;
+    const info = liveTrain(f.number);
+    if (info) trains.set(String(f.number).replace(/^0+/, ""), liveState(info));
+  }
+  if (!trains.size) return;
+  let state = {};
+  try {
+    state = JSON.parse((await prefs.get(ALERT_STATE_KEY)) || "{}");
+  } catch {
+    state = {};
+  }
+  const r = decideAlerts(favs, trains, state, new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(now)), { lang });
+  await prefs.set(ALERT_STATE_KEY, JSON.stringify(r.state)).catch(() => {});
+  for (const a of r.alerts) appNative.notify(a.trainNo, a.title, a.body).catch(() => {});
 }
 
 async function startBilling() {
@@ -688,6 +733,7 @@ function renderSettings() {
         openSheet("trips");
         renderTrips();
       },
+      alerts: appNative.available() ? { on: alertsOn, onToggle: () => setAlerts(!alertsOn) } : null,
       onExport: () =>
         exportFile(backupName(), makeBackup({ favourites: favs, trips, settings: { lang: store.get("lang"), basemap: store.get("basemap") } })).catch((e) => {
           settingsMsg = t(lang, "proError", { error: e.message });
@@ -815,7 +861,10 @@ function favButton(item, redraw = () => showPopup(true)) {
 
 function saveFavourites(list) {
   favs = list;
-  prefs.set(STORAGE_KEY, JSON.stringify(list)).catch((e) => console.warn("favourites", e));
+  prefs
+    .set(STORAGE_KEY, JSON.stringify(list))
+    .then(() => appNative.refreshWidget())
+    .catch((e) => console.warn("favourites", e));
   renderFavourites();
 }
 
@@ -980,6 +1029,7 @@ function render(force = false) {
   renderNear(force);
   if (force) renderFavourites();
   trackTrips(now);
+  checkAlertsLive(now);
 }
 
 function loop() {
@@ -1132,6 +1182,12 @@ prefs
   })
   .catch(() => {});
 prefs
+  .get(ALERT_CONFIG_KEY)
+  .then((v) => {
+    alertsOn = !!JSON.parse(v || "{}").enabled;
+  })
+  .catch(() => {});
+prefs
   .get(TRIPS_KEY)
   .then((v) => (trips = parseTrips(v)))
   .catch(() => {});
@@ -1146,6 +1202,7 @@ $("lang").addEventListener("click", () => {
   lang = lang === "es" ? "en" : "es";
   store.set("lang", lang);
   applyLang();
+  if (alertsOn) writeAlertConfig();
 });
 $("delayed-btn").addEventListener("click", () => {
   const panel = $("delayed");
