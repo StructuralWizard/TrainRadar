@@ -59,9 +59,11 @@ if [ -n "${DIST:-}" ]; then
     grep -q 'platform: "android"' "$DIST/js/config.js" || { echo "platform not set" >&2; exit 1; }
   fi
   if [ -n "${RT_FIXTURES:-}" ]; then
-    # Test builds: feeds from bundled fixtures, polled like the pass-through.
+    # Test builds: feeds from bundled fixtures, polled like the pass-through;
+    # the history API at "/" (absent in the APK: the teaser just stays hidden;
+    # the browser test answers it).
     mkdir -p "$DIST/rt" && cp "$RT_FIXTURES"/*.pb "$DIST/rt/"
-    sed -i 's#liveBase: "[^"]*"#liveBase: ""#; s#rtBase: "[^"]*"#rtBase: "rt/"#; s#apiBase: "[^"]*"#apiBase: ""#' "$DIST/js/config.js"
+    sed -i 's#liveBase: "[^"]*"#liveBase: ""#; s#rtBase: "[^"]*"#rtBase: "rt/"#; s#apiBase: "[^"]*"#apiBase: "/"#' "$DIST/js/config.js"
     # The Android smoke test (Espresso-web) reads the page with injected
     # scripts, which need eval. Test builds only: real builds keep the CSP.
     sed -i "s#script-src 'self' 'wasm-unsafe-eval'#script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'#" "$DIST/index.html"

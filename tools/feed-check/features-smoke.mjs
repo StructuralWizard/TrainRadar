@@ -37,7 +37,7 @@ const number = first.number;
 await page.fill("#search-q", number);
 await page.waitForSelector("#search-results li button", { timeout: 5000 }).catch(() => fail("no search results"));
 console.log("search:", number, "→", (await page.textContent("#search-results")).replace(/\s+/g, " "));
-await page.click("#search-results li button");
+await page.click(`#search-results li button:has-text("${number}")`);
 await page.waitForSelector(".popup", { timeout: 5000 }).catch(() => fail("search didn't open the train"));
 const title = await page.textContent(".popup .popup-title");
 if (!title.includes(number)) await fail(`popup shows ${title}, not ${number}`);
@@ -46,12 +46,28 @@ for (const want of ["Posición: GPS de Renfe", "tiempo real"]) {
   if (!popupText.includes(want)) await fail(`popup lacks "${want}"`);
 }
 
+const openTrainAgain = async () => {
+  if (await page.$(".popup .popup-title")) return;
+  await page.fill("#search-q", number);
+  await page.waitForSelector("#search-results li button");
+  await page.click(`#search-results li button:has-text("${number}")`);
+  await page.waitForSelector(".popup .popup-title");
+};
 // Line punctuality, last 7 days (the dev server stands in for the API).
 if (first.origin && !first.timetable_only) {
   await page.waitForSelector(".popup #history-box", { timeout: 5000 }).catch(() => fail("no history teaser"));
   const h = (await page.textContent("#history-box")).replace(/\s+/g, " ");
   console.log("history:", h);
   if (!/85 % a su hora/.test(h) || !/en 7 días/.test(h)) await fail(`history teaser says "${h}"`);
+  // The history screen: 7 days with a chart; longer ranges are Pro (locked on the web).
+  await page.click("#history-open");
+  await page.waitForSelector("#history-body .history-chart rect", { timeout: 5000 }).catch(() => fail("history chart missing"));
+  const bars = await page.$$eval("#history-body .history-chart rect", (r) => r.length);
+  const locked = await page.$$eval("#history-body button", (b) => b.filter((x) => x.textContent.includes("🔒")).length);
+  console.log("history sheet:", bars, "bars,", locked, "locked ranges");
+  if (bars !== 7 || locked !== 3) await fail(`history sheet: ${bars} bars, ${locked} locked`);
+  await page.click("#history-close");
+  await openTrainAgain();
 }
 
 // Drag the popup by its title: it moves and loses its pointer. The popup

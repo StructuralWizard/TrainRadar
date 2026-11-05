@@ -114,6 +114,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .popup-actions .pill.small { font-size: 12px; padding: 2px 10px; }
 .popup-actions .fav-btn[aria-pressed="true"] { color: #b45309; border-color: #f59e0b; }
 .popup-actions .fav-full { flex-basis: 100%; }
+.history-chart { width: 100%; height: auto; display: block; margin: 4px 0; }
 .trips-stats { border-collapse: collapse; margin: 4px 0 8px; }
 .trips-stats th, .trips-stats td { padding: 2px 8px 2px 0; text-align: left; }
 .claim-text { white-space: pre-wrap; font: inherit; font-size: 13px; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 8px; }

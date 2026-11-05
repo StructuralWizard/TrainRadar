@@ -151,6 +151,18 @@ await pro.addInitScript(() => {
   };
 });
 const pp = await pro.newPage();
+// The history API (absent from the static bundle): made-up days.
+await pp.route("**/v1/history/**", (route) => {
+  const u = new URL(route.request().url());
+  const n = Number(u.searchParams.get("days")) || 7;
+  const dates = Array.from({ length: n }, (_, i) => new Date(Date.now() - (n - i) * 86_400_000).toISOString().slice(0, 10));
+  const kind = u.pathname.split("/")[3];
+  const products = ["CERCANIAS", "AVE", "ALVIA", "MD", "AVLO", "AVANT", "REGIONAL", "INTERCITY"];
+  const body = kind === "train"
+    ? { runs: dates.map((date, i) => ({ date, arr_delay_min: i % 9, cancelled: false })) }
+    : { days: dates.flatMap((date) => products.map((product) => ({ date, product, trips: 20, on_time: 17, late_5: 3, late_15: 1, cancelled: 0, median_delay: 2 }))) };
+  route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
+});
 pp.on("pageerror", (e) => errors.push(e.message));
 await pp.goto(url);
 await pp.waitForFunction(() => window.__trainradar?.engine?.positions(Date.now()).length > 0, null, { timeout: 30000 });
@@ -168,6 +180,20 @@ for (const n of live.slice(0, 3)) {
   await pp.click(".popup .fav-btn");
   await pp.waitForSelector('.popup .fav-btn[aria-pressed="true"]', { timeout: 3000 }).catch(() => fail(`Pro couldn't save favourite ${n}`));
 }
+// Pro history: 30 days unlocked.
+await pp.click("#history-open").catch(() => fail("no history link in the Pro popup"));
+await pp.waitForSelector("#history-body .history-chart rect");
+await pp.click("#history-body button:text-is('30 días')");
+await pp.waitForFunction(() => document.querySelectorAll("#history-body .history-chart rect").length === 30, null, { timeout: 5000 })
+  .catch(() => fail("Pro didn't get 30 days of history"));
+await pp.click("#history-close");
+if (!(await pp.$(".popup .trip-btn"))) {
+  await pp.fill("#search-q", live[2]);
+  await pp.waitForSelector("#search-results li button");
+  await pp.click("#search-results li button");
+  await pp.waitForSelector(".popup .trip-btn");
+}
+
 // My trips: log the open train, stop it, claim summary, CSV and image.
 await pp.click(".popup .trip-btn");
 await pp.waitForSelector('.popup .trip-btn[aria-pressed="true"]', { timeout: 3000 }).catch(() => fail("trip not logged"));
@@ -203,6 +229,20 @@ const [png] = await Promise.all([pp.waitForEvent("download"), pp.click(".trips-l
 if (!png.suggestedFilename().endsWith(".png")) await fail(`card named ${png.suggestedFilename()}`);
 await png.saveAs(`${out}/trip-card.png`);
 await pp.screenshot({ path: `${out}/app-trips.png` });
+
+// Commute mode: a saved commute opens on its next trains at start.
+const pair = await pp.evaluate(() => {
+  const { engine } = window.__trainradar;
+  const st = JSON.parse(engine.stationsGeoJson()).features.map((f) => ({ id: f.properties.id, name: f.properties.name, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] }));
+  for (const a of st) for (const b of st) if (a.id !== b.id && JSON.parse(engine.commuteJson(a.id, b.id, Date.now(), 3 * 3600, 8)).length) return { from: a, to: b };
+  return null;
+});
+if (!pair) await fail("no commute in the demo data");
+await pp.evaluate((c) => localStorage.setItem("commute", JSON.stringify(c)), pair);
+await pp.reload();
+await pp.waitForSelector("#commute:not([hidden]) #commute-body li", { timeout: 30000 }).catch(() => fail("commute didn't open at start"));
+console.log("commute:", (await pp.textContent("#commute-body")).replace(/\s+/g, " ").slice(0, 160));
+await pp.screenshot({ path: `${out}/app-commute.png` });
 
 if (errors.length) await fail(`page errors: ${errors.join("; ")}`);
 console.log("OK");

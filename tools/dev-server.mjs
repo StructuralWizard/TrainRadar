@@ -65,17 +65,28 @@ async function sendStatus(res) {
 }
 
 function sendFakeHistory(res, url) {
-  const line = decodeURIComponent(url.pathname.split("/").pop());
-  const products = ["CERCANIAS", "AVE", "ALVIA", "MD", "AVLO", "AVANT", "REGIONAL", "INTERCITY"];
-  const days = [];
-  for (let i = 7; i >= 1; i--) {
-    const date = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
-    for (const product of products) {
-      days.push({ date, product, trips: 20, on_time: 17, late_5: 3, late_15: 1, cancelled: i === 3 ? 1 : 0, median_delay: 2, p90_delay: 8 });
-    }
+  const [, , , kind, raw] = url.pathname.split("/");
+  const id = decodeURIComponent(raw || "");
+  const n = Math.min(365, Number(url.searchParams.get("days")) || 7);
+  const dates = [];
+  for (let i = n; i >= 1; i--) dates.push(new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10));
+  let body;
+  if (kind === "train") {
+    body = { trainNo: id.replace(/^0+/, ""), runs: dates.map((date, i) => ({ date, arr_delay_min: (i * 7) % 23, max_delay_min: (i * 7) % 23, cancelled: false, origin_id: "A", dest_id: "B", stops: [] })) };
+  } else if (kind === "station") {
+    body = { stopId: id, days: dates.map((date) => ({ date, calls: 100, on_time: 85, late_5: 15, late_15: 4, median_delay: 1, p90_delay: 7 })) };
+  } else {
+    const products = ["CERCANIAS", "AVE", "ALVIA", "MD", "AVLO", "AVANT", "REGIONAL", "INTERCITY"];
+    const days = [];
+    dates.forEach((date, i) => {
+      for (const product of products) {
+        days.push({ date, product, trips: 20, on_time: 17, late_5: 3, late_15: 1, cancelled: i === n - 3 ? 1 : 0, median_delay: 2, p90_delay: 8 });
+      }
+    });
+    body = { line: id, days };
   }
   res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-  res.end(JSON.stringify({ line, days }));
+  res.end(JSON.stringify(body));
 }
 
 function send(res, status, text) {
@@ -98,9 +109,9 @@ createServer(async (req, res) => {
     return res.end(Buffer.from(await r.arrayBuffer()));
   }
   if (url.pathname.startsWith("/data/")) return sendFile(res, DATA, url.pathname.slice(6));
-  // A stand-in for the history API (backend/src/api.js): 7 made-up days for
-  // any line, so the popup's teaser shows locally and in the browser tests.
-  if (url.pathname.startsWith("/v1/history/line/")) return sendFakeHistory(res, url);
+  // A stand-in for the history API (backend/src/api.js): made-up days for any
+  // line, train or station, so the history shows locally and in the tests.
+  if (/^\/v1\/history\/(line|train|station)\//.test(url.pathname)) return sendFakeHistory(res, url);
   // Tests only: TEST_PLAY_URL fills CONFIG.playUrl, to test the app links.
   if (process.env.TEST_PLAY_URL && url.pathname === "/js/config.js") {
     const js = (await readFile(join(ROOT, "js/config.js"), "utf8")).replace('playUrl: ""', `playUrl: ${JSON.stringify(process.env.TEST_PLAY_URL)}`);
