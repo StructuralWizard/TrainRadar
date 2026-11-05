@@ -4,7 +4,7 @@
 # Used by CI (try-out APK) and by the maintainer for release builds
 # (docs/android.md).
 #   LIVE_BASE=https://live.example API_BASE=https://api.example tools/build-app.sh
-#   [SITE=https://trainradar.pages.dev]
+#   [SITE=https://trainradar.pages.dev] [APP_VERSION=2.0.0]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 : "${LIVE_BASE:?set LIVE_BASE to the public URL of the live bucket}"
@@ -23,6 +23,6 @@ rm -rf app/www
 # The bucket also serves each feed on its own: the app's fallback source
 # (the pass-through Worker only answers the website).
 RT_BASE="${LIVE_BASE%/}/rt/" LIVE_BASE="$LIVE_BASE" API_BASE="${API_BASE:-}" \
-  TARGET=android DIST=app/www DATA_DIR="$data" tools/build-web.sh
+  APP_VERSION="${APP_VERSION:-}" TARGET=android DIST=app/www DATA_DIR="$data" tools/build-web.sh
 (cd app && npm ci --no-audit --no-fund && npx cap sync android)
 echo "app/android ready: cd app/android && ./gradlew assembleDebug (or bundleRelease)"

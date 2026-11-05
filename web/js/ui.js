@@ -185,7 +185,7 @@ export function profileChart(lang, p) {
 /** About panel: what TrainRadar is, where the live data comes from, legal
  * pages, licences, and (when configured) the app and coffee links. The
  * coffee link is web only, never inside the Android app. */
-export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web", feedMode = "fallback", onSettings = null } = {}) {
+export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web", feedMode = "fallback", onSettings = null, version = "dev" } = {}) {
   const link = (href, text) => el("a", { href, target: "_blank", rel: "noopener" }, text);
   const out = [el("p", {}, t(lang, "aboutText"))];
   if (onSettings) {
@@ -209,6 +209,7 @@ export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web
   );
   out.push(...officialLinks(lang));
   out.push(el("p", { class: "small" }, link("https://github.com/StructuralWizard/TrainRadar", `${t(lang, "sourceCode")} ↗`)));
+  out.push(el("p", { class: "small muted", id: "about-version" }, t(lang, "aboutBy", { v: version })));
   return out;
 }
 
@@ -627,7 +628,7 @@ export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onR
       remove,
     );
   });
-  return [el("ul", { class: "board" }, items), el("p", { class: "small muted" }, t(lang, "favNote", { n: limit }))];
+  return [el("ul", { class: "board" }, items), el("p", { class: "small muted" }, Number.isFinite(limit) ? t(lang, "favNote", { n: limit }) : t(lang, "favNotePro"))];
 }
 
 /** The line's last 7 days (phase C2b), from the history API's summary. */

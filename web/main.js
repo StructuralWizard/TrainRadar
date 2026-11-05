@@ -1081,6 +1081,7 @@ function renderAbout() {
       coffeeUrl: CONFIG.coffeeUrl,
       platform: CONFIG.platform,
       feedMode: feeds?.mode() || "fallback",
+      version: CONFIG.appVersion,
       onSettings: () => {
         openSheet("settings");
         renderSettings();

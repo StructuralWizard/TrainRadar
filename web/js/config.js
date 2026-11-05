@@ -20,6 +20,8 @@ export const CONFIG = {
   zoom: 5.2,
   // Load a Cercanías núcleo's timetable once this zoomed in over it.
   regionZoom: 8,
+  // App version shown in About (set by tools/build-web.sh from APP_VERSION).
+  appVersion: "dev",
   // The public site, for shared links (…?train=03020).
   siteUrl: "https://trainradar.pages.dev/",
   // "web" or "android" (tools/build-web.sh --target android, phase C4).
