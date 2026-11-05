@@ -84,26 +84,77 @@ bundle in a browser (favourites and their limit, links, no coffee link).
 
 The upload key never goes in the repository. Turn on **Play App Signing** when you
 create the app in Play Console, so Google holds the app signing key and your upload
-key can be replaced if lost.
+key can be replaced if lost. On Windows, run everything below in **WSL** (Ubuntu): the
+build scripts are bash.
 
-1. Install Java 21, Node 22, Rust (with `wasm32-unknown-unknown`), `wasm-bindgen-cli`
-   (the version in `Cargo.lock`), and Android Studio (or the command-line SDK).
-2. Create the upload key once and keep it, and its passwords, outside the repository
-   (e.g. in your password manager):
-   ```sh
-   keytool -genkeypair -v -keystore ~/keys/trainradar-upload.jks -alias upload \
-     -keyalg RSA -keysize 4096 -validity 10000
-   ```
-3. Build the bundle with live data and sign it:
-   ```sh
-   LIVE_BASE=https://live.mytrainradar.com API_BASE=https://api.mytrainradar.com tools/build-app.sh
-   cd app/android
-   ./gradlew bundleRelease
-   jarsigner -keystore ~/keys/trainradar-upload.jks \
-     app/build/outputs/bundle/release/app-release.aab upload
-   ```
-4. Raise `versionCode` (and `versionName`) in `app/android/app/build.gradle` for every
-   upload. Tag the commit (`v0.4.0`, …) so each store version matches the code.
+### Once: tools
+
+- [ ] **Android Studio** (https://developer.android.com/studio). Open it once and let it
+      install the SDK. It also brings Java 21 (`JAVA_HOME` = Android Studio's `jbr`
+      folder if `java -version` shows something older).
+- [ ] **Node 22** (https://nodejs.org, or `nvm install 22`).
+- [ ] **Rust** (https://rustup.rs). `rust-toolchain.toml` picks the right version and
+      the WebAssembly target by itself.
+- [ ] **wasm-bindgen-cli**, the same version as the engine:
+      `cargo install wasm-bindgen-cli --version 0.2.130 --locked`
+- [ ] **jq** and **curl** (`brew install jq` / `sudo apt install jq curl`). Optional:
+      **binaryen** (`wasm-opt`, a smaller engine).
+- [ ] Check: `java -version` (21), `node -v` (22), `wasm-bindgen --version` (0.2.130),
+      `echo $ANDROID_HOME` (the SDK folder; Android Studio → Settings → Android SDK shows
+      it; add `export ANDROID_HOME=…` to your shell profile).
+
+### Once: the upload key
+
+- [ ] Create it outside the repository and keep the file and both passwords in your
+      password manager. If you lose it, Play can reset it (Play App Signing), but it
+      takes days.
+      ```sh
+      mkdir -p ~/keys
+      keytool -genkeypair -v -keystore ~/keys/trainradar-upload.jks -alias upload \
+        -keyalg RSA -keysize 4096 -validity 10000
+      ```
+- [ ] Never copy it into the repository (`*.jks` and `*.keystore` are ignored anyway).
+
+### Every release
+
+- [ ] Get the code: `git clone https://github.com/StructuralWizard/TrainRadar.git`
+      (first time), then `git checkout main && git pull`.
+- [ ] Raise the version in `app/android/app/build.gradle`: `versionCode` +1 (Play
+      refuses a number it has seen) and `versionName` (e.g. `0.5.0`). Commit it in a PR,
+      or tell Claude to.
+- [ ] Build the app with the deployed data and the live feeds:
+      ```sh
+      LIVE_BASE=https://live.mytrainradar.com API_BASE=https://api.mytrainradar.com tools/build-app.sh
+      ```
+      It ends with "app/android ready".
+- [ ] Build the bundle and sign it with the upload key:
+      ```sh
+      cd app/android
+      ./gradlew bundleRelease
+      jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+        -keystore ~/keys/trainradar-upload.jks \
+        app/build/outputs/bundle/release/app-release.aab upload
+      jarsigner -verify app/build/outputs/bundle/release/app-release.aab   # "jar verified."
+      ```
+- [ ] Play Console → TrainRadar → **Testing → Internal testing** → Create new release →
+      upload `app-release.aab` → release notes (ES and EN) → Save → Review → Roll out.
+- [ ] On your phone: open the internal testing link (Testers tab), install from Play,
+      and check: the map opens, live trains move, favourites, location, and in ⓘ →
+      TrainRadar Pro y ajustes the price shows; with a licence-tester account buy,
+      restore and cancel Pro and a tip.
+- [ ] Tag the release so the store version matches the code:
+      `git tag v0.5.0 && git push origin v0.5.0` (or ask Claude to prepare it).
+
+### If something goes wrong
+
+- "SDK location not found": set `ANDROID_HOME` (above) or create
+  `app/android/local.properties` with `sdk.dir=/path/to/Android/sdk` (ignored by git).
+- "Unsupported class file major version": Java isn't 21; point `JAVA_HOME` at Android
+  Studio's `jbr`.
+- `wasm-bindgen` version mismatch: install exactly 0.2.130 (above).
+- Play says "version code already used": raise `versionCode` again.
+- Products show no price in the app: the products must be **active** in Play Console and
+  the app installed **from Play** (internal testing), not a sideloaded APK.
 
 Later, with the maintainer's approval, the upload key can become a GitHub Actions secret
 for a `release-android.yml` that runs on tags only (plan C, phase C6).
