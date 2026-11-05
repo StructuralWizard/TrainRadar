@@ -1,6 +1,7 @@
 # Creates a tag and GitHub release. Run manually from the Actions tab after a
 # phase is merged: Release → Run workflow → tag (e.g. v0.2.0) and target.
-# Notes come from docs/releases/<tag>.md on main.
+# Notes come from docs/releases/<tag>.md on main. A second job builds the
+# Android store bundle (unsigned AAB) for the tag and attaches it.
 name: Release
 
 on:
@@ -39,3 +40,53 @@ jobs:
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$TARGET" \
             --title "$TAG – $(head -1 "$notes" | sed 's/^# *//')" \
             --notes-file <(tail -n +2 "$notes")
+
+  # The Android app's store bundle for this release, attached to it unsigned:
+  # the maintainer signs it with the upload key on their computer and uploads
+  # it to Play (docs/android.md → Release build). versionCode comes from the
+  # tag: vX.Y.Z → X·10000 + Y·100 + Z. Play release notes come from the
+  # "## Google Play" section of docs/releases/<tag>.md.
+  aab:
+    name: store bundle (unsigned AAB)
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Java 21, Android SDK, wasm-bindgen
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          v=$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name=="wasm-bindgen") | .version')
+          cargo install wasm-bindgen-cli --version "$v" --locked
+          sudo apt-get install -y binaryen
+      - name: Build the bundle and the Play release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          LIVE_BASE: ${{ vars.LIVE_PUBLIC_URL }}
+          API_BASE: ${{ vars.API_PUBLIC_URL }}
+        run: |
+          [[ "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "bad tag: $TAG"; exit 1; }
+          [ -n "$LIVE_BASE" ] || { echo "::error::LIVE_PUBLIC_URL isn't set"; exit 1; }
+          v="${TAG#v}"
+          code=$(( BASH_REMATCH[1] * 10000 + BASH_REMATCH[2] * 100 + BASH_REMATCH[3] ))
+          git fetch --depth 1 origin "refs/tags/$TAG:refs/tags/$TAG"
+          git checkout --quiet "$TAG"
+          APP_VERSION="$v" tools/build-app.sh
+          (cd app/android && ./gradlew --no-daemon :app:bundleRelease -PversionCode="$code" -PversionName="$v")
+          cp app/android/app/build/outputs/bundle/release/app-release.aab "trainradar-$v-unsigned.aab"
+          sed -n '/^## Google Play/,$p' "docs/releases/$TAG.md" | tail -n +2 > "play-release-notes-$v.txt"
+          gh release upload "$TAG" "trainradar-$v-unsigned.aab" "play-release-notes-$v.txt" --repo "$GITHUB_REPOSITORY"
+          echo "Store bundle: trainradar-$v-unsigned.aab (versionCode $code), attached to the $TAG release. Sign it, then upload it to Play." >> "$GITHUB_STEP_SUMMARY"

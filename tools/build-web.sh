@@ -51,6 +51,10 @@ if [ -n "${DIST:-}" ]; then
   rm -f "$DIST"/js/*.test.mjs "$DIST"/pkg/.gitignore "$DIST"/pkg/.gitkeep
   sed -i "s#const VERSION = \"dev\";#const VERSION = \"${VERSION:-$(date +%s)}\";#" "$DIST/sw.js"
   if [ -n "${DATA_DIR:-}" ]; then cp -r "$DATA_DIR" "$DIST/data"; fi
+  if [ -n "${APP_VERSION:-}" ]; then
+    case "$APP_VERSION" in *[!0-9A-Za-z.-]*) echo "bad APP_VERSION" >&2; exit 1 ;; esac
+    sed -i "s#appVersion: \"dev\"#appVersion: \"$APP_VERSION\"#" "$DIST/js/config.js"
+  fi
   if [ "${TARGET:-web}" = "android" ]; then
     # In the app the files are on the phone: no service worker, no Pages
     # headers; the coffee link never shows (Play rules on external payments).

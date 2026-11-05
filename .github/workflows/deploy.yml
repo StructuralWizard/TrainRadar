@@ -171,7 +171,7 @@ jobs:
           DIST: dist
           DATA_DIR: build/data
           VERSION: ${{ github.sha }}
-        run: tools/build-web.sh
+        run: APP_VERSION="web-${GITHUB_SHA::7}" tools/build-web.sh
       - name: Deploy to Cloudflare Pages
         run: |
           npx --yes "$WRANGLER" pages deploy dist --project-name "$PAGES_PROJECT" \
