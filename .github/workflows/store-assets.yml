@@ -43,7 +43,9 @@ jobs:
           sleep 1
           mkdir -p store-assets
           node tools/feed-check/store-shots.mjs http://localhost:8080/ store-assets
+      # Uploaded even if a later shot fails, so the finished ones are kept.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
         with:
           name: store-assets
           path: store-assets
