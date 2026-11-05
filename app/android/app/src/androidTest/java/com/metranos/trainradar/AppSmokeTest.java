@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import androidx.test.espresso.web.model.Atoms;
+import java.util.concurrent.TimeUnit;
 import androidx.test.espresso.web.webdriver.Locator;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -27,8 +28,20 @@ public class AppSmokeTest {
     @Rule
     public ActivityScenarioRule<MainActivity> rule = new ActivityScenarioRule<>(MainActivity.class);
 
+    /** Run a script in the page. A CI emulator can keep the page busy for
+     * longer than Espresso-web's 10 s default (loading data), so allow 60 s
+     * and retry twice before failing. */
     private static Object eval(String script) {
-        return onWebView().forceJavascriptEnabled().perform(Atoms.script(script)).get().getValue();
+        RuntimeException last = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                return onWebView().withTimeout(60, TimeUnit.SECONDS).forceJavascriptEnabled()
+                        .perform(Atoms.script(script)).get().getValue();
+            } catch (RuntimeException e) {
+                last = e;
+            }
+        }
+        throw last;
     }
 
     private static void waitFor(String condition, long timeoutMs) throws InterruptedException {
@@ -66,7 +79,8 @@ public class AppSmokeTest {
         eval("var q = document.getElementById('search-q'); q.value = '" + number + "';"
                 + "q.dispatchEvent(new Event('input', { bubbles: true })); return true;");
         waitFor("document.querySelector('#search-results li button')", 10_000);
-        onWebView().withElement(findElement(Locator.CSS_SELECTOR, "#search-results li button")).perform(webClick());
+        onWebView().withTimeout(60, TimeUnit.SECONDS)
+                .withElement(findElement(Locator.CSS_SELECTOR, "#search-results li button")).perform(webClick());
         waitFor("document.querySelector('.popup .popup-title')", 10_000);
 
         String popup = (String) eval("return document.querySelector('.popup').textContent;");

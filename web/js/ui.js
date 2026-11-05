@@ -216,7 +216,7 @@ export function trainPopup(
   info,
   regionName,
   onIncidents,
-  { napDate, profile, onTrain, appUrl, history, enthusiast = true, fav = null, onShare = null, proLink = null } = {},
+  { napDate, profile, onTrain, appUrl, history, enthusiast = true, fav = null, onShare = null, proLink = null, trip = null } = {},
 ) {
   const title = el(
     "div",
@@ -330,6 +330,17 @@ export function trainPopup(
     title,
     sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null,
     popupActions(lang, fav, onShare),
+    trip && info.origin
+      ? el(
+          "div",
+          { class: "popup-actions" },
+          el(
+            "button",
+            { class: "pill small trip-btn", type: "button", "aria-pressed": String(trip.on), onclick: trip.onToggle },
+            trip.on ? `🧳 ${t(lang, "tripOn")}` : `🧳 ${t(lang, trip.pro ? "tripStart" : "tripStartPro")}`,
+          ),
+        )
+      : null,
     rows,
   );
 }
@@ -355,14 +366,15 @@ function popupActions(lang, fav, onShare) {
 /** Settings: TrainRadar Pro and tips (Android app), backup of the user's
  * own data (both). `pro`: entitlement.decide()'s result; `catalogue`:
  * Billing.catalogue() (null outside the app or before Play answers). */
-export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete }) {
+export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete, onTrips = null }) {
   const out = [];
   if (platform === "android") {
     const sub = catalogue?.find((p) => p.kind === "subscription");
     out.push(el("h3", {}, "TrainRadar Pro"));
     out.push(el("p", { class: pro?.pro ? "pro-on" : "muted", id: "pro-state" }, t(lang, `proState_${pro?.state || "none"}`)));
     out.push(el("p", { class: "small" }, t(lang, "proIncludes")));
-    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails"].map((k) => el("li", {}, t(lang, k)))));
+    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails", "proTrips"].map((k) => el("li", {}, t(lang, k)))));
+    if (pro?.pro && onTrips) out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "trips-btn", onclick: onTrips }, `🧳 ${t(lang, "tripsTitle")}`)));
     out.push(el("p", { class: "small muted" }, t(lang, "proSoon")));
     if (!pro?.pro) {
       out.push(
@@ -406,6 +418,74 @@ export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, 
   out.push(el("p", {}, el("button", { class: "pill small danger", type: "button", id: "delete-all", onclick: onDelete }, t(lang, "deleteAll"))));
   if (message) out.push(el("p", { class: "small notice-box", id: "settings-msg", role: "status" }, message));
   return out;
+}
+
+/** My trips (Pro): monthly figures, then each trip with its claim summary,
+ * image card and delete. */
+export function tripsPanel(lang, { trips, stats, onClaim, onCard, onDelete, onCsv, onDeleteAll }) {
+  if (!trips.length) return [el("p", { class: "muted" }, t(lang, "tripsEmpty"))];
+  const out = [];
+  if (stats.length) {
+    out.push(
+      el(
+        "table",
+        { class: "small trips-stats" },
+        el("tr", {}, ["tripsMonth", "tripsCount", "tripsLate", "tripsAvg"].map((k) => el("th", {}, t(lang, k)))),
+        stats.map((m) => el("tr", {}, el("td", {}, m.month), el("td", {}, String(m.trips)), el("td", {}, m.latePct === null ? "—" : `${m.latePct} %`), el("td", {}, m.avgDelay === null ? "—" : `${m.avgDelay} min`))),
+      ),
+    );
+  }
+  const list = [...trips].sort((a, b) => b.startedAt - a.startedAt);
+  out.push(
+    el(
+      "ul",
+      { class: "board trips-list" },
+      list.map((tr) => {
+        const d = tr.arrDelayMin ?? tr.lastDelayMin;
+        return el(
+          "li",
+          {},
+          el("strong", {}, tr.label),
+          el("span", { class: "board-main muted" }, ` ${tr.day.split("-").reverse().join("/")} · ${tr.origin} → ${tr.destination}`),
+          " ",
+          el("span", { class: "board-delay" }, tr.endedAt ? (d === null ? "—" : formatDelay(lang, d * 60)) : t(lang, "tripLive")),
+          tr.estimated ? el("span", { class: "small muted" }, ` ${t(lang, "tripEstimated")}`) : null,
+          el(
+            "div",
+            { class: "popup-actions" },
+            tr.endedAt ? el("button", { class: "pill small", type: "button", onclick: () => onClaim(tr) }, t(lang, "tripClaim")) : null,
+            tr.endedAt ? el("button", { class: "pill small", type: "button", onclick: () => onCard(tr) }, t(lang, "tripCard")) : null,
+            el("button", { class: "pill small", type: "button", "aria-label": t(lang, "tripDelete"), onclick: () => onDelete(tr) }, "✕"),
+          ),
+        );
+      }),
+    ),
+  );
+  out.push(el("p", { class: "small muted" }, t(lang, "tripsNote")));
+  out.push(
+    el(
+      "p",
+      { class: "popup-actions" },
+      el("button", { class: "pill small", type: "button", id: "trips-csv", onclick: onCsv }, t(lang, "tripsCsv")),
+      el("button", { class: "pill small danger", type: "button", onclick: onDeleteAll }, t(lang, "tripsDeleteAll")),
+    ),
+  );
+  return out;
+}
+
+/** The claim helper: the facts, a copy button and Renfe's official page. */
+export function claimBox(lang, text, url, onCopy) {
+  return [
+    el("p", { class: "small" }, t(lang, "claimIntro")),
+    el("pre", { class: "claim-text", id: "claim-text" }, text),
+    el(
+      "p",
+      { class: "popup-actions" },
+      el("button", { class: "pill small", type: "button", onclick: onCopy }, t(lang, "claimCopy")),
+      el("a", { class: "pill small", href: url, target: "_blank", rel: "noopener" }, `${t(lang, "claimRenfe")} ↗`),
+    ),
+    el("p", { class: "small muted" }, t(lang, "claimNote")),
+  ];
 }
 
 /** The favourites sheet: each train with its live state, each station. */
