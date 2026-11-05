@@ -22,6 +22,38 @@ map opens without downloading them; live feeds come from the central bucket
   own backup (Google Drive, `res/xml/data_extraction_rules.xml`); caches and the bundled
   data are left out.
 
+## TrainRadar Pro and tips (phase C5)
+
+- **Billing:** Google Play Billing through `cordova-plugin-purchase` (`web/js/billing.js`),
+  with products from `CONFIG.products`: `pro_monthly` (subscription) and the tips
+  `tip_small`, `tip_medium`, `tip_large` (consumables, unlock nothing). No server, no
+  accounts: Play is asked on the phone at start and on resume, and its answer is cached
+  for 7 days offline (`web/js/entitlement.js`, which documents how Play's states map:
+  grace period = Pro, cancelled = Pro until the paid period ends, on hold or expired =
+  not Pro). "Restore purchases" asks Play again (a new phone, a reinstall).
+- **Pro unlocks now:** unlimited favourites and the enthusiast details. The Pro screen
+  lists what's coming as "coming in later versions", not as part of the purchase.
+- **Settings (ⓘ → TrainRadar Pro y ajustes):** the Pro screen, tips, Restore, Manage
+  subscription (Play's page), and for everyone: export your data to a JSON file
+  (`trainradar-backup-YYYYMMDD.json`, through the share sheet), import it (merged, no
+  duplicates, within the favourites limit), delete all your data.
+- **Tests:** `web/js/pro.test.mjs` (entitlement states, billing wrapper on a fake
+  Play, backup round trip), and `tools/feed-check/app-smoke.mjs`, which runs the app
+  bundle with a stand-in for Play to check that Pro unlocks the details and favourites.
+
+### Play Console steps (maintainer)
+
+1. Create the app `com.metranos.trainradar`, Play App Signing on.
+2. Upload a release build to the **internal testing** track (billing only works for
+   an app that Play knows; `docs/android.md` → Release build).
+3. Monetise → Products → **Subscriptions**: `pro_monthly`, a monthly auto-renewing base
+   plan, €1.99 in Spain (other countries from Play's price templates), no free trial.
+4. Monetise → Products → **In-app products**: `tip_small` €1.99, `tip_medium` €4.99,
+   `tip_large` €9.99 (managed products; the app consumes them).
+5. Settings → **Licence testing**: add your Google account(s), so test purchases are
+   free and renew every few minutes.
+6. Install from the internal testing link and buy, cancel and restore to check.
+
 ## Builds in CI (no secrets)
 
 `.github/workflows/android.yml`, on every pull request and merge:

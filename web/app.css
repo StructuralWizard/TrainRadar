@@ -114,6 +114,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .popup-actions .pill.small { font-size: 12px; padding: 2px 10px; }
 .popup-actions .fav-btn[aria-pressed="true"] { color: #b45309; border-color: #f59e0b; }
 .popup-actions .fav-full { flex-basis: 100%; }
+.pro-on { color: #166534; font-weight: 600; }
+.pro-features { padding-left: 18px; margin: 4px 0; }
+.pill.danger { color: #b91c1c; border-color: #fca5a5; }
 .history-box { background: #f0f9ff; color: #0c4a6e; border-radius: 8px; padding: 6px 8px; margin: 6px 0; font-size: 13px; }
 .history-box .history-title { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
 .history-box .muted { color: #075985; opacity: 0.8; }

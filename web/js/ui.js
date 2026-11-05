@@ -184,9 +184,12 @@ export function profileChart(lang, p) {
 /** About panel: what TrainRadar is, where the live data comes from, legal
  * pages, licences, and (when configured) the app and coffee links. The
  * coffee link is web only, never inside the Android app. */
-export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web", feedMode = "fallback" } = {}) {
+export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web", feedMode = "fallback", onSettings = null } = {}) {
   const link = (href, text) => el("a", { href, target: "_blank", rel: "noopener" }, text);
   const out = [el("p", {}, t(lang, "aboutText"))];
+  if (onSettings) {
+    out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "settings-btn", onclick: onSettings }, `⚙ ${t(lang, platform === "android" ? "settingsPro" : "settings")}`)));
+  }
   if (playUrl && platform === "web") out.push(el("p", {}, el("a", { class: "pill pill-strong", href: playUrl, target: "_blank", rel: "noopener" }, t(lang, "getApp"))));
   if (coffeeUrl && platform === "web") out.push(el("p", {}, link(coffeeUrl, `☕ ${t(lang, "coffee")}`)));
   out.push(el("p", { class: "small muted" }, t(lang, "feedSource", { source: t(lang, feedMode === "live" ? "feedLive" : "feedProxy") })));
@@ -213,7 +216,7 @@ export function trainPopup(
   info,
   regionName,
   onIncidents,
-  { napDate, profile, onTrain, appUrl, history, enthusiast = true, fav = null, onShare = null } = {},
+  { napDate, profile, onTrain, appUrl, history, enthusiast = true, fav = null, onShare = null, proLink = null } = {},
 ) {
   const title = el(
     "div",
@@ -268,7 +271,7 @@ export function trainPopup(
         : "",
     ),
   );
-  if (history && info.origin) rows.push(historyBox(lang, history, appUrl));
+  if (history && info.origin) rows.push(historyBox(lang, history, appUrl, proLink));
   // A timetabled 0 km/h just means "dwelling at a station": not worth a row.
   if (info.speed_kmh !== null && info.speed_kmh !== undefined && (info.speed_measured || info.speed_kmh > 0)) {
     rows.push(
@@ -349,6 +352,62 @@ function popupActions(lang, fav, onShare) {
   );
 }
 
+/** Settings: TrainRadar Pro and tips (Android app), backup of the user's
+ * own data (both). `pro`: entitlement.decide()'s result; `catalogue`:
+ * Billing.catalogue() (null outside the app or before Play answers). */
+export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete }) {
+  const out = [];
+  if (platform === "android") {
+    const sub = catalogue?.find((p) => p.kind === "subscription");
+    out.push(el("h3", {}, "TrainRadar Pro"));
+    out.push(el("p", { class: pro?.pro ? "pro-on" : "muted", id: "pro-state" }, t(lang, `proState_${pro?.state || "none"}`)));
+    out.push(el("p", { class: "small" }, t(lang, "proIncludes")));
+    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails"].map((k) => el("li", {}, t(lang, k)))));
+    out.push(el("p", { class: "small muted" }, t(lang, "proSoon")));
+    if (!pro?.pro) {
+      out.push(
+        el(
+          "p",
+          {},
+          sub?.canBuy
+            ? el("button", { class: "pill pill-strong", type: "button", id: "pro-buy", onclick: () => onBuy(sub.id) }, t(lang, "proBuy", { price: sub.price || "" }))
+            : el("span", { class: "small muted" }, t(lang, catalogue ? "proUnavailable" : "proLoading")),
+        ),
+      );
+      out.push(el("p", { class: "small muted" }, t(lang, "proTerms")));
+    }
+    out.push(
+      el(
+        "p",
+        { class: "popup-actions" },
+        el("button", { class: "pill small", type: "button", id: "pro-restore", onclick: onRestore }, t(lang, "proRestore")),
+        pro?.pro ? el("button", { class: "pill small", type: "button", onclick: onManage }, t(lang, "proManage")) : null,
+      ),
+    );
+    const tips = (catalogue || []).filter((p) => p.kind === "tip" && p.canBuy);
+    if (tips.length) {
+      out.push(el("h3", {}, t(lang, "tipsTitle")));
+      out.push(el("p", { class: "small" }, t(lang, "tipsText")));
+      out.push(el("p", { class: "popup-actions" }, tips.map((p) => el("button", { class: "pill small", type: "button", onclick: () => onBuy(p.id) }, `${t(lang, `tip_${p.id}`)} · ${p.price || ""}`))));
+    }
+  }
+  out.push(el("h3", {}, t(lang, "backupTitle")));
+  out.push(el("p", { class: "small" }, t(lang, platform === "android" ? "backupAuto" : "backupWeb")));
+  const file = el("input", { type: "file", accept: "application/json,.json", id: "import-file", hidden: true, onchange: (e) => e.target.files?.[0] && onImport(e.target.files[0]) });
+  out.push(
+    el(
+      "p",
+      { class: "popup-actions" },
+      el("button", { class: "pill small", type: "button", id: "backup-export", onclick: onExport }, t(lang, "backupExport")),
+      el("button", { class: "pill small", type: "button", id: "backup-import", onclick: () => file.click() }, t(lang, "backupImport")),
+      file,
+    ),
+  );
+  out.push(el("p", {}, el("button", { class: "pill small danger", type: "button", id: "delete-all", onclick: onDelete }, t(lang, "deleteAll"))));
+  if (message) out.push(el("p", { class: "small notice-box", id: "settings-msg", role: "status" }, message));
+  return out;
+}
+
 /** The favourites sheet: each train with its live state, each station. */
 export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onRemove, limit }) {
   if (!list.length) return [el("p", { class: "muted" }, t(lang, "favEmpty"))];
@@ -377,7 +436,7 @@ export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onR
 }
 
 /** The line's last 7 days (phase C2b), from the history API's summary. */
-export function historyBox(lang, h, proUrl) {
+export function historyBox(lang, h, proUrl, onPro = null) {
   const n = (x) => x.toLocaleString(lang === "en" ? "en-GB" : "es-ES");
   const parts = [t(lang, "histLine", { p: h.onTimePct, l: h.late5Pct })];
   if (h.medianMin !== null && h.medianMin > 0) parts.push(t(lang, "histMedian", { m: h.medianMin }));
@@ -390,7 +449,11 @@ export function historyBox(lang, h, proUrl) {
     el("div", {}, parts.join(" · ")),
     el("div", { class: "small muted" }, runs.join(" · ")),
     el("div", { class: "small muted" }, t(lang, "histNote")),
-    proUrl ? el("a", { class: "small", href: proUrl, target: "_blank", rel: "noopener" }, t(lang, "histPro")) : null,
+    onPro
+      ? el("button", { class: "link small", type: "button", onclick: onPro }, t(lang, "histPro"))
+      : proUrl
+        ? el("a", { class: "small", href: proUrl, target: "_blank", rel: "noopener" }, t(lang, "histPro"))
+        : null,
   );
 }
 

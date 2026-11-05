@@ -24,10 +24,14 @@ import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { HistoryCache } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { enthusiast } from "./js/features.js";
-import { canShare, isNative, onAppLink, onBackButton, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
+import { canShare, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
+import { backupName, makeBackup, mergeFavourites, parseBackup } from "./js/backup.js";
+import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
+import { decide, parseCache } from "./js/entitlement.js";
 import {
   delayedItem,
   favouritesPanel,
+  settingsPanel,
   el,
   incidentsPanel,
   legend,
@@ -78,7 +82,11 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings"];
+let billing = null; // Google Play (Android app only)
+let entitlement = { pro: false, state: "none", checkedAt: 0 };
+let settingsMsg = "";
+const favLimit = () => (CONFIG.pro ? Infinity : FREE_LIMIT);
 let favs = []; // favourite trains and stations (favourites.js)
 let favFull = null; // key of the item whose save just hit the limit
 const show = {
@@ -153,6 +161,8 @@ function applyLang() {
   $("fav-btn").title = t(lang, "favourites");
   $("favs-title").textContent = t(lang, "favourites");
   $("favs-close").setAttribute("aria-label", t(lang, "close"));
+  $("settings-title").textContent = t(lang, CONFIG.platform === "android" ? "settingsPro" : "settings");
+  $("settings-close").setAttribute("aria-label", t(lang, "close"));
   $("app-banner-link").textContent = `📱 ${t(lang, "appBanner")}`;
   $("app-banner-close").setAttribute("aria-label", t(lang, "close"));
   if (!$("about").hidden) renderAbout();
@@ -497,6 +507,7 @@ function showPopup(open = false) {
       profile: info.altitude_m === undefined ? null : selectedProfile(now),
       onTrain: (i) => selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true }),
       appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
+      proLink: CONFIG.platform === "android" && !CONFIG.pro ? () => (openSheet("settings"), renderSettings()) : null,
       history: info.timetable_only ? null : history.get(info.history_line, info.history_product),
       enthusiast: enthusiast(CONFIG),
       fav: favButton({ type: "train", number: info.number, label: trainTitle(info) }),
@@ -600,15 +611,98 @@ function refreshTrack() {
   if (engine && map?.getSource("track")) map.getSource("track").setData(JSON.parse(engine.trackGeoJson()));
 }
 
+/** Pro from Google Play's answer (or the cached one), applied everywhere. */
+async function refreshEntitlement() {
+  const cache = parseCache(await prefs.get(ENTITLEMENT_KEY).catch(() => null));
+  const next = decide(billing?.proStatus() ?? null, cache, Date.now());
+  const changed = next.pro !== entitlement.pro || next.state !== entitlement.state;
+  entitlement = next;
+  CONFIG.pro = next.pro;
+  if (next.checkedAt) prefs.set(ENTITLEMENT_KEY, JSON.stringify(next)).catch(() => {});
+  if (changed) {
+    popupKey = "";
+    render(true);
+  }
+  renderSettings();
+}
+
+async function startBilling() {
+  if (CONFIG.platform !== "android") return;
+  await refreshEntitlement(); // cached answer first, before Play replies
+  const go = async () => {
+    if (!Billing.available() || billing) return;
+    billing = new Billing(window.CdvPurchase, CONFIG.products, {
+      onChange: () => refreshEntitlement(),
+      onTip: () => ((settingsMsg = t(lang, "tipThanks")), renderSettings()),
+      onError: (e) => console.warn("billing", e?.code, e?.message),
+    });
+    await billing.start().catch((e) => console.warn("billing", e));
+    refreshEntitlement();
+  };
+  document.addEventListener("deviceready", go, { once: true });
+  go();
+  onResume(() => billing?.cdv.store.update?.().then(refreshEntitlement).catch(() => {}));
+}
+
+function renderSettings() {
+  if ($("settings").hidden) return;
+  $("settings-body").replaceChildren(
+    ...settingsPanel(lang, {
+      platform: CONFIG.platform,
+      pro: entitlement,
+      catalogue: billing?.ready ? billing.catalogue() : null,
+      message: settingsMsg,
+      onBuy: async (id) => {
+        settingsMsg = "";
+        try {
+          await billing.buy(id);
+        } catch (e) {
+          settingsMsg = t(lang, "proError", { error: e.message });
+        }
+        await refreshEntitlement();
+        if (entitlement.pro && CONFIG.products.find((p) => p.id === id)?.pro) settingsMsg = t(lang, "proThanks");
+        renderSettings();
+      },
+      onRestore: async () => {
+        await billing?.restore().catch(() => {});
+        refreshEntitlement();
+      },
+      onManage: () => billing?.manage(),
+      onExport: () =>
+        exportFile(backupName(), makeBackup({ favourites: favs, settings: { lang: store.get("lang"), basemap: store.get("basemap") } })).catch((e) => {
+          settingsMsg = t(lang, "proError", { error: e.message });
+          renderSettings();
+        }),
+      onImport: async (file) => {
+        try {
+          const b = parseBackup(await file.text());
+          const m = mergeFavourites(favs, b.favourites, favLimit());
+          saveFavourites(m.list);
+          for (const [k, v] of Object.entries(b.settings)) store.set(k, v);
+          settingsMsg = t(lang, "backupDone", { added: m.added }) + (m.skipped ? t(lang, "backupSkipped", { skipped: m.skipped, limit: favLimit() }) : "");
+        } catch (e) {
+          settingsMsg = t(lang, "backupBad", { why: e.message });
+        }
+        renderSettings();
+      },
+      onDelete: async () => {
+        if (!window.confirm(t(lang, "deleteConfirm"))) return;
+        await prefs.clear();
+        location.reload();
+      },
+    }),
+  );
+}
+
 /** Star button state for a popup; `redraw` refreshes that popup. */
 function favButton(item, redraw = () => showPopup(true)) {
   const k = JSON.stringify([item.type, item.number ?? item.id]);
   return {
     on: isFavourite(favs, item),
     full: favFull === k,
-    limit: FREE_LIMIT,
+    limit: favLimit(),
     onToggle: () => {
-      const r = toggleFavourite(favs, item, FREE_LIMIT);
+      const r = toggleFavourite(favs, item, favLimit());
       favFull = r.full ? k : null;
       if (!r.full) saveFavourites(r.list);
       redraw();
@@ -649,7 +743,7 @@ function renderFavourites() {
         openStation(st);
       },
       onRemove: (f) => saveFavourites(toggleFavourite(favs, f).list),
-      limit: FREE_LIMIT,
+      limit: favLimit(),
     }),
   );
 }
@@ -717,6 +811,10 @@ function renderAbout() {
       coffeeUrl: CONFIG.coffeeUrl,
       platform: CONFIG.platform,
       feedMode: feeds?.mode() || "fallback",
+      onSettings: () => {
+        openSheet("settings");
+        renderSettings();
+      },
     }),
   );
 }
@@ -920,6 +1018,8 @@ $("fav-btn").addEventListener("click", () => {
   } else $("favs").hidden = true;
 });
 $("favs-close").addEventListener("click", () => ($("favs").hidden = true));
+$("settings-close").addEventListener("click", () => ($("settings").hidden = true));
+startBilling();
 prefs
   .get(STORAGE_KEY)
   .then((v) => {
