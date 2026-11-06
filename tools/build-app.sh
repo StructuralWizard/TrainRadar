@@ -17,6 +17,23 @@ for f in $(jq -r '.stations.file, (.regions[] | .file, (.geometry.file // empty)
   case "$f" in *[!A-Za-z0-9._-]*) echo "odd file name in the manifest: $f" >&2; exit 1 ;; esac
   curl -fsS "$SITE/data/$f" -o "$data/$f"
 done
+# Android's build tools unpack *.gz assets and drop the suffix, so the app
+# would ask for files that aren't there. Store them unpacked under names
+# without .gz, and point the manifest at those names.
+for f in "$data"/*.gz; do
+  [ -e "$f" ] || continue
+  if [ "$(head -c 2 "$f" | od -A n -t x1 | tr -d ' ')" = "1f8b" ]; then
+    gzip -dc "$f" > "${f%.gz}" && rm "$f"
+  else
+    mv "$f" "${f%.gz}"
+  fi
+done
+jq '(.. | objects | select(has("file")) | .file) |= sub("\\.gz$"; "")' "$data/manifest.json" > "$data/m.json"
+mv "$data/m.json" "$data/manifest.json"
+for f in $(jq -r '.stations.file, (.regions[] | .file, (.geometry.file // empty))' "$data/manifest.json"); do
+  [ -f "$data/$f" ] || { echo "manifest names $f, which isn't in $data" >&2; exit 1; }
+done
+if ls "$data" | grep -q '\.gz$'; then echo "gzip files left in $data" >&2; exit 1; fi
 echo "reference data: $(du -sh "$data" | cut -f1) from $SITE"
 
 rm -rf app/www
