@@ -132,7 +132,7 @@ const g = await (await browser.newContext({ viewport: { width: 1024, height: 500
 await g.setContent(`<!doctype html><html><body style="margin:0;width:1024px;height:500px;background:#1d4ed8;font-family:system-ui,sans-serif;display:flex;align-items:center;gap:48px;padding:0 72px;box-sizing:border-box;color:#fff">
 <img src="data:image/png;base64,${icon}" width="280" height="280" style="border-radius:56px;background:#fff">
 <div><div style="font-size:84px;font-weight:800;letter-spacing:-1px">TrainRadar</div>
-<div style="font-size:38px;margin-top:12px;opacity:.95">Los trenes de España en directo,<br>coloreados por su retraso</div></div></body></html>`);
+<div style="font-size:36px;margin-top:12px;opacity:.95;white-space:nowrap;line-height:1.3">Los trenes de España en directo,<br>coloreados por su retraso</div></div></body></html>`);
 for (let i = 0; ; i++) {
   try {
     await g.screenshot({ path: `${out}/feature-graphic.png` });

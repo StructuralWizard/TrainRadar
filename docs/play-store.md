@@ -97,7 +97,7 @@ Open data from Renfe Operadora (CC BY 4.0) and Spain's National Access Point for
 |---|---|
 | Privacy policy | https://trainradar.pages.dev/legal/privacy.html |
 | Ads | **No**, the app contains no ads |
-| App access | All functionality available without special access (no login). Pro: say purchases can be tested with licence testers |
+| App access | **Some functionality is restricted** (Play counts the Pro subscription). No sign-in details; leave "Sign in details … provide full access" unticked. Instructions: no account; Pro (`pro_monthly`) is bought in the app with Google Play Billing (Ajustes → TrainRadar Pro); reviewers can subscribe with a Play test payment method |
 | Content rating | See below → expected **PEGI 3 / Everyone** |
 | Target audience | **18 and over** is not required; choose **13–15, 16–17, 18+** (not designed for children; no child-directed content) |
 | News app | No |
