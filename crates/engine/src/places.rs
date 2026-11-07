@@ -162,6 +162,46 @@ impl CommuteRow {
 }
 
 /// Next trains leaving `from` that later call at `to`, with live delays.
+/// Whether `trip` calls at `from` and later at `to`: the position of its
+/// call at `to` in the trip's schedule, else `None`.
+pub fn serves(net: &Network, trip: TripRef, from: &str, to: &str) -> Option<usize> {
+    if from == to {
+        return None;
+    }
+    let r = &net.regions[trip.region as usize];
+    let pi = r.tt.trips[trip.trip as usize].pattern;
+    let pf = r.calls.get(from)?.iter().find(|&&(p, _)| p == pi)?.1;
+    r.calls
+        .get(to)?
+        .iter()
+        .find(|&&(p, pos)| p == pi && pos > pf)
+        .map(|&(_, pos)| usize::from(pos))
+}
+
+/// Every station a train passes on its way from `from` to `to` (both
+/// included), over all timetabled patterns that call at both in that order;
+/// sorted. For filtering notices by a commute.
+pub fn between_stations(net: &Network, from: &str, to: &str) -> Vec<String> {
+    let mut out = std::collections::BTreeSet::new();
+    if from == to {
+        return Vec::new();
+    }
+    for r in &net.regions {
+        let (Some(fc), Some(tc)) = (r.calls.get(from), r.calls.get(to)) else {
+            continue;
+        };
+        for &(p, pf) in fc {
+            for &(_, pt) in tc.iter().filter(|&&(q, pos)| q == p && pos > pf) {
+                let stops = &r.tt.patterns[p as usize].stops;
+                for &s in &stops[usize::from(pf)..=usize::from(pt)] {
+                    out.insert(r.tt.stops[s as usize].id.clone());
+                }
+            }
+        }
+    }
+    out.into_iter().collect()
+}
+
 pub fn commute(
     net: &Network,
     live: &Live,
@@ -333,6 +373,27 @@ mod tests {
         // Departed trains drop off; the horizon limits the far end.
         let later = board(&net, &live, "B", local(8, 30), 15 * 60, 10);
         assert!(later.is_empty(), "{later:?}");
+    }
+
+    #[test]
+    fn serves_needs_both_stations_in_order() {
+        let net = with_stations();
+        let live = Live::default();
+        let row = &board(&net, &live, "A", local(7, 55), 30 * 60, 1)[0];
+        assert_eq!(serves(&net, row.trip, "A", "C"), Some(2));
+        assert_eq!(serves(&net, row.trip, "B", "C"), Some(2));
+        assert_eq!(serves(&net, row.trip, "C", "A"), None, "wrong way");
+        assert_eq!(serves(&net, row.trip, "A", "A"), None);
+        assert_eq!(serves(&net, row.trip, "A", "Z"), None, "not on it");
+    }
+
+    #[test]
+    fn stations_between_two_stations() {
+        let net = with_stations();
+        assert_eq!(between_stations(&net, "A", "C"), ["A", "B", "C"]);
+        assert_eq!(between_stations(&net, "B", "C"), ["B", "C"]);
+        assert!(between_stations(&net, "C", "A").is_empty(), "wrong way");
+        assert!(between_stations(&net, "A", "A").is_empty());
     }
 
     #[test]

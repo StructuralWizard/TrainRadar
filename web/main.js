@@ -453,6 +453,7 @@ function renderIncidents() {
       regionName,
       onShowAll: () => {
         incFilter = null;
+        store.set(INC_FILTER_KEY, "");
         renderIncidents();
       },
       onStop: (s) => flyToVisible(s.lon, s.lat, 13),
@@ -463,6 +464,52 @@ function renderIncidents() {
   if (!incidents.length && !feeds?.modified("alerts")) {
     $("inc-body").prepend(el("p", { class: "muted" }, t(lang, "incidentsLoading")));
   }
+  const chips = noticeChips();
+  if (chips) $("inc-body").prepend(chips);
+}
+
+/** The Notices filter for a commute (Pro): notices at any station between
+ * its ends (both included) or on a line its trains run on. */
+const INC_FILTER_KEY = "incidents-filter";
+const commuteKey = (c) => `${c.from.id}>${c.to.id}`;
+
+function commuteNoticeFilter(c) {
+  // Cercanías timetables load lazily: load the ones around both ends.
+  for (const st of [c.from, c.to]) {
+    const d = 0.05;
+    for (const r of ref?.regionsIn([st.lon - d, st.lat - d, st.lon + d, st.lat + d]) || []) {
+      if (!ref.loaded.has(r.code))
+        ref.loadRegion(r.code).then(() => {
+          if (incFilter?.commute === commuteKey(c)) showIncidents(commuteNoticeFilter(c));
+        }).catch(() => {});
+    }
+  }
+  const ids = new Set(JSON.parse(engine.betweenStationsJson(c.from.id, c.to.id)).map((x) => x.id));
+  const routes = new Set(JSON.parse(engine.commuteJson(c.from.id, c.to.id, Date.now(), 24 * 3600, 50)).map((r) => r.route));
+  return {
+    label: `${c.from.name} → ${c.to.name}`,
+    commute: commuteKey(c),
+    test: (i) => i.stops.some((x) => ids.has(x.id)) || i.lines.some((l) => routes.has(l)),
+  };
+}
+
+/** Opened from the ⚠ button: the remembered commute filter, if any. */
+function defaultNoticeFilter() {
+  if (!CONFIG.pro || !engine) return null;
+  const c = commutes.list.find((x) => commuteKey(x) === store.get(INC_FILTER_KEY));
+  return c ? commuteNoticeFilter(c) : null;
+}
+
+function noticeChips() {
+  if (!CONFIG.pro || !commutes.list.length) return null;
+  const current = incFilter?.commute ?? (incFilter ? null : "");
+  const pick = (c) => () => {
+    store.set(INC_FILTER_KEY, c ? commuteKey(c) : "");
+    showIncidents(c ? commuteNoticeFilter(c) : null);
+  };
+  const chip = (label, v, c) =>
+    el("button", { class: v === current ? "pill small pill-strong" : "pill small", type: "button", "aria-pressed": String(v === current), onclick: pick(c) }, label);
+  return el("p", { class: "commute-tabs", id: "inc-commutes" }, chip(t(lang, "delayedAll"), "", null), ...commutes.list.map((c) => chip(`${c.from.name} → ${c.to.name}`, commuteKey(c), c)));
 }
 
 function showIncidents(filter = null) {
@@ -1130,11 +1177,34 @@ function setupAppBanner() {
   });
 }
 
+/** The Delays list's filter (Pro): "" = all trains, else a saved commute
+ * as "fromId>toId". Remembered on this device. */
+const DELAYED_FILTER_KEY = "delayed-filter";
+
 function renderDelayedList() {
-  const list = JSON.parse(engine.delayedJson(Date.now(), 50));
+  // Pro with saved commutes: "All" or one commute's trains only.
+  const choices = CONFIG.pro ? commutes.list : [];
+  let filter = store.get(DELAYED_FILTER_KEY) || "";
+  let only = choices.find((c) => `${c.from.id}>${c.to.id}` === filter) || null;
+  if (!only) filter = "";
+  const bar = $("delayed-filter");
+  bar.hidden = !choices.length;
+  if (choices.length) {
+    const pick = (v) => () => {
+      store.set(DELAYED_FILTER_KEY, v);
+      renderDelayedList();
+    };
+    const chip = (label, v) =>
+      el("button", { class: v === filter ? "pill small pill-strong" : "pill small", type: "button", "aria-pressed": String(v === filter), onclick: pick(v) }, label);
+    bar.replaceChildren(
+      chip(t(lang, "delayedAll"), ""),
+      ...choices.map((c) => chip(`${c.from.name} → ${c.to.name}`, `${c.from.id}>${c.to.id}`)),
+    );
+  }
+  const list = JSON.parse(only ? engine.delayedBetweenJson(Date.now(), 50, only.from.id, only.to.id) : engine.delayedJson(Date.now(), 50));
   const ul = $("delayed-list");
   if (!list.length) {
-    ul.replaceChildren(el("li", { class: "muted" }, t(lang, "noDelays")));
+    ul.replaceChildren(el("li", { class: "muted" }, only ? t(lang, "noDelaysCommute", { from: only.from.name, to: only.to.name }) : t(lang, "noDelays")));
     return;
   }
   ul.replaceChildren(
@@ -1420,7 +1490,7 @@ $("search-q").addEventListener("keydown", (e) => {
 });
 $("loc-btn").addEventListener("click", () => (locator?.active ? stopLocation() : startLocation()));
 $("near-close").addEventListener("click", () => ($("near").hidden = true));
-$("inc-btn").addEventListener("click", () => ($("incidents").hidden ? showIncidents() : ($("incidents").hidden = true)));
+$("inc-btn").addEventListener("click", () => ($("incidents").hidden ? showIncidents(defaultNoticeFilter()) : ($("incidents").hidden = true)));
 $("inc-close").addEventListener("click", () => ($("incidents").hidden = true));
 $("near-off").addEventListener("click", () => stopLocation());
 $("center-btn").addEventListener("click", () => {
