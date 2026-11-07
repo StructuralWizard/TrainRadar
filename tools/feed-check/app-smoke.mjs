@@ -244,6 +244,20 @@ await pp.waitForSelector("#commute:not([hidden]) #commute-body li", { timeout: 3
 console.log("commute:", (await pp.textContent("#commute-body")).replace(/\s+/g, " ").slice(0, 160));
 await pp.screenshot({ path: `${out}/app-commute.png` });
 
+// Several commutes (Pro): tabs, the last used one opens, switching works.
+const back = { from: pair.to, to: pair.from };
+await pp.evaluate((s) => localStorage.setItem("commute", JSON.stringify(s)), { v: 2, list: [pair, back], active: 1, draft: null });
+await pp.reload();
+await pp.waitForSelector("#commute:not([hidden]) .commute-tabs button", { timeout: 30000 }).catch(() => fail("commute tabs didn't show"));
+const tabs = await pp.$$eval(".commute-tabs button", (b) => b.map((x) => [x.textContent, x.getAttribute("aria-pressed")]));
+if (tabs.length !== 2 || tabs[1][1] !== "true") await fail(`commute tabs: ${JSON.stringify(tabs)}`);
+await pp.click(".commute-tabs button >> nth=0");
+await pp.waitForFunction((name) => document.querySelector("#commute-body strong")?.textContent.startsWith(name), pair.from.name, { timeout: 5000 }).catch(() => fail("switching commute didn't change the board"));
+const savedActive = await pp.evaluate(() => JSON.parse(localStorage.getItem("commute")).active);
+if (savedActive !== 0) await fail(`active commute not saved: ${savedActive}`);
+console.log("commutes:", tabs.map((t) => t[0]).join(" | "));
+await pp.screenshot({ path: `${out}/app-commutes.png` });
+
 if (errors.length) await fail(`page errors: ${errors.join("; ")}`);
 console.log("OK");
 await browser.close();

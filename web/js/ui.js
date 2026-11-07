@@ -501,10 +501,29 @@ export function historyPanel(lang, { title, series, runs, days, ranges, onRange,
 }
 
 /** Commute mode (Pro): the next trains from one saved station to another. */
-export function commutePanel(lang, { from, to, rows, onTrain, onSwap, onClear }) {
-  if (!from || !to) return [el("p", { class: "muted" }, t(lang, "commuteHelp"))];
+export function commutePanel(lang, { from, to, rows, list = [], active = -1, draft = null, note = "", onSelect = () => {}, onTrain, onSwap, onClear }) {
+  const out = [];
+  if (note) out.push(el("p", { class: "small" }, note));
+  // Saved commutes as tabs when there's more than one.
+  if (list.length > 1) {
+    out.push(
+      el(
+        "p",
+        { class: "commute-tabs" },
+        list.map((c, i) =>
+          el(
+            "button",
+            { class: i === active ? "pill small pill-strong" : "pill small", type: "button", "aria-pressed": String(i === active), onclick: () => onSelect(i) },
+            `${c.from.name} → ${c.to.name}`,
+          ),
+        ),
+      ),
+    );
+  }
+  const help = el("p", { class: "small muted" }, draft ? t(lang, "commuteDraft", { station: draft.name }) : t(lang, list.length ? "commuteAddHelp" : "commuteHelp"));
+  if (!from || !to) return [...out, help];
   const clock = (u) => formatClock(u);
-  const out = [el("p", {}, el("strong", {}, `${from.name} → ${to.name}`))];
+  out.push(el("p", {}, el("strong", {}, `${from.name} → ${to.name}`)));
   out.push(
     rows.length
       ? el(
@@ -533,6 +552,7 @@ export function commutePanel(lang, { from, to, rows, onTrain, onSwap, onClear })
       el("button", { class: "pill small", type: "button", onclick: onClear }, t(lang, "commuteClear")),
     ),
   );
+  out.push(help);
   return out;
 }
 
