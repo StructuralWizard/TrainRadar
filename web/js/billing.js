@@ -37,8 +37,13 @@ export class Billing {
       .productUpdated(() => this.onChange())
       .receiptUpdated(() => this.onChange());
     store.error((e) => this.onError(e));
-    const errors = await store.initialize([Platform.GOOGLE_PLAY]);
-    this.ready = !errors?.length;
+    const errors = (await store.initialize([Platform.GOOGLE_PLAY])) || [];
+    for (const e of errors) this.onError(e);
+    // A product missing from Play Console (e.g. a tip not created yet) isn't
+    // a failure: the others still load and can be bought.
+    const missing = this.cdv.ErrorCode?.INVALID_PRODUCT_ID;
+    this.ready = !errors.some((e) => e?.code !== missing);
+    this.failed = !this.ready; // the Pro screen says so instead of waiting
     this.onChange();
     return this.ready;
   }
