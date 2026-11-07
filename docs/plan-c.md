@@ -190,7 +190,7 @@ shown in the app until phase C8 (see below). Monthly keeps the exposure on closu
 one month per subscriber. Code the paywall and entitlement logic so more products can be
 added later from a config list without UI changes (`CONFIG.products`), but ship only
 `pro_monthly` + tips. Prices are set in Play Console (Spain €1.99 incl. VAT; UK and other
-markets via Play's local price templates, maintainer to confirm).
+markets via Play's per-product local price conversion (templates ended Oct 2025), maintainer to confirm).
 
 Entitlement cached in Preferences, refreshed from Play on start and on resume; "Restore
 purchases" in Settings (a Pro purchase follows the user's Google account to any phone).

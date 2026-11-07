@@ -81,7 +81,7 @@ map opens without downloading them; live feeds come from the central bucket
 2. Upload a release build to the **internal testing** track (billing only works for
    an app that Play knows; `docs/android.md` → Release build).
 3. Monetise → Products → **Subscriptions**: `pro_monthly`, a monthly auto-renewing base
-   plan, €1.99 in Spain (other countries from Play's price templates), no free trial.
+   plan, €1.99 in Spain (set per product since Oct 2025: enter the Spanish price, let Play convert it for the other countries), no free trial.
 4. Monetise → Products → **In-app products**: `tip_small` €1.99, `tip_medium` €4.99,
    `tip_large` €9.99 (managed products; the app consumes them).
 5. Settings → **Licence testing**: add your Google account(s), so test purchases are
