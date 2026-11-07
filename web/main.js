@@ -734,7 +734,7 @@ function renderSettings() {
     ...settingsPanel(lang, {
       platform: CONFIG.platform,
       pro: entitlement,
-      catalogue: billing?.ready ? billing.catalogue() : null,
+      catalogue: billing?.ready ? billing.catalogue() : billing?.failed ? [] : null,
       message: settingsMsg,
       onBuy: async (id) => {
         settingsMsg = "";

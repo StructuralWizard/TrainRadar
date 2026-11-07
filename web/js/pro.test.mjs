@@ -43,7 +43,7 @@ function fakeCdv({ owned = false, initErrors = [] } = {}) {
     handlers,
     ProductType: { PAID_SUBSCRIPTION: "sub", CONSUMABLE: "cons", NON_CONSUMABLE: "nc" },
     Platform: { GOOGLE_PLAY: "android-playstore" },
-    ErrorCode: { PAYMENT_CANCELLED: 6777006 },
+    ErrorCode: { PAYMENT_CANCELLED: 6777006, INVALID_PRODUCT_ID: 6777012 },
     store: {
       registered: null,
       register(p) { this.registered = p; },
@@ -86,6 +86,21 @@ test("billing: Play unavailable → status unknown (cache decides)", async () =>
   assert.equal(await b.start(), false);
   assert.equal(b.proStatus(), null);
   assert.equal(Billing.available(), false, "no CdvPurchase outside the app");
+});
+
+test("billing: a product missing from Play Console doesn't block the others", async () => {
+  const errors = [];
+  const b = new Billing(fakeCdv({ initErrors: [{ code: 6777012, message: "Product with id tip_large not found." }] }), PRODUCTS, { onError: (e) => errors.push(e.code) });
+  assert.equal(await b.start(), true);
+  assert.equal(b.failed, false);
+  assert.deepEqual(errors, [6777012], "still reported");
+  assert.equal(b.catalogue()[0].canBuy, true);
+});
+
+test("billing: Play failing marks the store failed (the Pro screen stops waiting)", async () => {
+  const b = new Billing(fakeCdv({ initErrors: [{ code: 6777012 }, { code: 6777003 }] }), PRODUCTS);
+  assert.equal(await b.start(), false);
+  assert.equal(b.failed, true);
 });
 
 test("backup: round trip, validation, merge without duplicates and within the limit", () => {
