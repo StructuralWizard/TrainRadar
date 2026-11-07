@@ -863,7 +863,7 @@ export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onS
     const stale = ageSecs > 2 * 86_400;
     out.push(el("p", { class: stale ? "small warn" : "small muted" }, t(lang, stale ? "incidentsStale" : "incidentsAge", vars)));
   }
-  if (filter) {
+  if (filter && !filter.commute) {
     out.push(
       el(
         "p",
@@ -875,7 +875,7 @@ export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onS
     );
   }
   const shown = filter ? list.filter(filter.test) : list;
-  if (!shown.length) out.push(el("p", { class: "muted" }, t(lang, "noIncidents")));
+  if (!shown.length) out.push(el("p", { class: "muted" }, filter?.commute ? t(lang, "noIncidentsCommute", { what: filter.label }) : t(lang, "noIncidents")));
   out.push(
     el(
       "ul",

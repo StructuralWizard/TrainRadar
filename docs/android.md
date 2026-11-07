@@ -64,7 +64,11 @@ map opens without downloading them; live feeds come from the central bucket
   calling at the origin and later at the destination, with live delays); ⓘ → TrainRadar
   Pro y ajustes → 🏠 opens it any time; swap or delete there. Up to 10 commutes
   (`web/js/commutes.js`), shown as tabs; each new origin → destination adds one, and
-  the app opens on the one used last. The single commute of 2.0.x is kept.
+  the app opens on the one used last. The single commute of 2.0.x is kept. The
+  Delays list and the Notices sheet get "All" / one-commute chips (remembered):
+  delayed trains that run from the origin to the destination and haven't reached it
+  (`Engine.delayedBetweenJson`), and notices at any station on the way or on a line
+  its trains run on (`Engine.betweenStationsJson`).
 - **Native code:** `app/android/app/src/main/java/com/metranos/trainradar/`:
   `TrainRadarPlugin` (reached from `web/js/native.js` as `appNative`), `AlertsWorker`,
   `AlertRules`, `Notifier`, `Widget`. They read the app's settings from Capacitor

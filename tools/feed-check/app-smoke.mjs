@@ -258,6 +258,37 @@ if (savedActive !== 0) await fail(`active commute not saved: ${savedActive}`);
 console.log("commutes:", tabs.map((t) => t[0]).join(" | "));
 await pp.screenshot({ path: `${out}/app-commutes.png` });
 
+// Delays list (Pro): "All" or one commute's trains only, remembered.
+await pp.click("#commute-close");
+await pp.click("#delayed-btn");
+await pp.waitForSelector("#delayed-filter:not([hidden]) button", { timeout: 5000 }).catch(() => fail("delays filter didn't show"));
+const chips = await pp.$$eval("#delayed-filter button", (b) => b.map((x) => x.textContent));
+if (chips.length !== 3 || chips[0] !== "Todos") await fail(`delays filter: ${JSON.stringify(chips)}`);
+const allLate = await pp.$$eval("#delayed-list li", (l) => l.map((x) => x.textContent));
+await pp.click("#delayed-filter button >> nth=1");
+const onlyLate = await pp.$$eval("#delayed-list li", (l) => l.map((x) => x.textContent));
+if (!onlyLate.length || !onlyLate.every((x) => allLate.includes(x) || /Ningún tren de/.test(x))) await fail(`commute delays: ${JSON.stringify(onlyLate)}`);
+if ((await pp.evaluate(() => localStorage.getItem("delayed-filter"))) !== `${pair.from.id}>${pair.to.id}`) await fail("delays filter not remembered");
+console.log("delays:", allLate.length, "all,", onlyLate.length, "on", chips[1]);
+await pp.screenshot({ path: `${out}/app-delays-commute.png` });
+await pp.click("#delayed-filter button >> nth=0");
+await pp.click("#delayed-close");
+
+// Notices (Pro): "All" or one commute's notices only, remembered.
+await pp.click("#inc-btn");
+await pp.waitForSelector("#inc-commutes button", { timeout: 5000 }).catch(() => fail("notices filter didn't show"));
+const allNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
+await pp.click("#inc-commutes button >> nth=1");
+const commuteNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
+const noneMsg = await pp.$$eval("#inc-body p.muted", (p) => p.some((x) => /Ningún aviso de Renfe en/.test(x.textContent)));
+if (commuteNotices > allNotices || (!commuteNotices && !noneMsg)) await fail(`commute notices: ${commuteNotices} of ${allNotices}`);
+await pp.click("#inc-close");
+await pp.click("#inc-btn");
+const pressed = await pp.$eval("#inc-commutes button >> nth=1", (b) => b.getAttribute("aria-pressed")).catch(() => null);
+if (pressed !== "true") await fail("notices filter not remembered");
+console.log("notices:", allNotices, "all,", commuteNotices, "on the commute");
+await pp.click("#inc-commutes button >> nth=0");
+
 if (errors.length) await fail(`page errors: ${errors.join("; ")}`);
 console.log("OK");
 await browser.close();

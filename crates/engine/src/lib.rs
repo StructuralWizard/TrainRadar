@@ -249,10 +249,33 @@ impl Engine {
     /// Most delayed trains (5+ min), worst first, as a JSON array.
     #[wasm_bindgen(js_name = delayedJson)]
     pub fn delayed_json(&self, now_ms: f64, limit: usize) -> String {
+        self.delayed_where(now_ms, limit, |_| true)
+    }
+
+    /// The same list for one commute (Pro): delayed trains that call at
+    /// `from` and later at `to` and haven't reached `to` yet.
+    #[wasm_bindgen(js_name = delayedBetweenJson)]
+    pub fn delayed_between_json(&self, now_ms: f64, limit: usize, from: &str, to: &str) -> String {
+        self.delayed_where(now_ms, limit, |v| {
+            let Some(m) = self.live.trains[v.index].matched else {
+                return false;
+            };
+            places::serves(&self.net, m.trip, from, to)
+                .is_some_and(|at_to| v.next_stop.is_some_and(|n| n <= at_to))
+        })
+    }
+
+    fn delayed_where(
+        &self,
+        now_ms: f64,
+        limit: usize,
+        keep: impl Fn(&TrainView) -> bool,
+    ) -> String {
         let views = self.live.views(&self.net, secs(now_ms), false);
         let mut late: Vec<&TrainView> = views
             .iter()
             .filter(|v| v.delay.is_some_and(|d| d.class() != DelayClass::OnTime))
+            .filter(|v| keep(v))
             .collect();
         late.sort_by_key(|v| std::cmp::Reverse(v.delay));
         let mut s = String::from("[");
@@ -839,6 +862,22 @@ impl Engine {
                 .b("canceled", b.canceled)
                 .b("live", b.live)
                 .end();
+        }
+        s.push(']');
+        s
+    }
+
+    /// Station ids on the way from `from` to `to` (both included), as a JSON
+    /// array: the Notices filter for a commute (Pro).
+    #[wasm_bindgen(js_name = betweenStationsJson)]
+    pub fn between_stations_json(&self, from: &str, to: &str) -> String {
+        let ids = places::between_stations(&self.net, from, to);
+        let mut s = String::from("[");
+        for (i, id) in ids.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            json::Obj::new(&mut s).s("id", id).end();
         }
         s.push(']');
         s
