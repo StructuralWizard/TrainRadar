@@ -217,3 +217,4 @@ details.small summary { cursor: pointer; }
 .app-banner[hidden] { display: none; }
 @media (min-width: 720px) { .app-banner { left: auto; width: 380px; } }
 .app-link { display: inline-block; margin-top: 4px; }
+.commute-tabs { display: flex; flex-wrap: wrap; gap: 6px; }

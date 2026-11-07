@@ -30,6 +30,7 @@ import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
 import { decide, parseCache } from "./js/entitlement.js";
 import { tripCard } from "./js/card.js";
 import { ALERT_CONFIG_KEY, ALERT_STATE_KEY, MAJOR, MINOR, decideAlerts, liveState } from "./js/alerts.js";
+import { MAX_COMMUTES, activeCommute, emptyCommutes, parseCommutes, removeActive, selectCommute, serializeCommutes, setDestination, setOrigin, swapActive } from "./js/commutes.js";
 import { CLAIMS_URL, TRIPS_KEY, activeTrip, claimText, monthlyStats, parseTrips, serializeTrips, startTrip, tripsCsv, updateTrip } from "./js/trips.js";
 import {
   delayedItem,
@@ -92,7 +93,8 @@ let incFilter = null; // { label, test }
 const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute"];
 const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
-let commute = { from: null, to: null }; // commute mode (Pro)
+let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
+let commuteNote = ""; // e.g. "the list is full", shown once in the commute sheet
 const COMMUTE_KEY = "commute";
 let trips = []; // my trips (Pro), trips.js
 let claimFor = null; // the trip whose claim summary is shown
@@ -626,10 +628,15 @@ function showStation(f) {
       commute:
         CONFIG.platform === "android" && CONFIG.pro
           ? {
-              isFrom: commute.from?.id === id,
-              isTo: commute.to?.id === id,
-              setFrom: () => saveCommute({ ...commute, from: { id, name, lon, lat } }, () => showStation(f)),
-              setTo: () => saveCommute({ ...commute, to: { id, name, lon, lat } }, () => showStation(f)),
+              // Origin chosen for the next commute, or this is an end of the active one.
+              isFrom: commutes.draft ? commutes.draft.id === id : activeCommute(commutes)?.from.id === id,
+              isTo: !commutes.draft && activeCommute(commutes)?.to.id === id,
+              setFrom: () => saveCommutes(setOrigin(commutes, { id, name, lon, lat }), () => showStation(f)),
+              setTo: () => {
+                const r = setDestination(commutes, { id, name, lon, lat });
+                commuteNote = r.full ? t(lang, "commuteFull", { max: MAX_COMMUTES }) : "";
+                saveCommutes(r.state, () => showStation(f), r.added || r.full);
+              },
             }
           : null,
       onShare: canShare()
@@ -918,11 +925,11 @@ async function renderHistory() {
   }
 }
 
-function saveCommute(next, redraw = () => {}) {
-  commute = next;
-  prefs.set(COMMUTE_KEY, JSON.stringify(next)).catch(() => {});
+function saveCommutes(next, redraw = () => {}, open = false) {
+  commutes = next;
+  prefs.set(COMMUTE_KEY, serializeCommutes(next)).catch(() => {});
   redraw();
-  if (next.from && next.to) {
+  if (open) {
     openSheet("commute");
     renderCommute();
   }
@@ -931,7 +938,11 @@ function saveCommute(next, redraw = () => {}) {
 /** Commute mode (Pro): next trains between the two saved stations. */
 function renderCommute() {
   if ($("commute").hidden || !engine) return;
-  const { from, to } = commute;
+  const note = commuteNote;
+  commuteNote = "";
+  const c = activeCommute(commutes);
+  const from = c?.from || null;
+  const to = c?.to || null;
   // Their Cercanías timetables may not be loaded yet: load, then redraw.
   for (const st of [from, to].filter(Boolean)) {
     const d = 0.05;
@@ -945,6 +956,14 @@ function renderCommute() {
       from,
       to,
       rows,
+      list: commutes.list,
+      active: commutes.active,
+      draft: commutes.draft,
+      note,
+      onSelect: (i) => {
+        saveCommutes(selectCommute(commutes, i));
+        renderCommute();
+      },
       onTrain: (r) => {
         const info = liveTrain(r.number);
         if (info) {
@@ -952,9 +971,12 @@ function renderCommute() {
           selectTrain(info, { fly: true });
         }
       },
-      onSwap: () => saveCommute({ from: commute.to, to: commute.from }),
+      onSwap: () => {
+        saveCommutes(swapActive(commutes));
+        renderCommute();
+      },
       onClear: () => {
-        saveCommute({ from: null, to: null });
+        saveCommutes(removeActive(commutes));
         renderCommute();
       },
     }),
@@ -1280,7 +1302,7 @@ async function main() {
   // Commute mode (Pro): open on the next trains of the saved commute.
   else
     whenTrains().then(() => {
-      if (CONFIG.pro && commute.from && commute.to && SHEETS.every((x) => $(x).hidden)) {
+      if (CONFIG.pro && activeCommute(commutes) && SHEETS.every((x) => $(x).hidden)) {
         openSheet("commute");
         renderCommute();
       }
@@ -1314,8 +1336,7 @@ prefs
 prefs
   .get(COMMUTE_KEY)
   .then((v) => {
-    const c = JSON.parse(v || "null");
-    if (c && typeof c === "object") commute = { from: c.from || null, to: c.to || null };
+    commutes = parseCommutes(v);
   })
   .catch(() => {});
 prefs
