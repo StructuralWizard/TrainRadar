@@ -66,6 +66,13 @@ if (first.origin && !first.timetable_only) {
   const locked = await page.$$eval("#history-body button", (b) => b.filter((x) => x.textContent.includes("🔒")).length);
   console.log("history sheet:", bars, "bars,", locked, "locked ranges");
   if (bars !== 7 || locked !== 3) await fail(`history sheet: ${bars} bars, ${locked} locked`);
+  // When the history starts, and Renfe's official monthly figures.
+  const since = await page.textContent("#hist-since").catch(() => "");
+  const official = await page.getAttribute("#hist-official", "href").catch(() => "");
+  console.log("history since:", since, "| official:", official);
+  if (!/registra los retrasos desde el/.test(since)) await fail(`history start note: "${since}"`);
+  if (!/^https:\/\/grupo\.renfe\.com\/.*puntualidad-en-los-servicios/.test(official || "")) await fail(`Renfe's official link: "${official}"`);
+  await page.screenshot({ path: `${out}/history-sheet.png` });
   await page.click("#history-close");
   await openTrainAgain();
 }
@@ -84,17 +91,27 @@ const boxOf = async (sel) => {
 // drag can drop it, so try up to three times.
 let dragged = false;
 for (let attempt = 0; attempt < 3 && !dragged; attempt++) {
-  const box = await boxOf(".maplibregl-popup");
-  const tb = await boxOf(".popup .popup-title");
+  // The card may still be scrolled down to its history link: back to the
+  // title, as a person would before dragging it.
+  await page.evaluate(() => document.querySelector(".maplibregl-popup-content")?.scrollTo(0, 0));
+  // The title inside the map's train popup (another .popup-title can exist
+  // elsewhere on the page, off screen: dragging that moved nothing).
+  const box = await boxOf(".maplibregl-popup:has(.popup-title)");
+  const tb = await boxOf(".maplibregl-popup .popup-title");
   if (!box || !tb) {
     const state = await page.evaluate(() => ({ popups: document.querySelectorAll(".maplibregl-popup").length, html: document.querySelector(".maplibregl-popup")?.textContent?.slice(0, 120) }));
     await fail(`train popup gone before the drag: ${JSON.stringify(state)}`);
   }
+  const under = await page.evaluate(([x, y]) => {
+    const e = document.elementFromPoint(x, y);
+    return e ? `${e.tagName}#${e.id}.${e.className}` : "nothing";
+  }, [tb.x + 10, tb.y + 5]);
+  console.log("drag at", Math.round(tb.x + 10), Math.round(tb.y + 5), "on", under);
   await page.mouse.move(tb.x + 10, tb.y + 5);
   await page.mouse.down();
   await page.mouse.move(tb.x + 10, tb.y + 205, { steps: 5 });
   await page.mouse.up();
-  const moved = await page.locator(".maplibregl-popup").boundingBox();
+  const moved = await page.locator(".maplibregl-popup:has(.popup-title)").first().boundingBox();
   console.log("popup y:", Math.round(box.y), "→", Math.round(moved.y));
   dragged = moved.y - box.y >= 150;
 }

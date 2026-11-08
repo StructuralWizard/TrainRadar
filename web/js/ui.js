@@ -455,7 +455,7 @@ export function punctualityChart(lang, series) {
 
 /** The history screen: range buttons (longer ranges with Pro), the chart of
  * the line or station, and for a train its runs. */
-export function historyPanel(lang, { title, series, runs, days, ranges, onRange, onPro, state }) {
+export function historyPanel(lang, { title, series, runs, days, ranges, onRange, onPro, state, since = null, sinceShort = false, officialUrl = null }) {
   const out = [el("p", {}, el("strong", {}, title))];
   out.push(
     el(
@@ -470,9 +470,23 @@ export function historyPanel(lang, { title, series, runs, days, ranges, onRange,
       ),
     ),
   );
+  // When the history starts, and Renfe's own monthly figures (another method).
+  const sinceDate = since ? formatDay(lang, Date.parse(`${since}T12:00:00Z`) / 1000) : "";
+  const footer = [];
+  if (since) footer.push(el("p", { class: "small muted", id: "hist-since" }, t(lang, sinceShort ? "histSinceShort" : "histSince", { date: sinceDate })));
+  if (officialUrl) {
+    footer.push(
+      el(
+        "p",
+        { class: "small" },
+        el("a", { href: officialUrl, target: "_blank", rel: "noopener", id: "hist-official" }, `${t(lang, "histOfficial")} ↗`),
+        el("span", { class: "muted" }, ` ${t(lang, "histOfficialNote")}`),
+      ),
+    );
+  }
   if (state === "loading") return [...out, el("p", { class: "muted" }, t(lang, "loading"))];
-  if (state === "error") return [...out, el("p", { class: "muted" }, t(lang, "histUnavailable"))];
-  if (!series.length && !(runs || []).length) return [...out, el("p", { class: "muted" }, t(lang, "histNone"))];
+  if (state === "error") return [...out, el("p", { class: "muted" }, t(lang, "histUnavailable")), ...footer];
+  if (!series.length && !(runs || []).length) return [...out, el("p", { class: "muted" }, t(lang, "histNone")), ...footer];
   if (series.length) {
     const avg = Math.round(series.reduce((a, d) => a + d.onTimePct, 0) / series.length);
     out.push(el("p", { class: "small" }, t(lang, "histAvg", { p: avg, d: series.length })), punctualityChart(lang, series));
@@ -496,7 +510,7 @@ export function historyPanel(lang, { title, series, runs, days, ranges, onRange,
       ),
     );
   }
-  out.push(el("p", { class: "small muted" }, t(lang, "histNote")));
+  out.push(el("p", { class: "small muted" }, t(lang, "histNote")), ...footer);
   return out;
 }
 

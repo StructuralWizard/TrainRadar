@@ -147,7 +147,18 @@ pub struct Live {
     pub trains: Vec<LiveTrain>,
     /// Time of the last ingest/rebuild (unix seconds).
     pub now: i64,
+    /// Since when untimestamped fixes have stayed put, as seen by an observer
+    /// that watches the feed all the time (the server's recorder): vehicle key
+    /// → (lat, lon in 1e-5 degrees, since). See [`Live::apply_fix_since`].
+    known_since: HashMap<String, (i32, i32, i64)>,
 }
+
+/// The AV/LD/MD feed keeps listing a train at its last GPS position long
+/// after it has gone (seen: trains due at midnight still "on the way" at
+/// 03:20). A fix without a timestamp that hasn't moved for this long...
+pub const GHOST_FROZEN_SECS: i64 = 3_600;
+/// ...when its trip should have ended this long ago is left off the map.
+pub const GHOST_AFTER_END_SECS: i64 = 1_800;
 
 /// Trains of timetable-only operators (no live feed) that should be running
 /// now, placed by their timetable.
@@ -296,6 +307,33 @@ impl Seen {
     }
 }
 
+/// An untimestamped fix that has stayed put for [`GHOST_FROZEN_SECS`] while
+/// its trip, even moving on from there with the timetable, should have ended
+/// [`GHOST_AFTER_END_SECS`] ago: the feed's leftover, not a train.
+fn is_ghost(
+    net: &Network,
+    v: &RtVehicle,
+    seen: Option<&Seen>,
+    matched: Option<Match>,
+    delay: Option<i32>,
+    now: i64,
+) -> bool {
+    let (Some(s), Some(m)) = (seen, matched) else {
+        return false;
+    };
+    if v.timestamp.is_some() || now - s.since < GHOST_FROZEN_SECS {
+        return false;
+    }
+    let st = net.schedule(m.trip);
+    let Some(last) = st.last() else {
+        return false;
+    };
+    // Expected end: the timetable's, shifted by the delay at the fix.
+    let late = i64::from(delay.unwrap_or(0).max(0));
+    let end = m.start_utc + i64::from(last.arrival) + late;
+    now - end >= GHOST_AFTER_END_SECS
+}
+
 fn key(v: &RtVehicle) -> String {
     format!("{}|{}", v.trip_id, v.train_number)
 }
@@ -311,10 +349,20 @@ impl Live {
                         .timestamp
                         .filter(|t| (t - now).abs() <= MAX_CLOCK_SKEW_SECS)
                         .unwrap_or(now);
+                    // Untimestamped and new to us: the server may know since
+                    // when it has been at this spot.
+                    let since = match self.known_since.get(&key(x)) {
+                        Some(&(klat, klon, ks))
+                            if x.timestamp.is_none() && (klat, klon) == (lat, lon) =>
+                        {
+                            ks.min(ft)
+                        }
+                        _ => ft,
+                    };
                     let fresh = Seen {
                         lat,
                         lon,
-                        since: ft,
+                        since,
                         last: ft,
                         timed: x.timestamp.is_some(),
                         hist: Vec::new(),
@@ -339,6 +387,52 @@ impl Live {
             FeedData::Alerts(a) => self.incidents = a,
         }
         self.rebuild(net, now);
+    }
+
+    /// Untimestamped fixes and since when each has stayed at its position,
+    /// one per line: `key\tlat_e5\tlon_e5\tsince` (the server publishes this
+    /// so that apps opened later know how old a frozen position is).
+    pub fn fix_since_text(&self) -> String {
+        let mut rows: Vec<String> = self
+            .seen
+            .iter()
+            .filter(|(_, s)| !s.timed)
+            .map(|(k, s)| format!("{k}\t{}\t{}\t{}", s.lat, s.lon, s.since))
+            .collect();
+        rows.sort();
+        rows.join("\n")
+    }
+
+    /// Take in [`Live::fix_since_text`] from an observer that has watched the
+    /// feed longer than us: a vehicle still at the same position has been
+    /// there since the earlier time. Returns how many fixes got older.
+    pub fn apply_fix_since(&mut self, net: &Network, text: &str, now: i64) -> usize {
+        self.known_since = text
+            .lines()
+            .filter_map(|l| {
+                let mut f = l.split('\t');
+                let k = f.next()?.to_owned();
+                let lat = f.next()?.parse().ok()?;
+                let lon = f.next()?.parse().ok()?;
+                let since = f.next()?.parse().ok()?;
+                Some((k, (lat, lon, since)))
+            })
+            .collect();
+        let mut n = 0;
+        for (k, s) in &mut self.seen {
+            if let Some(&(lat, lon, since)) = self.known_since.get(k)
+                && !s.timed
+                && (s.lat, s.lon) == (lat, lon)
+                && since < s.since
+            {
+                s.since = since;
+                n += 1;
+            }
+        }
+        if n > 0 {
+            self.rebuild(net, now);
+        }
+        n
     }
 
     /// Renfe's latest trip update for a GTFS trip id, if any.
@@ -402,6 +496,9 @@ impl Live {
                     }
                     _ => (None, None),
                 };
+                if is_ghost(net, v, seen, matched, delay, now) {
+                    continue;
+                }
                 trains.push(LiveTrain {
                     rt: v.clone(),
                     feed,
@@ -765,6 +862,60 @@ mod tests {
         live.ingest(&net, "vp_ld", feed(40.155), t0 + 150);
         let v = &live.views(&net, t0 + 151, false)[0];
         assert!(v.speed.is_none_or(|s| !s.1), "{:?}", v.speed);
+    }
+
+    #[test]
+    fn frozen_untimestamped_fix_uses_the_servers_since_and_ghosts_go() {
+        let net = sample_network();
+        let feed = || FeedData::Vehicles(vec![vehicle("1004D100C3", 40.35, None)]);
+        // The server has watched this AV/LD-style fix (no timestamp) since
+        // 08:07, halfway A→B (scheduled 08:05): 2 min late.
+        let mut server = Live::default();
+        server.ingest(&net, "vp_ld", feed(), local(8, 7));
+        server.ingest(&net, "vp_ld", feed(), local(8, 30));
+        let text = server.fix_since_text();
+        assert!(
+            text.starts_with("1004D100C3|") && text.contains("\t4035000\t"),
+            "{text}"
+        );
+        assert_eq!(
+            server.trains[0].delay,
+            Some(120),
+            "the server knows the fix's age"
+        );
+
+        // An app opened at 08:40 sees the same frozen fix: on its own it
+        // would take it as fresh (35 min late)...
+        let at = local(8, 40);
+        let mut app = Live::default();
+        app.ingest(&net, "vp_ld", feed(), at);
+        assert!(app.trains[0].delay.unwrap() > 30 * 60);
+        // ...with the server's since it's 2 min late, as it was.
+        assert_eq!(app.apply_fix_since(&net, &text, at), 1);
+        assert_eq!(app.trains[0].delay, Some(120));
+        // Known before the first feed works too.
+        let mut early = Live::default();
+        early.apply_fix_since(&net, &text, at);
+        early.ingest(&net, "vp_ld", feed(), at);
+        assert_eq!(early.trains[0].delay, Some(120));
+
+        // Still frozen over an hour later, with its trip due to have ended
+        // 30+ min ago: the feed's leftover, off the map.
+        let late = local(9, 10);
+        app.ingest(&net, "vp_ld", feed(), late);
+        assert!(
+            app.trains.is_empty(),
+            "{:?}",
+            app.trains.first().map(|t| t.delay)
+        );
+        // A fix that moved again is a train.
+        app.ingest(
+            &net,
+            "vp_ld",
+            FeedData::Vehicles(vec![vehicle("1004D100C3", 40.34, None)]),
+            late + 30,
+        );
+        assert_eq!(app.trains.len(), 1);
     }
 
     #[test]

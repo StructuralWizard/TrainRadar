@@ -22,6 +22,9 @@ export const CONFIG = {
   regionZoom: 8,
   // App version shown in About (set by tools/build-web.sh from APP_VERSION).
   appVersion: "dev",
+  // First day of TrainRadar's delay history (the recorder started then):
+  // the history screen says so, so a short history isn't taken for a fault.
+  historySince: "2026-11-04",
   // The public site, for shared links (…?train=03020).
   siteUrl: "https://trainradar.pages.dev/",
   // "web" or "android" (tools/build-web.sh --target android, phase C4).

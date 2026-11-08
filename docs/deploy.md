@@ -152,7 +152,9 @@ stays off until you turn it on, because it needs a paid plan:
    `backend/migrations/`, creates the private bucket with a 90-day expiry for
    `backups/`, and deploys with the recorder on.
 4. **Check.** `https://live.<your-domain>/rt/recorder.json` shows `"ok": true` and an
-   `updatedAt` from the last 5 minutes; `rt/summary.json` lists every live train. The
+   `updatedAt` from the last 5 minutes; `rt/summary.json` lists every live train;
+   `rt/fixes.tsv` says since when each AV/LD/MD GPS position has stayed put (that feed
+   gives positions no time: apps use it so a frozen position isn't taken as fresh). The
    "Live check" workflow also checks the recorder (stale over 15 min, an error, or the
    database over 4 GB) once `RECORDER_ENABLED` is set.
 5. **API domain (optional).** Workers & Pages → `trainradar-live` → Settings → Domains &

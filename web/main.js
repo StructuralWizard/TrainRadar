@@ -21,7 +21,7 @@ import {
 } from "./js/map.js";
 import { formatClock } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
-import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries } from "./js/history.js";
+import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { enthusiast } from "./js/features.js";
 import { appNative, canShare, copyText, exportBlob, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
@@ -75,6 +75,7 @@ let engine, ref, feeds, map, attr;
 let selected = null; // { trip_id, number }
 let popup = null;
 let popupKey = "";
+let popupToTop = false; // a train was just chosen: show its card from the top
 // Line punctuality for the train popup (public history API, phase C2b).
 const history = new HistoryCache(CONFIG.apiBase, {
   // One redraw when the answer arrives, even under the pointer.
@@ -524,6 +525,7 @@ function regionName(code) {
 
 function selectTrain(info, { fly = false } = {}) {
   selected = { trip_id: info.trip_id, number: info.number };
+  popupToTop = true;
   updateRoute();
   render(true);
   if (fly) flyToVisible(info.lon, info.lat, 10, { forPopup: true });
@@ -615,7 +617,15 @@ function showPopup(open = false) {
     });
   } else {
     popup.setDOMContent(body);
+    // A train just chosen (tap, search, link) starts at its title, not
+    // where the card was scrolled to before (e.g. its history link); the
+    // refresh every few seconds keeps the scroll.
+    if (popupToTop) {
+      const content = popup.getElement()?.querySelector(".maplibregl-popup-content");
+      if (content) content.scrollTop = 0;
+    }
   }
+  popupToTop = false;
 }
 
 /** Let the user drag a popup out of the way by its title. It then keeps
@@ -1003,6 +1013,9 @@ async function renderHistory() {
         days: v.days,
         ranges,
         state,
+        since: CONFIG.historySince,
+        sinceShort: rangeBefore(CONFIG.historySince, v.days),
+        officialUrl: renfeOfficialUrl(v.kind === "station" ? null : v.product),
         onRange: (days) => {
           historyView = { ...v, days };
           renderHistory();
@@ -1023,8 +1036,13 @@ async function renderHistory() {
       const r = await histApi.get("station", v.id, v.days);
       if (historyView === v) draw("ok", dailySeries(r.days));
     } else {
-      const [line, train] = await Promise.all([histApi.get("line", v.line, v.days), histApi.get("train", v.trainNo, v.days)]);
-      if (historyView === v) draw("ok", dailySeries(line.days, v.product), train.runs || []);
+      // A train found by number (not on the map): its line from its runs.
+      const train = await histApi.get("train", v.trainNo, v.days);
+      const last = (train.runs || []).at(-1);
+      const lineId = v.line || last?.line;
+      const product = v.product || last?.product || null;
+      const line = lineId ? await histApi.get("line", lineId, v.days) : { days: [] };
+      if (historyView === v) draw("ok", dailySeries(line.days, product), train.runs || []);
     }
   } catch {
     if (historyView === v) draw("error");
@@ -1178,7 +1196,48 @@ function renderSearch() {
   }
   const hits = JSON.parse(engine.searchJson(q, 8));
   ul.hidden = false;
-  if (!hits.length) return ul.replaceChildren(el("li", { class: "muted" }, t(lang, "searchNone")));
+  // A train number that isn't on the map now: its history (Pro, app).
+  const n = /^\d{2,6}$/.test(q) ? q.replace(/^0+/, "") : "";
+  const offMap = n && !hits.some((h) => h.number.replace(/^0+/, "") === n) && CONFIG.platform === "android" && CONFIG.apiBase;
+  const offRow = !offMap
+    ? null
+    : CONFIG.pro
+      ? el(
+          "li",
+          {},
+          el(
+            "button",
+            {
+              class: "link",
+              id: "search-history",
+              onclick: () => {
+                ul.hidden = true;
+                $("search-q").value = "";
+                openHistory({ kind: "train", trainNo: n, line: null, product: null, title: t(lang, "searchTrainTitle", { n }), days: FREE_DAYS });
+              },
+            },
+            el("strong", {}, t(lang, "searchTrainTitle", { n })),
+            ` · ${t(lang, "searchNotRunning")}`,
+          ),
+        )
+      : el(
+          "li",
+          {},
+          el(
+            "button",
+            {
+              class: "link muted",
+              id: "search-history-pro",
+              onclick: () => {
+                ul.hidden = true;
+                openSheet("settings");
+                renderSettings();
+              },
+            },
+            t(lang, "searchNotRunningPro", { n }),
+          ),
+        );
+  if (!hits.length) return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]));
   ul.replaceChildren(
     ...hits.map((h) =>
       el(
@@ -1199,6 +1258,7 @@ function renderSearch() {
         ),
       ),
     ),
+    ...(offRow ? [offRow] : []),
   );
 }
 

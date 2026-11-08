@@ -85,6 +85,28 @@ export const RANGES = [7, 30, 90, 365];
 export const FREE_DAYS = 7;
 
 /** One history request (`kind`: line | train | station), cached per page. */
+/** Renfe's official monthly punctuality reports (its transparency portal),
+ * per kind of service; a different method from TrainRadar's (cancelled
+ * trains left out, some figures only count delays Renfe attributes to
+ * itself), so they're linked, never mixed into our figures. */
+export const RENFE_PUNCTUALITY = "https://grupo.renfe.com/es/es/gobierno-y-transparencia/puntualidad-en-los-servicios";
+const LONG_DISTANCE = new Set(["AVE", "AVLO", "ALVIA", "EUROMED", "INTERCITY", "LD", "TRENHOTEL"]);
+
+export function renfeOfficialUrl(product) {
+  if (!product) return RENFE_PUNCTUALITY;
+  if (product === "CERCANIAS") return `${RENFE_PUNCTUALITY}/cercanias`;
+  if (LONG_DISTANCE.has(product)) return `${RENFE_PUNCTUALITY}/ave-larga-distancia`;
+  return `${RENFE_PUNCTUALITY}/media-distancia`; // MD, Regional, Avant, Proximidad…
+}
+
+/** Whether a range of `days` ending yesterday starts before `since`. */
+export function rangeBefore(since, days, nowMs = Date.now()) {
+  if (!since) return false;
+  const yesterday = new Date(nowMs - 86_400_000);
+  const from = new Date(Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate()) - (days - 1) * 86_400_000);
+  return from.toISOString().slice(0, 10) < since;
+}
+
 export class HistoryApi {
   constructor(base, fetchFn = (...a) => fetch(...a)) {
     this.base = base;
