@@ -170,12 +170,34 @@ console.log("networks:", (await page.textContent("#networks-body")).replace(/\s+
 await page.screenshot({ path: `${out}/networks-sheet.png` });
 await page.fill("#net-q", "madr");
 const netRows = await page.$$eval("#networks .net-row", (r) => r.map((x) => x.dataset.code));
-if (netRows.length !== 1) await fail(`network search: ${netRows}`);
+// The Cercanías network first, then its community and province.
+if (netRows.length !== 3 || netRows[1] !== "ccaa:md" || netRows[2] !== "prov:28") await fail(`network search: ${netRows}`);
 await page.click("#networks .net-row");
 await page.waitForTimeout(1500);
 if (!(await page.isHidden("#networks"))) await fail("network picker still open");
 const chip = await page.textContent("#net-chip");
 if (!/Madrid/.test(chip)) await fail(`network chip says ${chip}`);
+// A province, found with a typo.
+await page.click("#net-chip");
+await page.fill("#net-q", "sevlla");
+await page.click('#networks .net-row[data-code="prov:41"]').catch(() => fail("province not found"));
+await page.waitForTimeout(1500);
+if ((await page.textContent("#net-chip")).trim() !== "Sevilla") await fail("province not on the chip");
+
+// Search: a city (typo forgiven), then origin → destination.
+await page.fill("#search-q", "zaragoz");
+await page.waitForSelector('#search-results [data-kind="city"]', { timeout: 5000 }).catch(() => fail("no city in the search"));
+await page.fill("#search-q", "zaragoza a madrid");
+await page.click("#search-route-go").catch(() => fail("no origin → destination row"));
+await page.waitForSelector("#route:not([hidden]) #route-count, #route:not([hidden]) #route-none", { timeout: 5000 }).catch(() => fail("route sheet empty"));
+console.log("route:", (await page.textContent("#route-body")).replace(/\s+/g, " ").slice(0, 160));
+await page.screenshot({ path: `${out}/route-sheet.png` });
+await page.click("#route-swap");
+if ((await page.inputValue("#route-from")) !== "Madrid") await fail("swap didn't swap");
+await page.fill("#route-to", "cordoba");
+await page.press("#route-to", "Enter");
+if ((await page.inputValue("#route-to")) !== "Córdoba") await fail("suggestion not picked");
+await page.click("#route-close");
 
 
 // Desktop (≥ 720 px): trains and stations keep their map popups, and a

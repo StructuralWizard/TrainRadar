@@ -7,9 +7,10 @@ import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format.js";
 import { Sheets, isPhone } from "./js/sheet.js";
-import { COMMUNITIES, PROVINCES, boxOf, cityBox, cityStations, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
+import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
-import { layersSheet, networksSheet, stationSheet, trainSheet } from "./js/sheetui.js";
+import { PLACE_ICON, layersSheet, networksSheet, placeKind, routeResults, stationSheet, trainSheet } from "./js/sheetui.js";
+import { endStations, mergeRoutes } from "./js/route.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
@@ -96,7 +97,7 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail", "networks", "layers-panel"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail", "networks", "layers-panel", "route"];
 const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
@@ -204,6 +205,13 @@ function applyLang() {
   $("trips-close").setAttribute("aria-label", t(lang, "close"));
   $("more-title").textContent = t(lang, "moreTitle");
   $("networks-title").textContent = t(lang, "netTitle");
+  $("route-title").textContent = t(lang, "routeTitle");
+  $("route-from-l").textContent = t(lang, "routeFrom");
+  $("route-to-l").textContent = t(lang, "routeTo");
+  $("route-from").placeholder = t(lang, "routeFromPh");
+  $("route-to").placeholder = t(lang, "routeToPh");
+  $("route-swap").setAttribute("aria-label", t(lang, "routeSwap"));
+  $("route-swap").title = t(lang, "routeSwap");
   $("networks-close").setAttribute("aria-label", t(lang, "close"));
   $("layers-panel-title").textContent = t(lang, "layers");
   $("layers-panel-close").setAttribute("aria-label", t(lang, "close"));
@@ -924,6 +932,7 @@ function showStationSheet(f, regions, refresh) {
     onShare: canShare()
       ? () => share({ title: name, text: t(lang, "shareStation", { station: name }), url: `${CONFIG.siteUrl}?station=${encodeURIComponent(id)}` })
       : null,
+    onRoute: () => openRoute({ kind: "station", item: { id, name, lon, lat } }, null),
   });
   const scroll = sheet.scrollTop;
   $("detail-body").replaceChildren(body);
@@ -1434,30 +1443,64 @@ function renderSearch() {
   }
   const hits = JSON.parse(engine.searchJson(q, 8));
   ul.hidden = false;
-  // Phone: stations too ("Buscar tren, línea o estación").
-  const stationRows = isPhone()
-    ? searchStations(q).map((st) =>
+  // Places: cities, stations, provinces, communities (typos forgiven).
+  const done = () => {
+    ul.hidden = true;
+    $("search-q").value = "";
+    $("search-q").blur();
+  };
+  const places = /^\d+$/.test(q) ? [] : searchPlaces(q, stationList(), 6);
+  const placeRows = places.map((h) =>
+    el(
+      "li",
+      {},
+      el(
+        "button",
+        {
+          class: `link search-place search-${h.kind}`,
+          "data-kind": h.kind,
+          onclick: () => {
+            done();
+            if (h.kind === "station") openStation(h.item);
+            else goToNetwork(`${{ city: "city", province: "prov", community: "ccaa" }[h.kind]}:${h.item.code}`);
+          },
+        },
+        icon(PLACE_ICON[h.kind], 16),
+        el("strong", {}, h.item.name),
+        el("span", { class: "muted" }, ` · ${placeKind(lang, h.kind)}`),
+      ),
+    ),
+  );
+  // Origin → destination: "Madrid a Sevilla" straight away; else a way in.
+  const end = (text) => searchPlaces(text, stationList(), 1, ["city", "station"])[0] || null;
+  const pair = parseRoute(q);
+  const ends = pair && { from: end(pair.from), to: end(pair.to) };
+  const routeRows = [];
+  if (ends?.from && ends?.to) {
+    routeRows.push(
+      el(
+        "li",
+        {},
         el(
+          "button",
+          { class: "link search-route", id: "search-route-go", onclick: () => (done(), openRoute(ends.from, ends.to)) },
+          icon("arrowRight", 16),
+          el("strong", {}, t(lang, "routeGo", { from: ends.from.item.name, to: ends.to.item.name })),
+          el("span", { class: "muted" }, ` · ${t(lang, "routeGoSub")}`),
+        ),
+      ),
+    );
+  }
+  const first = places.find((h) => h.kind === "city" || h.kind === "station") || null;
+  const routeOpen =
+    q.length >= 2 && !/^\d+$/.test(q)
+      ? el(
           "li",
           {},
-          el(
-            "button",
-            {
-              class: "link search-station",
-              onclick: () => {
-                ul.hidden = true;
-                $("search-q").value = "";
-                $("search-q").blur();
-                openStation(st);
-              },
-            },
-            icon("pin", 16),
-            el("strong", {}, st.name),
-            el("span", { class: "muted" }, ` · ${t(lang, "searchStation")}`),
-          ),
-        ),
-      )
-    : [];
+          el("button", { class: "link search-route muted", id: "search-route", onclick: () => (done(), openRoute(ends?.from || first, ends?.to || null)) }, icon("arrowRight", 16), t(lang, "routeOpen")),
+        )
+      : null;
+  const stationRows = [...placeRows, ...(routeOpen ? [routeOpen] : [])];
   // A train number that isn't on the map now: its history (Pro, app).
   const n = /^\d{2,6}$/.test(q) ? q.replace(/^0+/, "") : "";
   const offMap = n && !hits.some((h) => h.number.replace(/^0+/, "") === n) && CONFIG.platform === "android" && CONFIG.apiBase;
@@ -1499,8 +1542,10 @@ function renderSearch() {
             t(lang, "searchNotRunningPro", { n }),
           ),
         );
-  if (!hits.length && !stationRows.length) return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]));
+  if (!hits.length && !placeRows.length && !routeRows.length)
+    return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]), ...(routeOpen ? [routeOpen] : []));
   ul.replaceChildren(
+    ...routeRows,
     ...hits.map((h) =>
       el(
         "li",
@@ -1538,7 +1583,7 @@ const sheets = new Sheets({
   onSnap: () => haptic(),
 });
 for (const id of SHEETS) {
-  const tall = id === "networks" || id === "layers-panel";
+  const tall = id === "networks" || id === "layers-panel" || id === "route";
   sheets.add($(id), id === "delayed" ? { initial: "peek", closable: false } : tall ? { initial: "full", snaps: ["half", "full"] } : { initial: "half" });
 }
 // Closing the detail sheet (swipe, Back, ✕, another tab) drops the selection.
@@ -1696,6 +1741,7 @@ function renderHomeSummary(st, pos) {
 function phoneChrome() {
   // Close buttons: an SVG cross instead of the ✕ character (labelled).
   for (const b of document.querySelectorAll('.sheet-head button[id$="-close"], #app-banner-close')) b.replaceChildren(icon("close", 18));
+  $("route-swap").replaceChildren(icon("swap", 20));
   $("search-icon").replaceChildren(icon("search", 20));
   $("net-chip").replaceChildren(el("span", { id: "net-chip-l" }, netName()), icon("chevronDown", 16));
   $("net-chip").setAttribute("aria-label", t(lang, "netChipLabel", { name: netName() }));
@@ -1874,22 +1920,107 @@ function renderLayers() {
   );
 }
 
-/** Stations whose name matches a search (phone), accents ignored. */
+/*
+ * Origin → destination: the direct trains of the next hours between two
+ * stations or cities (any of a city's main stations), from the timetables
+ * with live delays (engine.commuteJson per pair of stations).
+ */
+const ROUTE_HORIZON = 4 * 3600;
+const route = { from: null, to: null }; // {kind: "station" | "city", item}
+
+function openRoute(from = route.from, to = route.to) {
+  route.from = from;
+  route.to = to;
+  openSheet("route");
+  $("route-from").value = from?.item.name || "";
+  $("route-to").value = to?.item.name || "";
+  $("route-sugg").hidden = true;
+  renderRoute();
+  // Ask for the missing end (not on a phone with both set: no keyboard).
+  if (!from) $("route-from").focus();
+  else if (!to) $("route-to").focus();
+}
+
+function renderRoute() {
+  if ($("route").hidden || !engine) return;
+  const { from, to } = route;
+  const body = $("route-body");
+  if (!from || !to) return body.replaceChildren(el("p", { class: "small muted", id: "route-help" }, t(lang, "routeHelp")));
+  const a = endStations(from, stationList());
+  const b = endStations(to, stationList());
+  // Their Cercanías timetables may not be loaded yet: load, then redraw.
+  const d = 0.05;
+  for (const st of [...a, ...b]) {
+    for (const r of ref?.regionsIn([st.lon - d, st.lat - d, st.lon + d, st.lat + d]) || []) {
+      if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(renderRoute).catch(() => {});
+    }
+  }
+  const now = Date.now();
+  const pairs = [];
+  for (const f of a) for (const s of b) if (f.id !== s.id) pairs.push({ from: f, to: s, rows: JSON.parse(engine.commuteJson(f.id, s.id, now, ROUTE_HORIZON, 20)) });
+  const rows = mergeRoutes(pairs, now / 1000, 25);
+  body.replaceChildren(
+    ...routeResults(lang, {
+      from,
+      to,
+      rows,
+      multi: from.kind === "city" || to.kind === "city",
+      onTrain: (r) => {
+        const info = liveTrain(r.number);
+        if (info) selectTrain(info, { fly: true });
+      },
+    }),
+  );
+}
+
+/** Suggestions under the field being typed in. */
+function routeSuggest(field) {
+  const input = $(`route-${field}`);
+  const ul = $("route-sugg");
+  route[field] = null;
+  renderRoute();
+  const hits = searchPlaces(input.value, stationList(), 8, ["city", "station"]);
+  ul.hidden = !hits.length;
+  ul.dataset.field = field;
+  ul.replaceChildren(
+    ...hits.map((h) =>
+      el(
+        "li",
+        {},
+        el(
+          "button",
+          { type: "button", class: "route-sugg-row", "data-kind": h.kind, onclick: () => routePick(field, h) },
+          icon(PLACE_ICON[h.kind], 16),
+          el("strong", {}, h.item.name),
+          el("span", { class: "muted" }, ` · ${placeKind(lang, h.kind)}`),
+        ),
+      ),
+    ),
+  );
+}
+
+function routePick(field, hit) {
+  route[field] = { kind: hit.kind, item: hit.item };
+  $(`route-${field}`).value = hit.item.name;
+  $("route-sugg").hidden = true;
+  const other = field === "from" ? "to" : "from";
+  if (!route[other]) $(`route-${other}`).focus();
+  else $(`route-${field}`).blur();
+  renderRoute();
+}
+
+/** Every station as {id, name, lat, lon, services}, for the searches. */
 let stationIndex = null;
-function searchStations(q, limit = 5) {
-  const norm = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const nq = norm(q);
-  if (nq.length < 2 || !engine) return [];
+function stationList() {
+  if (!engine) return [];
   stationIndex ??= JSON.parse(engine.stationsGeoJson()).features.map((f) => ({
     id: f.properties.id,
     name: f.properties.name,
-    key: norm(f.properties.name),
+    services: f.properties.services,
     lon: f.geometry.coordinates[0],
     lat: f.geometry.coordinates[1],
   }));
-  const starts = stationIndex.filter((x) => x.key.startsWith(nq));
-  const inside = stationIndex.filter((x) => !x.key.startsWith(nq) && x.key.includes(nq));
-  return [...starts, ...inside].slice(0, limit);
+  return stationIndex;
 }
 
 /** A light tick when a sheet snaps (Android app only). */
@@ -1999,6 +2130,7 @@ function render(force = false) {
   if (force) {
     renderFavourites();
     renderCommute();
+    renderRoute();
   }
   trackTrips(now);
   checkAlertsLive(now);
@@ -2445,6 +2577,22 @@ $("more-close").addEventListener("click", () => ($("more").hidden = true));
 $("net-chip").addEventListener("click", () => openNetworks());
 $("fab-layers").addEventListener("click", () => ($("layers-panel").hidden ? openLayers() : ($("layers-panel").hidden = true)));
 $("networks-close").addEventListener("click", () => ($("networks").hidden = true));
+$("route-close").addEventListener("click", () => ($("route").hidden = true));
+for (const field of ["from", "to"]) {
+  const input = $(`route-${field}`);
+  input.addEventListener("input", () => routeSuggest(field));
+  input.addEventListener("focus", () => input.select());
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("route-sugg").querySelector("button")?.click();
+    if (e.key === "Escape") $("route-sugg").hidden = true;
+  });
+}
+$("route-swap").addEventListener("click", () => {
+  [route.from, route.to] = [route.to, route.from];
+  [$("route-from").value, $("route-to").value] = [$("route-to").value, $("route-from").value];
+  $("route-sugg").hidden = true;
+  renderRoute();
+});
 $("layers-panel-close").addEventListener("click", () => ($("layers-panel").hidden = true));
 $("fab-locate").addEventListener("click", () => {
   if (!locator?.active) return startLocation();

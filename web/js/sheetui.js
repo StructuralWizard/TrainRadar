@@ -224,7 +224,7 @@ export function trainSheet(lang, info, o = {}) {
 /**
  * The station sheet. `o`: { sub, board (stationBoardJson), approaching,
  * tab "dep" | "arr", onTab, onDeparture(row), onTrain(info), onClose, fav,
- * onHistory, onShare, commute, lineColor(route) }.
+ * onHistory, onShare, onRoute, commute, lineColor(route) }.
  */
 export function stationSheet(lang, station, o = {}) {
   const chip = (ic, label, onclick, attrs = {}) =>
@@ -233,6 +233,7 @@ export function stationSheet(lang, station, o = {}) {
   if (o.fav) chips.push(chip("star", t(lang, o.fav.on ? "favOn" : "favAdd"), o.fav.onToggle, { class: "chip-btn fav-btn", "aria-pressed": String(o.fav.on) }));
   if (o.onHistory) chips.push(chip("chart", t(lang, "histStation"), o.onHistory, { id: "station-history" }));
   if (o.onShare) chips.push(chip("share", t(lang, "share"), o.onShare));
+  if (o.onRoute) chips.push(chip("arrowRight", t(lang, "routeFromHere"), o.onRoute, { id: "station-route" }));
   if (o.commute) {
     chips.push(chip(null, t(lang, o.commute.isFrom ? "commuteIsFrom" : "commuteFrom"), o.commute.setFrom, { id: "commute-from" }));
     chips.push(chip(null, t(lang, o.commute.isTo ? "commuteIsTo" : "commuteTo"), o.commute.setTo, { id: "commute-to" }));
@@ -443,5 +444,50 @@ export function layersSheet(lang, o) {
         ),
       ),
     ]),
+  ];
+}
+
+/** Kind label of a place search hit ("Ciudad", "Estación"…). */
+export function placeKind(lang, kind) {
+  return t(lang, { city: "placeCity", station: "searchStation", province: "placeProvince", community: "placeCommunity" }[kind]);
+}
+
+/** Icon for a place search hit. */
+export const PLACE_ICON = { city: "globe", station: "pin", province: "map", community: "map" };
+
+/**
+ * Origin → destination results: `rows` from route.js mergeRoutes (each
+ * with its `from` and `to` station), `multi` when an end is a city (then
+ * each row says which stations). `onTrain(row)` for trains on the map.
+ */
+export function routeResults(lang, { from, to, rows, multi, onTrain }) {
+  if (!rows.length) return [el("p", { class: "muted", id: "route-none" }, t(lang, "routeNone", { from: from.item.name, to: to.item.name }))];
+  return [
+    el("p", { class: "small muted", id: "route-count" }, t(lang, "routeCount", { n: formatCount(lang, rows.length) })),
+    el(
+      "ul",
+      { class: "route-list" },
+      rows.map((r) => {
+        const label = [r.route, r.number].filter(Boolean).join(" ");
+        const main = el(
+          "span",
+          { class: "route-main" },
+          el("span", { class: "route-times" }, el("strong", {}, formatClock(r.expected_dep)), " ", el("span", { class: "muted" }, t(lang, "routeArr", { time: formatClock(r.expected_arr) }))),
+          el("span", { class: "route-train" }, label, multi ? el("span", { class: "muted" }, ` · ${r.from.name} → ${r.to.name}`) : null),
+        );
+        const delay = el(
+          "span",
+          { class: `route-delay tone-text-${r.canceled ? "major" : delayTone(r.delay)}` },
+          r.canceled ? t(lang, "canceled") : r.delay === null || r.delay === undefined ? "" : delayShortMin(lang, r.delay),
+        );
+        return el(
+          "li",
+          {},
+          r.live && onTrain
+            ? el("button", { class: "route-row", type: "button", "data-number": r.number, onclick: () => onTrain(r) }, main, delay, icon("chevronRight", 16))
+            : el("div", { class: "route-row" }, main, delay),
+        );
+      }),
+    ),
   ];
 }

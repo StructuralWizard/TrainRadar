@@ -44,7 +44,7 @@ const STOP = new Set(["de", "del", "la", "las", "el", "los", "l", "d", "i", "y",
 /**
  * How well `query` matches `name` (both raw text): 100 exact, 90 the name
  * starts with it, 80 every word starts a word of the name (any order), 70
- * inside, 40–60 with typos (one per 4–6 letters), -1 no match.
+ * inside, 40–60 with typos (one from 4 letters, two from 9), -1 no match.
  */
 export function matchScore(query, name) {
   const q = fold(query);
@@ -64,7 +64,7 @@ export function matchScore(query, name) {
       if (!words.some((x) => x.startsWith(w))) return -1;
       continue;
     }
-    const allow = w.length >= 8 ? 2 : w.length >= 4 ? 1 : 0;
+    const allow = w.length >= 9 ? 2 : w.length >= 4 ? 1 : 0;
     let best = allow + 1;
     for (const x of words) {
       // The whole word, or its start when the query word is cut short.
