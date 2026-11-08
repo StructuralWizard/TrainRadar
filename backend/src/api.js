@@ -2,6 +2,8 @@
 //   GET /v1/history/lines?days=7            punctuality of every line
 //   GET /v1/history/line/:line?days=…       one line, per day and product
 //   GET /v1/history/train/:trainNo?days=…   every run of a train number
+//       (&today=1 also includes today's finished runs, cached 5 min: the
+//       app's "my trips" fills in arrivals it didn't see)
 //   GET /v1/history/station/:stopId?days=…  one station, per day
 // `days` 1–365 (default 7), counted back from yesterday (Madrid). Queries
 // only use indexed keys and are capped in size. Responses are cached for an
@@ -10,6 +12,7 @@
 import { addDays, madridDate } from "./history.js";
 
 export const API_CACHE = "public, max-age=3600";
+export const TODAY_CACHE = "public, max-age=300";
 export const MAX_DAYS = 365;
 const MAX_ROWS = 2000;
 const ID = /^[A-Za-z0-9._-]{1,40}$/;
@@ -21,10 +24,10 @@ export function parseDays(v) {
   return n >= 1 && n <= MAX_DAYS ? n : null;
 }
 
-function json(body, status = 200) {
+function json(body, status = 200, cache = API_CACHE) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": status === 200 ? API_CACHE : "no-store" },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": status === 200 ? cache : "no-store" },
   });
 }
 
@@ -85,6 +88,12 @@ export async function historyApi(url, db, nowMs = Date.now()) {
   }
   if (kind === "train" && id) {
     const trainNo = id.replace(/^0+/, "");
+    const today = url.searchParams.get("today") === "1";
+    if (today) {
+      range.to = madridDate(nowMs);
+      range.from = addDays(range.to, -(days - 1));
+    }
+    const { from, to } = range;
     const { results } = await db
       .prepare(
         `SELECT service_date AS date, trip_id, line, product, origin_id, dest_id, sched_dep, sched_arr,
@@ -102,7 +111,7 @@ export async function historyApi(url, db, nowMs = Date.now()) {
       }
       return { ...r, cancelled: !!r.cancelled, stops };
     });
-    return json({ ...range, trainNo, runs });
+    return json({ ...range, trainNo, runs }, 200, today ? TODAY_CACHE : API_CACHE);
   }
   return json({ error: "not found" }, 404);
 }

@@ -31,7 +31,7 @@ import { decide, parseCache } from "./js/entitlement.js";
 import { tripCard } from "./js/card.js";
 import { ALERT_CONFIG_KEY, ALERT_STATE_KEY, MAJOR, MINOR, decideAlerts, liveState } from "./js/alerts.js";
 import { MAX_COMMUTES, activeCommute, emptyCommutes, parseCommutes, removeActive, selectCommute, serializeCommutes, setDestination, setOrigin, swapActive } from "./js/commutes.js";
-import { CLAIMS_URL, TRIPS_KEY, activeTrip, claimText, monthlyStats, parseTrips, serializeTrips, startTrip, tripsCsv, updateTrip } from "./js/trips.js";
+import { CLAIMS_URL, TRIPS_KEY, activeTrip, claimText, completeFromRun, monthlyStats, needsArrival, parseTrips, runForTrip, serializeTrips, startTrip, tripsCsv, updateTrip } from "./js/trips.js";
 import {
   delayedItem,
   favouritesPanel,
@@ -808,6 +808,7 @@ function renderSettings() {
       onManage: () => billing?.manage(),
       onTrips: () => {
         openSheet("trips");
+        fillArrivals();
         renderTrips();
       },
       alerts: appNative.available() ? { on: alertsOn, onToggle: () => setAlerts(!alertsOn) } : null,
@@ -878,6 +879,36 @@ function saveTrips(list) {
   renderTrips();
 }
 
+/**
+ * Trips that ended without the app seeing the arrival (it was closed):
+ * ask the history server, which records every run. At most every 10 min.
+ */
+let lastArrivalLookup = 0;
+async function fillArrivals(now = Date.now()) {
+  if (!CONFIG.pro || !CONFIG.apiBase || now - lastArrivalLookup < 10 * 60_000) return;
+  const pending = trips.filter((t) => needsArrival(t, now));
+  if (!pending.length) return;
+  lastArrivalLookup = now;
+  const found = new Map();
+  for (const trainNo of new Set(pending.map((t) => t.trainNo))) {
+    try {
+      const r = await histApi.get("train", trainNo, 4, { today: true });
+      for (const t of pending.filter((x) => x.trainNo === trainNo)) {
+        const run = runForTrip(t, r.runs || []);
+        // Not recorded yet (the server writes a run once it's over): ask
+        // again later, unless the trip ended more than a day ago.
+        const u = completeFromRun(t, run, { final: !!run || now - t.endedAt > 86_400_000 });
+        if (u !== t) found.set(t.id, u);
+      }
+    } catch (e) {
+      console.warn("arrival lookup", trainNo, e);
+    }
+  }
+  if (found.size) {
+    saveTrips(trips.map((t) => found.get(t.id) || t));
+  }
+}
+
 /** Follow the trips in progress (every ~15 s). */
 function trackTrips(now) {
   if (!CONFIG.pro || now - lastTripCheck < 15_000 || !trips.some((t) => !t.endedAt)) return;
@@ -891,6 +922,7 @@ function trackTrips(now) {
   });
   if (changed) saveTrips(next);
   else trips = next;
+  if (next.some((t) => needsArrival(t, now))) fillArrivals(now);
 }
 
 function renderTrips() {
@@ -913,7 +945,7 @@ function renderTrips() {
         if (claimFor?.id === t.id) claimFor = null;
         saveTrips(trips.filter((x) => x.id !== t.id));
       },
-      onCsv: () => exportFile(`trainradar-trips-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.csv`, tripsCsv(trips), "text/csv").catch((e) => console.warn("csv", e)),
+      onCsv: () => exportFile(`trainradar-trips-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.csv`, tripsCsv(trips, lang), "text/csv").catch((e) => console.warn("csv", e)),
       onDeleteAll: () => {
         if (!window.confirm(t(lang, "tripsDeleteConfirm"))) return;
         claimFor = null;
@@ -1417,8 +1449,13 @@ prefs
   .catch(() => {});
 prefs
   .get(TRIPS_KEY)
-  .then((v) => (trips = parseTrips(v)))
+  .then((v) => {
+    trips = parseTrips(v);
+    // Once Pro is known: arrivals missed while the app was closed.
+    setTimeout(() => fillArrivals(), 5000);
+  })
   .catch(() => {});
+onResume(() => fillArrivals());
 $("history-close").addEventListener("click", () => ($("history").hidden = true));
 $("commute-close").addEventListener("click", () => ($("commute").hidden = true));
 $("trips-close").addEventListener("click", () => {

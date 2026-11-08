@@ -225,6 +225,7 @@ const [csv] = await Promise.all([pp.waitForEvent("download"), pp.click("#trips-c
 await csv.saveAs(`${out}/trips.csv`);
 const csvText = await readFile(`${out}/trips.csv`, "utf8");
 if (csvText.trim().split("\n").length !== 2) await fail(`trips CSV: ${csvText}`);
+if (!csvText.startsWith("fecha;tren;origen;destino;")) await fail(`trips CSV headings: ${csvText.split("\n")[0]}`);
 const [png] = await Promise.all([pp.waitForEvent("download"), pp.click(".trips-list li button:text-is('Imagen')")]);
 if (!png.suggestedFilename().endsWith(".png")) await fail(`card named ${png.suggestedFilename()}`);
 await png.saveAs(`${out}/trip-card.png`);

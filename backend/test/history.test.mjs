@@ -129,6 +129,7 @@ test("API: lines, line, station, train; days limits; bad ids", async () => {
     trip("2026-11-03", "a", { train_no: "19", arr_delay_min: 4 }),
     trip("2026-11-02", "b", { train_no: "19", arr_delay_min: 12 }),
     trip("2026-10-01", "old", { train_no: "19" }),
+    trip("2026-11-04", "today", { train_no: "19", arr_delay_min: 7 }),
   ]);
   await aggregateDay(db, "2026-11-03");
   await aggregateDay(db, "2026-11-02");
@@ -148,7 +149,11 @@ test("API: lines, line, station, train; days limits; bad ids", async () => {
   assert.deepEqual(train.body.runs.map((r) => r.arr_delay_min), [12, 4]);
   assert.equal(train.body.runs[0].stops[1].delay, null);
   assert.equal(train.body.runs[0].stops[0].estimated, true);
-  assert.equal((await get("/v1/history/train/19?days=365")).body.runs.length, 3);
+  assert.equal((await get("/v1/history/train/19?days=365")).body.runs.length, 3, "today left out");
+  const today = await get("/v1/history/train/19?days=2&today=1");
+  assert.deepEqual(today.body.runs.map((r) => r.arr_delay_min), [4, 7], "yesterday and today");
+  assert.equal(today.body.to, "2026-11-04");
+  assert.equal(today.cache, "public, max-age=300");
   const station = await get("/v1/history/station/C");
   assert.equal(station.body.days.length, 2);
   for (const bad of ["?days=0", "?days=366", "?days=abc", "?days=1e3"]) {

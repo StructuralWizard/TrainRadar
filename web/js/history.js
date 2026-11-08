@@ -92,9 +92,12 @@ export class HistoryApi {
     this.cache = new Map();
   }
 
-  get(kind, id, days) {
+  /** `today`: also today's finished runs (train history only; not cached
+   * here, the server caches it for 5 minutes). */
+  get(kind, id, days, { today = false } = {}) {
     if (!this.base) return Promise.reject(new Error("no history API"));
     const key = `${kind}/${id}/${days}`;
+    if (today) return this.fetchJson(`${this.base}v1/history/${kind}/${encodeURIComponent(id)}?days=${days}&today=1`);
     if (!this.cache.has(key)) {
       const url = `${this.base}v1/history/${kind}/${encodeURIComponent(id)}?days=${days}`;
       const p = this.fetchFn(url).then((r) => {
@@ -105,6 +108,13 @@ export class HistoryApi {
       this.cache.set(key, p);
     }
     return this.cache.get(key);
+  }
+
+  fetchJson(url) {
+    return this.fetchFn(url).then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    });
   }
 }
 

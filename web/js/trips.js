@@ -3,7 +3,9 @@
 // when "Am I on this train?" is sure; while the train is live its delay at
 // each stop it reaches is recorded; it ends at the last stop, or once the
 // train has left the feed for 15 minutes. Only the train and its times are
-// stored, never your location.
+// stored, never your location. If the app wasn't open when the train
+// arrived, the arrival is filled in later from the history server, which
+// records every run (see needsArrival / completeFromRun).
 
 export const TRIPS_KEY = "trips";
 export const TRIPS_SCHEMA = 1;
@@ -93,6 +95,54 @@ export function updateTrip(trip, info, now) {
   return t;
 }
 
+/** How long to keep asking the server for an arrival the app didn't see. */
+export const ARRIVAL_LOOKUP_MS = 3 * 86_400_000;
+
+/** A finished trip whose arrival the app didn't see, still worth asking for. */
+export function needsArrival(t, now) {
+  return !!t.endedAt && t.arrDelayMin === null && !t.arrivalChecked && now - t.endedAt < ARRIVAL_LOOKUP_MS;
+}
+
+/**
+ * The server's run for this trip (from /v1/history/train, `runs`), matched
+ * by its scheduled arrival (or, failing that, its day and departure).
+ */
+export function runForTrip(t, runs) {
+  const near = (a, b) => a !== null && b !== null && Math.abs(a - b) <= 180;
+  const first = t.stops[0]?.sched ?? null;
+  return (
+    runs.find((r) => near(r.sched_arr, t.schedArr)) ||
+    runs.find((r) => r.date === t.day && near(r.sched_dep, first)) ||
+    null
+  );
+}
+
+/**
+ * Fill in what the app missed from the server's run: the arrival delay,
+ * the highest delay and each stop's delay (matched by scheduled time).
+ * `final`: no point asking again (found, or the run is too old to appear).
+ */
+export function completeFromRun(t, run, { final = !!run } = {}) {
+  if (!run) return final ? { ...t, arrivalChecked: true } : t;
+  const arr = run.arr_delay_min ?? null;
+  const stops = t.stops.map((s) => {
+    if (s.delayMin !== null) return s;
+    const r = (run.stops || []).find((x) => Math.abs(x.sched - s.sched) <= 180);
+    return r && r.delay !== null && r.delay !== undefined ? { ...s, delayMin: r.delay } : s;
+  });
+  const known = [t.maxDelayMin, run.max_delay_min, arr].filter((x) => x !== null && x !== undefined);
+  return {
+    ...t,
+    stops,
+    arrDelayMin: arr,
+    lastDelayMin: arr ?? run.last_delay_min ?? t.lastDelayMin,
+    maxDelayMin: known.length ? Math.max(...known) : null,
+    estimated: run.source_quality !== "renfe_tu",
+    fromServer: true,
+    arrivalChecked: arr !== null || final,
+  };
+}
+
 /** Delay counted for a finished trip: at arrival, else the last one seen. */
 export function tripDelay(t) {
   return t.arrDelayMin ?? t.lastDelayMin ?? null;
@@ -145,13 +195,26 @@ export const CLAIMS_URL = {
 const csvCell = (v) => {
   const s = v === null || v === undefined ? "" : String(v);
   // Quote, and defuse spreadsheet formulas (=, +, -, @ at the start).
-  return /^[=+\-@]/.test(s) ? `"'${s.replace(/"/g, '""')}"` : /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return /^[=+\-@]/.test(s) ? `"'${s.replace(/"/g, '""')}"` : /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-export function tripsCsv(trips) {
-  const head = ["date", "train", "origin", "destination", "scheduled_arrival", "arrival_delay_min", "max_delay_min", "source"];
+const CSV = {
+  es: {
+    sep: ";", // what Excel expects in Spain (the decimal separator is the comma)
+    head: ["fecha", "tren", "origen", "destino", "llegada_prevista", "retraso_llegada_min", "retraso_maximo_min", "fuente"],
+    estimated: "estimado",
+  },
+  en: {
+    sep: ",",
+    head: ["date", "train", "origin", "destination", "scheduled_arrival", "arrival_delay_min", "max_delay_min", "source"],
+    estimated: "estimated",
+  },
+};
+
+export function tripsCsv(trips, lang = "es") {
+  const c = CSV[lang] || CSV.es;
   const rows = trips
     .filter((t) => t.endedAt)
-    .map((t) => [t.day, t.label, t.origin, t.destination, t.schedArr ? clock(t.schedArr) : "", tripDelay(t), t.maxDelayMin, t.estimated ? "estimated" : "renfe"]);
-  return [head, ...rows].map((r) => r.map(csvCell).join(",")).join("\n") + "\n";
+    .map((t) => [t.day, t.label, t.origin, t.destination, t.schedArr ? clock(t.schedArr) : "", tripDelay(t), t.maxDelayMin, t.estimated ? c.estimated : "renfe"]);
+  return [c.head, ...rows].map((r) => r.map(csvCell).join(c.sep)).join("\n") + "\n";
 }

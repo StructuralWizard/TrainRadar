@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { GONE_MS, activeTrip, claimText, monthlyStats, parseTrips, serializeTrips, startTrip, tripsCsv, updateTrip } from "./trips.js";
+import { GONE_MS, activeTrip, completeFromRun, needsArrival, runForTrip, claimText, monthlyStats, parseTrips, serializeTrips, startTrip, tripsCsv, updateTrip } from "./trips.js";
 
 // 08:00 Madrid on 5 Nov 2026 (CET = UTC+1).
 const T0 = Date.UTC(2026, 10, 5, 7, 0) ;
@@ -50,13 +50,45 @@ test("stats per month, claim summary, CSV, storage", () => {
   assert.equal(es, "Tren C5 1, 01/11/2026, A → B. Llegada prevista 09:00; llegada real aproximada 09:07 (retraso 7 min, según los datos publicados por Renfe).");
   assert.match(claimText("en", trips[2]), /estimated by TrainRadar/);
   assert.doesNotMatch(es + claimText("en", trips[1]), /derecho|eligible|entitled|indemniz|compensat/i, "never states eligibility");
-  const csv = tripsCsv([...trips, { ...done("2026-11-04", 2), origin: "=HYPERLINK(1)", destination: 'Sants, "Barcelona"' }]);
+  const csv = tripsCsv([...trips, { ...done("2026-11-04", 2), origin: "=HYPERLINK(1)", destination: 'Sants, "Barcelona"' }], "en");
   const lines = csv.trim().split("\n");
   assert.equal(lines[0], "date,train,origin,destination,scheduled_arrival,arrival_delay_min,max_delay_min,source");
   assert.equal(lines.length, 5, "open trip left out");
   assert.equal(lines[4], `2026-11-04,C5 1,"'=HYPERLINK(1)","Sants, ""Barcelona""",09:00,2,2,renfe`);
+  const esCsv = tripsCsv([...trips, { ...done("2026-11-04", 2), destination: "Sants; Barcelona" }], "es").trim().split("\n");
+  assert.equal(esCsv[0], "fecha;tren;origen;destino;llegada_prevista;retraso_llegada_min;retraso_maximo_min;fuente");
+  assert.equal(esCsv[3], "2026-11-02;C5 1;A;B;09:00;1;1;estimado");
+  assert.equal(esCsv[4], '2026-11-04;C5 1;A;"Sants; Barcelona";09:00;2;2;renfe');
   assert.deepEqual(parseTrips(serializeTrips(trips)), trips);
   assert.deepEqual(parseTrips(JSON.stringify(trips)).length, 4, "older bare-array format migrates");
   assert.deepEqual(parseTrips("{oops"), []);
   assert.deepEqual(parseTrips(JSON.stringify({ schema: 1, trips: [{ id: 1 }, null] })), []);
+});
+
+test("a trip whose arrival the app missed is completed from the server's run", () => {
+  const sched = (h, m) => Date.UTC(2026, 10, 8, h - 1, m) / 1000;
+  const trip = {
+    id: "x", day: "2026-11-08", trainNo: "19", label: "C5 19", origin: "A", destination: "C", schedArr: sched(9, 0),
+    stops: [{ name: "A", sched: sched(8, 30), delayMin: 2 }, { name: "B", sched: sched(8, 45), delayMin: null }, { name: "C", sched: sched(9, 0), delayMin: null }],
+    lastDelayMin: 2, maxDelayMin: 2, arrDelayMin: null, estimated: true, endedAt: Date.UTC(2026, 10, 8, 8, 30),
+  };
+  const now = trip.endedAt + 3_600_000;
+  assert.ok(needsArrival(trip, now));
+  assert.ok(!needsArrival(trip, trip.endedAt + 4 * 86_400_000), "too old: stop asking");
+  const runs = [
+    { date: "2026-11-07", sched_dep: sched(8, 30) - 86_400, sched_arr: sched(9, 0) - 86_400, arr_delay_min: 0, stops: [] },
+    { date: "2026-11-08", sched_dep: sched(8, 30), sched_arr: sched(9, 0) + 60, arr_delay_min: 9, max_delay_min: 11, last_delay_min: 9, source_quality: "renfe_tu",
+      stops: [{ stopId: "a", sched: sched(8, 30), delay: 1 }, { stopId: "b", sched: sched(8, 45), delay: 11 }, { stopId: "c", sched: sched(9, 0) + 60, delay: 9 }] },
+  ];
+  const run = runForTrip(trip, runs);
+  assert.equal(run.date, "2026-11-08", "the same day's run, by scheduled arrival");
+  const t = completeFromRun(trip, run);
+  assert.equal(t.arrDelayMin, 9);
+  assert.equal(t.maxDelayMin, 11);
+  assert.deepEqual(t.stops.map((s) => s.delayMin), [2, 11, 9], "what the app saw is kept");
+  assert.equal(t.estimated, false);
+  assert.ok(t.fromServer && t.arrivalChecked && !needsArrival(t, now));
+  assert.equal(runForTrip(trip, runs.slice(0, 1)), null);
+  assert.equal(completeFromRun(trip, null), trip, "not there yet: ask again later");
+  assert.ok(completeFromRun(trip, null, { final: true }).arrivalChecked);
 });
