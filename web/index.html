@@ -33,8 +33,16 @@
 
   <div class="controls">
     <div class="search">
+      <span id="search-icon" class="search-icon" aria-hidden="true"></span>
       <input id="search-q" type="search" inputmode="search" autocomplete="off" aria-label="Buscar tren">
+      <!-- Phone: the network shown, opens the network picker. -->
+      <button id="net-chip" class="net-chip" type="button"><span id="net-chip-l"></span></button>
       <ul id="search-results" class="search-results" hidden></ul>
+    </div>
+    <!-- Phone: live status and the delay colours, as two small chips. -->
+    <div id="chips" class="chips">
+      <span id="live-chip" class="map-chip live-chip" role="status"><i id="live-dot" class="live-dot"></i><span id="live-text"></span></span>
+      <span id="legend-chip" class="map-chip legend-chip"></span>
     </div>
     <select id="jump" aria-label="Ir a"></select>
     <details id="layers">
@@ -64,6 +72,12 @@
         <label><input type="radio" name="basemap" value="satellite"> <span id="b-satellite-l"></span></label>
       </div>
     </details>
+  </div>
+
+  <!-- Phone: map buttons above the sheet. -->
+  <div id="fabs" class="fabs">
+    <button id="fab-layers" class="fab" type="button"></button>
+    <button id="fab-locate" class="fab" type="button" aria-pressed="false"></button>
   </div>
 
   <div id="replay-bar" class="replay-bar" hidden></div>
@@ -152,7 +166,39 @@
     <div id="near-body"></div>
   </section>
 
+  <!-- Phone: a train's or station's details (desktop: map popups). -->
+  <section id="detail" class="sheet" hidden aria-live="off">
+    <div id="detail-body"></div>
+  </section>
+
+  <!-- Phone: the network picker and the layers, as sheets. -->
+  <section id="networks" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="networks-title"></h2>
+      <button id="networks-close" class="pill" type="button">✕</button>
+    </div>
+    <div id="networks-body"></div>
+  </section>
+
+  <section id="layers-panel" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="layers-panel-title"></h2>
+      <button id="layers-panel-close" class="pill" type="button">✕</button>
+    </div>
+    <div id="layers-panel-body"></div>
+  </section>
+
+  <section id="more" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="more-title"></h2>
+      <button id="more-close" class="pill" type="button">✕</button>
+    </div>
+    <div id="more-body"></div>
+  </section>
+
   <section id="delayed" class="sheet" hidden>
+    <!-- Phone home sheet: "Delays now" at a glance (hidden on desktop). -->
+    <div id="delayed-summary" class="delayed-summary sheet-grip"></div>
     <div class="sheet-head">
       <h2 id="delayed-title"></h2>
       <button id="delayed-close" class="pill" type="button">✕</button>
@@ -160,6 +206,10 @@
     <p id="delayed-filter" class="commute-tabs" hidden></p>
     <ul id="delayed-list"></ul>
   </section>
+
+  <!-- Phone layout: dims the map behind a full-height sheet; app tabs. -->
+  <div id="scrim" class="scrim" hidden></div>
+  <nav id="tabbar" class="tabbar" aria-label="Secciones"></nav>
 
   <script type="module" src="main.js"></script>
 </body>

@@ -90,12 +90,12 @@ const station = await free.evaluate(() => {
 });
 await free.waitForTimeout(3000);
 await free.goto(`${url}?station=${encodeURIComponent(station)}`);
-await free.waitForSelector(".maplibregl-popup", { timeout: 40000 }).catch(() => {});
+await free.waitForSelector("#detail:not([hidden]) .popup", { timeout: 40000 }).catch(() => {});
 await free.waitForTimeout(3000);
 await shot(free, "phone-4-station");
 
 // 5. Favourites with live delays (Pro).
-await pro.click(".maplibregl-popup-close-button").catch(() => {});
+await pro.click("#detail-close").catch(() => {});
 const numbers = await pro.evaluate(() => {
   const { engine } = window.__trainradar;
   const n = engine.positions(Date.now()).length / 6;
@@ -109,16 +109,17 @@ const numbers = await pro.evaluate(() => {
 for (const n of numbers) {
   await openTrain(pro, n);
   await pro.click(".popup .fav-btn").catch(() => {});
-  await pro.click(".maplibregl-popup-close-button").catch(() => {});
+  await pro.click("#detail-close").catch(() => {});
 }
-await pro.click("#fav-btn");
+await pro.click("#tab-favs");
 await pro.waitForTimeout(1000);
 await shot(pro, "phone-5-favourites");
 await pro.click("#favs-close");
 
 // 6. The Pro screen with its price (free edition).
-await free.click(".maplibregl-popup-close-button").catch(() => {});
-await free.click("#about-btn");
+await free.click("#detail-close").catch(() => {});
+await free.click("#tab-more");
+await free.click("#more-about");
 await free.click("#settings-btn");
 await free.waitForTimeout(1500);
 await shot(free, "phone-6-pro");

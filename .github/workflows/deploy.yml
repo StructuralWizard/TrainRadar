@@ -153,7 +153,8 @@ jobs:
       - name: Deploy the Worker (CORS pass-through)
         env:
           SITE: ${{ steps.urls.outputs.site }}
-        run: npx --yes "$WRANGLER" deploy --config worker/wrangler.toml --var "ALLOWED_ORIGINS:$SITE"
+        # The Pages address and the custom domain (docs/deploy.md).
+        run: npx --yes "$WRANGLER" deploy --config worker/wrangler.toml --var "ALLOWED_ORIGINS:$SITE,https://mytrainradar.com,https://www.mytrainradar.com"
 
       - name: Install wasm-bindgen-cli (version from Cargo.lock)
         run: |

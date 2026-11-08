@@ -6,4 +6,4 @@ compatibility_date = "2026-10-01"
 
 [vars]
 # Origins allowed to read the feeds from a browser. Add the Pages URL once deployed.
-ALLOWED_ORIGINS = "https://trainradar.pages.dev,http://localhost:8080"
+ALLOWED_ORIGINS = "https://trainradar.pages.dev,https://mytrainradar.com,https://www.mytrainradar.com,http://localhost:8080"

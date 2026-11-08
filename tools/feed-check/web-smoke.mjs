@@ -27,7 +27,9 @@ try {
   });
   await page.waitForFunction(() => window.__trainradar?.map?.getSource("trains"), null, { timeout: 30_000 });
   await page.waitForTimeout(3000); // tiles and a second render
-  console.log("stats:", await page.textContent("#stats"), "|", await page.textContent("#status"));
+  console.log("stats:", await page.textContent("#stats"), "|", await page.textContent("#status"), "| chip:", await page.textContent("#live-chip"));
+  if (!(await page.isVisible("#live-chip")) || !/trenes/.test(await page.textContent("#live-chip"))) await fail("no live status chip");
+  if (await page.isVisible(".bar")) await fail("desktop header shown on a phone");
   await page.screenshot({ path: `${out}/map.png` });
   if (flag === "--print-screenshot") {
     await page.screenshot({ path: `${out}/map-small.jpg`, type: "jpeg", quality: 55, scale: "css" });
@@ -70,7 +72,9 @@ try {
     await fail("popup shows a gradient but no height profile");
   }
 
-  await page.click("#delayed-btn");
+  await page.click("#tab-map"); // phone: back to the map, then expand the home sheet
+  await page.click(".bucket-major");
+  await page.waitForTimeout(400);
   const rows = await page.$$eval("#delayed-list li", (l) => l.length);
   console.log("delayed list rows:", rows);
   if (rows < 1) await fail("delayed list is empty");
@@ -78,14 +82,15 @@ try {
 
   // Notices panel with whatever Renfe publishes right now. On a phone the
   // open sheet covers the bottom buttons, so close it first like a person.
-  await page.click("#delayed-close");
-  await page.click("#inc-btn");
+  await page.click("#tab-map");
+  await page.click("#tab-incidents");
   await page.waitForTimeout(500);
   console.log("notices:", (await page.textContent("#incidents")).replace(/\s+/g, " ").slice(0, 300));
   await page.screenshot({ path: `${out}/notices.png` });
   await page.click("#inc-close");
 
-  await page.click("#lang");
+  await page.click("#tab-more");
+  await page.click("#more-lang");
   await page.waitForFunction(() => /trains/.test(document.getElementById("stats").textContent));
   console.log("english:", await page.textContent("#stats"));
   if (errors.length) await fail(`page errors: ${errors.join("; ")}`);

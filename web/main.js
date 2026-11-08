@@ -5,7 +5,10 @@ import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
-import { formatAgo, formatDelay, formatDistance } from "./js/format.js";
+import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format.js";
+import { Sheets, isPhone } from "./js/sheet.js";
+import { icon } from "./js/icons.js";
+import { layersSheet, networksSheet, stationSheet, trainSheet } from "./js/sheetui.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
@@ -25,7 +28,7 @@ import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from ".
 import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { enthusiast } from "./js/features.js";
-import { appNative, canShare, copyText, exportBlob, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
+import { appNative, canShare, copyText, exportBlob, exportFile, haptic as nativeHaptic, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
 import { backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./js/backup.js";
 import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
 import { decide, parseCache } from "./js/entitlement.js";
@@ -92,7 +95,7 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail", "networks", "layers-panel"];
 const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
@@ -129,6 +132,14 @@ const kindMask = () => Object.entries(KINDS).reduce((m, [k, bit]) => (showKind[k
 let stationPop = null;
 let dragOffset = [0, 0]; // where the user dragged the train popup to
 let highlight = null; // Set of train indexes on the selected train's line
+// Phone: what the detail sheet shows ("train" | "station" | null), the
+// station shown and its board tab, and each line's colour for badges.
+let detailKind = null;
+let stationView = null;
+let stationTab = "dep";
+let detailAt = 0;
+let detailKey = "";
+const lineColors = new Map(); // "region|line" and "|line" → "#rrggbb"
 
 function applyLang() {
   document.documentElement.lang = lang;
@@ -172,7 +183,8 @@ function applyLang() {
   ]) {
     $(id).textContent = t(lang, k);
   }
-  $("search-q").placeholder = t(lang, "searchPlaceholder");
+  $("search-q").placeholder = t(lang, isPhone() ? "searchPlaceholderPhone" : "searchPlaceholder");
+  phoneChrome();
   $("about-btn").setAttribute("aria-label", t(lang, "about"));
   $("about-btn").title = t(lang, "about");
   $("about-title").textContent = t(lang, "about");
@@ -189,6 +201,16 @@ function applyLang() {
   $("commute-title").textContent = t(lang, "commuteTitle");
   $("commute-close").setAttribute("aria-label", t(lang, "close"));
   $("trips-close").setAttribute("aria-label", t(lang, "close"));
+  $("more-title").textContent = t(lang, "moreTitle");
+  $("networks-title").textContent = t(lang, "netTitle");
+  $("networks-close").setAttribute("aria-label", t(lang, "close"));
+  $("layers-panel-title").textContent = t(lang, "layers");
+  $("layers-panel-close").setAttribute("aria-label", t(lang, "close"));
+  if (!$("networks").hidden) renderNetworks();
+  if (!$("layers-panel").hidden) renderLayers();
+  $("more-close").setAttribute("aria-label", t(lang, "close"));
+  buildTabs();
+  if (!$("more").hidden) renderMore();
   $("app-banner-link").textContent = `📱 ${t(lang, "appBanner")}`;
   $("app-banner-close").setAttribute("aria-label", t(lang, "close"));
   if (!$("about").hidden) renderAbout();
@@ -227,6 +249,7 @@ function makeRoomBelow(lon, lat) {
  * bottom sheet, or (`forPopup`) in the upper third, leaving room for the
  * popup that opens below it. */
 function flyToVisible(lon, lat, zoom, { forPopup = false } = {}) {
+  if (isPhone()) return map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), zoom), offset: phoneOffset(forPopup) });
   const sheet = SHEETS.map($).find((x) => !x.hidden);
   const covered = sheet && sheet.getBoundingClientRect().width >= window.innerWidth - 1;
   const h = map.getContainer().clientHeight;
@@ -238,11 +261,34 @@ function flyToVisible(lon, lat, zoom, { forPopup = false } = {}) {
   });
 }
 
+/** Phone: how far from the screen's centre the middle of the map left
+ * visible is — under the top bar, above the tab bar and the sheet (at
+ * half height when one is about to open). */
+function phoneOffset(sheetOpening = false) {
+  const h = map.getContainer().clientHeight;
+  const topEl = $("chips");
+  const top = topEl ? topEl.getBoundingClientRect().bottom : 0;
+  const sheetH = Math.max(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sheet-h")) || 0, sheetOpening ? sheets.heights().half : 0);
+  const bottom = h - ($("tabbar").offsetHeight || 0) - sheetH;
+  return [0, Math.round((top + bottom) / 2 - h / 2)];
+}
+
+/** Phone: pan a point into the visible part of the map if it's hidden. */
+function keepVisible(lon, lat) {
+  const [, dy] = phoneOffset(true);
+  const h = map.getContainer().clientHeight;
+  const y = map.project([lon, lat]).y;
+  const mid = h / 2 + dy;
+  const room = Math.max(60, h / 2 - Math.abs(dy) - 80);
+  if (Math.abs(y - mid) > room) map.easeTo({ center: [lon, lat], offset: [0, dy], duration: 350 });
+}
+
 function updateLocButton() {
   const on = !!locator?.active;
   const b = $("loc-btn");
   b.textContent = `📍 ${t(lang, "useLocation")}`;
   b.setAttribute("aria-pressed", String(on));
+  $("fab-locate").setAttribute("aria-pressed", String(on));
   b.setAttribute("aria-label", t(lang, on ? "locationOff" : "useLocationLabel"));
   $("center-btn").hidden = !on || !userFix;
   $("near-off").hidden = !on;
@@ -399,7 +445,14 @@ function refreshLines() {
   if (!engine || !map?.getSource("lines")) return;
   const data = JSON.parse(engine.linesGeoJson(Date.now()));
   const mask = kindMask();
-  for (const f of data.features) f.properties.notice = (f.properties.notice_kinds & mask) !== 0;
+  for (const f of data.features) {
+    f.properties.notice = (f.properties.notice_kinds & mask) !== 0;
+    const { line, region, color } = f.properties;
+    if (line && color) {
+      lineColors.set(`${region}|${line}`, color);
+      if (!lineColors.has(`|${line}`)) lineColors.set(`|${line}`, color);
+    }
+  }
   map.getSource("lines").setData(data);
 }
 
@@ -429,6 +482,12 @@ function renderIncidents() {
   if (engine) incidents = JSON.parse(engine.incidentsJson(Date.now()));
   refreshLines();
   $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}${incidents.length ? ` (${incidents.length})` : ""}`;
+  const badge = $("tab-incidents-n");
+  if (badge) {
+    badge.hidden = !incidents.length;
+    badge.textContent = incidents.length > 99 ? "99+" : String(incidents.length);
+    $("tab-incidents").setAttribute("aria-label", incidents.length ? `${t(lang, "tabNotices")}: ${t(lang, "noticesCount", { n: incidents.length })}` : t(lang, "tabNotices"));
+  }
   // One marker per station, coloured by its most serious shown notice.
   const rank = ["disruption", "strike", "works", "accessibility", "other"];
   const byStop = new Map();
@@ -562,6 +621,7 @@ function showPopup(open = false) {
     return;
   }
   map.getSource("selected")?.setData(pointGeoJson(info.lon, info.lat));
+  if (isPhone()) return showTrainSheet(info, open, now);
   if (popup) {
     popup.setLngLat([info.lon, info.lat]);
     // Rebuilding the content swaps its buttons out from under a finger, so
@@ -629,6 +689,92 @@ function showPopup(open = false) {
   popupToTop = false;
 }
 
+/** Phone: the selected train in the detail sheet (desktop: a popup). */
+function showTrainSheet(info, open, now) {
+  const sheet = $("detail");
+  if (!open) {
+    if (sheet.hidden || detailKind !== "train") return;
+    // As for the popup: rebuild only on a change, at most every 2 s, and
+    // not under a finger.
+    const key = JSON.stringify({ ...info, lat: 0, lon: 0, fix_age: Math.floor(info.fix_age / 10) });
+    if (key === detailKey || sheet.matches(":active") || Date.now() - detailAt < 2000) return;
+    detailKey = key;
+  }
+  detailAt = Date.now();
+  const i = engine.findTrain(info.trip_id, info.number);
+  const trip = i < 0 ? null : JSON.parse(engine.tripJson(i));
+  const favItem = { type: "train", number: info.number, label: trainTitle(info) };
+  const fav = favButton(favItem);
+  const route = info.route || info.line;
+  const body = trainSheet(lang, info, {
+    now,
+    regionName: regionName(info.region),
+    lineColor: lineColors.get(`${info.region}|${route}`) || lineColors.get(`|${route}`),
+    stops: trip?.stops,
+    redraw: () => showPopup(true),
+    onClose: () => (sheet.hidden = true),
+    fav,
+    notify: notifyAction(info, favItem),
+    onShare: canShare()
+      ? () => share({ title: trainTitle(info), text: t(lang, "shareTrain", { train: trainTitle(info) }), url: `${CONFIG.siteUrl}?train=${encodeURIComponent(info.number)}` })
+      : null,
+    onHistory: CONFIG.apiBase && info.history_line
+      ? () => openHistory({ kind: "train", trainNo: info.number, line: info.history_line, product: info.history_product, title: trainTitle(info), days: FREE_DAYS })
+      : null,
+    trip: CONFIG.platform === "android" && !info.timetable_only ? tripButton(info) : null,
+    onIncidents: (x) =>
+      showIncidents({
+        label: x.route,
+        test: (n) => n.lines.includes(x.route) && (!x.region || n.nucleos.includes(x.region)),
+      }),
+    history: info.timetable_only ? null : history.get(info.history_line, info.history_product),
+    rows: {
+      napDate: ref?.napDate(),
+      profile: info.altitude_m === undefined ? null : selectedProfile(now),
+      onTrain: (j) => selectTrain(JSON.parse(engine.trainJson(j, Date.now())), { fly: true }),
+      appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
+      proLink: CONFIG.platform === "android" && !CONFIG.pro ? () => (openSheet("settings"), renderSettings()) : null,
+      enthusiast: enthusiast(CONFIG),
+    },
+  });
+  $("detail-body").replaceChildren(body);
+  if (open) {
+    const was = detailKind;
+    detailKind = "train";
+    stationView = null;
+    if (sheet.hidden) {
+      openSheet("detail");
+      sheets.setSnap("detail", "half");
+    } else if (was !== "train") sheets.setSnap("detail", "half");
+    if (popupToTop) sheet.scrollTop = 0;
+    if (!map.isMoving()) keepVisible(info.lon, info.lat);
+  }
+  popupToTop = false;
+}
+
+/** "Avisarme": delay alerts for this train (Pro, Android), the Pro screen
+ * (free app), or the Android app (web, once it has a listing). */
+function notifyAction(info, favItem) {
+  if (info.timetable_only) return null;
+  if (CONFIG.platform === "android") {
+    if (!CONFIG.pro) return { on: false, onToggle: () => (openSheet("settings"), renderSettings()) };
+    const on = alertsOn && isFavourite(favs, favItem);
+    return {
+      on,
+      onToggle: async () => {
+        if (on) return openSheet("settings"), renderSettings();
+        if (!isFavourite(favs, favItem)) {
+          const r = toggleFavourite(favs, favItem, favLimit());
+          if (!r.full) saveFavourites(r.list);
+        }
+        if (!alertsOn) await setAlerts(true);
+        showPopup(true);
+      },
+    };
+  }
+  return CONFIG.playUrl ? { href: CONFIG.playUrl } : null;
+}
+
 /** Let the user drag a popup out of the way by its title. It then keeps
  * that offset from the train (or station) as the map moves. */
 function makeDraggable(p, get, set) {
@@ -662,15 +808,17 @@ function makeDraggable(p, get, set) {
 }
 
 /** Popup with a station's next departures and approaching trains. */
-function showStation(f) {
+function showStation(f, { refresh = false } = {}) {
   const { id, name } = f.properties;
   const [lon, lat] = f.geometry.coordinates;
   const now = Date.now();
   // Its núcleo's timetable may not be loaded yet: load, then refresh.
   const d = 0.05;
-  for (const r of ref?.regionsIn([lon - d, lat - d, lon + d, lat + d]) || []) {
-    if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(() => stationPop?.isOpen() && showStation(f));
+  const regions = ref?.regionsIn([lon - d, lat - d, lon + d, lat + d]) || [];
+  for (const r of regions) {
+    if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(() => (stationPop?.isOpen() || (detailKind === "station" && stationView === f)) && showStation(f, { refresh: true }));
   }
+  if (isPhone()) return showStationSheet(f, regions, refresh);
   const body = stationPopup(
     lang,
     { id, name },
@@ -712,6 +860,86 @@ function showStation(f) {
     .setDOMContent(body)
     .addTo(map);
   makeDraggable(stationPop, () => off, (o) => (off = o));
+}
+
+/** Phone: a station's board in the detail sheet. */
+function showStationSheet(f, regions, refresh) {
+  const { id, name } = f.properties;
+  const [lon, lat] = f.geometry.coordinates;
+  const now = Date.now();
+  const sheet = $("detail");
+  if (!refresh) {
+    stationTab = "dep";
+    selected = null;
+    highlight = null;
+    map.getSource("route")?.setData(emptyGeoJson());
+    map.getSource("selected")?.setData(emptyGeoJson());
+  }
+  const board = JSON.parse(engine.stationBoardJson(id, now, 90 * 60, 12));
+  const approaching = JSON.parse(engine.approachingJson(id, now, 30 * 60)).slice(0, 10);
+  const nucleo = regions.find((r) => r.code !== "ld");
+  const routes = [...new Set(board.map((r) => r.route).filter(Boolean))].slice(0, 4);
+  const sub = [];
+  if (nucleo) sub.push(t(lang, "cercanias", { region: nucleo.name }));
+  if (routes.length) sub.push(routes.join(", "));
+  if (userFix) sub.push(t(lang, "awayDistance", { d: formatDistance(lang, distanceM(userFix, { lat, lon })) }));
+  const redraw = () => showStation(f, { refresh: true });
+  const region = nucleo?.code || "";
+  const body = stationSheet(lang, { id, name }, {
+    sub: sub.join(" · "),
+    board,
+    approaching,
+    tab: stationTab,
+    onTab: (tab) => {
+      stationTab = tab;
+      redraw();
+    },
+    lineColor: (route) => lineColors.get(`${region}|${route}`) || lineColors.get(`|${route}`),
+    onDeparture: (r) => {
+      const i = engine.findTrain(r.trip_id, r.number);
+      if (i >= 0) selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true });
+    },
+    onTrain: (a) => selectTrain(a, { fly: true }),
+    onClose: () => (sheet.hidden = true),
+    fav: favButton({ type: "station", id, name, lon, lat }, redraw),
+    onHistory: CONFIG.apiBase ? () => openHistory({ kind: "station", id, title: t(lang, "histTitleStation", { name }), days: FREE_DAYS }) : null,
+    commute:
+      CONFIG.platform === "android" && CONFIG.pro
+        ? {
+            isFrom: commutes.draft ? commutes.draft.id === id : activeCommute(commutes)?.from.id === id,
+            isTo: !commutes.draft && activeCommute(commutes)?.to.id === id,
+            setFrom: () => saveCommutes(setOrigin(commutes, { id, name, lon, lat }), redraw),
+            setTo: () => {
+              const r = setDestination(commutes, { id, name, lon, lat });
+              commuteNote = r.full ? t(lang, "commuteFull", { max: MAX_COMMUTES }) : "";
+              saveCommutes(r.state, redraw, r.added || r.full);
+            },
+          }
+        : null,
+    onShare: canShare()
+      ? () => share({ title: name, text: t(lang, "shareStation", { station: name }), url: `${CONFIG.siteUrl}?station=${encodeURIComponent(id)}` })
+      : null,
+  });
+  const scroll = sheet.scrollTop;
+  $("detail-body").replaceChildren(body);
+  if (refresh) {
+    sheet.scrollTop = scroll;
+    return;
+  }
+  detailKind = "station";
+  stationView = f;
+  if (sheet.hidden) openSheet("detail");
+  sheets.setSnap("detail", "half");
+  sheet.scrollTop = 0;
+  keepVisible(lon, lat);
+}
+
+/** Metres between two { lat, lon } points (small distances). */
+function distanceM(a, b) {
+  const k = Math.PI / 180;
+  const x = (b.lon - a.lon) * k * Math.cos(((a.lat + b.lat) / 2) * k);
+  const y = (b.lat - a.lat) * k;
+  return Math.sqrt(x * x + y * y) * 6_371_000;
 }
 
 function refreshTrack() {
@@ -1181,6 +1409,7 @@ function openLink(link) {
 
 /** Android back button: close the top-most thing; false when nothing was open. */
 function goBack() {
+  if (isPhone() && sheets.back()) return true;
   const sheet = SHEETS.map($).find((x) => !x.hidden);
   if (sheet) return (sheet.hidden = true), true;
   if (popup) return popup.remove(), true;
@@ -1200,6 +1429,30 @@ function renderSearch() {
   }
   const hits = JSON.parse(engine.searchJson(q, 8));
   ul.hidden = false;
+  // Phone: stations too ("Buscar tren, línea o estación").
+  const stationRows = isPhone()
+    ? searchStations(q).map((st) =>
+        el(
+          "li",
+          {},
+          el(
+            "button",
+            {
+              class: "link search-station",
+              onclick: () => {
+                ul.hidden = true;
+                $("search-q").value = "";
+                $("search-q").blur();
+                openStation(st);
+              },
+            },
+            icon("pin", 16),
+            el("strong", {}, st.name),
+            el("span", { class: "muted" }, ` · ${t(lang, "searchStation")}`),
+          ),
+        ),
+      )
+    : [];
   // A train number that isn't on the map now: its history (Pro, app).
   const n = /^\d{2,6}$/.test(q) ? q.replace(/^0+/, "") : "";
   const offMap = n && !hits.some((h) => h.number.replace(/^0+/, "") === n) && CONFIG.platform === "android" && CONFIG.apiBase;
@@ -1241,7 +1494,7 @@ function renderSearch() {
             t(lang, "searchNotRunningPro", { n }),
           ),
         );
-  if (!hits.length) return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]));
+  if (!hits.length && !stationRows.length) return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]));
   ul.replaceChildren(
     ...hits.map((h) =>
       el(
@@ -1263,7 +1516,374 @@ function renderSearch() {
       ),
     ),
     ...(offRow ? [offRow] : []),
+    ...stationRows,
   );
+}
+
+/*
+ * Phone layout (≤ 719 px, and the Android app): bottom sheets with snap
+ * points (js/sheet.js) and an app tab bar instead of the floating buttons.
+ * The home sheet is the Delays list, peeking with a summary.
+ */
+const sheets = new Sheets({
+  home: "delayed",
+  tabbar: $("tabbar"),
+  scrim: $("scrim"),
+  onChange: () => updateTabs(),
+  onSnap: () => haptic(),
+});
+for (const id of SHEETS) {
+  const tall = id === "networks" || id === "layers-panel";
+  sheets.add($(id), id === "delayed" ? { initial: "peek", closable: false } : tall ? { initial: "full", snaps: ["half", "full"] } : { initial: "half" });
+}
+// Closing the detail sheet (swipe, Back, ✕, another tab) drops the selection.
+new MutationObserver(() => {
+  if (!$("detail").hidden) return;
+  if (detailKind === "train") clearSelection();
+  $("detail-body").replaceChildren();
+  detailKind = null;
+  stationView = null;
+  detailKey = "";
+}).observe($("detail"), { attributes: true, attributeFilter: ["hidden"] });
+const TABS = [
+  ["map", "tabMap", "map"],
+  ["near", "tabNear", "pin"],
+  ["incidents", "tabNotices", "warning"],
+  ["favs", "tabFavs", "star"],
+  ["more", "tabMore", "menu"],
+];
+/** Which tab a sheet belongs to. */
+function tabFor(sheet) {
+  if (["near", "incidents", "favs"].includes(sheet)) return sheet;
+  if (["more", "about", "settings", "trips", "history", "commute"].includes(sheet)) return "more";
+  return "map";
+}
+
+function buildTabs() {
+  const bar = $("tabbar");
+  bar.setAttribute("aria-label", t(lang, "tabsLabel"));
+  bar.replaceChildren(
+    ...TABS.map(([id, key, ic]) =>
+      el(
+        "button",
+        { type: "button", class: "tab", id: `tab-${id}`, onclick: () => tabClick(id) },
+        icon(ic),
+        el("span", { class: "tab-label" }, t(lang, key)),
+        id === "incidents" ? el("span", { class: "tab-badge", id: "tab-incidents-n", hidden: true }) : null,
+      ),
+    ),
+  );
+  updateTabs();
+  if (engine) renderIncidents();
+}
+
+function updateTabs() {
+  const active = tabFor(sheets.top());
+  for (const [id] of TABS) {
+    const b = $(`tab-${id}`);
+    if (!b) continue;
+    if (id === active) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  }
+}
+
+/** Close every sheet but the home one (the map tab). */
+function closeSheets() {
+  for (const id of SHEETS) if (id !== "delayed") $(id).hidden = true;
+}
+
+function tabClick(id) {
+  // Tapping the open tab again goes back to the map; from one of Más's
+  // screens (settings, about…) it goes back to the Más menu.
+  if (id !== "map" && sheets.top() === id) return closeSheets();
+  switch (id) {
+    case "map":
+      closeSheets();
+      popup?.remove();
+      stationPop?.remove();
+      sheets.setSnap("delayed", "peek");
+      break;
+    case "near":
+      if (locator?.active) {
+        openSheet("near");
+        renderNear(true);
+      } else startLocation();
+      break;
+    case "incidents":
+      showIncidents(defaultNoticeFilter());
+      break;
+    case "favs":
+      openSheet("favs");
+      renderFavourites();
+      break;
+    case "more":
+      openSheet("more");
+      renderMore();
+      break;
+  }
+}
+
+/** "Más": language, settings (Pro in the app) and About. */
+function renderMore() {
+  const row = (ic, label, value, onclick, id) =>
+    el(
+      "li",
+      {},
+      el(
+        "button",
+        { type: "button", class: "menu-row", id, onclick },
+        icon(ic),
+        el("span", { class: "menu-label" }, label),
+        value ? el("span", { class: "menu-value" }, value) : null,
+        icon("chevronRight", 18),
+      ),
+    );
+  $("more-body").replaceChildren(
+    el(
+      "ul",
+      { class: "menu-list" },
+      row("globe", t(lang, "moreLanguage"), t(lang, "moreLanguageValue"), () => $("lang").click(), "more-lang"),
+      row("settings", t(lang, CONFIG.platform === "android" ? "moreSettingsPro" : "moreSettings"), "", () => {
+        openSheet("settings");
+        renderSettings();
+      }, "more-settings"),
+      row("info", t(lang, "moreAbout"), "", () => {
+        openSheet("about");
+        renderAbout();
+      }, "more-about"),
+    ),
+  );
+}
+
+/** The home sheet's "Delays now": trains 15+, 5–14 min late and on time.
+ * Built once (and per language); afterwards only the numbers change, so a
+ * tap never lands on a box being replaced. */
+let summaryLang = "";
+function renderHomeSummary(st, pos) {
+  if (!isPhone()) return;
+  const c = [0, 0, 0, 0];
+  for (let i = 0; i + 5 < pos.length; i += 6) if (!(pos[i + 5] & FLAG.scheduled)) c[pos[i + 2]] += 1;
+  if (summaryLang !== lang) {
+    summaryLang = lang;
+    const bucket = (cls, key) =>
+      el(
+        "button",
+        { type: "button", class: `bucket bucket-${cls}`, onclick: () => sheets.setSnap("delayed", "half") },
+        el("span", { class: "bucket-label" }, t(lang, key)),
+        el("span", { class: "bucket-n", id: `bucket-${cls}-n` }),
+      );
+    $("delayed-summary").replaceChildren(
+      el("div", { class: "summary-head" }, el("h2", {}, t(lang, "delayedNow")), el("span", { class: "muted", id: "summary-of" })),
+      el("div", { class: "buckets" }, bucket("major", "bucketMajor"), bucket("minor", "bucketMinor"), bucket("ontime", "bucketOnTime")),
+    );
+  }
+  const set = (id, text) => {
+    const e = $(id);
+    if (e.textContent !== text) e.textContent = text;
+  };
+  set("summary-of", t(lang, "delayedOf", { n: formatCount(lang, st.delayed), total: formatCount(lang, st.trains) }));
+  set("bucket-major-n", formatCount(lang, c[2]));
+  set("bucket-minor-n", formatCount(lang, c[1]));
+  set("bucket-ontime-n", formatCount(lang, c[0]));
+}
+
+/** Phone top bar and map buttons: icons and labels (once per language). */
+function phoneChrome() {
+  // Close buttons: an SVG cross instead of the ✕ character (labelled).
+  for (const b of document.querySelectorAll('.sheet-head button[id$="-close"], #app-banner-close')) b.replaceChildren(icon("close", 18));
+  $("search-icon").replaceChildren(icon("search", 20));
+  $("net-chip").replaceChildren(el("span", { id: "net-chip-l" }, netName()), icon("chevronDown", 16));
+  $("net-chip").setAttribute("aria-label", t(lang, "netChipLabel", { name: netName() }));
+  const dot = (c, label) => el("span", {}, el("i", { style: `background:${c}` }), label);
+  $("legend-chip").replaceChildren(dot("#16a34a", "<5"), dot("#ea8a0c", "5–14"), dot("#dc2626", "15+"));
+  $("legend-chip").setAttribute("aria-label", t(lang, "legendChipLabel"));
+  $("legend-chip").setAttribute("role", "img");
+  $("fab-layers").replaceChildren(icon("layers", 22));
+  $("fab-layers").setAttribute("aria-label", t(lang, "layers"));
+  $("fab-locate").replaceChildren(icon("locate", 22));
+  $("fab-locate").setAttribute("aria-label", t(lang, "fabLocate"));
+}
+
+/** The network the map shows: the Cercanías núcleo under its centre, else Spain. */
+let netPinned = null; // the network just picked, until the user moves the map
+function currentNetwork() {
+  if (netPinned) return netPinned === "es" ? null : ref?.region(netPinned) || null;
+  if (!map || !ref || map.getZoom() < 7.5) return null;
+  const c = map.getCenter();
+  return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
+}
+const netName = () => currentNetwork()?.name || t(lang, "netSpain");
+
+function updateNetChip() {
+  const l = $("net-chip-l");
+  if (!l) return;
+  const name = netName();
+  if (l.textContent !== name) {
+    l.textContent = name;
+    $("net-chip").setAttribute("aria-label", t(lang, "netChipLabel", { name }));
+  }
+}
+
+/** "498 trenes · mediana +2 min" with a dot: green live, orange stale, red failing. */
+function renderLiveChip(st, now) {
+  if (!isPhone()) return;
+  const last = feeds?.lastUpdate() || 0;
+  const age = last ? (now - last) / 1000 : Infinity;
+  const state = feeds?.failing() ? "bad" : age > 120 ? "stale" : "ok";
+  const text =
+    st.median_delay === null
+      ? t(lang, "trains", { n: formatCount(lang, st.trains) })
+      : t(lang, "liveChip", { trains: t(lang, "trains", { n: formatCount(lang, st.trains) }), delay: formatDelay(lang, st.median_delay) });
+  $("live-text").textContent = text;
+  $("live-chip").dataset.state = state;
+  $("live-chip").title = state === "bad" ? t(lang, "feedError") : last ? t(lang, "updated", { age: formatAgo(lang, age) }) : t(lang, "loading");
+}
+
+/** Phone: the network picker ("Ir a…" on the desktop). */
+let netQuery = "";
+function openNetworks() {
+  netQuery = "";
+  openSheet("networks");
+  renderNetworks();
+}
+
+/** Go to a network (núcleo code, or "es" for all of Spain), as "Ir a…" does. */
+function goToNetwork(code) {
+  netPinned = code;
+  updateNetChip();
+  if (code === "es") map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
+  else {
+    const r = ref?.region(code);
+    if (!r) return;
+    const pad = isPhone() ? { top: 130, bottom: ($("tabbar").offsetHeight || 0) + 180, left: 24, right: 24 } : 40;
+    map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: pad, maxZoom: 11 });
+  }
+}
+
+/** Median delay (s) of the Cercanías trains in each núcleo, now. */
+function networkMedians() {
+  const rows = engine ? JSON.parse(engine.replayFrameJson(Date.now())) : [];
+  const nucleos = (ref?.manifest?.regions || []).filter((r) => r.code !== "ld" && r.live !== false && r.bbox);
+  const by = new Map(nucleos.map((r) => [r.code, []]));
+  for (const [, , , , lon, lat, , delay, flags] of rows) {
+    if (delay === null || !(flags & FLAG.commuter) || flags & FLAG.scheduled) continue;
+    const r = nucleos.find((x) => lat >= x.bbox[0] && lat <= x.bbox[2] && lon >= x.bbox[1] && lon <= x.bbox[3]);
+    if (r) by.get(r.code).push(delay);
+  }
+  const med = (a) => {
+    if (!a.length) return null;
+    const s = [...a].sort((x, y) => x - y);
+    return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+  };
+  return { nucleos, medians: new Map([...by].map(([k, v]) => [k, med(v)])), trains: rows.length };
+}
+
+function renderNetworks(keepInput = false) {
+  const { nucleos, medians, trains } = networkMedians();
+  const pick = (code) => {
+    $("networks").hidden = true;
+    goToNetwork(code);
+  };
+  let near = null;
+  if (userFix) {
+    const d = 0.05;
+    const r = (ref?.regionsIn([userFix.lon - d, userFix.lat - d, userFix.lon + d, userFix.lat + d]) || []).find((x) => x.code !== "ld" && x.live !== false);
+    near = r ? { name: r.name, onPick: () => pick(r.code) } : {};
+  } else if (Locator.supported()) {
+    near = { onLocate: () => startLocation() };
+  }
+  const parts = networksSheet(lang, {
+    query: netQuery,
+    near,
+    spain: { trains, onPick: () => pick("es") },
+    networks: [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
+    onPick: pick,
+    onQuery: (q) => {
+      netQuery = q;
+      renderNetworks(true);
+    },
+  }).filter(Boolean);
+  const body = $("networks-body");
+  if (keepInput && body.firstChild) body.replaceChildren(body.firstChild, ...parts.slice(1));
+  else body.replaceChildren(...parts);
+}
+
+/** Phone: "Capas" as a sheet of switches, each driving its desktop checkbox. */
+function openLayers() {
+  openSheet("layers-panel");
+  renderLayers();
+}
+
+function renderLayers() {
+  const sw = (id, labelKey, hint) => {
+    const box = $(id);
+    return {
+      id,
+      label: t(lang, labelKey),
+      hint: hint ? t(lang, hint) : "",
+      on: box.checked,
+      onChange: (on) => {
+        box.checked = on;
+        box.dispatchEvent(new Event("change"));
+      },
+    };
+  };
+  const base = document.querySelector('input[name="basemap"]:checked')?.value || "standard";
+  $("layers-panel-body").replaceChildren(
+    ...layersSheet(lang, {
+      base,
+      onBase: (v) => {
+        const r = document.querySelector(`input[name="basemap"][value="${v}"]`);
+        r.checked = true;
+        r.dispatchEvent(new Event("change"));
+        renderLayers();
+      },
+      groups: [
+        {
+          title: t(lang, "groupTrains"),
+          items: [sw("f-commuter", "showCommuter"), sw("f-av", "showAv"), sw("f-ld", "showLd"), sw("f-md", "showMd"), sw("f-scheduled", "showScheduled", "scheduledHint")],
+        },
+        {
+          title: t(lang, "groupMap"),
+          items: [sw("f-lines", "showLines"), sw("f-tav", "showTrackAv"), sw("f-tld", "showTrackLd"), sw("f-tmd", "showTrackMd"), sw("f-stations", "showStations")],
+        },
+        {
+          title: t(lang, "groupIncidents"),
+          items: [
+            sw("f-k-disruption", "kind_disruption"),
+            sw("f-k-works", "kind_works"),
+            sw("f-k-accessibility", "kind_accessibility"),
+            sw("f-k-strike", "kind_strike"),
+            sw("f-k-other", "kind_other"),
+            sw("f-stopped", "showStopped"),
+          ],
+        },
+      ],
+    }).flat(),
+  );
+}
+
+/** Stations whose name matches a search (phone), accents ignored. */
+let stationIndex = null;
+function searchStations(q, limit = 5) {
+  const norm = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const nq = norm(q);
+  if (nq.length < 2 || !engine) return [];
+  stationIndex ??= JSON.parse(engine.stationsGeoJson()).features.map((f) => ({
+    id: f.properties.id,
+    name: f.properties.name,
+    key: norm(f.properties.name),
+    lon: f.geometry.coordinates[0],
+    lat: f.geometry.coordinates[1],
+  }));
+  const starts = stationIndex.filter((x) => x.key.startsWith(nq));
+  const inside = stationIndex.filter((x) => !x.key.startsWith(nq) && x.key.includes(nq));
+  return [...starts, ...inside].slice(0, limit);
+}
+
+/** A light tick when a sheet snaps (Android app only). */
+function haptic() {
+  nativeHaptic();
 }
 
 function renderAbout() {
@@ -1348,8 +1968,11 @@ function render(force = false) {
   if (!force && now - lastRender < interval) return;
   lastRender = now;
   if (selected) updateRoute();
-  map.getSource("trains")?.setData(trainsGeoJson(engine.positions(now), highlight, hiddenByFilter));
+  const pos = engine.positions(now);
+  map.getSource("trains")?.setData(trainsGeoJson(pos, highlight, hiddenByFilter));
   const st = JSON.parse(engine.statsJson(now));
+  renderHomeSummary(st, pos);
+  renderLiveChip(st, now);
   $("stats").textContent =
     statsText(lang, st) + (st.scheduled ? ` ${t(lang, "scheduledCount", { n: st.scheduled })}` : "");
   const last = feeds?.lastUpdate() || 0;
@@ -1359,6 +1982,7 @@ function render(force = false) {
       ? t(lang, "updated", { age: formatAgo(lang, (now - last) / 1000) })
       : t(lang, "loading");
   if ((popup || selected) && map.getSource("selected")) showPopup();
+  if (force && detailKind === "station" && stationView && !$("detail").hidden) showStation(stationView, { refresh: true });
   if (!$("delayed").hidden && force) renderDelayedList();
   renderNear(force);
   if (force) {
@@ -1597,6 +2221,7 @@ function loadVisibleRegions() {
 
 async function main() {
   applyLang();
+  sheets.apply(); // phone: the home sheet peeks from the start
   ({ map, attr } = createMap("map", CONFIG, t(lang, "attribution")));
   const mapReady = new Promise((r) => map.on("load", r));
 
@@ -1636,6 +2261,16 @@ async function main() {
   setUserLayers();
   map.getSource("stations").setData(JSON.parse(engine.stationsGeoJson()));
   map.on("moveend", loadVisibleRegions);
+  map.on("moveend", updateNetChip);
+  // A pan or zoom by the user: the chip follows the map again.
+  for (const ev of ["dragstart", "zoomstart", "rotatestart"]) {
+    map.on(ev, (e) => {
+      if (e.originalEvent && netPinned) {
+        netPinned = null;
+        updateNetChip();
+      }
+    });
+  }
   map.on("click", (e) => {
     const pad = 10; // generous tap target on phones
     if (replay) {
@@ -1678,6 +2313,7 @@ async function main() {
       );
       if (st.length) return showStation(st[0]);
       stationPop?.remove();
+      if (isPhone()) $("detail").hidden = true;
       return clearSelection();
     }
     const info = JSON.parse(engine.trainJson(hits[0].properties.i, Date.now()));
@@ -1718,7 +2354,7 @@ async function main() {
   // Commute mode (Pro): open on the next trains of the saved commute.
   else
     whenTrains().then(() => {
-      if (CONFIG.pro && activeCommute(commutes) && SHEETS.every((x) => $(x).hidden)) {
+      if (CONFIG.pro && activeCommute(commutes) && (isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden))) {
         openSheet("commute");
         renderCommute();
       }
@@ -1783,6 +2419,7 @@ $("lang").addEventListener("click", () => {
   lang = lang === "es" ? "en" : "es";
   store.set("lang", lang);
   applyLang();
+  sheets.apply();
   if (alertsOn) writeAlertConfig();
 });
 $("delayed-btn").addEventListener("click", () => {
@@ -1793,12 +2430,24 @@ $("delayed-btn").addEventListener("click", () => {
   } else panel.hidden = true;
 });
 $("delayed-close").addEventListener("click", () => ($("delayed").hidden = true));
+$("more-close").addEventListener("click", () => ($("more").hidden = true));
+$("net-chip").addEventListener("click", () => openNetworks());
+$("fab-layers").addEventListener("click", () => ($("layers-panel").hidden ? openLayers() : ($("layers-panel").hidden = true)));
+$("networks-close").addEventListener("click", () => ($("networks").hidden = true));
+$("layers-panel-close").addEventListener("click", () => ($("layers-panel").hidden = true));
+$("fab-locate").addEventListener("click", () => {
+  if (!locator?.active) return startLocation();
+  if (userFix) flyToVisible(userFix.lon, userFix.lat, 13);
+  else {
+    openSheet("near");
+    renderNear(true);
+  }
+});
+matchMedia("(max-width: 719px)").addEventListener?.("change", () => applyLang());
 $("jump").addEventListener("change", (e) => {
   const v = e.target.value;
   e.target.value = "";
-  if (v === "es") return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
-  const r = ref?.region(v);
-  if (r) map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: 40, maxZoom: 11 });
+  if (v) goToNetwork(v);
 });
 function applyLayerVisibility() {
   if (!map?.getLayer("trains")) return;

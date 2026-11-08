@@ -4,6 +4,8 @@
       "allowed": {
         "origins": [
           "https://trainradar.pages.dev",
+          "https://mytrainradar.com",
+          "https://www.mytrainradar.com",
           "http://localhost:8080",
           "capacitor://localhost",
           "https://localhost"

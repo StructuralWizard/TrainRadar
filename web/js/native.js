@@ -143,6 +143,11 @@ export async function share({ title, text, url }) {
   return false;
 }
 
+/** A light tick (a sheet snapping into place): Android app only. */
+export function haptic() {
+  plugin("Haptics")?.impact({ style: "LIGHT" }).catch?.(() => {});
+}
+
 export function canShare() {
   return !!plugin("Share") || (typeof navigator !== "undefined" && !!navigator.share);
 }

@@ -165,6 +165,12 @@ stays off until you turn it on, because it needs a paid plan:
 5. **API domain (optional).** Workers & Pages → `trainradar-live` → Settings → Domains &
    Routes → Add → Custom domain → `api.<your-domain>`. The API then answers at
    `https://api.<your-domain>/v1/history/lines?days=7` (also on the `workers.dev` URL).
+6. **Site domain (optional).** Workers & Pages → `trainradar` (the Pages project) → Custom
+   domains → Set up a custom domain → `mytrainradar.com` (and again for
+   `www.mytrainradar.com`). Cloudflare adds the DNS records itself when the domain is on
+   Cloudflare. Both addresses are already allowed by the live bucket's CORS
+   (`backend/r2-cors.json`), the poller and API (`backend/wrangler.toml`) and the
+   pass-through (`deploy.yml`). The site also stays on `trainradar.pages.dev`.
 
 **Data kept:** every finished run in `trips` for 12 months (then moved to the archive),
 daily per-line and per-station figures forever. Daily backups in
