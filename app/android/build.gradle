@@ -4,6 +4,9 @@ buildscript {
     
     repositories {
         google()
+        // Google's copy of Maven Central first: Central now and then hands
+        // big files (the Kotlin compiler) to a download host that times out.
+        maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }
         mavenCentral()
     }
     dependencies {
@@ -20,6 +23,9 @@ apply from: "variables.gradle"
 allprojects {
     repositories {
         google()
+        // Google's copy of Maven Central first: Central now and then hands
+        // big files (the Kotlin compiler) to a download host that times out.
+        maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }
         mavenCentral()
     }
     // Test libraries pull an old kotlin-stdlib-jdk7/jdk8 (1.6) next to
