@@ -11,7 +11,9 @@
 // current hour is rewritten every few minutes (short cache); finished hours
 // are immutable. Only train data, never anything about people.
 
-export const REPLAY_FLUSH_EVERY = 5; // cycles (minutes)
+// Every cycle (minute): the object holding the hour can be restarted at any
+// time, and unwritten frames would be lost. ~1,440 small writes a day.
+export const REPLAY_FLUSH_EVERY = 1;
 export const FIRST_KEY = "replay/first.json";
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -105,6 +107,11 @@ export class ReplayStore {
     this.hour.add(frameJson, ms);
     this.pending += 1;
     if (this.pending >= REPLAY_FLUSH_EVERY) await this.flush(false);
+  }
+
+  /** For the recorder's status file: what's being written. */
+  status() {
+    return this.hour ? { hour: this.hour.id, frames: this.hour.frames.length, trains: this.hour.trains.length } : null;
   }
 
   /** Write the hour file; `done`: the hour is over (cache it for long). */

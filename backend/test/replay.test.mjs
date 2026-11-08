@@ -16,7 +16,7 @@ test("replay: hour ids and keys are UTC", () => {
   assert.equal(hourKey(hourId(ms)), "replay/2026-11-08/23.json.gz");
 });
 
-test("replay: frames are written every few minutes, hours split, and a restart continues the hour", async () => {
+test("replay: frames are written every minute, hours split, and a restart continues the hour", async () => {
   const bucket = fakeR2();
   const t0 = Date.parse("2026-11-08T14:50:00Z");
   const store = new ReplayStore(bucket);

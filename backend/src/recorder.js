@@ -171,6 +171,7 @@ export class RecorderCore {
         await this.replay.add(this.engine.replayFrameJson(now), now).catch((e) => {
           res.replayError = String(e?.message || e);
         });
+        res.replay = this.replay.status();
       }
       this.totals.finished += res.finished;
       this.totals.written += res.written;
