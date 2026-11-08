@@ -7,6 +7,7 @@ import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format.js";
 import { Sheets, isPhone } from "./js/sheet.js";
+import { COMMUNITIES, PROVINCES, boxOf, cityBox, cityStations, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
 import { layersSheet, networksSheet, stationSheet, trainSheet } from "./js/sheetui.js";
 import { Locator, circlePolygon } from "./js/location.js";
@@ -469,8 +470,12 @@ function fillJump() {
     nucleos.length
       ? el("optgroup", { label: t(lang, "cercaniasNetworks") }, nucleos.map((r) => el("option", { value: r.code }, r.name)))
       : null,
+    el("optgroup", { label: t(lang, "netCommunities") }, byName(COMMUNITIES).map((c) => el("option", { value: `ccaa:${c.code}` }, c.name))),
+    el("optgroup", { label: t(lang, "netProvinces") }, byName(PROVINCES).map((p) => el("option", { value: `prov:${p.code}` }, p.name))),
   );
 }
+
+const byName = (list) => [...list].sort((a, b) => a.name.localeCompare(b.name, "es"));
 
 /** Show one bottom sheet and hide the others. */
 function openSheet(id) {
@@ -1707,7 +1712,7 @@ function phoneChrome() {
 /** The network the map shows: the Cercanías núcleo under its centre, else Spain. */
 let netPinned = null; // the network just picked, until the user moves the map
 function currentNetwork() {
-  if (netPinned) return netPinned === "es" ? null : ref?.region(netPinned) || null;
+  if (netPinned) return netPinned === "es" ? null : placeByCode(netPinned) || ref?.region(netPinned) || null;
   if (!map || !ref || map.getZoom() < 7.5) return null;
   const c = map.getCenter();
   return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
@@ -1747,17 +1752,21 @@ function openNetworks() {
   renderNetworks();
 }
 
-/** Go to a network (núcleo code, or "es" for all of Spain), as "Ir a…" does. */
+/** Go to a network (núcleo code, "es" for all of Spain, or a place code:
+ * "prov:28", "ccaa:md", "city:madrid"), as "Ir a…" does. */
 function goToNetwork(code) {
   netPinned = code;
   updateNetChip();
-  if (code === "es") map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
-  else {
-    const r = ref?.region(code);
-    if (!r) return;
-    const pad = isPhone() ? { top: 130, bottom: ($("tabbar").offsetHeight || 0) + 180, left: 24, right: 24 } : 40;
-    map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: pad, maxZoom: 11 });
-  }
+  if (code === "es") return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
+  const place = placeByCode(code);
+  const bbox = place ? place.bbox || cityBox(place) : ref?.region(code)?.bbox;
+  if (bbox) fitBox(bbox, place && !place.bbox ? 13 : 11);
+}
+
+/** Show a box [s, w, n, e] clear of the phone's top bar and sheet. */
+function fitBox(bbox, maxZoom = 11) {
+  const pad = isPhone() ? { top: 130, bottom: ($("tabbar").offsetHeight || 0) + 180, left: 24, right: 24 } : 40;
+  map.fitBounds([[bbox[1], bbox[0]], [bbox[3], bbox[2]]], { padding: pad, maxZoom });
 }
 
 /** Median delay (s) of the Cercanías trains in each núcleo, now. */
@@ -1797,6 +1806,8 @@ function renderNetworks(keepInput = false) {
     near,
     spain: { trains, onPick: () => pick("es") },
     networks: [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
+    communities: byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name, alt: c.alt })),
+    provinces: byName(PROVINCES).map((p) => ({ code: `prov:${p.code}`, name: p.name, alt: p.alt })),
     onPick: pick,
     onQuery: (q) => {
       netQuery = q;

@@ -4,6 +4,7 @@
 import { t } from "./i18n.js";
 import { formatAgo, formatClock, formatCount, formatDistance } from "./format.js";
 import { icon } from "./icons.js";
+import { fold, matchScore } from "./places.js";
 import { el, historyBox, minutesUntil, trainAlerts, trainRows, trainTitle } from "./ui.js";
 
 /** "ok" < 5 min, "minor" 5–14, "major" 15+, "none" unknown. */
@@ -321,9 +322,9 @@ export function stationSheet(lang, station, o = {}) {
  * onPick(code), onQuery(q), onClose }. `median` in seconds or null.
  */
 export function networksSheet(lang, o) {
-  const fold = (x) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  const q = fold(o.query || "");
-  const list = (o.networks || []).filter((n) => !q || fold(n.name).includes(q));
+  const q = o.query || "";
+  const hit = (n) => !fold(q) || [n.name, ...(n.alt || [])].some((x) => matchScore(q, x) >= 0);
+  const list = (o.networks || []).filter(hit);
   const near = o.near;
   const nearCard = el(
     "button",
@@ -350,22 +351,24 @@ export function networksSheet(lang, o) {
     autocomplete: "off",
     placeholder: t(lang, "netSearch"),
     "aria-label": t(lang, "netSearch"),
-    value: o.query || "",
+    value: q,
     oninput: (e) => o.onQuery?.(e.target.value),
   });
+  const row = (n, right) =>
+    el("li", {}, el("button", { class: "net-row", type: "button", "data-code": n.code, onclick: () => o.onPick?.(n.code) }, el("span", { class: "net-name" }, n.name), right));
+  // Communities and provinces: no median (their trains aren't told apart).
+  const group = (id, title, items) => {
+    const shown = items.filter(hit);
+    return shown.length ? [el("h3", { class: "group-h", id }, title), el("ul", { class: "net-list" }, shown.map((n) => row(n, icon("chevronRight", 16))))] : [];
+  };
+  const extra = [...group("net-g-ccaa", t(lang, "netCommunities"), o.communities || []), ...group("net-g-prov", t(lang, "netProvinces"), o.provinces || [])];
   return [
     el("label", { class: "net-search" }, icon("search", 18), input),
-    q ? null : el("div", { class: "net-cards" }, nearCard, spainCard),
-    el("h3", { class: "group-h" }, t(lang, "netGroup")),
-    list.length
-      ? el(
-          "ul",
-          { class: "net-list" },
-          list.map((n) =>
-            el("li", {}, el("button", { class: "net-row", type: "button", "data-code": n.code, onclick: () => o.onPick?.(n.code) }, el("span", { class: "net-name" }, n.name), median(n.median))),
-          ),
-        )
-      : el("p", { class: "muted small" }, t(lang, "netNone")),
+    fold(q) ? null : el("div", { class: "net-cards" }, nearCard, spainCard),
+    // Searching: only the groups with a match ("none" when there's none).
+    ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, t(lang, "netGroup"))] : []),
+    list.length ? el("ul", { class: "net-list" }, list.map((n) => row(n, median(n.median)))) : extra.length ? null : el("p", { class: "muted small" }, t(lang, "netNone")),
+    ...extra,
   ];
 }
 
