@@ -6,7 +6,7 @@
 
 ![TrainRadar: trenes de Cercanías y AV/LD/MD en directo en Madrid, coloreados por retraso](docs/screenshot.jpg)
 
-**Live:** https://trainradar.pages.dev · installable on your phone's home screen
+**Live:** https://mytrainradar.com · installable on your phone's home screen
 
 TrainRadar is an open-source Rust workspace compiled to WebAssembly. Your browser fetches
 Renfe's open realtime feeds, decodes them, matches trains to the timetable, works out delays

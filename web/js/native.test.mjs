@@ -9,6 +9,7 @@ test("app links and web links", () => {
   assert.deepEqual(parseLink("trainradar://station/18000"), { type: "station", id: "18000" });
   assert.deepEqual(parseLink("https://trainradar.pages.dev/?train=19"), { type: "train", number: "19" });
   assert.deepEqual(parseLink("https://trainradar.pages.dev/?station=60000"), { type: "station", id: "60000" });
+  assert.deepEqual(parseLink("https://mytrainradar.com/?train=03020"), { type: "train", number: "03020" });
   assert.equal(parseLink("trainradar://train/<script>"), null);
   assert.equal(parseLink("trainradar://other/1"), null);
   assert.equal(parseLink("https://trainradar.pages.dev/"), null);

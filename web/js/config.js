@@ -29,7 +29,7 @@ export const CONFIG = {
   // the history screen says so, so a short history isn't taken for a fault.
   historySince: "2026-11-04",
   // The public site, for shared links (…?train=03020).
-  siteUrl: "https://trainradar.pages.dev/",
+  siteUrl: "https://mytrainradar.com/",
   // "web" or "android" (tools/build-web.sh --target android, phase C4).
   platform: "web",
   // TrainRadar Pro unlocked: set at run time from Google Play (Android app,
