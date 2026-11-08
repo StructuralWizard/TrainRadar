@@ -183,7 +183,8 @@ function applyLang() {
   ]) {
     $(id).textContent = t(lang, k);
   }
-  $("search-q").placeholder = t(lang, "searchPlaceholder");
+  $("search-q").placeholder = t(lang, isPhone() ? "searchPlaceholderPhone" : "searchPlaceholder");
+  phoneChrome();
   $("about-btn").setAttribute("aria-label", t(lang, "about"));
   $("about-btn").title = t(lang, "about");
   $("about-title").textContent = t(lang, "about");
@@ -259,7 +260,7 @@ function flyToVisible(lon, lat, zoom, { forPopup = false } = {}) {
  * half height when one is about to open). */
 function phoneOffset(sheetOpening = false) {
   const h = map.getContainer().clientHeight;
-  const topEl = document.querySelector(".topbar") || document.querySelector(".bar");
+  const topEl = $("chips");
   const top = topEl ? topEl.getBoundingClientRect().bottom : 0;
   const sheetH = Math.max(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sheet-h")) || 0, sheetOpening ? sheets.heights().half : 0);
   const bottom = h - ($("tabbar").offsetHeight || 0) - sheetH;
@@ -281,6 +282,7 @@ function updateLocButton() {
   const b = $("loc-btn");
   b.textContent = `📍 ${t(lang, "useLocation")}`;
   b.setAttribute("aria-pressed", String(on));
+  $("fab-locate").setAttribute("aria-pressed", String(on));
   b.setAttribute("aria-label", t(lang, on ? "locationOff" : "useLocationLabel"));
   $("center-btn").hidden = !on || !userFix;
   $("near-off").hidden = !on;
@@ -1421,6 +1423,30 @@ function renderSearch() {
   }
   const hits = JSON.parse(engine.searchJson(q, 8));
   ul.hidden = false;
+  // Phone: stations too ("Buscar tren, línea o estación").
+  const stationRows = isPhone()
+    ? searchStations(q).map((st) =>
+        el(
+          "li",
+          {},
+          el(
+            "button",
+            {
+              class: "link search-station",
+              onclick: () => {
+                ul.hidden = true;
+                $("search-q").value = "";
+                $("search-q").blur();
+                openStation(st);
+              },
+            },
+            icon("pin", 16),
+            el("strong", {}, st.name),
+            el("span", { class: "muted" }, ` · ${t(lang, "searchStation")}`),
+          ),
+        ),
+      )
+    : [];
   // A train number that isn't on the map now: its history (Pro, app).
   const n = /^\d{2,6}$/.test(q) ? q.replace(/^0+/, "") : "";
   const offMap = n && !hits.some((h) => h.number.replace(/^0+/, "") === n) && CONFIG.platform === "android" && CONFIG.apiBase;
@@ -1462,7 +1488,7 @@ function renderSearch() {
             t(lang, "searchNotRunningPro", { n }),
           ),
         );
-  if (!hits.length) return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]));
+  if (!hits.length && !stationRows.length) return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]));
   ul.replaceChildren(
     ...hits.map((h) =>
       el(
@@ -1484,6 +1510,7 @@ function renderSearch() {
       ),
     ),
     ...(offRow ? [offRow] : []),
+    ...stationRows,
   );
 }
 
@@ -1644,6 +1671,79 @@ function renderHomeSummary(st, pos) {
   );
 }
 
+/** Phone top bar and map buttons: icons and labels (once per language). */
+function phoneChrome() {
+  $("search-icon").replaceChildren(icon("search", 20));
+  $("net-chip").replaceChildren(el("span", { id: "net-chip-l" }, netName()), icon("chevronDown", 16));
+  $("net-chip").setAttribute("aria-label", t(lang, "netChipLabel", { name: netName() }));
+  const dot = (c, label) => el("span", {}, el("i", { style: `background:${c}` }), label);
+  $("legend-chip").replaceChildren(dot("#16a34a", "<5"), dot("#ea8a0c", "5–14"), dot("#dc2626", "15+"));
+  $("legend-chip").setAttribute("aria-label", t(lang, "legendChipLabel"));
+  $("legend-chip").setAttribute("role", "img");
+  $("fab-layers").replaceChildren(icon("layers", 22));
+  $("fab-layers").setAttribute("aria-label", t(lang, "layers"));
+  $("fab-locate").replaceChildren(icon("locate", 22));
+  $("fab-locate").setAttribute("aria-label", t(lang, "fabLocate"));
+}
+
+/** The network the map shows: the Cercanías núcleo under its centre, else Spain. */
+function currentNetwork() {
+  if (!map || !ref || map.getZoom() < 7.5) return null;
+  const c = map.getCenter();
+  return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
+}
+const netName = () => currentNetwork()?.name || t(lang, "netSpain");
+
+function updateNetChip() {
+  const l = $("net-chip-l");
+  if (!l) return;
+  const name = netName();
+  if (l.textContent !== name) {
+    l.textContent = name;
+    $("net-chip").setAttribute("aria-label", t(lang, "netChipLabel", { name }));
+  }
+}
+
+/** "498 trenes · mediana +2 min" with a dot: green live, orange stale, red failing. */
+function renderLiveChip(st, now) {
+  if (!isPhone()) return;
+  const last = feeds?.lastUpdate() || 0;
+  const age = last ? (now - last) / 1000 : Infinity;
+  const state = feeds?.failing() ? "bad" : age > 120 ? "stale" : "ok";
+  const text =
+    st.median_delay === null
+      ? t(lang, "trains", { n: formatCount(lang, st.trains) })
+      : t(lang, "liveChip", { trains: t(lang, "trains", { n: formatCount(lang, st.trains) }), delay: formatDelay(lang, st.median_delay) });
+  $("live-text").textContent = text;
+  $("live-chip").dataset.state = state;
+  $("live-chip").title = state === "bad" ? t(lang, "feedError") : last ? t(lang, "updated", { age: formatAgo(lang, age) }) : t(lang, "loading");
+}
+
+/** Interim (until the network sheet): the native "Ir a…" list. */
+function openNetworks() {
+  const sel = $("jump");
+  sel.classList.toggle("jump-open");
+  if (sel.classList.contains("jump-open")) sel.focus();
+}
+
+/** Stations whose name matches a search (phone), accents ignored. */
+let stationIndex = null;
+function searchStations(q, limit = 5) {
+  const norm = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const nq = norm(q);
+  if (nq.length < 2 || !engine) return [];
+  stationIndex ??= JSON.parse(engine.stationsGeoJson()).features.map((f) => ({
+    id: f.properties.id,
+    name: f.properties.name,
+    key: norm(f.properties.name),
+    lon: f.geometry.coordinates[0],
+    lat: f.geometry.coordinates[1],
+  }));
+  const starts = stationIndex.filter((x) => x.key.startsWith(nq));
+  const inside = stationIndex.filter((x) => !x.key.startsWith(nq) && x.key.includes(nq));
+  return [...starts, ...inside].slice(0, limit);
+}
+
 /** A light tick when a sheet snaps (Android app only; phase e). */
 function haptic() {}
 
@@ -1733,6 +1833,7 @@ function render(force = false) {
   map.getSource("trains")?.setData(trainsGeoJson(pos, highlight, hiddenByFilter));
   const st = JSON.parse(engine.statsJson(now));
   renderHomeSummary(st, pos);
+  renderLiveChip(st, now);
   $("stats").textContent =
     statsText(lang, st) + (st.scheduled ? ` ${t(lang, "scheduledCount", { n: st.scheduled })}` : "");
   const last = feeds?.lastUpdate() || 0;
@@ -2021,6 +2122,7 @@ async function main() {
   setUserLayers();
   map.getSource("stations").setData(JSON.parse(engine.stationsGeoJson()));
   map.on("moveend", loadVisibleRegions);
+  map.on("moveend", updateNetChip);
   map.on("click", (e) => {
     const pad = 10; // generous tap target on phones
     if (replay) {
@@ -2181,9 +2283,24 @@ $("delayed-btn").addEventListener("click", () => {
 });
 $("delayed-close").addEventListener("click", () => ($("delayed").hidden = true));
 $("more-close").addEventListener("click", () => ($("more").hidden = true));
+$("net-chip").addEventListener("click", () => openNetworks());
+$("fab-layers").addEventListener("click", () => {
+  const d = $("layers");
+  d.open = !d.open;
+});
+$("fab-locate").addEventListener("click", () => {
+  if (!locator?.active) return startLocation();
+  if (userFix) flyToVisible(userFix.lon, userFix.lat, 13);
+  else {
+    openSheet("near");
+    renderNear(true);
+  }
+});
+matchMedia("(max-width: 719px)").addEventListener?.("change", () => applyLang());
 $("jump").addEventListener("change", (e) => {
   const v = e.target.value;
   e.target.value = "";
+  e.target.classList.remove("jump-open");
   if (v === "es") return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
   const r = ref?.region(v);
   if (r) map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: 40, maxZoom: 11 });

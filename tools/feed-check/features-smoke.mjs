@@ -122,9 +122,17 @@ await page.click("#seg-arr");
 if ((await page.getAttribute("#seg-arr", "aria-selected")) !== "true") await fail("Llegando tab not selected");
 await page.click("#detail-close");
 if (!(await page.isHidden("#detail"))) await fail("station sheet didn't close");
+// Phone search finds stations too, accents ignored.
+await page.fill("#search-q", "cordoba");
+await page.waitForSelector("#search-results .search-station", { timeout: 5000 }).catch(() => fail("search found no station"));
+await page.click("#search-results .search-station");
+await page.waitForFunction(() => /Córdoba/.test(document.querySelector("#detail:not([hidden]) .sheet-station h2")?.textContent || ""), null, { timeout: 8000 })
+  .catch(() => fail("station from the search didn't open"));
+console.log("network chip:", await page.textContent("#net-chip"));
+await page.click("#detail-close");
 
 // Layer switches hide and show their layers; the satellite choice adds imagery.
-await page.click("#layers summary");
+await page.click("#fab-layers"); // phone: the Capas button
 for (const [box, layer] of [["#f-tav", "track-av"], ["#f-tld", "track-ld"], ["#f-tmd", "track-md"], ["#f-stations", "stations"], ["#f-stopped", "stopped-ring"]]) {
   await page.uncheck(box);
   const v = await page.evaluate((l) => window.__trainradar.map.getLayoutProperty(l, "visibility"), layer);

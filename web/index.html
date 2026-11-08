@@ -33,8 +33,16 @@
 
   <div class="controls">
     <div class="search">
+      <span id="search-icon" class="search-icon" aria-hidden="true"></span>
       <input id="search-q" type="search" inputmode="search" autocomplete="off" aria-label="Buscar tren">
+      <!-- Phone: the network shown, opens the network picker. -->
+      <button id="net-chip" class="net-chip" type="button"><span id="net-chip-l"></span></button>
       <ul id="search-results" class="search-results" hidden></ul>
+    </div>
+    <!-- Phone: live status and the delay colours, as two small chips. -->
+    <div id="chips" class="chips">
+      <span id="live-chip" class="map-chip live-chip" role="status"><i id="live-dot" class="live-dot"></i><span id="live-text"></span></span>
+      <span id="legend-chip" class="map-chip legend-chip"></span>
     </div>
     <select id="jump" aria-label="Ir a"></select>
     <details id="layers">
@@ -64,6 +72,12 @@
         <label><input type="radio" name="basemap" value="satellite"> <span id="b-satellite-l"></span></label>
       </div>
     </details>
+  </div>
+
+  <!-- Phone: map buttons above the sheet. -->
+  <div id="fabs" class="fabs">
+    <button id="fab-layers" class="fab" type="button"></button>
+    <button id="fab-locate" class="fab" type="button" aria-pressed="false"></button>
   </div>
 
   <div id="replay-bar" class="replay-bar" hidden></div>

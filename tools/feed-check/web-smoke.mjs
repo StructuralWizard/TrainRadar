@@ -27,7 +27,9 @@ try {
   });
   await page.waitForFunction(() => window.__trainradar?.map?.getSource("trains"), null, { timeout: 30_000 });
   await page.waitForTimeout(3000); // tiles and a second render
-  console.log("stats:", await page.textContent("#stats"), "|", await page.textContent("#status"));
+  console.log("stats:", await page.textContent("#stats"), "|", await page.textContent("#status"), "| chip:", await page.textContent("#live-chip"));
+  if (!(await page.isVisible("#live-chip")) || !/trenes/.test(await page.textContent("#live-chip"))) await fail("no live status chip");
+  if (await page.isVisible(".bar")) await fail("desktop header shown on a phone");
   await page.screenshot({ path: `${out}/map.png` });
   if (flag === "--print-screenshot") {
     await page.screenshot({ path: `${out}/map-small.jpg`, type: "jpeg", quality: 55, scale: "css" });

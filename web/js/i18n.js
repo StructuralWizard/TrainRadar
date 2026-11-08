@@ -324,6 +324,15 @@ export const STRINGS = {
     confMedium: "confianza media",
     confLow: "confianza baja",
     showTrain: "Ver tren",
+    // Phone layout: top bar, chips, map buttons.
+    searchPlaceholderPhone: "Buscar tren, línea o estación",
+    searchStation: "Estación",
+    netSpain: "España",
+    netChipLabel: "Red: {name}. Cambiar de red",
+    liveChip: "{trains} · mediana {delay}",
+    liveStale: "Datos de hace {age}",
+    legendChipLabel: "Colores por retraso: verde menos de 5 min, naranja de 5 a 14, rojo 15 o más",
+    fabLocate: "Mi ubicación",
     // Phone layout: train and station sheets.
     trainNo: "Tren {n}",
     nextStops: "Próximas paradas",
@@ -683,6 +692,15 @@ export const STRINGS = {
     confMedium: "medium confidence",
     confLow: "low confidence",
     showTrain: "Show train",
+    // Phone layout: top bar, chips, map buttons.
+    searchPlaceholderPhone: "Find a train, line or station",
+    searchStation: "Station",
+    netSpain: "Spain",
+    netChipLabel: "Network: {name}. Change network",
+    liveChip: "{trains} · median {delay}",
+    liveStale: "Data from {age}",
+    legendChipLabel: "Delay colours: green under 5 min, orange 5 to 14, red 15 or more",
+    fabLocate: "My location",
     // Phone layout: train and station sheets.
     trainNo: "Train {n}",
     nextStops: "Next stops",

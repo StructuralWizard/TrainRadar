@@ -242,7 +242,7 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 /* Phone layout (≤ 719 px, and the Android app): app tab bar and bottom
  * sheets with snap points (js/sheet.js). The desktop layout above is
  * unchanged; nothing below applies from 720 px. */
-.tabbar, .delayed-summary, .scrim, .sheet-handle { display: none; }
+.tabbar, .delayed-summary, .scrim, .sheet-handle, .search-icon, .net-chip, .chips, .fabs { display: none; }
 @media (max-width: 719px) {
   :root { --tab-h: calc(58px + var(--safe-bottom)); --sheet-h: 0px; }
   .bottom { display: none; }
@@ -403,7 +403,70 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .delay-pill.tone-major { background: #fee2e2; color: #991b1b; }
   .delay-pill.tone-none { background: #f3f4f6; color: #4b5563; }
 
+  /* Top: one search bar with the network chip, then the status chips.
+   * The desktop header, legend and "Ir a…" box are not shown. */
+  .bar, .legend { display: none; }
+  .maplibregl-ctrl-top-right { display: none; } /* pinch to zoom */
+  .controls { top: calc(12px + var(--safe-top)); left: 16px; right: 16px; gap: 10px; }
+  .controls .search {
+    width: auto; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 6px 0 16px;
+    background: #fff; border-radius: 26px; box-shadow: 0 4px 16px rgba(17, 24, 39, 0.14);
+  }
+  .search-icon { display: flex; color: #4b5563; flex: none; }
+  #search-q {
+    flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; box-shadow: none;
+    background: transparent; font-size: 16px; color: #111827; outline: none;
+  }
+  #search-q::-webkit-search-cancel-button { display: none; }
+  .search:focus-within { box-shadow: 0 0 0 3px #93c5fd, 0 4px 16px rgba(17, 24, 39, 0.14); }
+  .net-chip {
+    display: inline-flex; align-items: center; gap: 4px; flex: none; max-width: 48%; height: 40px; padding: 0 10px 0 14px;
+    border: 0; border-radius: 20px; background: #eef2ff; color: #1d4ed8; font-weight: 600; font-size: 14px;
+  }
+  .net-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .net-chip .icon { flex: none; }
+  .net-chip:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+  .search-results { top: calc(100% + 6px); border-radius: 16px; max-height: 60vh; z-index: 8; }
+  .search-results button { min-height: 48px; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+  .search-station .icon { color: #4b5563; flex: none; }
+  .chips { display: flex; gap: 8px; align-items: center; min-width: 0; }
+  .map-chip {
+    display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 17px;
+    background: rgba(255, 255, 255, 0.96); box-shadow: 0 2px 8px rgba(17, 24, 39, 0.12);
+    font-size: 13px; font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; min-width: 0;
+  }
+  .live-chip { flex: 0 1 auto; overflow: hidden; gap: 7px; padding: 0 11px; }
+  .live-chip #live-text { overflow: hidden; text-overflow: ellipsis; }
+  .live-dot { flex: none; width: 8px; height: 8px; border-radius: 4px; background: #9ca3af; }
+  .live-chip[data-state="ok"] .live-dot { background: #16a34a; }
+  .live-chip[data-state="stale"] .live-dot { background: #ea8a0c; }
+  .live-chip[data-state="bad"] .live-dot { background: #dc2626; }
+  .legend-chip { flex: none; gap: 7px; padding: 0 9px; font-size: 12px; color: #374151; }
+  .legend-chip span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend-chip i { width: 9px; height: 9px; border-radius: 5px; }
+  /* "Ir a…" (until its sheet) and "Capas" open from the chip and the button. */
+  .controls select { display: none; }
+  .controls select.jump-open { display: block; max-width: none; min-height: 44px; font-size: 16px; }
+  .controls details { display: none; }
+  .controls details[open] { display: block; max-width: none; }
+  .controls details summary { min-height: 44px; display: flex; align-items: center; }
+
+  /* Map buttons on the right, above the sheet. */
+  .fabs {
+    display: flex; flex-direction: column; gap: 10px; position: absolute; z-index: 4; right: 16px;
+    bottom: calc(var(--tab-h) + var(--sheet-h) + 12px); transition: bottom 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  body[data-sheet="full"] .fabs, body.replaying .fabs { display: none; }
+  .fab {
+    width: 48px; height: 48px; border: 0; border-radius: 24px; background: #fff; color: #111827;
+    box-shadow: 0 4px 14px rgba(17, 24, 39, 0.16); display: flex; align-items: center; justify-content: center;
+  }
+  .fab:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+  #fab-locate { color: #1d4ed8; }
+  #fab-locate[aria-pressed="true"] { background: #1d4ed8; color: #fff; }
+
   /* Map credits, banner and Replay sit above the tab bar and sheet. */
+  .maplibregl-ctrl-bottom-right { right: auto; left: 0; }
   .maplibregl-ctrl-bottom-right { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   .app-banner { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   body.replaying .tabbar, body.replaying #delayed { display: none; }
