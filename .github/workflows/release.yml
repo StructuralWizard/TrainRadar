@@ -90,9 +90,13 @@ jobs:
           git fetch --depth 1 origin "refs/tags/$TAG:refs/tags/$TAG"
           git checkout --quiet "$TAG"
           APP_VERSION="$v" tools/build-app.sh
-          # Gradle's own download times out now and then: try it a few times.
-          for i in 1 2 3 4; do (cd app/android && ./gradlew --no-daemon --version > /dev/null) && break; [ "$i" = 4 ] && exit 1; sleep $(( i * 15 )); done
-          (cd app/android && ./gradlew --no-daemon :app:bundleRelease -PversionCode="$code" -PversionName="$v")
+          # Gradle and its libraries are downloaded, and the servers time out
+          # now and then: try a few times (what was downloaded is kept).
+          for i in 1 2 3; do
+            (cd app/android && ./gradlew --no-daemon :app:bundleRelease -PversionCode="$code" -PversionName="$v") && break
+            [ "$i" = 3 ] && exit 1
+            sleep $(( i * 30 ))
+          done
           cp app/android/app/build/outputs/bundle/release/app-release.aab "trainradar-$v-unsigned.aab"
           sed -n '/^## Google Play/,$p' "docs/releases/$TAG.md" | tail -n +2 > "play-release-notes-$v.txt"
           gh release upload "$TAG" "trainradar-$v-unsigned.aab" "play-release-notes-$v.txt" --repo "$GITHUB_REPOSITORY" --clobber
