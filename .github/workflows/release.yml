@@ -37,6 +37,11 @@ jobs:
           [[ "$TARGET" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "bad target: $TARGET"; exit 1; }
           notes="docs/releases/$TAG.md"
           [ -f "$notes" ] || { echo "::error::$notes is not on main yet. Merge the phase PR first, then run Release again."; exit 1; }
+          # Run again after a failed bundle build: the release is already there.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "$TAG already exists: keeping it, building the bundle again."
+            exit 0
+          fi
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$TARGET" \
             --title "$TAG – $(head -1 "$notes" | sed 's/^# *//')" \
             --notes-file <(tail -n +2 "$notes")
@@ -85,8 +90,10 @@ jobs:
           git fetch --depth 1 origin "refs/tags/$TAG:refs/tags/$TAG"
           git checkout --quiet "$TAG"
           APP_VERSION="$v" tools/build-app.sh
+          # Gradle's own download times out now and then: try it a few times.
+          for i in 1 2 3 4; do (cd app/android && ./gradlew --no-daemon --version > /dev/null) && break; [ "$i" = 4 ] && exit 1; sleep $(( i * 15 )); done
           (cd app/android && ./gradlew --no-daemon :app:bundleRelease -PversionCode="$code" -PversionName="$v")
           cp app/android/app/build/outputs/bundle/release/app-release.aab "trainradar-$v-unsigned.aab"
           sed -n '/^## Google Play/,$p' "docs/releases/$TAG.md" | tail -n +2 > "play-release-notes-$v.txt"
-          gh release upload "$TAG" "trainradar-$v-unsigned.aab" "play-release-notes-$v.txt" --repo "$GITHUB_REPOSITORY"
+          gh release upload "$TAG" "trainradar-$v-unsigned.aab" "play-release-notes-$v.txt" --repo "$GITHUB_REPOSITORY" --clobber
           echo "Store bundle: trainradar-$v-unsigned.aab (versionCode $code), attached to the $TAG release. Sign it, then upload it to Play." >> "$GITHUB_STEP_SUMMARY"

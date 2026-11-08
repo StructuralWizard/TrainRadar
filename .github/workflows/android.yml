@@ -60,6 +60,8 @@ jobs:
         id: apks
         run: |
           (cd app && npm ci --no-audit --no-fund && npx cap sync android)
+          # Gradle's own download times out now and then: try it a few times.
+          for i in 1 2 3 4; do (cd app/android && ./gradlew --no-daemon --version > /dev/null) && break; [ "$i" = 4 ] && exit 1; sleep $(( i * 15 )); done
           cd app/android && ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest
 
       - name: Emulator smoke test (map renders, a train popup opens)
