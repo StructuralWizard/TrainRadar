@@ -126,11 +126,15 @@ public class AppSmokeTest {
         // The sheet is open, which is what this checks. Close it (Back; the
         // sheet can ignore a press while it animates, so retry), then make
         // sure the call didn't fail for another reason.
-        long end = System.currentTimeMillis() + 20_000;
+        // After each press, wait up to 6 s for the app to come back before
+        // pressing again: a press that lands once the app is back would
+        // close the app itself.
+        long end = System.currentTimeMillis() + 30_000;
         while (!appInFront() && System.currentTimeMillis() < end) {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
-            Thread.sleep(2_000);
+            long settle = System.currentTimeMillis() + 6_000;
+            while (!appInFront() && System.currentTimeMillis() < settle) Thread.sleep(250);
         }
         if (!appInFront()) return; // still showing the sheet: the export reached it
         String after = String.valueOf(eval("return window.__shared;"));
