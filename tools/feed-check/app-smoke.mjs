@@ -59,16 +59,16 @@ if (!text.includes("Retraso")) await fail("popup lacks the delay");
 // Favourites: save two trains, the third hits the limit.
 await page.click(".popup .fav-btn");
 await page.waitForSelector('.popup .fav-btn[aria-pressed="true"]');
-await page.click(".maplibregl-popup-close-button");
+await page.click("#detail-close");
 await openTrain(live[1]);
 await page.click(".popup .fav-btn");
 await page.waitForSelector('.popup .fav-btn[aria-pressed="true"]');
-await page.click(".maplibregl-popup-close-button");
+await page.click("#detail-close");
 await openTrain(live[2]);
 await page.click(".popup .fav-btn");
 await page.waitForSelector(".popup .fav-full", { timeout: 3000 }).catch(() => fail("no limit message"));
 if (await page.$('.popup .fav-btn[aria-pressed="true"]')) await fail("third favourite saved past the limit");
-await page.click(".maplibregl-popup-close-button");
+await page.click("#detail-close");
 
 // Kept after a reload; the panel lists them and opens one.
 await page.reload();
@@ -177,7 +177,7 @@ await pp.waitForSelector(".popup .popup-title");
 await pp.waitForFunction(() => /Tren delante|Vía/.test(document.querySelector(".popup")?.textContent || ""), null, { timeout: 8000 })
   .catch(() => fail("Pro didn't unlock the details"));
 for (const n of live.slice(0, 3)) {
-  await pp.click(".maplibregl-popup-close-button").catch(() => {});
+  await pp.click("#detail-close").catch(() => {});
   await pp.fill("#search-q", n);
   await pp.waitForSelector("#search-results li button");
   await pp.click("#search-results li button");
@@ -203,7 +203,7 @@ await pp.click(".popup .trip-btn");
 await pp.waitForSelector('.popup .trip-btn[aria-pressed="true"]', { timeout: 3000 }).catch(() => fail("trip not logged"));
 await pp.click(".popup .trip-btn"); // stop: the trip ends
 await pp.waitForSelector('.popup .trip-btn[aria-pressed="false"]');
-await pp.click(".maplibregl-popup-close-button");
+await pp.click("#detail-close");
 await pp.click("#tab-more");
 await pp.click("#more-about");
 await pp.click("#settings-btn");
@@ -330,7 +330,8 @@ if (pressedBg[0] !== "rgb(240, 253, 244)" || pressedBg[1] !== "rgb(22, 101, 52)"
 
 // Delays list (Pro): "All" or one commute's trains only, remembered.
 await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
-await pp.click(".bucket-major"); // phone: expand the home sheet
+await pp.click("#tab-map"); // phone: back to the map, then expand the home sheet
+  await pp.click(".bucket-major");
   await pp.waitForTimeout(400);
 await pp.waitForSelector("#delayed-filter:not([hidden]) button", { timeout: 5000 }).catch(() => fail("delays filter didn't show"));
 const chips = await pp.$$eval("#delayed-filter button", (b) => b.map((x) => x.textContent));

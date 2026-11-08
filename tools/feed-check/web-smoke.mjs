@@ -70,7 +70,8 @@ try {
     await fail("popup shows a gradient but no height profile");
   }
 
-  await page.click(".bucket-major"); // phone: expand the home sheet
+  await page.click("#tab-map"); // phone: back to the map, then expand the home sheet
+  await page.click(".bucket-major");
   await page.waitForTimeout(400);
   const rows = await page.$$eval("#delayed-list li", (l) => l.length);
   console.log("delayed list rows:", rows);

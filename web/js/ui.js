@@ -213,21 +213,37 @@ export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web
   return out;
 }
 
-export function trainPopup(
-  lang,
-  info,
-  regionName,
-  onIncidents,
-  { napDate, profile, onTrain, appUrl, history, enthusiast = true, fav = null, onShare = null, proLink = null, trip = null, onHistory = null } = {},
-) {
+export function trainPopup(lang, info, regionName, onIncidents, opts = {}) {
+  const { fav = null, onShare = null, trip = null } = opts;
   const title = el(
     "div",
     { class: "popup-title", style: info.timetable_only ? `color:${SCHEDULED_COLOR}` : null },
     trainTitle(info),
   );
-  const sub = [];
-  if (info.feed === "vp_cer" && regionName) sub.push(t(lang, "cercanias", { region: regionName }));
-  if (info.platform) sub.push(t(lang, "platform", { p: info.platform }));
+  const sub = trainSub(lang, info, regionName);
+  return el(
+    "div",
+    { class: "popup" },
+    title,
+    sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null,
+    popupActions(lang, fav, onShare),
+    trip && info.origin
+      ? el(
+          "div",
+          { class: "popup-actions" },
+          el(
+            "button",
+            { class: "pill small trip-btn", type: "button", "aria-pressed": String(trip.on), onclick: trip.onToggle },
+            trip.on ? `🧳 ${t(lang, "tripOn")}` : `🧳 ${t(lang, trip.pro ? "tripStart" : "tripStartPro")}`,
+          ),
+        )
+      : null,
+    trainRows(lang, info, onIncidents, opts),
+  );
+}
+
+/** Cancelled, stopped, timetable only, notices: shown first. */
+export function trainAlerts(lang, info, onIncidents) {
   const rows = [];
   if (info.canceled) rows.push(el("div", { class: "badge badge-red" }, t(lang, "canceled")));
   if (info.timetable_only) {
@@ -248,13 +264,39 @@ export function trainPopup(
       ),
     );
   }
+  return rows;
+}
+
+/** "Cercanías Madrid · Vía 6". */
+export function trainSub(lang, info, regionName) {
+  const sub = [];
+  if (info.feed === "vp_cer" && regionName) sub.push(t(lang, "cercanias", { region: regionName }));
+  if (info.platform) sub.push(t(lang, "platform", { p: info.platform }));
+  return sub;
+}
+
+/**
+ * A train's details, as rows. `skip`: parts the caller already shows
+ * ("route", "next", "delay", "history", "speed", "accessible", "position",
+ * "app") — the phone sheet has its own header, stops list and meta line.
+ */
+export function trainRows(
+  lang,
+  info,
+  onIncidents,
+  { napDate, profile, onTrain, appUrl, history, enthusiast = true, proLink = null, onHistory = null } = {},
+  skip = new Set(),
+) {
+  const rows = skip.has("alerts") ? [] : trainAlerts(lang, info, onIncidents);
   if (info.origin) {
-    rows.push(row(t(lang, "from"), info.origin));
-    rows.push(row(t(lang, "to"), info.destination));
+    if (!skip.has("route")) {
+      rows.push(row(t(lang, "from"), info.origin));
+      rows.push(row(t(lang, "to"), info.destination));
+    }
   } else {
     rows.push(el("div", { class: "muted" }, t(lang, "unmatched")));
   }
-  if (info.next_stop) {
+  if (info.next_stop && !skip.has("next")) {
     rows.push(
       row(
         t(lang, "nextStop"),
@@ -264,7 +306,7 @@ export function trainPopup(
     );
   }
   const cls = info.delay === null ? 3 : info.delay < 300 ? 0 : info.delay < 900 ? 1 : 2;
-  rows.push(
+  if (!skip.has("delay")) rows.push(
     row(
       t(lang, "delay"),
       el("strong", { style: `color:${COLORS[cls]}` }, formatDelay(lang, info.delay)),
@@ -273,9 +315,9 @@ export function trainPopup(
         : "",
     ),
   );
-  if (history && info.origin) rows.push(historyBox(lang, history, appUrl, proLink, onHistory));
+  if (history && info.origin && !skip.has("history")) rows.push(historyBox(lang, history, appUrl, proLink, onHistory));
   // A timetabled 0 km/h just means "dwelling at a station": not worth a row.
-  if (info.speed_kmh !== null && info.speed_kmh !== undefined && (info.speed_measured || info.speed_kmh > 0)) {
+  if (!skip.has("speed") && info.speed_kmh !== null && info.speed_kmh !== undefined && (info.speed_measured || info.speed_kmh > 0)) {
     rows.push(
       row(t(lang, "speed"), t(lang, info.speed_measured ? "speedMeasured" : "speedScheduled", { v: info.speed_kmh })),
     );
@@ -302,7 +344,7 @@ export function trainPopup(
     if (chart) rows.push(chart);
     rows.push(el("details", { class: "small muted" }, el("summary", {}, t(lang, "gradeSource")), COPERNICUS_NOTICE));
   }
-  if (info.accessible) rows.push(el("div", { class: "small" }, t(lang, info.accessible === "yes" ? "accessibleYes" : "accessibleNo")));
+  if (info.accessible && !skip.has("accessible")) rows.push(el("div", { class: "small" }, t(lang, info.accessible === "yes" ? "accessibleYes" : "accessibleNo")));
   const age = formatAgo(lang, info.fix_age);
   if (info.timetable_only) {
     const site = OPERATOR_SITES[info.operator];
@@ -310,7 +352,7 @@ export function trainPopup(
     if (site) rows.push(el("a", { class: "small", href: site, target: "_blank", rel: "noopener" }, t(lang, "operatorLive", { op: info.operator })));
     rows.push(el("a", { class: "small", href: "https://www.transportes.gob.es/", target: "_blank", rel: "noopener" }, "Powered by MITRAMS"));
   }
-  if (!info.timetable_only) rows.push(
+  if (!info.timetable_only && !skip.has("position")) rows.push(
     row(
       t(lang, "position"),
       // Under a minute old, the dot is effectively at the GPS fix.
@@ -323,28 +365,10 @@ export function trainPopup(
     if (info.oncoming) rows.push(row(t(lang, "oncoming"), oncomingText(lang, info.oncoming, onTrain)));
   }
   if (!info.timetable_only) rows.push(...sourceNote(lang, info));
-  if (appUrl && info.origin) {
+  if (appUrl && info.origin && !skip.has("app")) {
     rows.push(el("a", { class: "small app-link", href: appUrl, target: "_blank", rel: "noopener" }, `🔔 ${t(lang, "appAlerts")}`));
   }
-  return el(
-    "div",
-    { class: "popup" },
-    title,
-    sub.length ? el("div", { class: "muted" }, sub.join(" · ")) : null,
-    popupActions(lang, fav, onShare),
-    trip && info.origin
-      ? el(
-          "div",
-          { class: "popup-actions" },
-          el(
-            "button",
-            { class: "pill small trip-btn", type: "button", "aria-pressed": String(trip.on), onclick: trip.onToggle },
-            trip.on ? `🧳 ${t(lang, "tripOn")}` : `🧳 ${t(lang, trip.pro ? "tripStart" : "tripStartPro")}`,
-          ),
-        )
-      : null,
-    rows,
-  );
+  return rows;
 }
 
 /** ☆ Save / ★ Saved and Share buttons under a popup's title. */
@@ -699,7 +723,7 @@ export function historyBox(lang, h, proUrl, onPro = null, onHistory = null) {
   );
 }
 
-function minutesUntil(lang, unix) {
+export function minutesUntil(lang, unix) {
   const m = Math.round((unix - Date.now() / 1000) / 60);
   return m <= 0 ? t(lang, "now") : t(lang, "inMin", { m });
 }
@@ -782,7 +806,7 @@ export function nearPanel(lang, { stations, board, approaching, onStation, onTra
 }
 
 /** Departures board rows (engine.stationBoardJson). */
-function boardList(lang, board) {
+export function boardList(lang, board) {
   return board.length
     ? el(
         "ul",

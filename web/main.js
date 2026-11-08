@@ -8,6 +8,7 @@ import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format.js";
 import { Sheets, isPhone } from "./js/sheet.js";
 import { icon } from "./js/icons.js";
+import { stationSheet, trainSheet } from "./js/sheetui.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
@@ -94,7 +95,7 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail"];
 const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
@@ -131,6 +132,14 @@ const kindMask = () => Object.entries(KINDS).reduce((m, [k, bit]) => (showKind[k
 let stationPop = null;
 let dragOffset = [0, 0]; // where the user dragged the train popup to
 let highlight = null; // Set of train indexes on the selected train's line
+// Phone: what the detail sheet shows ("train" | "station" | null), the
+// station shown and its board tab, and each line's colour for badges.
+let detailKind = null;
+let stationView = null;
+let stationTab = "dep";
+let detailAt = 0;
+let detailKey = "";
+const lineColors = new Map(); // "region|line" and "|line" → "#rrggbb"
 
 function applyLang() {
   document.documentElement.lang = lang;
@@ -233,6 +242,7 @@ function makeRoomBelow(lon, lat) {
  * bottom sheet, or (`forPopup`) in the upper third, leaving room for the
  * popup that opens below it. */
 function flyToVisible(lon, lat, zoom, { forPopup = false } = {}) {
+  if (isPhone()) return map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), zoom), offset: phoneOffset(forPopup) });
   const sheet = SHEETS.map($).find((x) => !x.hidden);
   const covered = sheet && sheet.getBoundingClientRect().width >= window.innerWidth - 1;
   const h = map.getContainer().clientHeight;
@@ -242,6 +252,28 @@ function flyToVisible(lon, lat, zoom, { forPopup = false } = {}) {
     // The sheet can grow to 55% of the screen once its content loads.
     offset: [0, covered ? -(h * 0.55) / 2 : forPopup ? -h * 0.25 : 0],
   });
+}
+
+/** Phone: how far from the screen's centre the middle of the map left
+ * visible is — under the top bar, above the tab bar and the sheet (at
+ * half height when one is about to open). */
+function phoneOffset(sheetOpening = false) {
+  const h = map.getContainer().clientHeight;
+  const topEl = document.querySelector(".topbar") || document.querySelector(".bar");
+  const top = topEl ? topEl.getBoundingClientRect().bottom : 0;
+  const sheetH = Math.max(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sheet-h")) || 0, sheetOpening ? sheets.heights().half : 0);
+  const bottom = h - ($("tabbar").offsetHeight || 0) - sheetH;
+  return [0, Math.round((top + bottom) / 2 - h / 2)];
+}
+
+/** Phone: pan a point into the visible part of the map if it's hidden. */
+function keepVisible(lon, lat) {
+  const [, dy] = phoneOffset(true);
+  const h = map.getContainer().clientHeight;
+  const y = map.project([lon, lat]).y;
+  const mid = h / 2 + dy;
+  const room = Math.max(60, h / 2 - Math.abs(dy) - 80);
+  if (Math.abs(y - mid) > room) map.easeTo({ center: [lon, lat], offset: [0, dy], duration: 350 });
 }
 
 function updateLocButton() {
@@ -405,7 +437,14 @@ function refreshLines() {
   if (!engine || !map?.getSource("lines")) return;
   const data = JSON.parse(engine.linesGeoJson(Date.now()));
   const mask = kindMask();
-  for (const f of data.features) f.properties.notice = (f.properties.notice_kinds & mask) !== 0;
+  for (const f of data.features) {
+    f.properties.notice = (f.properties.notice_kinds & mask) !== 0;
+    const { line, region, color } = f.properties;
+    if (line && color) {
+      lineColors.set(`${region}|${line}`, color);
+      if (!lineColors.has(`|${line}`)) lineColors.set(`|${line}`, color);
+    }
+  }
   map.getSource("lines").setData(data);
 }
 
@@ -574,6 +613,7 @@ function showPopup(open = false) {
     return;
   }
   map.getSource("selected")?.setData(pointGeoJson(info.lon, info.lat));
+  if (isPhone()) return showTrainSheet(info, open, now);
   if (popup) {
     popup.setLngLat([info.lon, info.lat]);
     // Rebuilding the content swaps its buttons out from under a finger, so
@@ -641,6 +681,92 @@ function showPopup(open = false) {
   popupToTop = false;
 }
 
+/** Phone: the selected train in the detail sheet (desktop: a popup). */
+function showTrainSheet(info, open, now) {
+  const sheet = $("detail");
+  if (!open) {
+    if (sheet.hidden || detailKind !== "train") return;
+    // As for the popup: rebuild only on a change, at most every 2 s, and
+    // not under a finger.
+    const key = JSON.stringify({ ...info, lat: 0, lon: 0, fix_age: Math.floor(info.fix_age / 10) });
+    if (key === detailKey || sheet.matches(":active") || Date.now() - detailAt < 2000) return;
+    detailKey = key;
+  }
+  detailAt = Date.now();
+  const i = engine.findTrain(info.trip_id, info.number);
+  const trip = i < 0 ? null : JSON.parse(engine.tripJson(i));
+  const favItem = { type: "train", number: info.number, label: trainTitle(info) };
+  const fav = favButton(favItem);
+  const route = info.route || info.line;
+  const body = trainSheet(lang, info, {
+    now,
+    regionName: regionName(info.region),
+    lineColor: lineColors.get(`${info.region}|${route}`) || lineColors.get(`|${route}`),
+    stops: trip?.stops,
+    redraw: () => showPopup(true),
+    onClose: () => (sheet.hidden = true),
+    fav,
+    notify: notifyAction(info, favItem),
+    onShare: canShare()
+      ? () => share({ title: trainTitle(info), text: t(lang, "shareTrain", { train: trainTitle(info) }), url: `${CONFIG.siteUrl}?train=${encodeURIComponent(info.number)}` })
+      : null,
+    onHistory: CONFIG.apiBase && info.history_line
+      ? () => openHistory({ kind: "train", trainNo: info.number, line: info.history_line, product: info.history_product, title: trainTitle(info), days: FREE_DAYS })
+      : null,
+    trip: CONFIG.platform === "android" && !info.timetable_only ? tripButton(info) : null,
+    onIncidents: (x) =>
+      showIncidents({
+        label: x.route,
+        test: (n) => n.lines.includes(x.route) && (!x.region || n.nucleos.includes(x.region)),
+      }),
+    history: info.timetable_only ? null : history.get(info.history_line, info.history_product),
+    rows: {
+      napDate: ref?.napDate(),
+      profile: info.altitude_m === undefined ? null : selectedProfile(now),
+      onTrain: (j) => selectTrain(JSON.parse(engine.trainJson(j, Date.now())), { fly: true }),
+      appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
+      proLink: CONFIG.platform === "android" && !CONFIG.pro ? () => (openSheet("settings"), renderSettings()) : null,
+      enthusiast: enthusiast(CONFIG),
+    },
+  });
+  $("detail-body").replaceChildren(body);
+  if (open) {
+    const was = detailKind;
+    detailKind = "train";
+    stationView = null;
+    if (sheet.hidden) {
+      openSheet("detail");
+      sheets.setSnap("detail", "half");
+    } else if (was !== "train") sheets.setSnap("detail", "half");
+    if (popupToTop) sheet.scrollTop = 0;
+    if (!map.isMoving()) keepVisible(info.lon, info.lat);
+  }
+  popupToTop = false;
+}
+
+/** "Avisarme": delay alerts for this train (Pro, Android), the Pro screen
+ * (free app), or the Android app (web, once it has a listing). */
+function notifyAction(info, favItem) {
+  if (info.timetable_only) return null;
+  if (CONFIG.platform === "android") {
+    if (!CONFIG.pro) return { on: false, onToggle: () => (openSheet("settings"), renderSettings()) };
+    const on = alertsOn && isFavourite(favs, favItem);
+    return {
+      on,
+      onToggle: async () => {
+        if (on) return openSheet("settings"), renderSettings();
+        if (!isFavourite(favs, favItem)) {
+          const r = toggleFavourite(favs, favItem, favLimit());
+          if (!r.full) saveFavourites(r.list);
+        }
+        if (!alertsOn) await setAlerts(true);
+        showPopup(true);
+      },
+    };
+  }
+  return CONFIG.playUrl ? { href: CONFIG.playUrl } : null;
+}
+
 /** Let the user drag a popup out of the way by its title. It then keeps
  * that offset from the train (or station) as the map moves. */
 function makeDraggable(p, get, set) {
@@ -674,15 +800,17 @@ function makeDraggable(p, get, set) {
 }
 
 /** Popup with a station's next departures and approaching trains. */
-function showStation(f) {
+function showStation(f, { refresh = false } = {}) {
   const { id, name } = f.properties;
   const [lon, lat] = f.geometry.coordinates;
   const now = Date.now();
   // Its núcleo's timetable may not be loaded yet: load, then refresh.
   const d = 0.05;
-  for (const r of ref?.regionsIn([lon - d, lat - d, lon + d, lat + d]) || []) {
-    if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(() => stationPop?.isOpen() && showStation(f));
+  const regions = ref?.regionsIn([lon - d, lat - d, lon + d, lat + d]) || [];
+  for (const r of regions) {
+    if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(() => (stationPop?.isOpen() || (detailKind === "station" && stationView === f)) && showStation(f, { refresh: true }));
   }
+  if (isPhone()) return showStationSheet(f, regions, refresh);
   const body = stationPopup(
     lang,
     { id, name },
@@ -724,6 +852,86 @@ function showStation(f) {
     .setDOMContent(body)
     .addTo(map);
   makeDraggable(stationPop, () => off, (o) => (off = o));
+}
+
+/** Phone: a station's board in the detail sheet. */
+function showStationSheet(f, regions, refresh) {
+  const { id, name } = f.properties;
+  const [lon, lat] = f.geometry.coordinates;
+  const now = Date.now();
+  const sheet = $("detail");
+  if (!refresh) {
+    stationTab = "dep";
+    selected = null;
+    highlight = null;
+    map.getSource("route")?.setData(emptyGeoJson());
+    map.getSource("selected")?.setData(emptyGeoJson());
+  }
+  const board = JSON.parse(engine.stationBoardJson(id, now, 90 * 60, 12));
+  const approaching = JSON.parse(engine.approachingJson(id, now, 30 * 60)).slice(0, 10);
+  const nucleo = regions.find((r) => r.code !== "ld");
+  const routes = [...new Set(board.map((r) => r.route).filter(Boolean))].slice(0, 4);
+  const sub = [];
+  if (nucleo) sub.push(t(lang, "cercanias", { region: nucleo.name }));
+  if (routes.length) sub.push(routes.join(", "));
+  if (userFix) sub.push(t(lang, "awayDistance", { d: formatDistance(lang, distanceM(userFix, { lat, lon })) }));
+  const redraw = () => showStation(f, { refresh: true });
+  const region = nucleo?.code || "";
+  const body = stationSheet(lang, { id, name }, {
+    sub: sub.join(" · "),
+    board,
+    approaching,
+    tab: stationTab,
+    onTab: (tab) => {
+      stationTab = tab;
+      redraw();
+    },
+    lineColor: (route) => lineColors.get(`${region}|${route}`) || lineColors.get(`|${route}`),
+    onDeparture: (r) => {
+      const i = engine.findTrain(r.trip_id, r.number);
+      if (i >= 0) selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true });
+    },
+    onTrain: (a) => selectTrain(a, { fly: true }),
+    onClose: () => (sheet.hidden = true),
+    fav: favButton({ type: "station", id, name, lon, lat }, redraw),
+    onHistory: CONFIG.apiBase ? () => openHistory({ kind: "station", id, title: t(lang, "histTitleStation", { name }), days: FREE_DAYS }) : null,
+    commute:
+      CONFIG.platform === "android" && CONFIG.pro
+        ? {
+            isFrom: commutes.draft ? commutes.draft.id === id : activeCommute(commutes)?.from.id === id,
+            isTo: !commutes.draft && activeCommute(commutes)?.to.id === id,
+            setFrom: () => saveCommutes(setOrigin(commutes, { id, name, lon, lat }), redraw),
+            setTo: () => {
+              const r = setDestination(commutes, { id, name, lon, lat });
+              commuteNote = r.full ? t(lang, "commuteFull", { max: MAX_COMMUTES }) : "";
+              saveCommutes(r.state, redraw, r.added || r.full);
+            },
+          }
+        : null,
+    onShare: canShare()
+      ? () => share({ title: name, text: t(lang, "shareStation", { station: name }), url: `${CONFIG.siteUrl}?station=${encodeURIComponent(id)}` })
+      : null,
+  });
+  const scroll = sheet.scrollTop;
+  $("detail-body").replaceChildren(body);
+  if (refresh) {
+    sheet.scrollTop = scroll;
+    return;
+  }
+  detailKind = "station";
+  stationView = f;
+  if (sheet.hidden) openSheet("detail");
+  sheets.setSnap("detail", "half");
+  sheet.scrollTop = 0;
+  keepVisible(lon, lat);
+}
+
+/** Metres between two { lat, lon } points (small distances). */
+function distanceM(a, b) {
+  const k = Math.PI / 180;
+  const x = (b.lon - a.lon) * k * Math.cos(((a.lat + b.lat) / 2) * k);
+  const y = (b.lat - a.lat) * k;
+  return Math.sqrt(x * x + y * y) * 6_371_000;
 }
 
 function refreshTrack() {
@@ -1294,6 +1502,15 @@ const sheets = new Sheets({
 for (const id of SHEETS) {
   sheets.add($(id), id === "delayed" ? { initial: "peek", closable: false } : { initial: "half" });
 }
+// Closing the detail sheet (swipe, Back, ✕, another tab) drops the selection.
+new MutationObserver(() => {
+  if (!$("detail").hidden) return;
+  if (detailKind === "train") clearSelection();
+  $("detail-body").replaceChildren();
+  detailKind = null;
+  stationView = null;
+  detailKey = "";
+}).observe($("detail"), { attributes: true, attributeFilter: ["hidden"] });
 const TABS = [
   ["map", "tabMap", "map"],
   ["near", "tabNear", "pin"],
@@ -1525,6 +1742,7 @@ function render(force = false) {
       ? t(lang, "updated", { age: formatAgo(lang, (now - last) / 1000) })
       : t(lang, "loading");
   if ((popup || selected) && map.getSource("selected")) showPopup();
+  if (force && detailKind === "station" && stationView && !$("detail").hidden) showStation(stationView, { refresh: true });
   if (!$("delayed").hidden && force) renderDelayedList();
   renderNear(force);
   if (force) {
@@ -1845,6 +2063,7 @@ async function main() {
       );
       if (st.length) return showStation(st[0]);
       stationPop?.remove();
+      if (isPhone()) $("detail").hidden = true;
       return clearSelection();
     }
     const info = JSON.parse(engine.trainJson(hits[0].properties.i, Date.now()));
