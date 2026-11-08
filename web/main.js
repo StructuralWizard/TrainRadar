@@ -8,7 +8,7 @@ import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format.js";
 import { Sheets, isPhone } from "./js/sheet.js";
 import { icon } from "./js/icons.js";
-import { stationSheet, trainSheet } from "./js/sheetui.js";
+import { layersSheet, networksSheet, stationSheet, trainSheet } from "./js/sheetui.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
@@ -95,7 +95,7 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail", "networks", "layers-panel"];
 const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
@@ -202,6 +202,12 @@ function applyLang() {
   $("commute-close").setAttribute("aria-label", t(lang, "close"));
   $("trips-close").setAttribute("aria-label", t(lang, "close"));
   $("more-title").textContent = t(lang, "moreTitle");
+  $("networks-title").textContent = t(lang, "netTitle");
+  $("networks-close").setAttribute("aria-label", t(lang, "close"));
+  $("layers-panel-title").textContent = t(lang, "layers");
+  $("layers-panel-close").setAttribute("aria-label", t(lang, "close"));
+  if (!$("networks").hidden) renderNetworks();
+  if (!$("layers-panel").hidden) renderLayers();
   $("more-close").setAttribute("aria-label", t(lang, "close"));
   buildTabs();
   if (!$("more").hidden) renderMore();
@@ -1527,7 +1533,8 @@ const sheets = new Sheets({
   onSnap: () => haptic(),
 });
 for (const id of SHEETS) {
-  sheets.add($(id), id === "delayed" ? { initial: "peek", closable: false } : { initial: "half" });
+  const tall = id === "networks" || id === "layers-panel";
+  sheets.add($(id), id === "delayed" ? { initial: "peek", closable: false } : tall ? { initial: "full", snaps: ["half", "full"] } : { initial: "half" });
 }
 // Closing the detail sheet (swipe, Back, ✕, another tab) drops the selection.
 new MutationObserver(() => {
@@ -1687,7 +1694,9 @@ function phoneChrome() {
 }
 
 /** The network the map shows: the Cercanías núcleo under its centre, else Spain. */
+let netPinned = null; // the network just picked, until the user moves the map
 function currentNetwork() {
+  if (netPinned) return netPinned === "es" ? null : ref?.region(netPinned) || null;
   if (!map || !ref || map.getZoom() < 7.5) return null;
   const c = map.getCenter();
   return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
@@ -1719,11 +1728,128 @@ function renderLiveChip(st, now) {
   $("live-chip").title = state === "bad" ? t(lang, "feedError") : last ? t(lang, "updated", { age: formatAgo(lang, age) }) : t(lang, "loading");
 }
 
-/** Interim (until the network sheet): the native "Ir a…" list. */
+/** Phone: the network picker ("Ir a…" on the desktop). */
+let netQuery = "";
 function openNetworks() {
-  const sel = $("jump");
-  sel.classList.toggle("jump-open");
-  if (sel.classList.contains("jump-open")) sel.focus();
+  netQuery = "";
+  openSheet("networks");
+  renderNetworks();
+}
+
+/** Go to a network (núcleo code, or "es" for all of Spain), as "Ir a…" does. */
+function goToNetwork(code) {
+  netPinned = code;
+  updateNetChip();
+  if (code === "es") map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
+  else {
+    const r = ref?.region(code);
+    if (!r) return;
+    const pad = isPhone() ? { top: 130, bottom: ($("tabbar").offsetHeight || 0) + 180, left: 24, right: 24 } : 40;
+    map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: pad, maxZoom: 11 });
+  }
+}
+
+/** Median delay (s) of the Cercanías trains in each núcleo, now. */
+function networkMedians() {
+  const rows = engine ? JSON.parse(engine.replayFrameJson(Date.now())) : [];
+  const nucleos = (ref?.manifest?.regions || []).filter((r) => r.code !== "ld" && r.live !== false && r.bbox);
+  const by = new Map(nucleos.map((r) => [r.code, []]));
+  for (const [, , , , lon, lat, , delay, flags] of rows) {
+    if (delay === null || !(flags & FLAG.commuter) || flags & FLAG.scheduled) continue;
+    const r = nucleos.find((x) => lat >= x.bbox[0] && lat <= x.bbox[2] && lon >= x.bbox[1] && lon <= x.bbox[3]);
+    if (r) by.get(r.code).push(delay);
+  }
+  const med = (a) => {
+    if (!a.length) return null;
+    const s = [...a].sort((x, y) => x - y);
+    return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+  };
+  return { nucleos, medians: new Map([...by].map(([k, v]) => [k, med(v)])), trains: rows.length };
+}
+
+function renderNetworks(keepInput = false) {
+  const { nucleos, medians, trains } = networkMedians();
+  const pick = (code) => {
+    $("networks").hidden = true;
+    goToNetwork(code);
+  };
+  let near = null;
+  if (userFix) {
+    const d = 0.05;
+    const r = (ref?.regionsIn([userFix.lon - d, userFix.lat - d, userFix.lon + d, userFix.lat + d]) || []).find((x) => x.code !== "ld" && x.live !== false);
+    near = r ? { name: r.name, onPick: () => pick(r.code) } : {};
+  } else if (Locator.supported()) {
+    near = { onLocate: () => startLocation() };
+  }
+  const parts = networksSheet(lang, {
+    query: netQuery,
+    near,
+    spain: { trains, onPick: () => pick("es") },
+    networks: [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
+    onPick: pick,
+    onQuery: (q) => {
+      netQuery = q;
+      renderNetworks(true);
+    },
+  }).filter(Boolean);
+  const body = $("networks-body");
+  if (keepInput && body.firstChild) body.replaceChildren(body.firstChild, ...parts.slice(1));
+  else body.replaceChildren(...parts);
+}
+
+/** Phone: "Capas" as a sheet of switches, each driving its desktop checkbox. */
+function openLayers() {
+  openSheet("layers-panel");
+  renderLayers();
+}
+
+function renderLayers() {
+  const sw = (id, labelKey, hint) => {
+    const box = $(id);
+    return {
+      id,
+      label: t(lang, labelKey),
+      hint: hint ? t(lang, hint) : "",
+      on: box.checked,
+      onChange: (on) => {
+        box.checked = on;
+        box.dispatchEvent(new Event("change"));
+      },
+    };
+  };
+  const base = document.querySelector('input[name="basemap"]:checked')?.value || "standard";
+  $("layers-panel-body").replaceChildren(
+    ...layersSheet(lang, {
+      base,
+      onBase: (v) => {
+        const r = document.querySelector(`input[name="basemap"][value="${v}"]`);
+        r.checked = true;
+        r.dispatchEvent(new Event("change"));
+        renderLayers();
+      },
+      groups: [
+        {
+          title: t(lang, "groupTrains"),
+          items: [sw("f-commuter", "showCommuter"), sw("f-av", "showAv"), sw("f-ld", "showLd"), sw("f-md", "showMd"), sw("f-scheduled", "showScheduled", "scheduledHint")],
+        },
+        {
+          title: t(lang, "groupMap"),
+          items: [sw("f-lines", "showLines"), sw("f-tav", "showTrackAv"), sw("f-tld", "showTrackLd"), sw("f-tmd", "showTrackMd"), sw("f-stations", "showStations")],
+        },
+        {
+          title: t(lang, "groupIncidents"),
+          items: [
+            sw("f-k-disruption", "kind_disruption"),
+            sw("f-k-works", "kind_works"),
+            sw("f-k-accessibility", "kind_accessibility"),
+            sw("f-k-strike", "kind_strike"),
+            sw("f-k-other", "kind_other"),
+            sw("f-stopped", "showStopped"),
+          ],
+        },
+      ],
+    }).flat(),
+  );
 }
 
 /** Stations whose name matches a search (phone), accents ignored. */
@@ -2123,6 +2249,15 @@ async function main() {
   map.getSource("stations").setData(JSON.parse(engine.stationsGeoJson()));
   map.on("moveend", loadVisibleRegions);
   map.on("moveend", updateNetChip);
+  // A pan or zoom by the user: the chip follows the map again.
+  for (const ev of ["dragstart", "zoomstart", "rotatestart"]) {
+    map.on(ev, (e) => {
+      if (e.originalEvent && netPinned) {
+        netPinned = null;
+        updateNetChip();
+      }
+    });
+  }
   map.on("click", (e) => {
     const pad = 10; // generous tap target on phones
     if (replay) {
@@ -2284,10 +2419,9 @@ $("delayed-btn").addEventListener("click", () => {
 $("delayed-close").addEventListener("click", () => ($("delayed").hidden = true));
 $("more-close").addEventListener("click", () => ($("more").hidden = true));
 $("net-chip").addEventListener("click", () => openNetworks());
-$("fab-layers").addEventListener("click", () => {
-  const d = $("layers");
-  d.open = !d.open;
-});
+$("fab-layers").addEventListener("click", () => ($("layers-panel").hidden ? openLayers() : ($("layers-panel").hidden = true)));
+$("networks-close").addEventListener("click", () => ($("networks").hidden = true));
+$("layers-panel-close").addEventListener("click", () => ($("layers-panel").hidden = true));
 $("fab-locate").addEventListener("click", () => {
   if (!locator?.active) return startLocation();
   if (userFix) flyToVisible(userFix.lon, userFix.lat, 13);
@@ -2300,10 +2434,7 @@ matchMedia("(max-width: 719px)").addEventListener?.("change", () => applyLang())
 $("jump").addEventListener("change", (e) => {
   const v = e.target.value;
   e.target.value = "";
-  e.target.classList.remove("jump-open");
-  if (v === "es") return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
-  const r = ref?.region(v);
-  if (r) map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: 40, maxZoom: 11 });
+  if (v) goToNetwork(v);
 });
 function applyLayerVisibility() {
   if (!map?.getLayer("trains")) return;

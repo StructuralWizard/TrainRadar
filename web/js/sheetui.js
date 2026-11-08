@@ -303,3 +303,131 @@ export function stationSheet(lang, station, o = {}) {
     list,
   );
 }
+
+/**
+ * The network picker. `o`: { query, near: { name, onPick } | { onLocate }
+ * | null, spain: { trains, onPick }, networks: [{ code, name, median }],
+ * onPick(code), onQuery(q), onClose }. `median` in seconds or null.
+ */
+export function networksSheet(lang, o) {
+  const fold = (x) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const q = fold(o.query || "");
+  const list = (o.networks || []).filter((n) => !q || fold(n.name).includes(q));
+  const near = o.near;
+  const nearCard = el(
+    "button",
+    { class: "net-card net-card-near", type: "button", id: "net-near", onclick: near?.onPick || near?.onLocate },
+    el("span", { class: "net-card-k" }, icon("locate", 14), t(lang, "netNear")),
+    el("span", { class: "net-card-v" }, near?.name || (near?.onLocate ? t(lang, "netNearOff") : t(lang, "netNearNone"))),
+  );
+  if (!near?.onPick && !near?.onLocate) nearCard.disabled = true;
+  const spainCard = el(
+    "button",
+    { class: "net-card", type: "button", id: "net-spain", onclick: o.spain?.onPick },
+    el("span", { class: "net-card-k" }, t(lang, "netTrains", { n: formatCount(lang, o.spain?.trains || 0) })),
+    el("span", { class: "net-card-v" }, t(lang, "allSpain")),
+  );
+  const median = (m) => {
+    if (m === null || m === undefined) return el("span", { class: "net-median muted" }, t(lang, "netNoData"));
+    const tone = delayTone(m);
+    return el("span", { class: `net-median tone-text-${tone}` }, t(lang, "netMedian", { delay: delayShortMin(lang, m) }));
+  };
+  const input = el("input", {
+    id: "net-q",
+    type: "search",
+    inputmode: "search",
+    autocomplete: "off",
+    placeholder: t(lang, "netSearch"),
+    "aria-label": t(lang, "netSearch"),
+    value: o.query || "",
+    oninput: (e) => o.onQuery?.(e.target.value),
+  });
+  return [
+    el("label", { class: "net-search" }, icon("search", 18), input),
+    q ? null : el("div", { class: "net-cards" }, nearCard, spainCard),
+    el("h3", { class: "group-h" }, t(lang, "netGroup")),
+    list.length
+      ? el(
+          "ul",
+          { class: "net-list" },
+          list.map((n) =>
+            el("li", {}, el("button", { class: "net-row", type: "button", "data-code": n.code, onclick: () => o.onPick?.(n.code) }, el("span", { class: "net-name" }, n.name), median(n.median))),
+          ),
+        )
+      : el("p", { class: "muted small" }, t(lang, "netNone")),
+  ];
+}
+
+/** "+2 min" / "0 min" for a median (no "A su hora"). */
+function delayShortMin(lang, secs) {
+  const m = Math.round(secs / 60);
+  return m > 0 ? `+${formatCount(lang, m)} min` : `${formatCount(lang, m)} min`;
+}
+
+const NS = "http://www.w3.org/2000/svg";
+function art(parts) {
+  const s = document.createElementNS(NS, "svg");
+  for (const [k, v] of Object.entries({ width: "100%", height: "64", viewBox: "0 0 160 64", preserveAspectRatio: "none", "aria-hidden": "true" })) s.setAttribute(k, v);
+  for (const [tag, a] of parts) {
+    const p = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(a)) p.setAttribute(k, String(v));
+    s.append(p);
+  }
+  return s;
+}
+const BASE_ART = {
+  standard: [
+    ["rect", { width: 160, height: 64, fill: "#ebe8e3" }],
+    ["path", { d: "M0 40 C 50 20 90 50 160 24", stroke: "#ffffff", "stroke-width": 6, fill: "none" }],
+    ["path", { d: "M20 64 C 60 30 100 20 160 50", stroke: "#4338ca", "stroke-width": 3, fill: "none" }],
+  ],
+  satellite: [
+    ["rect", { width: 160, height: 64, fill: "#4b5a3a" }],
+    ["rect", { x: 20, y: 8, width: 50, height: 30, fill: "#6b7a52" }],
+    ["rect", { x: 90, y: 30, width: 60, height: 26, fill: "#7b6b52" }],
+    ["path", { d: "M20 64 C 60 30 100 20 160 50", stroke: "#a5b4fc", "stroke-width": 3, fill: "none" }],
+  ],
+};
+
+/**
+ * Layers. `o`: { base: "standard" | "satellite", onBase(v), groups:
+ * [{ title, items: [{ id, label, hint, on, onChange(checked) }] }] }.
+ */
+export function layersSheet(lang, o) {
+  const card = (v, label) =>
+    el(
+      "button",
+      { class: "base-card", type: "button", id: `base-${v}`, "aria-pressed": String(o.base === v), onclick: () => o.onBase?.(v) },
+      art(BASE_ART[v]),
+      el("span", {}, label),
+    );
+  return [
+    el("div", { class: "base-cards" }, card("standard", t(lang, "baseCardStandard")), card("satellite", t(lang, "baseSatellite"))),
+    ...o.groups.map((g) => [
+      el("h3", { class: "group-h" }, g.title),
+      el(
+        "ul",
+        { class: "switch-list" },
+        g.items.map((it) =>
+          el(
+            "li",
+            {},
+            el(
+              "label",
+              { class: "switch-row" },
+              el("span", { class: "switch-text" }, it.label, it.hint ? el("small", {}, it.hint) : null),
+              el("input", {
+                type: "checkbox",
+                role: "switch",
+                class: "switch",
+                id: `sw-${it.id}`,
+                checked: it.on,
+                onchange: (e) => it.onChange(e.target.checked),
+              }),
+            ),
+          ),
+        ),
+      ),
+    ]),
+  ];
+}

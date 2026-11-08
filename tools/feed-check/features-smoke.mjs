@@ -132,8 +132,10 @@ console.log("network chip:", await page.textContent("#net-chip"));
 await page.click("#detail-close");
 
 // Layer switches hide and show their layers; the satellite choice adds imagery.
-await page.click("#fab-layers"); // phone: the Capas button
-for (const [box, layer] of [["#f-tav", "track-av"], ["#f-tld", "track-ld"], ["#f-tmd", "track-md"], ["#f-stations", "stations"], ["#f-stopped", "stopped-ring"]]) {
+await page.click("#fab-layers"); // phone: Capas is a sheet of switches
+await page.waitForSelector("#layers-panel:not([hidden]) #sw-f-tav", { timeout: 5000 }).catch(() => fail("layers sheet didn't open"));
+await page.screenshot({ path: `${out}/layers-sheet.png` });
+for (const [box, layer] of [["#sw-f-tav", "track-av"], ["#sw-f-tld", "track-ld"], ["#sw-f-tmd", "track-md"], ["#sw-f-stations", "stations"], ["#sw-f-stopped", "stopped-ring"]]) {
   await page.uncheck(box);
   const v = await page.evaluate((l) => window.__trainradar.map.getLayoutProperty(l, "visibility"), layer);
   if (v !== "none") await fail(`${layer} still visible`);
@@ -142,22 +144,38 @@ for (const [box, layer] of [["#f-tav", "track-av"], ["#f-tld", "track-ld"], ["#f
 // Notice kinds: the demo's Pinto marker is a works notice.
 const markers = () => page.evaluate(() => window.__trainradar.map.getSource("incidents").serialize().data.features.length);
 if ((await markers()) < 1) await fail("no notice marker");
-await page.uncheck("#f-k-works");
+await page.uncheck("#sw-f-k-works");
 if ((await markers()) !== 0) await fail("works notices still on the map");
-await page.check("#f-k-works");
+await page.check("#sw-f-k-works");
 // Train types: hiding high speed removes the AVE trains.
 const count = () => page.evaluate(() => window.__trainradar.map.getSource("trains").serialize().data.features.length);
 const before = await count();
-await page.uncheck("#f-av");
+await page.uncheck("#sw-f-av");
 await page.waitForTimeout(1500);
 const after = await count();
 console.log("trains with / without AV:", before, after);
 if (!(after < before)) await fail("hiding AV didn't hide any train");
-await page.check("#f-av");
-await page.check('input[name="basemap"][value="satellite"]');
+await page.check("#sw-f-av");
+await page.click("#base-satellite");
 const sat = await page.evaluate(() => window.__trainradar.map.getLayoutProperty("satellite", "visibility"));
 if (sat !== "visible") await fail("satellite layer not shown");
-await page.check('input[name="basemap"][value="standard"]');
+if ((await page.getAttribute("#base-satellite", "aria-pressed")) !== "true") await fail("satellite card not marked");
+await page.click("#base-standard");
+await page.click("#layers-panel-close");
+
+// Network picker: the chip opens it, a network flies there.
+await page.click("#net-chip");
+await page.waitForSelector("#networks:not([hidden]) .net-row", { timeout: 5000 }).catch(() => fail("network picker didn't open"));
+console.log("networks:", (await page.textContent("#networks-body")).replace(/\s+/g, " ").slice(0, 160));
+await page.screenshot({ path: `${out}/networks-sheet.png` });
+await page.fill("#net-q", "madr");
+const netRows = await page.$$eval("#networks .net-row", (r) => r.map((x) => x.dataset.code));
+if (netRows.length !== 1) await fail(`network search: ${netRows}`);
+await page.click("#networks .net-row");
+await page.waitForTimeout(1500);
+if (!(await page.isHidden("#networks"))) await fail("network picker still open");
+const chip = await page.textContent("#net-chip");
+if (!/Madrid/.test(chip)) await fail(`network chip says ${chip}`);
 
 
 // Desktop (≥ 720 px): trains and stations keep their map popups, and a

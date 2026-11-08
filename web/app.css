@@ -418,7 +418,7 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
     background: transparent; font-size: 16px; color: #111827; outline: none;
   }
   #search-q::-webkit-search-cancel-button { display: none; }
-  .search:focus-within { box-shadow: 0 0 0 3px #93c5fd, 0 4px 16px rgba(17, 24, 39, 0.14); }
+  .search:has(#search-q:focus) { box-shadow: 0 0 0 3px #93c5fd, 0 4px 16px rgba(17, 24, 39, 0.14); }
   .net-chip {
     display: inline-flex; align-items: center; gap: 4px; flex: none; max-width: 48%; height: 40px; padding: 0 10px 0 14px;
     border: 0; border-radius: 20px; background: #eef2ff; color: #1d4ed8; font-weight: 600; font-size: 14px;
@@ -444,12 +444,61 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .legend-chip { flex: none; gap: 7px; padding: 0 9px; font-size: 12px; color: #374151; }
   .legend-chip span { display: inline-flex; align-items: center; gap: 4px; }
   .legend-chip i { width: 9px; height: 9px; border-radius: 5px; }
-  /* "Ir a…" (until its sheet) and "Capas" open from the chip and the button. */
-  .controls select { display: none; }
-  .controls select.jump-open { display: block; max-width: none; min-height: 44px; font-size: 16px; }
-  .controls details { display: none; }
-  .controls details[open] { display: block; max-width: none; }
-  .controls details summary { min-height: 44px; display: flex; align-items: center; }
+  /* "Ir a…" and "Capas" are sheets on a phone (#networks, #layers-panel);
+   * the desktop controls stay in the page as the source of truth. */
+  .controls select, .controls details { display: none; }
+
+  /* Network picker. */
+  .net-search {
+    display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; margin-top: 4px;
+    border-radius: 14px; background: #f3f4f6; color: #4b5563;
+  }
+  .net-search input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; font-size: 16px; color: #111827; outline: none; }
+  .net-search:focus-within { box-shadow: 0 0 0 3px #93c5fd; }
+  .net-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+  .net-card {
+    min-height: 88px; padding: 12px 14px; border: 0; border-radius: 16px; background: #f3f4f6; color: #111827;
+    display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 8px; text-align: left;
+  }
+  .net-card-near { background: #1d4ed8; color: #fff; }
+  .net-card:disabled { opacity: 0.6; }
+  .net-card-k { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; opacity: 0.9; }
+  .net-card-v { font-size: 17px; font-weight: 700; }
+  .group-h { margin: 20px 0 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #4b5563; }
+  .net-list { list-style: none; margin: 0; padding: 0; }
+  .net-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px;
+    border: 0; border-bottom: 1px solid #f3f4f6; background: none; color: #111827; text-align: left; font-size: 15px;
+  }
+  .net-median { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; color: #4b5563; }
+  .net-median.tone-text-minor { color: #c2410c; font-weight: 600; }
+  .net-median.tone-text-major { color: #b91c1c; font-weight: 600; }
+  .net-row:focus-visible, .net-card:focus-visible, .base-card:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+
+  /* Layers. */
+  .base-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 4px; }
+  .base-card {
+    padding: 0; border: 2px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff;
+    display: flex; flex-direction: column; text-align: left; font-size: 14px; font-weight: 600; color: #111827;
+  }
+  .base-card svg { display: block; }
+  .base-card span { padding: 8px 10px; }
+  .base-card[aria-pressed="true"] { border-color: #1d4ed8; color: #1d4ed8; }
+  .switch-list { list-style: none; margin: 0; padding: 0; }
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; border-bottom: 1px solid #f3f4f6; font-size: 15px; cursor: pointer; }
+  .switch-text { display: flex; flex-direction: column; }
+  .switch-text small { font-size: 12px; color: #4b5563; }
+  .switch {
+    appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 52px; height: 32px; margin: 0;
+    border-radius: 16px; background: #d1d5db; transition: background 0.2s; cursor: pointer;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.2s;
+  }
+  .switch:checked { background: #1d4ed8; }
+  .switch:checked::after { transform: translateX(20px); }
+  .switch:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
 
   /* Map buttons on the right, above the sheet. */
   .fabs {
@@ -470,8 +519,6 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .maplibregl-ctrl-bottom-right { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   .app-banner { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   body.replaying .tabbar, body.replaying #delayed { display: none; }
-  /* Until "Capas" is a sheet of its own: the peek doesn't cover it. */
-  body:has(#layers[open]) #delayed { display: none; }
 }
 @media (max-width: 719px) and (prefers-reduced-motion: reduce) {
   .sheet { transition: none; }
