@@ -1393,7 +1393,13 @@ async function startReplay() {
   const first = await data.first();
   if (replay?.data === data && first?.hour) {
     replay.since = Date.parse(`${first.hour}:00:00Z`);
-    if (replay.t < replay.since) replay.t = replay.since;
+    if (replay.t < replay.since) {
+      // Recording began part-way through that hour: start at its first frame.
+      const doc = await data.hour(first.hour);
+      if (replay?.data !== data) return;
+      replay.since = doc?.frames?.[0] ? doc.frames[0][0] * 1000 : replay.since;
+      replay.t = replay.since;
+    }
     renderReplayBar();
     drawReplay();
   }
@@ -1409,12 +1415,21 @@ function stopReplay() {
 
 let replayPop = null;
 async function drawReplay() {
-  if (!replay || replay.busy) return;
+  if (!replay) return;
+  if (replay.busy) {
+    replay.again = true; // draw the latest time once this one is done
+    return;
+  }
   replay.busy = true;
   const r = replay;
   const trains = await r.data.at(r.t).catch(() => []);
   r.busy = false;
   if (replay !== r) return;
+  if (r.again) {
+    r.again = false;
+    drawReplay();
+    return;
+  }
   r.trains = trains;
   map.getSource("trains")?.setData(replayGeoJson(trains));
   const { date, time } = msToMadrid(r.t);
@@ -1441,10 +1456,13 @@ function setReplayTime(ms) {
   if (!replay) return;
   const max = Date.now() - 60_000;
   replay.t = Math.max(replay.since || 0, Math.min(ms, max));
-  if (replay.t >= max) replay.playing = false;
+  const stopped = replay.playing && replay.t >= max;
+  if (stopped) replay.playing = false;
   replayPop?.remove();
   drawReplay();
-  renderReplayBar();
+  // Rebuilding the bar would drop the slider out from under a dragging
+  // finger: drawReplay updates its controls instead.
+  if (stopped) renderReplayBar();
 }
 
 function renderReplayBar() {
