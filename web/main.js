@@ -28,7 +28,7 @@ import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from ".
 import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { enthusiast } from "./js/features.js";
-import { appNative, canShare, copyText, exportBlob, exportFile, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
+import { appNative, canShare, copyText, exportBlob, exportFile, haptic as nativeHaptic, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
 import { backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./js/backup.js";
 import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
 import { decide, parseCache } from "./js/entitlement.js";
@@ -1680,6 +1680,8 @@ function renderHomeSummary(st, pos) {
 
 /** Phone top bar and map buttons: icons and labels (once per language). */
 function phoneChrome() {
+  // Close buttons: an SVG cross instead of the ✕ character (labelled).
+  for (const b of document.querySelectorAll('.sheet-head button[id$="-close"], #app-banner-close')) b.replaceChildren(icon("close", 18));
   $("search-icon").replaceChildren(icon("search", 20));
   $("net-chip").replaceChildren(el("span", { id: "net-chip-l" }, netName()), icon("chevronDown", 16));
   $("net-chip").setAttribute("aria-label", t(lang, "netChipLabel", { name: netName() }));
@@ -1870,8 +1872,10 @@ function searchStations(q, limit = 5) {
   return [...starts, ...inside].slice(0, limit);
 }
 
-/** A light tick when a sheet snaps (Android app only; phase e). */
-function haptic() {}
+/** A light tick when a sheet snaps (Android app only). */
+function haptic() {
+  nativeHaptic();
+}
 
 function renderAbout() {
   $("about-body").replaceChildren(

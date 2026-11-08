@@ -521,5 +521,85 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   body.replaying .tabbar, body.replaying #delayed { display: none; }
 }
 @media (max-width: 719px) and (prefers-reduced-motion: reduce) {
-  .sheet { transition: none; }
+  .sheet, .fabs, .switch, .switch::after { transition: none; }
+}
+/* An SVG close cross sits where the ✕ character was. */
+.sheet-head button[id$="-close"] .icon, #app-banner-close .icon { display: block; margin: auto; }
+
+/* Phone polish: tap targets of 44 px or more, tabular figures. */
+@media (max-width: 719px) {
+  .sheet .pill { min-height: 44px; }
+  .sheet .link { min-height: 44px; }
+  .sheet .pill.small { min-height: 40px; }
+  .board li { min-height: 44px; align-items: center; }
+  .seg-btn { min-height: 44px; }
+  .delayed-item { min-height: 56px; align-items: center; font-size: 15px; }
+  .delayed-delay, .board-delay, .board-time { font-variant-numeric: tabular-nums; }
+  .link.with-icon { display: inline-flex; align-items: center; gap: 6px; }
+  #detail .ts-meta { font-variant-numeric: tabular-nums; }
+}
+
+/* Phone dark mode (the map keeps its light style). */
+@media (max-width: 719px) and (prefers-color-scheme: dark) {
+  :root { --fg: #f3f4f6; --muted: #9ca3af; --line: rgba(255, 255, 255, 0.1); --accent: #60a5fa; }
+  body { color: var(--fg); }
+  .sheet, .sheet-head, .sheet-handle, .tabbar, .search-results { background: #111827; color: #f3f4f6; }
+  .sheet { box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.5); }
+  .sheet-handle::before { background: #4b5563; }
+  .tabbar { border-top-color: #1f2937; }
+  .tab { color: #9ca3af; }
+  .tab[aria-current="page"] { color: #60a5fa; }
+  .controls .search, .fab, .map-chip { background: #1f2937; color: #f3f4f6; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); }
+  #search-q { color: #f3f4f6; }
+  #search-q::placeholder { color: #9ca3af; }
+  .search-icon { color: #9ca3af; }
+  .net-chip { background: #1e3a8a; color: #dbeafe; }
+  .legend-chip { color: #d1d5db; }
+  #fab-locate { color: #93c5fd; }
+  #fab-locate[aria-pressed="true"] { background: #2563eb; color: #fff; }
+  .scrim { background: rgba(0, 0, 0, 0.55); }
+  .muted, .small.muted, .summary-head .muted, .ts-meta, .ts-line, .dep-sub, .menu-value, .switch-text small, .group-h { color: #9ca3af; }
+  .icon-btn, .act, .net-search, .net-card, .seg { background: #1f2937; color: #f3f4f6; }
+  .net-search input { color: #f3f4f6; }
+  .net-card-near { background: #1d4ed8; color: #fff; }
+  .chip-btn, .base-card { background: #111827; color: #f3f4f6; border-color: #374151; }
+  .base-card[aria-pressed="true"] { border-color: #60a5fa; color: #93c5fd; }
+  .seg-btn { color: #9ca3af; }
+  .seg-btn[aria-selected="true"] { background: #374151; color: #f9fafb; box-shadow: none; }
+  .act[aria-pressed="true"], .chip-btn[aria-pressed="true"], .popup-actions .fav-btn[aria-pressed="true"], .trip-btn[aria-pressed="true"] {
+    background: #052e16; color: #86efac; border-color: #166534;
+  }
+  .pill { background: #1f2937; color: #f3f4f6; border-color: #374151; box-shadow: none; }
+  .pill-strong, .pill[aria-pressed="true"] { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .dep-row, .net-row, .menu-row, .delayed-item, .link { color: inherit; }
+  .link { color: #93c5fd; }
+  .link.warn, .warn { color: #fbbf24; }
+  .dep-list li, .net-row, .menu-row, .switch-row, .stop, .delayed-item, .board li, .incidents li, .links li, .popup .row { border-color: #1f2937; }
+  .stop-dot { background: #111827; border-color: #6b7280; }
+  .stop-time s { color: #9ca3af; }
+  .tone-text-minor, .net-median.tone-text-minor { color: #fdba74; }
+  .tone-text-major, .net-median.tone-text-major { color: #fca5a5; }
+  .delay-pill.tone-ok { background: #052e16; color: #86efac; }
+  .delay-pill.tone-minor { background: #431407; color: #fdba74; }
+  .delay-pill.tone-major { background: #450a0a; color: #fca5a5; }
+  .delay-pill.tone-none { background: #1f2937; color: #9ca3af; }
+  .bucket-major { background: #450a0a; color: #fca5a5; }
+  .bucket-minor { background: #431407; color: #fdba74; }
+  .bucket-ontime { background: #052e16; color: #86efac; }
+  #detail .history-box, .history-box { background: #172554; color: #dbeafe; }
+  .history-box .muted { color: #bfdbfe; }
+  .notice-box { background: #2e1065; color: #ddd6fe; }
+  .badge-red { background: #450a0a; color: #fca5a5; }
+  .onboard { background: #172554; }
+  .chip { background: #1f2937; color: #e5e7eb; }
+  .chip-region { background: #1e3a8a; }
+  .claim-text { background: #1f2937; border-color: #374151; color: #f3f4f6; }
+  .profile { background: #1f2937; }
+  .profile-line { stroke: #d1d5db; }
+  .switch { background: #4b5563; }
+  .switch:checked { background: #3b82f6; }
+  .sheet input, .sheet select, .sheet textarea { background: #1f2937; color: #f3f4f6; border-color: #374151; }
+  .maplibregl-ctrl-attrib.maplibregl-compact-show, .maplibregl-ctrl-attrib:not(.maplibregl-compact) { background: #1f2937; color: #e5e7eb; }
+  .maplibregl-ctrl-attrib a { color: #93c5fd; }
+  .app-banner { background: #1f2937; color: #f3f4f6; }
 }

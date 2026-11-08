@@ -89,6 +89,17 @@ function action(ic, label, onclick, { id, pressed, cls = "", href } = {}) {
 
 let allStopsFor = ""; // trip whose full stop list is open
 
+/** The notices link with a warning icon instead of the "⚠" character. */
+function withIcons(rows) {
+  for (const r of rows) {
+    if (!r.classList?.contains("warn")) continue;
+    const text = r.textContent.replace(/^⚠\s*/u, "");
+    r.replaceChildren(icon("warning", 16), el("span", {}, text));
+    r.classList.add("with-icon");
+  }
+  return rows;
+}
+
 /**
  * The train sheet. `o`: { regionName, lineColor, stops (tripJson), now (ms),
  * onClose, fav {on, onToggle}, notify {on, onToggle} | {href}, onShare,
@@ -122,7 +133,7 @@ export function trainSheet(lang, info, o = {}) {
   if (info.speed_kmh !== null && info.speed_kmh !== undefined && (info.speed_measured || info.speed_kmh > 0)) {
     meta.push(info.speed_measured ? t(lang, "speedMeasured", { v: info.speed_kmh }) : `≈ ${info.speed_kmh} km/h`);
   }
-  if (info.accessible) meta.push(t(lang, info.accessible === "yes" ? "accessibleYes" : "accessibleNo"));
+  if (info.accessible) meta.push(t(lang, info.accessible === "yes" ? "accessibleYes" : "accessibleNo").replace(/^♿\s*/u, ""));
   if (info.feed === "vp_cer" && o.regionName) meta.unshift(t(lang, "cercanias", { region: o.regionName }));
 
   const acts = [];
@@ -192,7 +203,7 @@ export function trainSheet(lang, info, o = {}) {
       closeButton(lang, o.onClose),
     ),
     meta.length ? el("p", { class: "ts-meta" }, meta.join(" · ")) : null,
-    trainAlerts(lang, info, o.onIncidents),
+    withIcons(trainAlerts(lang, info, o.onIncidents)),
     acts.length ? el("div", { class: "act-grid", style: `grid-template-columns:repeat(${acts.length},minmax(0,1fr))` }, acts) : null,
     o.fav?.full ? el("p", { class: "small muted fav-full" }, t(lang, "favFull", { n: o.fav.limit })) : null,
     o.trip && info.origin
