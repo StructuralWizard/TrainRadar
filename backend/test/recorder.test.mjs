@@ -72,6 +72,10 @@ test("records demo trains: summary, runs in progress, finished runs in D1, resta
   const fixes = await (await live.get("rt/fixes.tsv")).text();
   const fixRows = fixes.split("\n").filter(Boolean).map((l) => l.split("\t"));
   assert.ok(fixRows.length > 0 && fixRows.every((r) => r.length === 4 && Number(r[3]) > 0), fixes.slice(0, 200));
+  // Replay: this minute's frame, kept for the hour file.
+  assert.ok(core.replay.hour.frames.length === 1 && core.replay.hour.trains.length > 0, "replay frame");
+  await core.replay.flush();
+  assert.ok([...live.objects.keys()].some((k) => /^replay\/\d{4}-\d\d-\d\d\/\d\d\.json\.gz$/.test(k)), [...live.objects.keys()].join(","));
   const status = JSON.parse(await (await live.get("rt/recorder.json")).text());
   assert.equal(status.ok, true);
 

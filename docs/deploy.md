@@ -153,6 +153,11 @@ stays off until you turn it on, because it needs a paid plan:
    `backups/`, and deploys with the recorder on.
 4. **Check.** `https://live.<your-domain>/rt/recorder.json` shows `"ok": true` and an
    `updatedAt` from the last 5 minutes; `rt/summary.json` lists every live train;
+   `replay/<date>/<hour>.json.gz` (UTC) holds a frame a minute of every train as the map
+   showed it, for the app's replay (TrainRadar Pro), and `replay/first.json` the first
+   hour. About 3–10 MB a day gzipped (1–4 GB a year) in the live bucket: inside R2's
+   free 10 GB for the first years, then about $0.015 per GB-month; one write every 5
+   minutes. Repository variable `REPLAY_ENABLED` = `false` stops it.
    `rt/fixes.tsv` says since when each AV/LD/MD GPS position has stayed put (that feed
    gives positions no time: apps use it so a frozen position isn't taken as fresh). The
    "Live check" workflow also checks the recorder (stale over 15 min, an error, or the

@@ -10,6 +10,7 @@
 // The engine is passed in, so this runs in tests on the real WebAssembly.
 
 import { dbStats, writeTrips } from "./history.js";
+import { ReplayStore } from "./replay.js";
 
 export const CYCLE_MS = 60_000;
 /** A feed the poller hasn't fetched for this long is treated as empty:
@@ -126,6 +127,8 @@ export class RecorderCore {
     this.seen = {};
     this.cycles = 0;
     this.totals = { finished: 0, written: 0 };
+    // Replay frames (TrainRadar Pro): where every train was, each minute.
+    this.replay = env.REPLAY_ENABLED === "false" ? null : new ReplayStore(env.LIVE);
   }
 
   enabled() {
@@ -163,6 +166,12 @@ export class RecorderCore {
     try {
       await this.ensureEngine(now);
       res = await recordCycle({ engine: this.engine, live: this.env.LIVE, db: this.env.HISTORY, now, seen: this.seen });
+      if (this.replay) {
+        // A replay problem must never stop the history being recorded.
+        await this.replay.add(this.engine.replayFrameJson(now), now).catch((e) => {
+          res.replayError = String(e?.message || e);
+        });
+      }
       this.totals.finished += res.finished;
       this.totals.written += res.written;
       this.cycles += 1;
@@ -188,6 +197,7 @@ export class RecorderCore {
 
   /** Save before the object is evicted or redeployed (best effort). */
   async save() {
+    await this.replay?.flush(false).catch(() => {});
     if (this.engine) await this.storage.put("runs", this.engine.recorderSave());
   }
 }

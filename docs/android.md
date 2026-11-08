@@ -50,6 +50,12 @@ map opens without downloading them; live feeds come from the central bucket
   recorded run (matched by scheduled arrival). It keeps trying for 3 days; a run not
   found a day after the trip is given up. The CSV has Spanish headings and `;` as
   separator in Spanish (what Excel expects there), English headings and `,` in English.
+- **Replay (Pro, `web/js/replay.js`):** ⓘ → TrainRadar Pro y ajustes → ⏪ Moviola.
+  Pick a day and a time (Madrid), play at ×1/×10/×60/×300, scrub through the day;
+  trains move between the recorder's minute frames (`replay/<date>/<hour>.json.gz`,
+  written by `backend/src/replay.js`) and are coloured by their delay then; tap one
+  for its delay at that moment. Live drawing pauses meanwhile; "Volver al directo" or
+  Back returns. Data from the first hour the recorder wrote (`replay/first.json`).
 - **Delay alerts (Pro):** ⓘ → TrainRadar Pro y ajustes → 🔔. Android asks for the
   notification permission then. Every 15 min (WorkManager, only with a network) the
   app reads the public `rt/summary.json` and notifies a favourite train once per level

@@ -285,8 +285,11 @@ jobs:
         env:
           CONFIG: ${{ steps.d1.outputs.config || 'backend/wrangler.toml' }}
           RECORDER: ${{ steps.gate.outputs.recorder == 'true' && 'true' || 'false' }}
+          # Replay frames (TrainRadar Pro) are on with the recorder unless the
+          # repository variable REPLAY_ENABLED is "false".
+          REPLAY: ${{ vars.REPLAY_ENABLED == 'false' && 'false' || 'true' }}
         run: |
-          npx --yes "$WRANGLER" deploy --config "$CONFIG" --var "RECORDER_ENABLED:$RECORDER" | tee deploy.txt
+          npx --yes "$WRANGLER" deploy --config "$CONFIG" --var "RECORDER_ENABLED:$RECORDER" --var "REPLAY_ENABLED:$REPLAY" | tee deploy.txt
           url=$(grep -oE 'https://trainradar-live\.[a-z0-9-]+\.workers\.dev' deploy.txt | head -1)
           echo "Live poller: $url/rt/status.json" >> "$GITHUB_STEP_SUMMARY"
           if [ "$RECORDER" = "true" ]; then
