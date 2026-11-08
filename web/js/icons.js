@@ -7,6 +7,7 @@ const NS = "http://www.w3.org/2000/svg";
 const ICONS = {
   search: [["circle", { cx: 11, cy: 11, r: 7 }], ["path", { d: "M20 20l-3.5-3.5" }]],
   chevronDown: [["path", { d: "M6 9l6 6 6-6" }]],
+  chevronUp: [["path", { d: "M6 15l6-6 6 6" }]],
   chevronLeft: [["path", { d: "M15 18l-6-6 6-6" }]],
   chevronRight: [["path", { d: "M9 6l6 6-6 6" }]],
   close: [["path", { d: "M6 6l12 12M18 6L6 18" }]],

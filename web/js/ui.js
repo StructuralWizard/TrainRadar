@@ -924,7 +924,7 @@ export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onS
     );
   }
   const shown = filter ? list.filter(filter.test) : list;
-  if (!shown.length) out.push(el("p", { class: "muted" }, filter?.commute ? t(lang, "noIncidentsCommute", { what: filter.label }) : t(lang, "noIncidents")));
+  if (!shown.length) out.push(el("p", { class: "muted" }, filter?.none || (filter?.commute ? t(lang, "noIncidentsCommute", { what: filter.label }) : t(lang, "noIncidents"))));
   out.push(
     el(
       "ul",

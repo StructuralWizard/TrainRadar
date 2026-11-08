@@ -50,16 +50,21 @@ export function settle(h, v, heights, allowed, closable) {
 
 /**
  * Manage the phone sheets. `home`: the id of the sheet shown (at peek)
- * whenever no other is open. `onChange({ id, snap })` after each change
+ * whenever no other is open, unless the user pulled it down out of the way
+ * (then `restore`, a button, brings it back). `onChange({ id, snap })` after each change
  * (id null = only the home sheet); `onSnap` when a drag settles (haptics).
  */
 export class Sheets {
-  constructor({ home = null, tabbar = null, scrim = null, onChange = () => {}, onSnap = () => {} } = {}) {
+  constructor({ home = null, tabbar = null, scrim = null, restore = null, homeHidden = false, onChange = () => {}, onSnap = () => {}, onHomeHidden = () => {} } = {}) {
     this.home = home;
     this.tabbar = tabbar;
     this.scrim = scrim;
     this.onChange = onChange;
     this.onSnap = onSnap;
+    this.restore = restore;
+    this.homeHidden = homeHidden;
+    this.onHomeHidden = onHomeHidden;
+    this.restore?.addEventListener("click", () => this.hideHome(false));
     this.opts = new Map(); // id → { el, snaps, initial, closable }
     this.snap = new Map(); // id → current snap
     this.scrim?.addEventListener("click", () => this.back());
@@ -128,6 +133,15 @@ export class Sheets {
     return false;
   }
 
+  /** Pull the home sheet out of the way (true) or bring it back at peek. */
+  hideHome(hidden) {
+    if (this.homeHidden === hidden) return;
+    this.homeHidden = hidden;
+    if (!hidden) this.snap.set(this.home, "peek");
+    this.apply();
+    this.onHomeHidden(hidden);
+  }
+
   /** Show or hide a sheet without reacting to it as a user change. */
   setHidden(id, hidden) {
     const o = this.opts.get(id);
@@ -147,8 +161,9 @@ export class Sheets {
     if (!this.phone) return this.layout();
     const top = this.top();
     if (this.home) {
-      this.setHidden(this.home, !!top);
-      this.homeAuto = !top;
+      this.setHidden(this.home, !!top || this.homeHidden);
+      this.homeAuto = !top && !this.homeHidden;
+      if (this.restore) this.restore.hidden = !!top || !this.homeHidden;
       if (!top && !this.snap.has(this.home)) this.snap.set(this.home, "peek");
     }
     const hs = this.heights();
@@ -182,6 +197,7 @@ export class Sheets {
       }
     }
     if (this.scrim) this.scrim.hidden = true;
+    if (this.restore) this.restore.hidden = true;
     document.body.dataset.sheet = "none";
     document.documentElement.style.setProperty("--sheet-h", "0px");
   }
@@ -213,9 +229,13 @@ export class Sheets {
       const moved = Math.abs(h - d.h0) > 6;
       d = null;
       if (!moved) return this.apply();
-      const closable = o.closable && el.id !== this.home;
+      const isHome = el.id === this.home;
+      // The home sheet "closes" by tucking away behind its restore button.
+      const closable = isHome ? !!this.restore : o.closable;
       const to = settle(h, v, this.heights(), o.snaps, closable);
-      if (to === "close") {
+      if (to === "close" && isHome) {
+        this.hideHome(true);
+      } else if (to === "close") {
         el.hidden = true;
       } else {
         this.snap.set(el.id, to);

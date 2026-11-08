@@ -346,19 +346,23 @@ await pp.screenshot({ path: `${out}/app-delays-commute.png` });
 await pp.click("#delayed-filter button >> nth=0");
 await pp.click("#tab-map");
 
-// Notices (Pro): "All" or one commute's notices only, remembered.
+// Notices: "All", "My favourites and commutes", or one commute (Pro), remembered.
 await pp.click("#tab-incidents");
 await pp.waitForSelector("#inc-commutes button", { timeout: 5000 }).catch(() => fail("notices filter didn't show"));
 const allNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
-await pp.click("#inc-commutes button >> nth=1");
+await pp.click("#inc-mine");
+const mineNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
+const mineMsg = await pp.$$eval("#inc-body p.muted", (p) => p.some((x) => /favoritos ni trayectos/.test(x.textContent)));
+if (mineNotices > allNotices || (!mineNotices && !mineMsg)) await fail(`my notices: ${mineNotices} of ${allNotices}`);
+await pp.click("#inc-commutes button >> nth=2");
 const commuteNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
 const noneMsg = await pp.$$eval("#inc-body p.muted", (p) => p.some((x) => /Ningún aviso de Renfe en/.test(x.textContent)));
 if (commuteNotices > allNotices || (!commuteNotices && !noneMsg)) await fail(`commute notices: ${commuteNotices} of ${allNotices}`);
 await pp.click("#inc-close");
 await pp.click("#tab-incidents");
-const pressed = await pp.$eval("#inc-commutes button >> nth=1", (b) => b.getAttribute("aria-pressed")).catch(() => null);
+const pressed = await pp.$eval("#inc-commutes button >> nth=2", (b) => b.getAttribute("aria-pressed")).catch(() => null);
 if (pressed !== "true") await fail("notices filter not remembered");
-console.log("notices:", allNotices, "all,", commuteNotices, "on the commute");
+console.log("notices:", allNotices, "all,", mineNotices, "mine,", commuteNotices, "on the commute");
 await pp.click("#inc-commutes button >> nth=0");
 
 if (errors.length) await fail(`page errors: ${errors.join("; ")}`);

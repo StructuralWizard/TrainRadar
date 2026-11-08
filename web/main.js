@@ -567,23 +567,64 @@ function commuteNoticeFilter(c) {
   };
 }
 
-/** Opened from the ⚠ button: the remembered commute filter, if any. */
+/** Notices about my things: favourite stations, the stops (and Cercanías
+ * line) of favourite trains on the map, and saved commutes (Pro). */
+const MINE = "mine";
+function mineNoticeFilter() {
+  const ids = new Set();
+  const names = new Set();
+  const lines = new Set();
+  for (const f of favs) {
+    if (f.type === "station") {
+      ids.add(f.id);
+      names.add(fold(f.name));
+      continue;
+    }
+    const info = liveTrain(f.number);
+    if (!info) continue;
+    if (/^[CR]\d/i.test(info.route || "")) lines.add(info.route);
+    const i = engine.findTrain(info.trip_id, info.number);
+    const trip = i >= 0 ? JSON.parse(engine.tripJson(i)) : null;
+    for (const s of trip?.stops || []) names.add(fold(s.name));
+  }
+  const commuteTests = CONFIG.pro ? commutes.list.map((c) => commuteNoticeFilter(c).test) : [];
+  return {
+    label: t(lang, commuteTests.length ? "noticesMine" : "noticesMineFavs"),
+    commute: MINE,
+    none: t(lang, "noIncidentsMine"),
+    test: (i) => i.stops.some((x) => ids.has(x.id) || names.has(fold(x.name))) || i.lines.some((l) => lines.has(l)) || commuteTests.some((f) => f(i)),
+  };
+}
+const hasMine = () => favs.length > 0 || (CONFIG.pro && commutes.list.length > 0);
+
+/** Opened from the ⚠ button: the remembered filter, if any. */
 function defaultNoticeFilter() {
-  if (!CONFIG.pro || !engine) return null;
-  const c = commutes.list.find((x) => commuteKey(x) === store.get(INC_FILTER_KEY));
+  if (!engine) return null;
+  const k = store.get(INC_FILTER_KEY);
+  if (k === MINE) return hasMine() ? mineNoticeFilter() : null;
+  if (!CONFIG.pro) return null;
+  const c = commutes.list.find((x) => commuteKey(x) === k);
   return c ? commuteNoticeFilter(c) : null;
 }
 
+/** "Todos · Mis favoritos y trayectos · each commute (Pro)". */
 function noticeChips() {
-  if (!CONFIG.pro || !commutes.list.length) return null;
+  if (!hasMine()) return null;
   const current = incFilter?.commute ?? (incFilter ? null : "");
-  const pick = (c) => () => {
-    store.set(INC_FILTER_KEY, c ? commuteKey(c) : "");
-    showIncidents(c ? commuteNoticeFilter(c) : null);
+  const pick = (key, make) => () => {
+    store.set(INC_FILTER_KEY, key);
+    showIncidents(make ? make() : null);
   };
-  const chip = (label, v, c) =>
-    el("button", { class: v === current ? "pill small pill-strong" : "pill small", type: "button", "aria-pressed": String(v === current), onclick: pick(c) }, label);
-  return el("p", { class: "commute-tabs", id: "inc-commutes" }, chip(t(lang, "delayedAll"), "", null), ...commutes.list.map((c) => chip(`${c.from.name} → ${c.to.name}`, commuteKey(c), c)));
+  const chip = (label, v, make, id) =>
+    el("button", { class: v === current ? "pill small pill-strong" : "pill small", type: "button", id, "aria-pressed": String(v === current), onclick: pick(v, make) }, label);
+  const commuteChips = CONFIG.pro ? commutes.list.map((c) => chip(`${c.from.name} → ${c.to.name}`, commuteKey(c), () => commuteNoticeFilter(c))) : [];
+  return el(
+    "p",
+    { class: "commute-tabs", id: "inc-commutes" },
+    chip(t(lang, "delayedAll"), "", null, "inc-all"),
+    chip(t(lang, commuteChips.length ? "noticesMine" : "noticesMineFavs"), MINE, mineNoticeFilter, "inc-mine"),
+    ...commuteChips,
+  );
 }
 
 function showIncidents(filter = null) {
@@ -1575,10 +1616,14 @@ function renderSearch() {
  * points (js/sheet.js) and an app tab bar instead of the floating buttons.
  * The home sheet is the Delays list, peeking with a summary.
  */
+const HOME_HIDDEN_KEY = "home-hidden"; // "Retrasos ahora" pulled down out of the way
 const sheets = new Sheets({
   home: "delayed",
   tabbar: $("tabbar"),
   scrim: $("scrim"),
+  restore: $("delayed-show"),
+  homeHidden: store.get(HOME_HIDDEN_KEY) === "1",
+  onHomeHidden: (hidden) => store.set(HOME_HIDDEN_KEY, hidden ? "1" : ""),
   onChange: () => updateTabs(),
   onSnap: () => haptic(),
 });
@@ -1723,7 +1768,13 @@ function renderHomeSummary(st, pos) {
         el("span", { class: "bucket-n", id: `bucket-${cls}-n` }),
       );
     $("delayed-summary").replaceChildren(
-      el("div", { class: "summary-head" }, el("h2", {}, t(lang, "delayedNow")), el("span", { class: "muted", id: "summary-of" })),
+      el(
+        "div",
+        { class: "summary-head" },
+        el("h2", {}, t(lang, "delayedNow")),
+        el("span", { class: "muted", id: "summary-of" }),
+        el("button", { type: "button", class: "icon-btn summary-hide", id: "delayed-hide", "aria-label": t(lang, "delayedHide"), title: t(lang, "delayedHide"), onclick: () => sheets.hideHome(true) }, icon("chevronDown", 18)),
+      ),
       el("div", { class: "buckets" }, bucket("major", "bucketMajor"), bucket("minor", "bucketMinor"), bucket("ontime", "bucketOnTime")),
     );
   }
@@ -1732,6 +1783,13 @@ function renderHomeSummary(st, pos) {
     if (e.textContent !== text) e.textContent = text;
   };
   set("summary-of", t(lang, "delayedOf", { n: formatCount(lang, st.delayed), total: formatCount(lang, st.trains) }));
+  const show = $("delayed-show");
+  if (show.dataset.lang !== lang) {
+    show.dataset.lang = lang;
+    show.replaceChildren(icon("chevronUp", 16), el("span", {}, t(lang, "delayedNow")), el("span", { class: "delayed-show-n", id: "delayed-show-n" }));
+    show.setAttribute("aria-label", t(lang, "delayedShow"));
+  }
+  set("delayed-show-n", formatCount(lang, st.delayed));
   set("bucket-major-n", formatCount(lang, c[2]));
   set("bucket-minor-n", formatCount(lang, c[1]));
   set("bucket-ontime-n", formatCount(lang, c[0]));
@@ -2366,6 +2424,12 @@ async function main() {
   applyLang();
   sheets.apply(); // phone: the home sheet peeks from the start
   ({ map, attr } = createMap("map", CONFIG, t(lang, "attribution")));
+  // Open credits close with a tap on the map or on their text (not a link).
+  map.on("click", foldCredits);
+  map.getContainer().addEventListener("click", (e) => {
+    const box = e.target.closest?.(".maplibregl-ctrl-attrib.maplibregl-compact-show");
+    if (box && !e.target.closest("a, summary, .maplibregl-ctrl-attrib-button")) foldCredits();
+  });
   const mapReady = new Promise((r) => map.on("load", r));
 
   await init();

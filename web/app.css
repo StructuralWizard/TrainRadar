@@ -242,7 +242,7 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 /* Phone layout (≤ 719 px, and the Android app): app tab bar and bottom
  * sheets with snap points (js/sheet.js). The desktop layout above is
  * unchanged; nothing below applies from 720 px. */
-.tabbar, .delayed-summary, .scrim, .sheet-handle, .search-icon, .net-chip, .chips, .fabs { display: none; }
+.tabbar, .delayed-summary, .delayed-show, .scrim, .sheet-handle, .search-icon, .net-chip, .chips, .fabs { display: none; }
 @media (max-width: 719px) {
   :root { --tab-h: calc(58px + var(--safe-bottom)); --sheet-h: 0px; }
   .bottom { display: none; }
@@ -287,6 +287,17 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .delayed-summary { display: block; touch-action: none; padding-bottom: 10px; }
   .summary-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   .summary-head h2 { margin: 0; font-size: 17px; }
+  .summary-head .muted { margin-left: auto; }
+  .summary-hide { flex: none; width: 36px; height: 36px; margin: -6px -6px -6px 0; border: 0; border-radius: 18px; background: transparent; color: #4b5563; display: grid; place-items: center; }
+  /* "Retrasos ahora" tucked away: a small pill above the tab bar brings it back. */
+  .delayed-show {
+    position: fixed; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(var(--tab-h) + 10px);
+    display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px;
+    border: 0; border-radius: 22px; background: #fff; color: #111827; font: inherit; font-size: 14px; font-weight: 600;
+    box-shadow: 0 4px 16px rgba(17, 24, 39, 0.18);
+  }
+  .delayed-show[hidden], body.replaying .delayed-show { display: none; }
+  .delayed-show-n { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #fee2e2; color: #b91c1c; font-size: 12px; display: grid; place-items: center; box-sizing: border-box; }
   .summary-head .muted { font-size: 13px; color: #4b5563; font-variant-numeric: tabular-nums; }
   .buckets { display: flex; gap: 8px; margin-top: 12px; }
   .bucket {
@@ -516,6 +527,9 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 
   /* Map credits, banner and Replay sit above the tab bar and sheet. */
   .maplibregl-ctrl-bottom-right { right: auto; left: 0; }
+  /* Open credits stop short of the round map buttons, so their ⓘ (which
+   * closes them) stays tappable. */
+  .maplibregl-ctrl-attrib.maplibregl-compact-show { max-width: calc(100vw - 104px); box-sizing: border-box; }
   .maplibregl-ctrl-bottom-right { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   .app-banner { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   body.replaying .tabbar, body.replaying #delayed { display: none; }
@@ -560,6 +574,9 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .scrim { background: rgba(0, 0, 0, 0.55); }
   .muted, .small.muted, .summary-head .muted, .ts-meta, .ts-line, .dep-sub, .menu-value, .switch-text small, .group-h { color: #9ca3af; }
   .icon-btn, .act, .net-search, .net-card, .seg { background: #1f2937; color: #f3f4f6; }
+  .delayed-show { background: #1f2937; color: #f3f4f6; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); }
+  .summary-hide { background: transparent; color: #9ca3af; }
+  .delayed-show-n { background: #450a0a; color: #fca5a5; }
   .net-search input { color: #f3f4f6; }
   .net-card-near { background: #1d4ed8; color: #fff; }
   .chip-btn, .base-card { background: #111827; color: #f3f4f6; border-color: #374151; }
