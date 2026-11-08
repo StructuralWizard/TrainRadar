@@ -1655,27 +1655,36 @@ function renderMore() {
   );
 }
 
-/** The home sheet's "Delays now": trains 15+, 5–14 min late and on time. */
+/** The home sheet's "Delays now": trains 15+, 5–14 min late and on time.
+ * Built once (and per language); afterwards only the numbers change, so a
+ * tap never lands on a box being replaced. */
+let summaryLang = "";
 function renderHomeSummary(st, pos) {
   if (!isPhone()) return;
   const c = [0, 0, 0, 0];
   for (let i = 0; i + 5 < pos.length; i += 6) if (!(pos[i + 5] & FLAG.scheduled)) c[pos[i + 2]] += 1;
-  const bucket = (cls, key, n) =>
-    el(
-      "button",
-      { type: "button", class: `bucket bucket-${cls}`, onclick: () => sheets.setSnap("delayed", "half") },
-      el("span", { class: "bucket-label" }, t(lang, key)),
-      el("span", { class: "bucket-n" }, formatCount(lang, n)),
+  if (summaryLang !== lang) {
+    summaryLang = lang;
+    const bucket = (cls, key) =>
+      el(
+        "button",
+        { type: "button", class: `bucket bucket-${cls}`, onclick: () => sheets.setSnap("delayed", "half") },
+        el("span", { class: "bucket-label" }, t(lang, key)),
+        el("span", { class: "bucket-n", id: `bucket-${cls}-n` }),
+      );
+    $("delayed-summary").replaceChildren(
+      el("div", { class: "summary-head" }, el("h2", {}, t(lang, "delayedNow")), el("span", { class: "muted", id: "summary-of" })),
+      el("div", { class: "buckets" }, bucket("major", "bucketMajor"), bucket("minor", "bucketMinor"), bucket("ontime", "bucketOnTime")),
     );
-  $("delayed-summary").replaceChildren(
-    el(
-      "div",
-      { class: "summary-head" },
-      el("h2", {}, t(lang, "delayedNow")),
-      el("span", { class: "muted" }, t(lang, "delayedOf", { n: formatCount(lang, st.delayed), total: formatCount(lang, st.trains) })),
-    ),
-    el("div", { class: "buckets" }, bucket("major", "bucketMajor", c[2]), bucket("minor", "bucketMinor", c[1]), bucket("ontime", "bucketOnTime", c[0])),
-  );
+  }
+  const set = (id, text) => {
+    const e = $(id);
+    if (e.textContent !== text) e.textContent = text;
+  };
+  set("summary-of", t(lang, "delayedOf", { n: formatCount(lang, st.delayed), total: formatCount(lang, st.trains) }));
+  set("bucket-major-n", formatCount(lang, c[2]));
+  set("bucket-minor-n", formatCount(lang, c[1]));
+  set("bucket-ontime-n", formatCount(lang, c[0]));
 }
 
 /** Phone top bar and map buttons: icons and labels (once per language). */
