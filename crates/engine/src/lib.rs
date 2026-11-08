@@ -190,6 +190,62 @@ impl Engine {
         out
     }
 
+    /// One frame of the replay (written by the recorder once a minute): every
+    /// train as the map shows it now, `[[key, route, number, destination,
+    /// lon, lat, bearing|null, delay_s|null, flags], …]` (flags as in
+    /// `positions`; key = GTFS trip id, else the train number).
+    #[wasm_bindgen(js_name = replayFrameJson)]
+    pub fn replay_frame_json(&self, now_ms: f64) -> String {
+        use std::fmt::Write;
+        let views = self.live.views(&self.net, secs(now_ms), false);
+        let mut s = String::from("[");
+        for (k, v) in views.iter().enumerate() {
+            let t = &self.live.trains[v.index];
+            if k > 0 {
+                s.push(',');
+            }
+            s.push('[');
+            let key = if t.rt.trip_id.is_empty() {
+                &t.rt.train_number
+            } else {
+                &t.rt.trip_id
+            };
+            json::str(&mut s, key);
+            let (route, dest) = t.matched.map_or((String::new(), String::new()), |m| {
+                let r = &self.net.regions[m.trip.region as usize];
+                let n = self.net.schedule(m.trip).len();
+                (
+                    r.tt.routes[self.net.trip(m.trip).route as usize]
+                        .short_name
+                        .clone(),
+                    self.net.stop_name(m.trip, n - 1).to_owned(),
+                )
+            });
+            s.push(',');
+            json::str(&mut s, &route);
+            s.push(',');
+            json::str(&mut s, &t.rt.train_number);
+            s.push(',');
+            json::str(&mut s, &dest);
+            let _ = write!(s, ",{:.5},{:.5},", v.coord.lon, v.coord.lat);
+            match v.bearing {
+                Some(b) => {
+                    let _ = write!(s, "{}", b.round());
+                }
+                None => s.push_str("null"),
+            }
+            match v.delay {
+                Some(d) => {
+                    let _ = write!(s, ",{}", d.0);
+                }
+                None => s.push_str(",null"),
+            }
+            let _ = write!(s, ",{}]", flags(&self.net, v, t));
+        }
+        s.push(']');
+        s
+    }
+
     /// Details for the popup of train `index` (as in `positions`), as JSON.
     #[wasm_bindgen(js_name = trainJson)]
     pub fn train_json(&self, index: usize, now_ms: f64) -> String {
@@ -1298,6 +1354,15 @@ mod tests {
         }
         let r: serde_json::Value = serde_json::from_str(&e.search_json("999", 5)).unwrap();
         assert_eq!(r.as_array().unwrap().len(), 0);
+        // Replay frame: the train as the map shows it, compact.
+        let f: serde_json::Value = serde_json::from_str(&e.replay_frame_json(ms)).unwrap();
+        let t = &f[0];
+        assert_eq!(t[0], "1004D100C3");
+        assert_eq!(t[1], "C3");
+        assert_eq!(t[2], "100");
+        assert_eq!(t[3], "Stop C");
+        assert!((t[5].as_f64().unwrap() - 40.35).abs() < 0.01, "{t}");
+        assert_eq!(t.as_array().unwrap().len(), 9);
         let t: serde_json::Value = serde_json::from_str(&e.track_geojson()).unwrap();
         assert_eq!(t["type"], "FeatureCollection");
         let b: serde_json::Value =

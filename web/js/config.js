@@ -22,6 +22,9 @@ export const CONFIG = {
   regionZoom: 8,
   // App version shown in About (set by tools/build-web.sh from APP_VERSION).
   appVersion: "dev",
+  // Where the replay's hour files are (TrainRadar Pro); "" = next to the
+  // live feeds (liveBase without "rt/"). Test builds set it.
+  replayBase: "",
   // First day of TrainRadar's delay history (the recorder started then):
   // the history screen says so, so a short history isn't taken for a fault.
   historySince: "2026-11-04",

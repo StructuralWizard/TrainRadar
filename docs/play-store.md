@@ -39,6 +39,7 @@ TRAINRADAR PRO (suscripción mensual)
 • Mis viajes: registro de tus trayectos con el retraso en cada parada, resumen para reclamar a Renfe, CSV e imagen para compartir.
 • Historial completo de puntualidad de líneas, trenes y estaciones (hasta 12 meses).
 • Trayectos habituales: guarda varios y la app abre con tus próximos trenes.
+• Moviola: mira dónde estaba cada tren, y con cuánto retraso, en cualquier momento pasado.
 • Detalles de vía: pendiente y perfil de altura, velocidad máxima, electrificación, trenes anterior y siguiente.
 
 PRIVACIDAD
@@ -74,6 +75,7 @@ TRAINRADAR PRO (monthly subscription)
 • My trips: a log of your journeys with the delay at each stop, a summary for a claim to Renfe, CSV and a shareable image.
 • Full punctuality history of lines, trains and stations (up to 12 months).
 • Commutes: save several and the app opens on your next trains.
+• Replay: see where every train was, and how late, at any past moment.
 • Track details: gradient and height profile, line speed, electrification, the trains ahead and behind.
 
 PRIVACY

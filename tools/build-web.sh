@@ -67,7 +67,7 @@ if [ -n "${DIST:-}" ]; then
     # the history API at "/" (absent in the APK: the teaser just stays hidden;
     # the browser test answers it).
     mkdir -p "$DIST/rt" && cp "$RT_FIXTURES"/*.pb "$DIST/rt/"
-    sed -i 's#liveBase: "[^"]*"#liveBase: ""#; s#rtBase: "[^"]*"#rtBase: "rt/"#; s#apiBase: "[^"]*"#apiBase: "/"#' "$DIST/js/config.js"
+    sed -i 's#liveBase: "[^"]*"#liveBase: ""#; s#rtBase: "[^"]*"#rtBase: "rt/"#; s#apiBase: "[^"]*"#apiBase: "/"#; s#replayBase: "[^"]*"#replayBase: "/"#' "$DIST/js/config.js"
     # The Android smoke test (Espresso-web) reads the page with injected
     # scripts, which need eval. Test builds only: real builds keep the CSP.
     sed -i "s#script-src 'self' 'wasm-unsafe-eval'#script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'#" "$DIST/index.html"

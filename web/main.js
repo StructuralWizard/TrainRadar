@@ -5,7 +5,7 @@ import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
-import { formatAgo, formatDistance } from "./js/format.js";
+import { formatAgo, formatDelay, formatDistance } from "./js/format.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
@@ -21,6 +21,7 @@ import {
 } from "./js/map.js";
 import { formatClock } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
+import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from "./js/replay.js";
 import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { enthusiast } from "./js/features.js";
@@ -826,6 +827,7 @@ function renderSettings() {
         openSheet("commute");
         renderCommute();
       },
+      onReplay: replaySource() ? () => startReplay() : null,
       onExport: () =>
         exportFile(backupName(), makeBackup({ favourites: favs, trips, settings: { lang: store.get("lang"), basemap: store.get("basemap") } })).catch((e) => {
           settingsMsg = t(lang, "proError", { error: e.message });
@@ -1184,6 +1186,8 @@ function goBack() {
   if (popup) return popup.remove(), true;
   if (stationPop?.isOpen()) return stationPop.remove(), true;
   if (!$("search-results").hidden) return ($("search-results").hidden = true), true;
+  if (replayPop?.isOpen()) return replayPop.remove(), true;
+  if (replay) return stopReplay(), true;
   return false;
 }
 
@@ -1338,7 +1342,7 @@ function renderDelayedList() {
 
 /** Redraw trains. Trains move slowly on screen, so 1–4 updates a second is plenty. */
 function render(force = false) {
-  if (!engine || !map) return;
+  if (!engine || !map || replay) return; // the replay draws the trains meanwhile
   const now = Date.now();
   const interval = map.getZoom() >= 10 ? 250 : 1000;
   if (!force && now - lastRender < interval) return;
@@ -1365,7 +1369,199 @@ function render(force = false) {
   checkAlertsLive(now);
 }
 
+/**
+ * Replay (TrainRadar Pro): the map shows where every train was at a past
+ * moment, from the recorder's minute-by-minute files; play, pause, speed,
+ * pick a day and time. Live drawing stops until "Back to live".
+ */
+let replay = null; // { data, t (ms), playing, speed, since, last, busy }
+const REPLAY_SPEEDS = [1, 10, 60, 300];
+
+const replaySource = () => CONFIG.replayBase || replayRoot(CONFIG.liveBase);
+
+async function startReplay() {
+  if (!CONFIG.pro || !replaySource()) return;
+  for (const id of SHEETS) $(id).hidden = true;
+  popup?.remove();
+  stationPop?.remove();
+  const data = new ReplayData(replaySource());
+  replay = { data, t: Date.now() - 3_600_000, playing: false, speed: 60, since: null, last: 0, busy: false, trains: [] };
+  document.body.classList.add("replaying");
+  $("replay-bar").hidden = false;
+  renderReplayBar();
+  drawReplay();
+  const first = await data.first();
+  if (replay?.data === data && first?.hour) {
+    replay.since = Date.parse(`${first.hour}:00:00Z`);
+    if (replay.t < replay.since) replay.t = replay.since;
+    renderReplayBar();
+    drawReplay();
+  }
+}
+
+function stopReplay() {
+  replay = null;
+  replayPop?.remove();
+  document.body.classList.remove("replaying");
+  $("replay-bar").hidden = true;
+  render(true);
+}
+
+let replayPop = null;
+async function drawReplay() {
+  if (!replay || replay.busy) return;
+  replay.busy = true;
+  const r = replay;
+  const trains = await r.data.at(r.t).catch(() => []);
+  r.busy = false;
+  if (replay !== r) return;
+  r.trains = trains;
+  map.getSource("trains")?.setData(replayGeoJson(trains));
+  const { date, time } = msToMadrid(r.t);
+  const day = date.split("-").reverse().slice(0, 2).join("/");
+  $("stats").textContent = t(lang, "replayStats", { date: day, time, n: trains.length, late: trains.filter((x) => x.delay >= 300).length });
+  const since = r.since ? msToMadrid(r.since) : null;
+  $("status").textContent = trains.length
+    ? since
+      ? t(lang, "replaySince", { date: `${since.date.split("-").reverse().join("/")} ${since.time}` })
+      : ""
+    : `${t(lang, "replayNoData")}${since ? ` ${t(lang, "replaySince", { date: `${since.date.split("-").reverse().join("/")} ${since.time}` })}` : ""}`;
+  const slider = $("replay-slider");
+  if (slider && document.activeElement !== slider) {
+    const [h, m] = time.split(":").map(Number);
+    slider.value = String(h * 60 + m);
+  }
+  const dIn = $("replay-date");
+  if (dIn && document.activeElement !== dIn) dIn.value = date;
+  const tIn = $("replay-time");
+  if (tIn && document.activeElement !== tIn) tIn.value = time;
+}
+
+function setReplayTime(ms) {
+  if (!replay) return;
+  const max = Date.now() - 60_000;
+  replay.t = Math.max(replay.since || 0, Math.min(ms, max));
+  if (replay.t >= max) replay.playing = false;
+  replayPop?.remove();
+  drawReplay();
+  renderReplayBar();
+}
+
+function renderReplayBar() {
+  if (!replay) return;
+  const { date, time } = msToMadrid(replay.t);
+  const today = msToMadrid(Date.now()).date;
+  const min = replay.since ? msToMadrid(replay.since).date : CONFIG.historySince;
+  const [h, m] = time.split(":").map(Number);
+  $("replay-bar").replaceChildren(
+    el(
+      "div",
+      { class: "row" },
+      el("strong", { class: "grow" }, `⏪ ${t(lang, "replayTitle")}`),
+      el("button", { class: "pill small", type: "button", id: "replay-live", onclick: stopReplay }, t(lang, "replayLive")),
+    ),
+    el(
+      "div",
+      { class: "row" },
+      el("input", { type: "date", id: "replay-date", value: date, min, max: today, "aria-label": t(lang, "replayDate"), onchange: (e) => e.target.value && setReplayTime(madridToMs(e.target.value, $("replay-time").value || time)) }),
+      el("input", { type: "time", id: "replay-time", value: time, "aria-label": t(lang, "replayTime"), onchange: (e) => e.target.value && setReplayTime(madridToMs($("replay-date").value || date, e.target.value)) }),
+      el(
+        "button",
+        {
+          class: "pill small pill-strong",
+          type: "button",
+          id: "replay-play",
+          "aria-label": t(lang, replay.playing ? "replayPause" : "replayPlay"),
+          onclick: () => {
+            replay.playing = !replay.playing;
+            replay.last = performance.now();
+            renderReplayBar();
+          },
+        },
+        replay.playing ? "⏸" : "▶",
+      ),
+      ...REPLAY_SPEEDS.map((x) =>
+        el(
+          "button",
+          {
+            class: "pill small",
+            type: "button",
+            "aria-pressed": String(replay.speed === x),
+            onclick: () => {
+              replay.speed = x;
+              renderReplayBar();
+            },
+          },
+          `×${x}`,
+        ),
+      ),
+    ),
+    el(
+      "div",
+      { class: "row" },
+      el("input", {
+        type: "range",
+        id: "replay-slider",
+        min: "0",
+        max: "1439",
+        step: "1",
+        value: String(h * 60 + m),
+        "aria-label": t(lang, "replayTime"),
+        oninput: (e) => {
+          const v = Number(e.target.value);
+          setReplayTime(madridToMs($("replay-date").value || date, `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`));
+        },
+      }),
+    ),
+  );
+}
+
+/** Advance a playing replay (called every frame). */
+function tickReplay() {
+  if (!replay) return;
+  const now = performance.now();
+  if (replay.playing) {
+    const dt = replay.last ? now - replay.last : 0;
+    replay.last = now;
+    if (dt > 0) {
+      const before = replay.t;
+      replay.t = Math.min(replay.t + dt * replay.speed, Date.now() - 60_000);
+      if (replay.t === before) {
+        replay.playing = false;
+        renderReplayBar();
+      }
+    }
+    // Redraw a few times a second, not every frame.
+    if (now - (replay.drawn || 0) > 200) {
+      replay.drawn = now;
+      drawReplay();
+    }
+  }
+}
+
+/** A tapped train in the replay: what it was and how late, at that moment. */
+function showReplayTrain(i) {
+  const tr = replay?.trains?.[i];
+  if (!tr) return;
+  const title = [tr.route, tr.number.replace(/^0+/, "")].filter(Boolean).join(" ");
+  const delay = tr.delay === null ? "—" : formatDelay(lang, tr.delay);
+  replayPop?.remove();
+  replayPop = new maplibregl.Popup({ closeButton: true, maxWidth: "260px", offset: 12, focusAfterOpen: false })
+    .setLngLat([tr.lon, tr.lat])
+    .setDOMContent(
+      el(
+        "div",
+        { class: "popup" },
+        el("div", { class: "popup-title" }, title),
+        tr.dest ? el("div", { class: "small" }, `→ ${tr.dest}`) : null,
+        el("div", {}, el("strong", {}, delay), ` ${t(lang, "replayTrainAt", { time: msToMadrid(replay.t).time })}`),
+      ),
+    )
+    .addTo(map);
+}
+
 function loop() {
+  tickReplay();
   if (document.visibilityState === "visible") render();
   requestAnimationFrame(loop);
 }
@@ -1424,6 +1620,18 @@ async function main() {
   map.on("moveend", loadVisibleRegions);
   map.on("click", (e) => {
     const pad = 10; // generous tap target on phones
+    if (replay) {
+      const hit = map.queryRenderedFeatures(
+        [
+          [e.point.x - pad, e.point.y - pad],
+          [e.point.x + pad, e.point.y + pad],
+        ],
+        { layers: ["trains"] },
+      )[0];
+      if (hit) showReplayTrain(hit.properties.i);
+      else replayPop?.remove();
+      return;
+    }
     const hits = map.queryRenderedFeatures(
       [
         [e.point.x - pad, e.point.y - pad],

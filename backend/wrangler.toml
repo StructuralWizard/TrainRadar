@@ -50,5 +50,7 @@ ALLOWED_ORIGINS = "https://trainradar.pages.dev,http://localhost:8080,capacitor:
 # History recorder: the deploy job passes "true" when the repository
 # variable RECORDER_ENABLED is true (needs Workers Paid and D1 rights).
 RECORDER_ENABLED = "false"
+# Replay frames (backend/src/replay.js), with the recorder; "false" stops them.
+REPLAY_ENABLED = "true"
 # Where the recorder reads the reference data (the deployed site).
 REFDATA_BASE = "https://trainradar.pages.dev/data/"

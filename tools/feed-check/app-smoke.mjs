@@ -259,6 +259,44 @@ if (savedActive !== 0) await fail(`active commute not saved: ${savedActive}`);
 console.log("commutes:", tabs.map((t) => t[0]).join(" | "));
 await pp.screenshot({ path: `${out}/app-commutes.png` });
 
+// Replay (Pro): a made-up hour of three trains moving, served for any hour
+// asked (the recorder writes these files in production).
+await pp.route("**/replay/**", async (route) => {
+  const url = route.request().url();
+  if (url.endsWith("/replay/first.json")) {
+    const h = new Date(Date.now() - 6 * 3_600_000).toISOString().slice(0, 13);
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ hour: h }) });
+  }
+  const m = url.match(/replay\/(\d{4}-\d\d-\d\d)\/(\d\d)\.json\.gz/);
+  if (!m) return route.fulfill({ status: 404, body: "" });
+  const t0 = Date.parse(`${m[1]}T${m[2]}:00:00Z`) / 1000;
+  const frames = [];
+  for (let k = 0; k < 60; k++) {
+    frames.push([t0 + k * 60, [[0, -370000, 4030000 + k * 100, 180, 60, 8], [1, -369000, 4032000, 0, 700, 8], [2, -120000, 4110000 - k * 300, 225, 1200, 16]]]);
+  }
+  const doc = { v: 1, hour: `${m[1]}T${m[2]}`, trains: [["a", "C3", "20047", "Aranjuez"], ["b", "C3", "21047", "Atocha"], ["c", "AVE", "03001", "Barcelona-Sants"]], frames };
+  return route.fulfill({ contentType: "application/json", body: JSON.stringify(doc) });
+});
+if (await pp.isHidden("#about")) await pp.click("#about-btn");
+await pp.click("#settings-btn");
+await pp.click("#replay-btn");
+await pp.waitForSelector("#replay-bar:not([hidden]) #replay-play", { timeout: 5000 }).catch(() => fail("replay controls didn't show"));
+await pp.waitForFunction(() => /Moviola · .* · 3 trenes · 2 con retraso/.test(document.getElementById("stats").textContent), null, { timeout: 10000 }).catch(async () =>
+  fail(`replay stats: ${await pp.textContent("#stats")}`),
+);
+const at0 = await pp.inputValue("#replay-time");
+await pp.click("#replay-bar button:text-is('×300')");
+await pp.click("#replay-play");
+await pp.waitForFunction((t) => document.getElementById("replay-time").value !== t, at0, { timeout: 10000 }).catch(() => fail("replay didn't play"));
+await pp.click("#replay-play"); // pause
+console.log("replay:", await pp.textContent("#stats"), "| from", at0, "to", await pp.inputValue("#replay-time"));
+await pp.screenshot({ path: `${out}/app-replay.png` });
+// An hour with no file: no trains, and it says so.
+await pp.route("**/replay/2020-**", (r) => r.fulfill({ status: 404, body: "" }));
+await pp.click("#replay-live");
+await pp.waitForFunction(() => !/Moviola/.test(document.getElementById("stats").textContent), null, { timeout: 10000 }).catch(() => fail("didn't go back to live"));
+if (!(await pp.isHidden("#replay-bar"))) await fail("replay bar still showing");
+
 // Search (Pro): a train number not on the map offers its history.
 await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
 await pp.fill("#search-q", "99999");
