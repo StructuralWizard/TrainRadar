@@ -46,7 +46,7 @@ bucket_name = "trainradar-history"
 POLLER_ENABLED = "true"
 # Origins allowed to read /rt/* through this Worker (the staging path, before
 # the bucket's custom domain exists). The deploy job sets the real list.
-ALLOWED_ORIGINS = "https://trainradar.pages.dev,http://localhost:8080,capacitor://localhost,https://localhost"
+ALLOWED_ORIGINS = "https://trainradar.pages.dev,https://mytrainradar.com,https://www.mytrainradar.com,http://localhost:8080,capacitor://localhost,https://localhost"
 # History recorder: the deploy job passes "true" when the repository
 # variable RECORDER_ENABLED is true (needs Workers Paid and D1 rights).
 RECORDER_ENABLED = "false"
