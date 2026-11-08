@@ -67,9 +67,7 @@ test("records demo trains: summary, runs in progress, finished runs in D1, resta
     assert.ok(["running", "stopped", "cancelled"].includes(s.status));
     assert.equal(typeof s.updatedAt, "number");
   }
-  // The demo's Cercanías run 05:00–23:50 Madrid time: none at night.
-  const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "numeric", hourCycle: "h23" }).format(now));
-  if (hour >= 6) assert.ok(summary.some((s) => s.product === "CERCANIAS" && /^\d+-C/.test(s.line)), JSON.stringify(summary[0]));
+  assert.ok(summary.some((s) => s.product === "CERCANIAS" && /^\d+-C/.test(s.line)), JSON.stringify(summary[0]));
   const status = JSON.parse(await (await live.get("rt/recorder.json")).text());
   assert.equal(status.ok, true);
 

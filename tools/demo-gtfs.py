@@ -90,14 +90,15 @@ def main(out):
         "stop_times.txt": "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n" + "\n".join(times) + "\n",
     })
 
-    # Cercanías C3: every 10 min 05:00–23:50, 4 min between stops, 30 s dwell.
+    # Cercanías C3: every 10 min round the clock (so tests that need a moving
+    # Cercanías train pass at night too), 4 min between stops, 30 s dwell.
     trips, times = [], []
     for direction, (rid, seq) in enumerate((("10T0001C3", C3), ("10T0002C3", C3[::-1]))):
-        for k in range(19 * 6):
+        for k in range(24 * 6):
             num = 20000 + direction * 1000 + k
             tid = f"1004D{num}C3"
             trips.append(f"{rid},1004D,{tid},10_C3")
-            s = 5 * 3600 + k * 600 + direction * 300
+            s = k * 600 + direction * 300
             for i, st in enumerate(seq):
                 if i:
                     s += 240
