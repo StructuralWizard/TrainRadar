@@ -8,6 +8,8 @@
 import { FeedPoller } from "../pkg/engine.js";
 import { STATUS_EVERY_MS, SourceSwitch, changedFeeds, feedUrl } from "./source.js";
 
+const FIXES_EVERY_MS = 60_000;
+
 export class Feeds {
   /** `live`: live bucket base ("" = none); `base`: pass-through base. */
   constructor(engine, base, { onUpdate, onError, live = "" }) {
@@ -17,6 +19,7 @@ export class Feeds {
     this.onError = onError;
     this.source = new SourceSwitch({ live, fallback: base });
     this.statusTimer = 0;
+    this.fixesAt = 0; // last read of fixes.tsv (live mode)
     this.feeds = JSON.parse(engine.feedsJson()).map((f) => ({
       ...f,
       poller: new FeedPoller(f.interval),
@@ -46,6 +49,7 @@ export class Feeds {
       const r = await fetch(`${this.source.live}status.json?t=${Math.floor(now / STATUS_EVERY_MS)}`);
       if (!r.ok) throw new Error(`status HTTP ${r.status}`);
       const status = await r.json();
+      await this.fixes(now);
       const seen = Object.fromEntries(this.feeds.map((f) => [f.path, f.seenLm]));
       for (const c of changedFeeds(status, seen)) {
         const f = this.feeds.find((x) => x.path === c.path);
@@ -71,6 +75,24 @@ export class Feeds {
       if (this.source.liveFailed(Date.now())) return this.toFallback();
     }
     if (!this.hidden()) this.statusTimer = setTimeout(() => this.tick(), STATUS_EVERY_MS);
+  }
+
+  /**
+   * Since when each AV/LD/MD position has stayed put, from the server's
+   * recorder (that feed gives positions no time): once a minute. Without it
+   * a frozen position would look fresh to an app just opened, and its train
+   * hours late. Optional: missing before the server publishes it.
+   */
+  async fixes(now) {
+    if (now - this.fixesAt < FIXES_EVERY_MS) return;
+    this.fixesAt = now;
+    try {
+      const r = await fetch(`${this.source.live}fixes.tsv?t=${Math.floor(now / FIXES_EVERY_MS)}`);
+      if (!r.ok) return;
+      if (this.engine.applyFixSince(await r.text(), Date.now()) > 0) this.onUpdate("fixes");
+    } catch {
+      // not there (yet): positions are taken as fresh, as before
+    }
   }
 
   /** Switch to the pass-through until the live bucket is worth retrying. */

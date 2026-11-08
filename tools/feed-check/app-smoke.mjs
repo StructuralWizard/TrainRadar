@@ -259,8 +259,31 @@ if (savedActive !== 0) await fail(`active commute not saved: ${savedActive}`);
 console.log("commutes:", tabs.map((t) => t[0]).join(" | "));
 await pp.screenshot({ path: `${out}/app-commutes.png` });
 
+// Search (Pro): a train number not on the map offers its history.
+await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
+await pp.fill("#search-q", "99999");
+await pp.waitForSelector("#search-history", { timeout: 5000 }).catch(() => fail("no history row for a train not on the map"));
+console.log("search off map:", (await pp.textContent("#search-history")).replace(/\s+/g, " "));
+await pp.click("#search-history");
+await pp.waitForSelector("#history:not([hidden]) #hist-since", { timeout: 10000 }).catch(() => fail("history of a train not on the map didn't open"));
+await pp.click("#history-close");
+
+// Saved / recording buttons: readable (not coloured text on the pressed blue).
+const pressedBg = await pp.evaluate(() => {
+  const b = Object.assign(document.createElement("button"), { className: "pill small fav-btn", type: "button" });
+  b.setAttribute("aria-pressed", "true");
+  const wrap = Object.assign(document.createElement("div"), { className: "popup-actions" });
+  wrap.append(b);
+  document.body.append(wrap);
+  const cs = getComputedStyle(b);
+  const out = [cs.backgroundColor, cs.color];
+  wrap.remove();
+  return out;
+});
+if (pressedBg[0] !== "rgb(240, 253, 244)" || pressedBg[1] !== "rgb(22, 101, 52)") await fail(`saved button colours: ${pressedBg}`);
+
 // Delays list (Pro): "All" or one commute's trains only, remembered.
-await pp.click("#commute-close");
+await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
 await pp.click("#delayed-btn");
 await pp.waitForSelector("#delayed-filter:not([hidden]) button", { timeout: 5000 }).catch(() => fail("delays filter didn't show"));
 const chips = await pp.$$eval("#delayed-filter button", (b) => b.map((x) => x.textContent));

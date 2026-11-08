@@ -68,6 +68,10 @@ test("records demo trains: summary, runs in progress, finished runs in D1, resta
     assert.equal(typeof s.updatedAt, "number");
   }
   assert.ok(summary.some((s) => s.product === "CERCANIAS" && /^\d+-C/.test(s.line)), JSON.stringify(summary[0]));
+  // Since when each AV/LD/MD position (no timestamps in that feed) is known.
+  const fixes = await (await live.get("rt/fixes.tsv")).text();
+  const fixRows = fixes.split("\n").filter(Boolean).map((l) => l.split("\t"));
+  assert.ok(fixRows.length > 0 && fixRows.every((r) => r.length === 4 && Number(r[3]) > 0), fixes.slice(0, 200));
   const status = JSON.parse(await (await live.get("rt/recorder.json")).text());
   assert.equal(status.ok, true);
 

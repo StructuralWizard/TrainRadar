@@ -3,7 +3,10 @@
 // - writes every finished run to D1 (`trips`),
 // - writes `rt/summary.json` (every live train: delay, next stop, status),
 //   for the Android widget and alerts,
-// - writes `rt/recorder.json` (health and database size) for monitoring.
+// - writes `rt/recorder.json` (health and database size) for monitoring,
+// - writes `rt/fixes.tsv`: since when each AV/LD/MD GPS position (the feed
+//   gives them no time) has stayed put, so apps opened later don't take a
+//   frozen position for a fresh one (trains "hours late" at their last fix).
 // The engine is passed in, so this runs in tests on the real WebAssembly.
 
 import { dbStats, writeTrips } from "./history.js";
@@ -17,6 +20,7 @@ export const REFDATA_CHECK_MS = 60 * 60_000;
 /** Save the runs in progress every this many cycles. */
 export const SAVE_EVERY = 5;
 export const SUMMARY_CACHE = "public, max-age=30";
+export const FIXES_KEY = "rt/fixes.tsv";
 
 async function bytesOf(res) {
   const bytes = new Uint8Array(await res.arrayBuffer());
@@ -92,6 +96,9 @@ export async function recordCycle({ engine, live, db, now, seen }) {
   await live.put("rt/summary.json", summary, {
     httpMetadata: { contentType: "application/json", cacheControl: SUMMARY_CACHE },
   });
+  await live.put(FIXES_KEY, engine.fixSinceText(), {
+    httpMetadata: { contentType: "text/tab-separated-values; charset=utf-8", cacheControl: SUMMARY_CACHE },
+  });
   return { freshFeeds: fresh, finished: rows.length, written, active: engine.recorderActive(), trains: summary.length > 2 ? JSON.parse(summary).length : 0 };
 }
 
@@ -140,6 +147,9 @@ export class RecorderCore {
     await loadRefdata(next, this.base(), manifest, { fetchFn: this.fetchFn, now });
     const saved = this.engine ? this.engine.recorderSave() : await this.storage.get("runs");
     if (saved) next.recorderLoad(saved instanceof Uint8Array ? saved : new Uint8Array(saved));
+    // How long positions have been frozen, from before this (re)start.
+    const fixes = this.engine ? this.engine.fixSinceText() : await (await this.env.LIVE.get(FIXES_KEY))?.text();
+    if (fixes) next.applyFixSince(fixes, now);
     this.engine?.free?.();
     this.engine = next;
     this.refKey = key;

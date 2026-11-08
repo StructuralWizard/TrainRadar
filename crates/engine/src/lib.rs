@@ -883,6 +883,21 @@ impl Engine {
         s
     }
 
+    /// Since when each untimestamped GPS fix has stayed at its position
+    /// (`key\tlat_e5\tlon_e5\tsince` per line): the recorder publishes it as
+    /// `rt/fixes.tsv` so apps know how old a frozen AV/LD/MD position is.
+    #[wasm_bindgen(js_name = fixSinceText)]
+    pub fn fix_since_text(&self) -> String {
+        self.live.fix_since_text()
+    }
+
+    /// Take in `rt/fixes.tsv` (see [`Engine::fix_since_text`]); returns how
+    /// many positions turned out older than this app had assumed.
+    #[wasm_bindgen(js_name = applyFixSince)]
+    pub fn apply_fix_since(&mut self, text: &str, now_ms: f64) -> usize {
+        self.live.apply_fix_since(&self.net, text, secs(now_ms))
+    }
+
     /// Trains stopped between stations (longest first), as popup JSON.
     #[wasm_bindgen(js_name = stoppedJson)]
     pub fn stopped_json(&self, now_ms: f64) -> String {
