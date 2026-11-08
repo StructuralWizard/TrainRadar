@@ -113,11 +113,15 @@ public class AppSmokeTest {
         eval("window.__shared = 'pending'; " + promise
                 + ".then(function () { window.__shared = 'done'; }, function (e) { window.__shared = 'error: ' + (e && e.message || e); });"
                 + " return true;");
-        Thread.sleep(5_000);
-        if (appInFront()) {
-            // No share sheet came up: say why.
+        // Drawing an image can take several seconds on a CI emulator: wait
+        // up to 30 s for the share sheet, failing early if the call fails.
+        long until = System.currentTimeMillis() + 30_000;
+        while (appInFront()) {
             String state = String.valueOf(eval("return window.__shared;"));
-            throw new AssertionError("the share sheet didn't open; export: " + state);
+            if (state.startsWith("error") || System.currentTimeMillis() > until) {
+                throw new AssertionError("the share sheet didn't open; export: " + state);
+            }
+            Thread.sleep(1_000);
         }
         // The sheet is open: close it (Back) and check the call didn't fail.
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
