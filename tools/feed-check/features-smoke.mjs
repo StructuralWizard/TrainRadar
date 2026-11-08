@@ -80,19 +80,25 @@ const boxOf = async (sel) => {
   }
   return null;
 };
-const box = await boxOf(".maplibregl-popup");
-const tb = await boxOf(".popup .popup-title");
-if (!box || !tb) {
-  const state = await page.evaluate(() => ({ popups: document.querySelectorAll(".maplibregl-popup").length, html: document.querySelector(".maplibregl-popup")?.textContent?.slice(0, 120) }));
-  await fail(`train popup gone before the drag: ${JSON.stringify(state)}`);
+// The popup is redrawn as the train moves; a redraw in the middle of the
+// drag can drop it, so try up to three times.
+let dragged = false;
+for (let attempt = 0; attempt < 3 && !dragged; attempt++) {
+  const box = await boxOf(".maplibregl-popup");
+  const tb = await boxOf(".popup .popup-title");
+  if (!box || !tb) {
+    const state = await page.evaluate(() => ({ popups: document.querySelectorAll(".maplibregl-popup").length, html: document.querySelector(".maplibregl-popup")?.textContent?.slice(0, 120) }));
+    await fail(`train popup gone before the drag: ${JSON.stringify(state)}`);
+  }
+  await page.mouse.move(tb.x + 10, tb.y + 5);
+  await page.mouse.down();
+  await page.mouse.move(tb.x + 10, tb.y + 205, { steps: 5 });
+  await page.mouse.up();
+  const moved = await page.locator(".maplibregl-popup").boundingBox();
+  console.log("popup y:", Math.round(box.y), "→", Math.round(moved.y));
+  dragged = moved.y - box.y >= 150;
 }
-await page.mouse.move(tb.x + 10, tb.y + 5);
-await page.mouse.down();
-await page.mouse.move(tb.x + 10, tb.y + 205, { steps: 5 });
-await page.mouse.up();
-const moved = await page.locator(".maplibregl-popup").boundingBox();
-console.log("popup y:", Math.round(box.y), "→", Math.round(moved.y));
-if (moved.y - box.y < 150) await fail("popup didn't move when dragged");
+if (!dragged) await fail("popup didn't move when dragged");
 if (!(await page.$(".maplibregl-popup.dragged"))) await fail("dragged popup still has its pointer");
 await page.screenshot({ path: `${out}/dragged.png` });
 await page.click(".maplibregl-popup-close-button");

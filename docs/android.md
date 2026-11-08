@@ -43,6 +43,13 @@ map opens without downloading them; live feeds come from the central bucket
   Preferences (backed up by Android, included in the export file) as a versioned JSON
   document with a migration step (`parseTrips`); the plan's SQLite isn't needed at this
   size (a few hundred KB after years).
+  If the app was closed when the train arrived, the trip ends with no arrival; the app
+  then asks the history API (`/v1/history/train/<n>?days=4&today=1`, today's finished
+  runs included, cached 5 min) at start, on resume and when My trips opens, at most
+  every 10 min, and fills in the arrival, highest delay and missing stop delays from the
+  recorded run (matched by scheduled arrival). It keeps trying for 3 days; a run not
+  found a day after the trip is given up. The CSV has Spanish headings and `;` as
+  separator in Spanish (what Excel expects there), English headings and `,` in English.
 - **Delay alerts (Pro):** ⓘ → TrainRadar Pro y ajustes → 🔔. Android asks for the
   notification permission then. Every 15 min (WorkManager, only with a network) the
   app reads the public `rt/summary.json` and notifies a favourite train once per level
