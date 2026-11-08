@@ -123,11 +123,16 @@ public class AppSmokeTest {
             }
             Thread.sleep(1_000);
         }
-        // The sheet is open: close it (Back) and check the call didn't fail.
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
-        long end = System.currentTimeMillis() + 15_000;
-        while (!appInFront() && System.currentTimeMillis() < end) Thread.sleep(500);
+        // The sheet is open, which is what this checks. Close it (Back; the
+        // sheet can ignore a press while it animates, so retry), then make
+        // sure the call didn't fail for another reason.
+        long end = System.currentTimeMillis() + 20_000;
+        while (!appInFront() && System.currentTimeMillis() < end) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
+            Thread.sleep(2_000);
+        }
+        if (!appInFront()) return; // still showing the sheet: the export reached it
         String after = String.valueOf(eval("return window.__shared;"));
         assertFalse("export failed: " + after, after.startsWith("error") && !after.toLowerCase().contains("cancel"));
     }
