@@ -60,7 +60,13 @@ jobs:
         id: apks
         run: |
           (cd app && npm ci --no-audit --no-fund && npx cap sync android)
-          cd app/android && ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest
+          # Gradle and its libraries are downloaded, and the servers time out
+          # now and then: try a few times (what was downloaded is kept).
+          for i in 1 2 3; do
+            (cd app/android && ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest) && break
+            [ "$i" = 3 ] && exit 1
+            sleep $(( i * 30 ))
+          done
 
       - name: Emulator smoke test (map renders, a train popup opens)
         timeout-minutes: 25
