@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { HistoryApi, HistoryCache, dailySeries, summarize } from "./history.js";
+import { HistoryApi, HistoryCache, RENFE_PUNCTUALITY, dailySeries, rangeBefore, renfeOfficialUrl, summarize } from "./history.js";
 
 const day = (date, product, o = {}) => ({ date, product, trips: 10, on_time: 8, late_5: 2, late_15: 1, cancelled: 0, median_delay: 2, p90_delay: 9, ...o });
 
@@ -53,4 +53,17 @@ test("daily series for charts; one cached request per range", async () => {
   await api.get("train", "03071", 30);
   assert.deepEqual(calls, ["https://api.example/v1/history/train/03071?days=30"]);
   await assert.rejects(new HistoryApi("").get("line", "x", 7));
+});
+
+test("history: Renfe's official page per service, and whether a range starts before the history", () => {
+  assert.match(renfeOfficialUrl("CERCANIAS"), /\/cercanias$/);
+  assert.match(renfeOfficialUrl("AVE"), /\/ave-larga-distancia$/);
+  assert.match(renfeOfficialUrl("ALVIA"), /\/ave-larga-distancia$/);
+  assert.match(renfeOfficialUrl("MD"), /\/media-distancia$/);
+  assert.match(renfeOfficialUrl("REG.EXP."), /\/media-distancia$/);
+  assert.equal(renfeOfficialUrl(null), RENFE_PUNCTUALITY, "stations: the general page");
+  const now = Date.parse("2026-11-08T10:00:00Z"); // yesterday = 7 Nov
+  assert.equal(rangeBefore("2026-11-04", 4, now), false, "4–7 Nov");
+  assert.equal(rangeBefore("2026-11-04", 7, now), true, "1–7 Nov");
+  assert.equal(rangeBefore(null, 365, now), false);
 });
