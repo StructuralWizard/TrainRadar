@@ -5,7 +5,9 @@ import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
-import { formatAgo, formatDelay, formatDistance } from "./js/format.js";
+import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format.js";
+import { Sheets, isPhone } from "./js/sheet.js";
+import { icon } from "./js/icons.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
@@ -92,7 +94,7 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more"];
 const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
@@ -189,6 +191,10 @@ function applyLang() {
   $("commute-title").textContent = t(lang, "commuteTitle");
   $("commute-close").setAttribute("aria-label", t(lang, "close"));
   $("trips-close").setAttribute("aria-label", t(lang, "close"));
+  $("more-title").textContent = t(lang, "moreTitle");
+  $("more-close").setAttribute("aria-label", t(lang, "close"));
+  buildTabs();
+  if (!$("more").hidden) renderMore();
   $("app-banner-link").textContent = `📱 ${t(lang, "appBanner")}`;
   $("app-banner-close").setAttribute("aria-label", t(lang, "close"));
   if (!$("about").hidden) renderAbout();
@@ -429,6 +435,12 @@ function renderIncidents() {
   if (engine) incidents = JSON.parse(engine.incidentsJson(Date.now()));
   refreshLines();
   $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}${incidents.length ? ` (${incidents.length})` : ""}`;
+  const badge = $("tab-incidents-n");
+  if (badge) {
+    badge.hidden = !incidents.length;
+    badge.textContent = incidents.length > 99 ? "99+" : String(incidents.length);
+    $("tab-incidents").setAttribute("aria-label", incidents.length ? `${t(lang, "tabNotices")}: ${t(lang, "noticesCount", { n: incidents.length })}` : t(lang, "tabNotices"));
+  }
   // One marker per station, coloured by its most serious shown notice.
   const rank = ["disruption", "strike", "works", "accessibility", "other"];
   const byStop = new Map();
@@ -1181,6 +1193,7 @@ function openLink(link) {
 
 /** Android back button: close the top-most thing; false when nothing was open. */
 function goBack() {
+  if (isPhone() && sheets.back()) return true;
   const sheet = SHEETS.map($).find((x) => !x.hidden);
   if (sheet) return (sheet.hidden = true), true;
   if (popup) return popup.remove(), true;
@@ -1266,6 +1279,157 @@ function renderSearch() {
   );
 }
 
+/*
+ * Phone layout (≤ 719 px, and the Android app): bottom sheets with snap
+ * points (js/sheet.js) and an app tab bar instead of the floating buttons.
+ * The home sheet is the Delays list, peeking with a summary.
+ */
+const sheets = new Sheets({
+  home: "delayed",
+  tabbar: $("tabbar"),
+  scrim: $("scrim"),
+  onChange: () => updateTabs(),
+  onSnap: () => haptic(),
+});
+for (const id of SHEETS) {
+  sheets.add($(id), id === "delayed" ? { initial: "peek", closable: false } : { initial: "half" });
+}
+const TABS = [
+  ["map", "tabMap", "map"],
+  ["near", "tabNear", "pin"],
+  ["incidents", "tabNotices", "warning"],
+  ["favs", "tabFavs", "star"],
+  ["more", "tabMore", "menu"],
+];
+/** Which tab a sheet belongs to. */
+function tabFor(sheet) {
+  if (["near", "incidents", "favs"].includes(sheet)) return sheet;
+  if (["more", "about", "settings", "trips", "history", "commute"].includes(sheet)) return "more";
+  return "map";
+}
+
+function buildTabs() {
+  const bar = $("tabbar");
+  bar.setAttribute("aria-label", t(lang, "tabsLabel"));
+  bar.replaceChildren(
+    ...TABS.map(([id, key, ic]) =>
+      el(
+        "button",
+        { type: "button", class: "tab", id: `tab-${id}`, onclick: () => tabClick(id) },
+        icon(ic),
+        el("span", { class: "tab-label" }, t(lang, key)),
+        id === "incidents" ? el("span", { class: "tab-badge", id: "tab-incidents-n", hidden: true }) : null,
+      ),
+    ),
+  );
+  updateTabs();
+  if (engine) renderIncidents();
+}
+
+function updateTabs() {
+  const active = tabFor(sheets.top());
+  for (const [id] of TABS) {
+    const b = $(`tab-${id}`);
+    if (!b) continue;
+    if (id === active) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  }
+}
+
+/** Close every sheet but the home one (the map tab). */
+function closeSheets() {
+  for (const id of SHEETS) if (id !== "delayed") $(id).hidden = true;
+}
+
+function tabClick(id) {
+  // Tapping the open tab again goes back to the map; from one of Más's
+  // screens (settings, about…) it goes back to the Más menu.
+  if (id !== "map" && sheets.top() === id) return closeSheets();
+  switch (id) {
+    case "map":
+      closeSheets();
+      popup?.remove();
+      stationPop?.remove();
+      sheets.setSnap("delayed", "peek");
+      break;
+    case "near":
+      if (locator?.active) {
+        openSheet("near");
+        renderNear(true);
+      } else startLocation();
+      break;
+    case "incidents":
+      showIncidents(defaultNoticeFilter());
+      break;
+    case "favs":
+      openSheet("favs");
+      renderFavourites();
+      break;
+    case "more":
+      openSheet("more");
+      renderMore();
+      break;
+  }
+}
+
+/** "Más": language, settings (Pro in the app) and About. */
+function renderMore() {
+  const row = (ic, label, value, onclick, id) =>
+    el(
+      "li",
+      {},
+      el(
+        "button",
+        { type: "button", class: "menu-row", id, onclick },
+        icon(ic),
+        el("span", { class: "menu-label" }, label),
+        value ? el("span", { class: "menu-value" }, value) : null,
+        icon("chevronRight", 18),
+      ),
+    );
+  $("more-body").replaceChildren(
+    el(
+      "ul",
+      { class: "menu-list" },
+      row("globe", t(lang, "moreLanguage"), t(lang, "moreLanguageValue"), () => $("lang").click(), "more-lang"),
+      row("settings", t(lang, CONFIG.platform === "android" ? "moreSettingsPro" : "moreSettings"), "", () => {
+        openSheet("settings");
+        renderSettings();
+      }, "more-settings"),
+      row("info", t(lang, "moreAbout"), "", () => {
+        openSheet("about");
+        renderAbout();
+      }, "more-about"),
+    ),
+  );
+}
+
+/** The home sheet's "Delays now": trains 15+, 5–14 min late and on time. */
+function renderHomeSummary(st, pos) {
+  if (!isPhone()) return;
+  const c = [0, 0, 0, 0];
+  for (let i = 0; i + 5 < pos.length; i += 6) if (!(pos[i + 5] & FLAG.scheduled)) c[pos[i + 2]] += 1;
+  const bucket = (cls, key, n) =>
+    el(
+      "button",
+      { type: "button", class: `bucket bucket-${cls}`, onclick: () => sheets.setSnap("delayed", "half") },
+      el("span", { class: "bucket-label" }, t(lang, key)),
+      el("span", { class: "bucket-n" }, formatCount(lang, n)),
+    );
+  $("delayed-summary").replaceChildren(
+    el(
+      "div",
+      { class: "summary-head" },
+      el("h2", {}, t(lang, "delayedNow")),
+      el("span", { class: "muted" }, t(lang, "delayedOf", { n: formatCount(lang, st.delayed), total: formatCount(lang, st.trains) })),
+    ),
+    el("div", { class: "buckets" }, bucket("major", "bucketMajor", c[2]), bucket("minor", "bucketMinor", c[1]), bucket("ontime", "bucketOnTime", c[0])),
+  );
+}
+
+/** A light tick when a sheet snaps (Android app only; phase e). */
+function haptic() {}
+
 function renderAbout() {
   $("about-body").replaceChildren(
     ...aboutPanel(lang, {
@@ -1348,8 +1512,10 @@ function render(force = false) {
   if (!force && now - lastRender < interval) return;
   lastRender = now;
   if (selected) updateRoute();
-  map.getSource("trains")?.setData(trainsGeoJson(engine.positions(now), highlight, hiddenByFilter));
+  const pos = engine.positions(now);
+  map.getSource("trains")?.setData(trainsGeoJson(pos, highlight, hiddenByFilter));
   const st = JSON.parse(engine.statsJson(now));
+  renderHomeSummary(st, pos);
   $("stats").textContent =
     statsText(lang, st) + (st.scheduled ? ` ${t(lang, "scheduledCount", { n: st.scheduled })}` : "");
   const last = feeds?.lastUpdate() || 0;
@@ -1597,6 +1763,7 @@ function loadVisibleRegions() {
 
 async function main() {
   applyLang();
+  sheets.apply(); // phone: the home sheet peeks from the start
   ({ map, attr } = createMap("map", CONFIG, t(lang, "attribution")));
   const mapReady = new Promise((r) => map.on("load", r));
 
@@ -1718,7 +1885,7 @@ async function main() {
   // Commute mode (Pro): open on the next trains of the saved commute.
   else
     whenTrains().then(() => {
-      if (CONFIG.pro && activeCommute(commutes) && SHEETS.every((x) => $(x).hidden)) {
+      if (CONFIG.pro && activeCommute(commutes) && (isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden))) {
         openSheet("commute");
         renderCommute();
       }
@@ -1783,6 +1950,7 @@ $("lang").addEventListener("click", () => {
   lang = lang === "es" ? "en" : "es";
   store.set("lang", lang);
   applyLang();
+  sheets.apply();
   if (alertsOn) writeAlertConfig();
 });
 $("delayed-btn").addEventListener("click", () => {
@@ -1793,6 +1961,7 @@ $("delayed-btn").addEventListener("click", () => {
   } else panel.hidden = true;
 });
 $("delayed-close").addEventListener("click", () => ($("delayed").hidden = true));
+$("more-close").addEventListener("click", () => ($("more").hidden = true));
 $("jump").addEventListener("change", (e) => {
   const v = e.target.value;
   e.target.value = "";

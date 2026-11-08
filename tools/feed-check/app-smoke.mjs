@@ -73,7 +73,7 @@ await page.click(".maplibregl-popup-close-button");
 // Kept after a reload; the panel lists them and opens one.
 await page.reload();
 await ready();
-await page.click("#fav-btn");
+await page.click("#tab-favs");
 await page.waitForSelector("#favs-body li");
 const items = await page.$$eval("#favs-body li", (l) => l.length);
 console.log("favourites:", (await page.textContent("#favs-body")).replace(/\s+/g, " "));
@@ -91,13 +91,17 @@ const title = await page.textContent(".popup .popup-title");
 if (!title.includes(live[1].replace(/^0+/, ""))) await fail(`link opened ${title}`);
 
 // About: no coffee link in the app.
-await page.click("#about-btn");
+await page.click("#tab-more");
+await page.click("#more-about");
 if ((await page.textContent("#about")).includes("café")) await fail("coffee link in the app");
 const sw = await page.evaluate(() => navigator.serviceWorker?.getRegistrations().then((r) => r.length) ?? 0);
 if (sw) await fail("service worker registered in the app bundle");
 
 // Settings: Pro screen (no Play in a browser), backup export and import.
-if (await page.isHidden("#about")) await page.click("#about-btn");
+if (await page.isHidden("#about")) {
+  await page.click("#tab-more");
+  await page.click("#more-about");
+}
 await page.click("#settings-btn");
 await page.waitForSelector("#pro-state");
 const settings = (await page.textContent("#settings")).replace(/\s+/g, " ");
@@ -200,7 +204,8 @@ await pp.waitForSelector('.popup .trip-btn[aria-pressed="true"]', { timeout: 300
 await pp.click(".popup .trip-btn"); // stop: the trip ends
 await pp.waitForSelector('.popup .trip-btn[aria-pressed="false"]');
 await pp.click(".maplibregl-popup-close-button");
-await pp.click("#about-btn");
+await pp.click("#tab-more");
+await pp.click("#more-about");
 await pp.click("#settings-btn");
 await pp.waitForSelector("#pro-state.pro-on");
 console.log("pro:", await pp.textContent("#pro-state"));
@@ -250,9 +255,9 @@ const back = { from: pair.to, to: pair.from };
 await pp.evaluate((s) => localStorage.setItem("commute", JSON.stringify(s)), { v: 2, list: [pair, back], active: 1, draft: null });
 await pp.reload();
 await pp.waitForSelector("#commute:not([hidden]) .commute-tabs button", { timeout: 30000 }).catch(() => fail("commute tabs didn't show"));
-const tabs = await pp.$$eval(".commute-tabs button", (b) => b.map((x) => [x.textContent, x.getAttribute("aria-pressed")]));
+const tabs = await pp.$$eval("#commute .commute-tabs button", (b) => b.map((x) => [x.textContent, x.getAttribute("aria-pressed")]));
 if (tabs.length !== 2 || tabs[1][1] !== "true") await fail(`commute tabs: ${JSON.stringify(tabs)}`);
-await pp.click(".commute-tabs button >> nth=0");
+await pp.click("#commute .commute-tabs button >> nth=0");
 await pp.waitForFunction((name) => document.querySelector("#commute-body strong")?.textContent.startsWith(name), pair.from.name, { timeout: 5000 }).catch(() => fail("switching commute didn't change the board"));
 const savedActive = await pp.evaluate(() => JSON.parse(localStorage.getItem("commute")).active);
 if (savedActive !== 0) await fail(`active commute not saved: ${savedActive}`);
@@ -277,7 +282,10 @@ await pp.route("**/replay/**", async (route) => {
   const doc = { v: 1, hour: `${m[1]}T${m[2]}`, trains: [["a", "C3", "20047", "Aranjuez"], ["b", "C3", "21047", "Atocha"], ["c", "AVE", "03001", "Barcelona-Sants"]], frames };
   return route.fulfill({ contentType: "application/json", body: JSON.stringify(doc) });
 });
-if (await pp.isHidden("#about")) await pp.click("#about-btn");
+if (await pp.isHidden("#about")) {
+  await pp.click("#tab-more");
+  await pp.click("#more-about");
+}
 await pp.click("#settings-btn");
 await pp.click("#replay-btn");
 await pp.waitForSelector("#replay-bar:not([hidden]) #replay-play", { timeout: 5000 }).catch(() => fail("replay controls didn't show"));
@@ -322,7 +330,8 @@ if (pressedBg[0] !== "rgb(240, 253, 244)" || pressedBg[1] !== "rgb(22, 101, 52)"
 
 // Delays list (Pro): "All" or one commute's trains only, remembered.
 await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
-await pp.click("#delayed-btn");
+await pp.click(".bucket-major"); // phone: expand the home sheet
+  await pp.waitForTimeout(400);
 await pp.waitForSelector("#delayed-filter:not([hidden]) button", { timeout: 5000 }).catch(() => fail("delays filter didn't show"));
 const chips = await pp.$$eval("#delayed-filter button", (b) => b.map((x) => x.textContent));
 if (chips.length !== 3 || chips[0] !== "Todos") await fail(`delays filter: ${JSON.stringify(chips)}`);
@@ -334,10 +343,10 @@ if ((await pp.evaluate(() => localStorage.getItem("delayed-filter"))) !== `${pai
 console.log("delays:", allLate.length, "all,", onlyLate.length, "on", chips[1]);
 await pp.screenshot({ path: `${out}/app-delays-commute.png` });
 await pp.click("#delayed-filter button >> nth=0");
-await pp.click("#delayed-close");
+await pp.click("#tab-map");
 
 // Notices (Pro): "All" or one commute's notices only, remembered.
-await pp.click("#inc-btn");
+await pp.click("#tab-incidents");
 await pp.waitForSelector("#inc-commutes button", { timeout: 5000 }).catch(() => fail("notices filter didn't show"));
 const allNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
 await pp.click("#inc-commutes button >> nth=1");
@@ -345,7 +354,7 @@ const commuteNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.l
 const noneMsg = await pp.$$eval("#inc-body p.muted", (p) => p.some((x) => /Ningún aviso de Renfe en/.test(x.textContent)));
 if (commuteNotices > allNotices || (!commuteNotices && !noneMsg)) await fail(`commute notices: ${commuteNotices} of ${allNotices}`);
 await pp.click("#inc-close");
-await pp.click("#inc-btn");
+await pp.click("#tab-incidents");
 const pressed = await pp.$eval("#inc-commutes button >> nth=1", (b) => b.getAttribute("aria-pressed")).catch(() => null);
 if (pressed !== "true") await fail("notices filter not remembered");
 console.log("notices:", allNotices, "all,", commuteNotices, "on the commute");

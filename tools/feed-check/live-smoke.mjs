@@ -53,7 +53,8 @@ await page.waitForFunction(() => window.__trainradar?.engine, null, { timeout: 3
 if (await page.isVisible("#app-banner")) await fail("banner back after dismissing");
 
 // About panel.
-await page.click("#about-btn");
+await page.click("#tab-more");
+await page.click("#more-about");
 await page.waitForSelector("#about-body a[href='legal/privacy.html']");
 const about = (await page.textContent("#about")).replace(/\s+/g, " ");
 console.log("about:", about.slice(0, 300));

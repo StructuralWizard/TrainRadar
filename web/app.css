@@ -237,3 +237,85 @@ details.small summary { cursor: pointer; }
 .replay-bar .grow { flex: 1; }
 body.replaying .bottom, body.replaying #app-banner { display: none; }
 @media (min-width: 720px) { .replay-bar { left: auto; width: 420px; } }
+
+/* ------------------------------------------------------------------ */
+/* Phone layout (≤ 719 px, and the Android app): app tab bar and bottom
+ * sheets with snap points (js/sheet.js). The desktop layout above is
+ * unchanged; nothing below applies from 720 px. */
+.tabbar, .delayed-summary, .scrim, .sheet-handle { display: none; }
+@media (max-width: 719px) {
+  :root { --tab-h: calc(58px + var(--safe-bottom)); --sheet-h: 0px; }
+  .bottom { display: none; }
+
+  .tabbar {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+    position: fixed; z-index: 7; left: 0; right: 0; bottom: 0; height: var(--tab-h);
+    padding: 4px 4px var(--safe-bottom); background: #fff; border-top: 1px solid #e5e7eb;
+  }
+  .tab {
+    position: relative; border: 0; background: none; min-height: 50px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    font-size: 11px; font-weight: 500; color: #4b5563; -webkit-tap-highlight-color: transparent;
+  }
+  .tab[aria-current="page"] { color: var(--accent); font-weight: 600; }
+  .tab:focus-visible { outline: 3px solid #93c5fd; outline-offset: -3px; border-radius: 10px; }
+  .tab-badge {
+    position: absolute; top: 2px; left: 50%; margin-left: 4px; min-width: 20px; height: 18px; padding: 0 5px;
+    border-radius: 9px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+  }
+  .tab-badge[hidden] { display: none; }
+
+  .sheet {
+    z-index: 6; left: 0; right: 0; bottom: var(--tab-h); top: auto; width: auto; height: 55vh; max-height: none;
+    padding: 0 16px 16px; border-radius: 20px 20px 0 0; box-shadow: 0 -6px 20px rgba(17, 24, 39, 0.12);
+    overscroll-behavior: contain; transition: height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .sheet.dragging { transition: none; }
+  .sheet-handle {
+    display: flex; justify-content: center; position: sticky; top: 0; z-index: 2;
+    height: 22px; margin: 0 -16px; padding-top: 8px; background: #fff; touch-action: none; cursor: grab;
+  }
+  .sheet-handle::before { content: ""; width: 40px; height: 5px; border-radius: 3px; background: #d1d5db; }
+  .sheet-head { top: 22px; z-index: 1; touch-action: none; padding: 2px 0 8px; }
+  .sheet-head .pill { min-width: 44px; min-height: 44px; }
+
+  .scrim { display: block; position: fixed; inset: 0; z-index: 5; background: rgba(17, 24, 39, 0.35); }
+  .scrim[hidden] { display: none; }
+
+  /* Home sheet: "Retrasos ahora", then (dragged up) the Delays list. */
+  #delayed > .sheet-head { display: none; }
+  .delayed-summary { display: block; touch-action: none; padding-bottom: 10px; }
+  .summary-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .summary-head h2 { margin: 0; font-size: 17px; }
+  .summary-head .muted { font-size: 13px; color: #4b5563; font-variant-numeric: tabular-nums; }
+  .buckets { display: flex; gap: 8px; margin-top: 12px; }
+  .bucket {
+    flex: 1; min-width: 0; border: 0; border-radius: 14px; padding: 10px 12px; text-align: left;
+    display: flex; flex-direction: column; gap: 2px; min-height: 64px;
+  }
+  .bucket-label { font-size: 12px; font-weight: 600; }
+  .bucket-n { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .bucket-major { background: #fef2f2; color: #991b1b; }
+  .bucket-minor { background: #fff7ed; color: #9a3412; }
+  .bucket-ontime { background: #f0fdf4; color: #166534; }
+
+  /* "Más". */
+  .menu-list { list-style: none; margin: 0; padding: 0; }
+  .menu-row {
+    display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 0 4px;
+    border: 0; border-bottom: 1px solid #f3f4f6; background: none; text-align: left; font-size: 15px;
+  }
+  .menu-label { flex: 1; }
+  .menu-value { color: #4b5563; font-size: 14px; }
+  .menu-row .icon-chevronRight { color: #9ca3af; }
+
+  /* Map credits, banner and Replay sit above the tab bar and sheet. */
+  .maplibregl-ctrl-bottom-right { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
+  .app-banner { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
+  body.replaying .tabbar, body.replaying #delayed { display: none; }
+  /* Until "Capas" is a sheet of its own: the peek doesn't cover it. */
+  body:has(#layers[open]) #delayed { display: none; }
+}
+@media (max-width: 719px) and (prefers-reduced-motion: reduce) {
+  .sheet { transition: none; }
+}

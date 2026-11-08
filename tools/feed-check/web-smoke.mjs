@@ -70,7 +70,8 @@ try {
     await fail("popup shows a gradient but no height profile");
   }
 
-  await page.click("#delayed-btn");
+  await page.click(".bucket-major"); // phone: expand the home sheet
+  await page.waitForTimeout(400);
   const rows = await page.$$eval("#delayed-list li", (l) => l.length);
   console.log("delayed list rows:", rows);
   if (rows < 1) await fail("delayed list is empty");
@@ -78,14 +79,15 @@ try {
 
   // Notices panel with whatever Renfe publishes right now. On a phone the
   // open sheet covers the bottom buttons, so close it first like a person.
-  await page.click("#delayed-close");
-  await page.click("#inc-btn");
+  await page.click("#tab-map");
+  await page.click("#tab-incidents");
   await page.waitForTimeout(500);
   console.log("notices:", (await page.textContent("#incidents")).replace(/\s+/g, " ").slice(0, 300));
   await page.screenshot({ path: `${out}/notices.png` });
   await page.click("#inc-close");
 
-  await page.click("#lang");
+  await page.click("#tab-more");
+  await page.click("#more-lang");
   await page.waitForFunction(() => /trains/.test(document.getElementById("stats").textContent));
   console.log("english:", await page.textContent("#stats"));
   if (errors.length) await fail(`page errors: ${errors.join("; ")}`);

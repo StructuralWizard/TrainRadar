@@ -111,14 +111,15 @@ for (const n of numbers) {
   await pro.click(".popup .fav-btn").catch(() => {});
   await pro.click(".maplibregl-popup-close-button").catch(() => {});
 }
-await pro.click("#fav-btn");
+await pro.click("#tab-favs");
 await pro.waitForTimeout(1000);
 await shot(pro, "phone-5-favourites");
 await pro.click("#favs-close");
 
 // 6. The Pro screen with its price (free edition).
 await free.click(".maplibregl-popup-close-button").catch(() => {});
-await free.click("#about-btn");
+await free.click("#tab-more");
+await free.click("#more-about");
 await free.click("#settings-btn");
 await free.waitForTimeout(1500);
 await shot(free, "phone-6-pro");
