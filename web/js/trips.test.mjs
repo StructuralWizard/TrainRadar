@@ -92,3 +92,19 @@ test("a trip whose arrival the app missed is completed from the server's run", (
   assert.equal(completeFromRun(trip, null), trip, "not there yet: ask again later");
   assert.ok(completeFromRun(trip, null, { final: true }).arrivalChecked);
 });
+
+test("one trip per train and day: found again → the same trip; old duplicates merged", () => {
+  const now = Date.UTC(2026, 10, 8, 9, 0);
+  const info = { number: "13911", route: "MD", origin: "Málaga", destination: "Sevilla", delay: 600, delay_source: "estimated" };
+  let list = startTrip([], info, { stops: [] }, now, "auto");
+  list = list.map((t) => updateTrip(t, null, now + GONE_MS + 1)); // left the feed: ended
+  assert.ok(list[0].endedAt);
+  list = startTrip(list, info, { stops: [] }, now + GONE_MS + 60_000, "auto");
+  assert.equal(list.length, 1, "not logged twice");
+  assert.equal(list[0].endedAt, null, "carried on");
+  const arrived = [{ ...list[0], endedAt: now + 9e6, arrDelayMin: 5 }];
+  assert.equal(startTrip(arrived, info, { stops: [] }, now + 1e7), arrived, "already arrived: left alone");
+  const dup = (id, extra) => ({ id, day: "2026-11-08", trainNo: "13911", stops: [], arrDelayMin: null, endedAt: 1, startedAt: 1, ...extra });
+  const merged = parseTrips(JSON.stringify({ schema: 1, trips: [dup("a", { arrDelayMin: 7 }), dup("b", { startedAt: 2 }), { ...dup("c"), trainNo: "1" }] }));
+  assert.deepEqual(merged.map((t) => t.id), ["a", "c"], "the one with the arrival is kept");
+});

@@ -28,7 +28,18 @@ export function parseTrips(json) {
   // Schema 0 (never shipped, kept as the migration example): a bare array.
   if (Array.isArray(doc)) doc = { schema: 1, trips: doc };
   if (!doc || !Array.isArray(doc.trips) || !(doc.schema >= 1)) return [];
-  return doc.trips.filter((t) => t && typeof t.id === "string" && typeof t.trainNo === "string" && Array.isArray(t.stops));
+  const ok = doc.trips.filter((t) => t && typeof t.id === "string" && typeof t.trainNo === "string" && Array.isArray(t.stops));
+  // One trip per train and day (2.x before 2.3 could log the same train
+  // twice): keep the one that knows the arrival, else the later one.
+  const best = new Map();
+  for (const t of ok) {
+    const k = `${t.day}|${num(t.trainNo)}`;
+    const b = best.get(k);
+    const score = (x) => (x.arrDelayMin !== null && x.arrDelayMin !== undefined ? 2 : 0) + (x.endedAt ? 0 : 1);
+    if (!b || score(t) > score(b) || (score(t) === score(b) && (t.startedAt || 0) > (b.startedAt || 0))) best.set(k, t);
+  }
+  const keep = new Set(best.values());
+  return ok.filter((t) => keep.has(t));
 }
 
 export function serializeTrips(trips) {
@@ -50,6 +61,15 @@ export function activeTrip(trips, trainNo) {
  */
 export function startTrip(trips, info, route, now, how = "manual") {
   if (activeTrip(trips, info.number)) return trips;
+  // The same train today again (e.g. it vanished from the feed for a while
+  // and "Am I on this train?" found it again): carry on with that trip
+  // rather than log a second one. A train number runs once a day.
+  const day = madridDay(now);
+  const same = trips.find((t) => t.day === day && num(t.trainNo) === num(info.number));
+  if (same) {
+    if (same.arrDelayMin !== null) return trips; // already arrived
+    return trips.map((t) => (t === same ? { ...t, endedAt: null, arrivalChecked: false, lastSeen: now } : t));
+  }
   const delay = info.delay ?? 0;
   const stops = (route?.stops || []).map((s) => ({ name: s.name, sched: s.time - delay, delayMin: null }));
   const trip = {

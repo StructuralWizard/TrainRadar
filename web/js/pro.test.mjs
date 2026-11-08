@@ -122,7 +122,7 @@ test("backup: round trip, validation, merge without duplicates and within the li
 });
 
 test("backup carries the trips log; import merges by id", () => {
-  const trip = (id, at) => ({ id, day: "2026-11-05", trainNo: "19", label: "C5 19", origin: "A", destination: "B", stops: [], startedAt: at, endedAt: at + 1 });
+  const trip = (id, at) => ({ id, day: "2026-11-05", trainNo: `19${id}`, label: "C5 19", origin: "A", destination: "B", stops: [], startedAt: at, endedAt: at + 1 });
   const b = parseBackup(makeBackup({ trips: [trip("a", 1), trip("b", 2)] }));
   assert.deepEqual(b.trips.map((t) => t.id), ["a", "b"]);
   assert.deepEqual(mergeTrips([trip("b", 2), trip("c", 3)], b.trips).map((t) => t.id), ["a", "b", "c"]);

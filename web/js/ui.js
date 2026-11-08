@@ -558,9 +558,10 @@ export function commutePanel(lang, { from, to, rows, list = [], active = -1, dra
 
 /** My trips (Pro): monthly figures, then each trip with its claim summary,
  * image card and delete. */
-export function tripsPanel(lang, { trips, stats, onClaim, onCard, onDelete, onCsv, onDeleteAll }) {
+export function tripsPanel(lang, { trips, stats, message = "", onClaim, onCard, onDelete, onCsv, onDeleteAll }) {
   if (!trips.length) return [el("p", { class: "muted" }, t(lang, "tripsEmpty"))];
   const out = [];
+  if (message) out.push(el("p", { class: "small warn", id: "trips-msg" }, message));
   if (stats.length) {
     out.push(
       el(
@@ -578,14 +579,23 @@ export function tripsPanel(lang, { trips, stats, onClaim, onCard, onDelete, onCs
       { class: "board trips-list" },
       list.map((tr) => {
         const d = tr.arrDelayMin ?? tr.lastDelayMin;
+        // Three lines, so nothing overlaps on a narrow phone: train and
+        // delay; date and route; actions.
         return el(
           "li",
           {},
-          el("strong", {}, tr.label),
-          el("span", { class: "board-main muted" }, ` ${tr.day.split("-").reverse().join("/")} · ${tr.origin} → ${tr.destination}`),
-          " ",
-          el("span", { class: "board-delay" }, tr.endedAt ? (d === null ? "—" : formatDelay(lang, d * 60)) : t(lang, "tripLive")),
-          tr.estimated ? el("span", { class: "small muted" }, ` ${t(lang, "tripEstimated")}`) : null,
+          el(
+            "div",
+            { class: "trip-head" },
+            el("strong", {}, tr.label),
+            el(
+              "span",
+              { class: "board-delay" },
+              tr.endedAt ? (d === null ? "—" : formatDelay(lang, d * 60)) : t(lang, "tripLive"),
+              tr.estimated ? el("span", { class: "small muted" }, ` ${t(lang, "tripEstimated")}`) : null,
+            ),
+          ),
+          el("div", { class: "small muted" }, `${tr.day.split("-").reverse().join("/")} · ${tr.origin} → ${tr.destination}`),
           el(
             "div",
             { class: "popup-actions" },

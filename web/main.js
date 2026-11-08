@@ -925,6 +925,16 @@ function trackTrips(now) {
   if (next.some((t) => needsArrival(t, now))) fillArrivals(now);
 }
 
+/** A problem exporting from My trips, shown at the top of the sheet. */
+let tripsMsg = "";
+function exportProblem(e) {
+  const why = e?.message || String(e);
+  if (/cancel/i.test(why)) return; // the user closed the share sheet
+  console.warn("export", e);
+  tripsMsg = t(lang, "exportError", { error: why });
+  renderTrips();
+}
+
 function renderTrips() {
   if ($("trips").hidden) return;
   const body = [];
@@ -935,17 +945,34 @@ function renderTrips() {
     ...tripsPanel(lang, {
       trips,
       stats: monthlyStats(trips),
+      message: tripsMsg,
       onClaim: (t) => {
         claimFor = t;
         renderTrips();
         $("trips").scrollTop = 0;
       },
-      onCard: async (t) => exportBlob(`trainradar-${t.day}-${t.trainNo}.png`, await tripCard(lang, t)).catch((e) => console.warn("card", e)),
+      onCard: async (tr) => {
+        tripsMsg = "";
+        try {
+          const png = await tripCard(lang, tr);
+          if (!png) throw new Error("the image couldn't be drawn");
+          await exportBlob(`trainradar-${tr.day}-${tr.trainNo}.png`, png);
+        } catch (e) {
+          exportProblem(e);
+        }
+      },
       onDelete: (t) => {
         if (claimFor?.id === t.id) claimFor = null;
         saveTrips(trips.filter((x) => x.id !== t.id));
       },
-      onCsv: () => exportFile(`trainradar-trips-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.csv`, tripsCsv(trips, lang), "text/csv").catch((e) => console.warn("csv", e)),
+      onCsv: () => {
+        tripsMsg = "";
+        if (!trips.some((x) => x.endedAt)) {
+          tripsMsg = t(lang, "tripsCsvEmpty");
+          return renderTrips();
+        }
+        exportFile(`trainradar-trips-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.csv`, tripsCsv(trips, lang), "text/csv").catch(exportProblem);
+      },
       onDeleteAll: () => {
         if (!window.confirm(t(lang, "tripsDeleteConfirm"))) return;
         claimFor = null;
@@ -1390,7 +1417,8 @@ async function main() {
   map.on("mouseleave", "trains", () => (map.getCanvas().style.cursor = ""));
   render(true);
   requestAnimationFrame(loop);
-  window.__trainradar = { engine, map, ref, feeds }; // for tests and debugging
+  // For tests and debugging (the app's emulator test shares a file with these).
+  window.__trainradar = { engine, map, ref, feeds, exportFile, exportBlob, tripCard };
   // Links: the web's ?train= / ?station=, and the app's trainradar://… Wait
   // for the first trains so a train link finds its train.
   const whenTrains = () =>
