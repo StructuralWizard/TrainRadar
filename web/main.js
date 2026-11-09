@@ -5,14 +5,18 @@ import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
-import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format.js";
+import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
 import { Sheets, isPhone } from "./js/sheet.js";
+import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
-import { layersSheet, networksSheet, stationSheet, trainSheet } from "./js/sheetui.js";
+import { PLACE_ICON, layersSheet, networksSheet, pickField, placeKind, routeResults, stationSheet, trainSheet } from "./js/sheetui.js";
+import { endStations, mergeRoutes } from "./js/route.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
+  ARROW_ZOOM,
   FLAG,
+  SERVICE_COLORS,
   addLayers,
   createMap,
   emptyGeoJson,
@@ -47,6 +51,7 @@ import {
   el,
   incidentsPanel,
   legend,
+  serviceLegend,
   nearPanel,
   onboardBlock,
   stationPopup,
@@ -95,7 +100,7 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail", "networks", "layers-panel"];
+const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail", "networks", "layers-panel", "route"];
 const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
@@ -118,11 +123,11 @@ const show = {
 };
 // Map layers each "Capas" checkbox shows or hides (trains are filtered in render()).
 const LAYER_IDS = {
-  lines: ["lines", "lines-notice"],
-  tav: ["track-av"],
-  tld: ["track-ld"],
-  tmd: ["track-md"],
-  stations: ["stations", "stations-ld", "station-labels"],
+  lines: ["lines-casing", "lines", "lines-notice"],
+  tav: ["track-av-casing", "track-av"],
+  tld: ["track-ld-casing", "track-ld"],
+  tmd: ["track-md-casing", "track-md"],
+  stations: ["stations", "stations-ld", "stations-hit", "stations-ld-hit", "station-labels", "station-labels-big"],
   stopped: ["stopped-ring"],
 };
 // Kinds of Renfe notice (engine incidents::Kind bits), each with a switch.
@@ -148,7 +153,7 @@ function applyLang() {
   btn.textContent = lang === "es" ? "EN" : "ES";
   btn.setAttribute("aria-label", t(lang, "languageLabel"));
   btn.title = t(lang, "language");
-  $("legend").replaceChildren(...legend(lang));
+  $("legend").replaceChildren(...legend(lang), el("span", { class: "legend-sep" }), ...serviceLegend(lang, true));
   $("delayed-btn").textContent = t(lang, "delayedList");
   $("delayed-title").textContent = t(lang, "delayedTitle");
   $("delayed-close").setAttribute("aria-label", t(lang, "close"));
@@ -203,6 +208,13 @@ function applyLang() {
   $("trips-close").setAttribute("aria-label", t(lang, "close"));
   $("more-title").textContent = t(lang, "moreTitle");
   $("networks-title").textContent = t(lang, "netTitle");
+  $("route-title").textContent = t(lang, "routeTitle");
+  $("route-from-l").textContent = t(lang, "routeFrom");
+  $("route-to-l").textContent = t(lang, "routeTo");
+  $("route-from").placeholder = t(lang, "routeFromPh");
+  $("route-to").placeholder = t(lang, "routeToPh");
+  $("route-swap").setAttribute("aria-label", t(lang, "routeSwap"));
+  $("route-swap").title = t(lang, "routeSwap");
   $("networks-close").setAttribute("aria-label", t(lang, "close"));
   $("layers-panel-title").textContent = t(lang, "layers");
   $("layers-panel-close").setAttribute("aria-label", t(lang, "close"));
@@ -443,6 +455,7 @@ function updateRoute() {
 
 function refreshLines() {
   if (!engine || !map?.getSource("lines")) return;
+  metaCache.at = 0; // new timetables: line names and colours for the train labels
   const data = JSON.parse(engine.linesGeoJson(Date.now()));
   const mask = kindMask();
   for (const f of data.features) {
@@ -469,8 +482,12 @@ function fillJump() {
     nucleos.length
       ? el("optgroup", { label: t(lang, "cercaniasNetworks") }, nucleos.map((r) => el("option", { value: r.code }, r.name)))
       : null,
+    el("optgroup", { label: t(lang, "netCommunities") }, byName(COMMUNITIES).map((c) => el("option", { value: `ccaa:${c.code}` }, c.name))),
+    el("optgroup", { label: t(lang, "netProvinces") }, byName(PROVINCES).map((p) => el("option", { value: `prov:${p.code}` }, p.name))),
   );
 }
+
+const byName = (list) => [...list].sort((a, b) => a.name.localeCompare(b.name, "es"));
 
 /** Show one bottom sheet and hide the others. */
 function openSheet(id) {
@@ -554,23 +571,64 @@ function commuteNoticeFilter(c) {
   };
 }
 
-/** Opened from the ⚠ button: the remembered commute filter, if any. */
+/** Notices about my things: favourite stations, the stops (and Cercanías
+ * line) of favourite trains on the map, and saved commutes (Pro). */
+const MINE = "mine";
+function mineNoticeFilter() {
+  const ids = new Set();
+  const names = new Set();
+  const lines = new Set();
+  for (const f of favs) {
+    if (f.type === "station") {
+      ids.add(f.id);
+      names.add(fold(f.name));
+      continue;
+    }
+    const info = liveTrain(f.number);
+    if (!info) continue;
+    if (/^[CR]\d/i.test(info.route || "")) lines.add(info.route);
+    const i = engine.findTrain(info.trip_id, info.number);
+    const trip = i >= 0 ? JSON.parse(engine.tripJson(i)) : null;
+    for (const s of trip?.stops || []) names.add(fold(s.name));
+  }
+  const commuteTests = CONFIG.pro ? commutes.list.map((c) => commuteNoticeFilter(c).test) : [];
+  return {
+    label: t(lang, commuteTests.length ? "noticesMine" : "noticesMineFavs"),
+    commute: MINE,
+    none: t(lang, "noIncidentsMine"),
+    test: (i) => i.stops.some((x) => ids.has(x.id) || names.has(fold(x.name))) || i.lines.some((l) => lines.has(l)) || commuteTests.some((f) => f(i)),
+  };
+}
+const hasMine = () => favs.length > 0 || (CONFIG.pro && commutes.list.length > 0);
+
+/** Opened from the ⚠ button: the remembered filter, if any. */
 function defaultNoticeFilter() {
-  if (!CONFIG.pro || !engine) return null;
-  const c = commutes.list.find((x) => commuteKey(x) === store.get(INC_FILTER_KEY));
+  if (!engine) return null;
+  const k = store.get(INC_FILTER_KEY);
+  if (k === MINE) return hasMine() ? mineNoticeFilter() : null;
+  if (!CONFIG.pro) return null;
+  const c = commutes.list.find((x) => commuteKey(x) === k);
   return c ? commuteNoticeFilter(c) : null;
 }
 
+/** "Todos · Mis favoritos y trayectos · each commute (Pro)". */
 function noticeChips() {
-  if (!CONFIG.pro || !commutes.list.length) return null;
+  if (!hasMine()) return null;
   const current = incFilter?.commute ?? (incFilter ? null : "");
-  const pick = (c) => () => {
-    store.set(INC_FILTER_KEY, c ? commuteKey(c) : "");
-    showIncidents(c ? commuteNoticeFilter(c) : null);
+  const pick = (key, make) => () => {
+    store.set(INC_FILTER_KEY, key);
+    showIncidents(make ? make() : null);
   };
-  const chip = (label, v, c) =>
-    el("button", { class: v === current ? "pill small pill-strong" : "pill small", type: "button", "aria-pressed": String(v === current), onclick: pick(c) }, label);
-  return el("p", { class: "commute-tabs", id: "inc-commutes" }, chip(t(lang, "delayedAll"), "", null), ...commutes.list.map((c) => chip(`${c.from.name} → ${c.to.name}`, commuteKey(c), c)));
+  const chip = (label, v, make, id) =>
+    el("button", { class: v === current ? "pill small pill-strong" : "pill small", type: "button", id, "aria-pressed": String(v === current), onclick: pick(v, make) }, label);
+  const commuteChips = CONFIG.pro ? commutes.list.map((c) => chip(`${c.from.name} → ${c.to.name}`, commuteKey(c), () => commuteNoticeFilter(c))) : [];
+  return el(
+    "p",
+    { class: "commute-tabs", id: "inc-commutes" },
+    chip(t(lang, "delayedAll"), "", null, "inc-all"),
+    chip(t(lang, commuteChips.length ? "noticesMine" : "noticesMineFavs"), MINE, mineNoticeFilter, "inc-mine"),
+    ...commuteChips,
+  );
 }
 
 function showIncidents(filter = null) {
@@ -919,6 +977,7 @@ function showStationSheet(f, regions, refresh) {
     onShare: canShare()
       ? () => share({ title: name, text: t(lang, "shareStation", { station: name }), url: `${CONFIG.siteUrl}?station=${encodeURIComponent(id)}` })
       : null,
+    onRoute: () => openRoute({ kind: "station", item: { id, name, lon, lat } }, null),
   });
   const scroll = sheet.scrollTop;
   $("detail-body").replaceChildren(body);
@@ -961,6 +1020,7 @@ async function refreshEntitlement() {
     appNative.refreshWidget().catch(() => {});
   }
   renderSettings();
+  renderMore();
 }
 
 /** What the background check needs (read natively from Preferences). */
@@ -971,14 +1031,15 @@ function writeAlertConfig() {
 
 async function setAlerts(on) {
   if (on && !(await appNative.requestNotifications().catch(() => false))) {
-    settingsMsg = t(lang, "alertsDenied");
-    return renderSettings();
+    settingsMsg = moreMsg = t(lang, "alertsDenied");
+    return renderSettings(), renderMore();
   }
   alertsOn = on;
   await writeAlertConfig();
   await appNative.setAlerts(on, lang).catch((e) => console.warn("alerts", e));
-  settingsMsg = "";
+  settingsMsg = moreMsg = "";
   renderSettings();
+  renderMore();
 }
 
 /** While the app is open: the same alerts, live from the engine (every minute). */
@@ -1045,17 +1106,6 @@ function renderSettings() {
         refreshEntitlement();
       },
       onManage: () => billing?.manage(),
-      onTrips: () => {
-        openSheet("trips");
-        fillArrivals();
-        renderTrips();
-      },
-      alerts: appNative.available() ? { on: alertsOn, onToggle: () => setAlerts(!alertsOn) } : null,
-      onCommute: () => {
-        openSheet("commute");
-        renderCommute();
-      },
-      onReplay: replaySource() ? () => startReplay() : null,
       onExport: () =>
         exportFile(backupName(), makeBackup({ favourites: favs, trips, settings: { lang: store.get("lang"), basemap: store.get("basemap") } })).catch((e) => {
           settingsMsg = t(lang, "proError", { error: e.message });
@@ -1292,6 +1342,7 @@ function saveCommutes(next, redraw = () => {}, open = false) {
 /** Commute mode (Pro): next trains between the two saved stations. */
 function renderCommute() {
   if ($("commute").hidden || !engine) return;
+  if ($("commute-add").dataset.lang !== lang) renderCommuteAdd();
   const note = commuteNote;
   commuteNote = "";
   const c = activeCommute(commutes);
@@ -1377,6 +1428,7 @@ function openStation(st) {
 
 function renderFavourites() {
   if ($("favs").hidden) return;
+  if ($("favs-add").dataset.lang !== lang) renderFavAdd();
   $("favs-body").replaceChildren(
     ...favouritesPanel(lang, favs, {
       trainInfo: (f) => liveTrain(f.number),
@@ -1429,30 +1481,64 @@ function renderSearch() {
   }
   const hits = JSON.parse(engine.searchJson(q, 8));
   ul.hidden = false;
-  // Phone: stations too ("Buscar tren, línea o estación").
-  const stationRows = isPhone()
-    ? searchStations(q).map((st) =>
+  // Places: cities, stations, provinces, communities (typos forgiven).
+  const done = () => {
+    ul.hidden = true;
+    $("search-q").value = "";
+    $("search-q").blur();
+  };
+  const places = /^\d+$/.test(q) ? [] : searchPlaces(q, stationList(), 6);
+  const placeRows = places.map((h) =>
+    el(
+      "li",
+      {},
+      el(
+        "button",
+        {
+          class: `link search-place search-${h.kind}`,
+          "data-kind": h.kind,
+          onclick: () => {
+            done();
+            if (h.kind === "station") openStation(h.item);
+            else goToNetwork(`${{ city: "city", province: "prov", community: "ccaa" }[h.kind]}:${h.item.code}`);
+          },
+        },
+        icon(PLACE_ICON[h.kind], 16),
+        el("strong", {}, h.item.name),
+        el("span", { class: "muted" }, ` · ${placeKind(lang, h.kind)}`),
+      ),
+    ),
+  );
+  // Origin → destination: "Madrid a Sevilla" straight away; else a way in.
+  const end = (text) => searchPlaces(text, stationList(), 1, ["city", "station"])[0] || null;
+  const pair = parseRoute(q);
+  const ends = pair && { from: end(pair.from), to: end(pair.to) };
+  const routeRows = [];
+  if (ends?.from && ends?.to) {
+    routeRows.push(
+      el(
+        "li",
+        {},
         el(
+          "button",
+          { class: "link search-route", id: "search-route-go", onclick: () => (done(), openRoute(ends.from, ends.to)) },
+          icon("arrowRight", 16),
+          el("strong", {}, t(lang, "routeGo", { from: ends.from.item.name, to: ends.to.item.name })),
+          el("span", { class: "muted" }, ` · ${t(lang, "routeGoSub")}`),
+        ),
+      ),
+    );
+  }
+  const first = places.find((h) => h.kind === "city" || h.kind === "station") || null;
+  const routeOpen =
+    q.length >= 2 && !/^\d+$/.test(q)
+      ? el(
           "li",
           {},
-          el(
-            "button",
-            {
-              class: "link search-station",
-              onclick: () => {
-                ul.hidden = true;
-                $("search-q").value = "";
-                $("search-q").blur();
-                openStation(st);
-              },
-            },
-            icon("pin", 16),
-            el("strong", {}, st.name),
-            el("span", { class: "muted" }, ` · ${t(lang, "searchStation")}`),
-          ),
-        ),
-      )
-    : [];
+          el("button", { class: "link search-route muted", id: "search-route", onclick: () => (done(), openRoute(ends?.from || first, ends?.to || null)) }, icon("arrowRight", 16), t(lang, "routeOpen")),
+        )
+      : null;
+  const stationRows = [...placeRows, ...(routeOpen ? [routeOpen] : [])];
   // A train number that isn't on the map now: its history (Pro, app).
   const n = /^\d{2,6}$/.test(q) ? q.replace(/^0+/, "") : "";
   const offMap = n && !hits.some((h) => h.number.replace(/^0+/, "") === n) && CONFIG.platform === "android" && CONFIG.apiBase;
@@ -1494,8 +1580,10 @@ function renderSearch() {
             t(lang, "searchNotRunningPro", { n }),
           ),
         );
-  if (!hits.length && !stationRows.length) return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]));
+  if (!hits.length && !placeRows.length && !routeRows.length)
+    return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]), ...(routeOpen ? [routeOpen] : []));
   ul.replaceChildren(
+    ...routeRows,
     ...hits.map((h) =>
       el(
         "li",
@@ -1525,15 +1613,19 @@ function renderSearch() {
  * points (js/sheet.js) and an app tab bar instead of the floating buttons.
  * The home sheet is the Delays list, peeking with a summary.
  */
+const HOME_HIDDEN_KEY = "home-hidden"; // "Retrasos ahora" pulled down out of the way
 const sheets = new Sheets({
   home: "delayed",
   tabbar: $("tabbar"),
   scrim: $("scrim"),
+  restore: $("delayed-show"),
+  homeHidden: store.get(HOME_HIDDEN_KEY) === "1",
+  onHomeHidden: (hidden) => store.set(HOME_HIDDEN_KEY, hidden ? "1" : ""),
   onChange: () => updateTabs(),
   onSnap: () => haptic(),
 });
 for (const id of SHEETS) {
-  const tall = id === "networks" || id === "layers-panel";
+  const tall = id === "networks" || id === "layers-panel" || id === "route";
   sheets.add($(id), id === "delayed" ? { initial: "peek", closable: false } : tall ? { initial: "full", snaps: ["half", "full"] } : { initial: "half" });
 }
 // Closing the detail sheet (swipe, Back, ✕, another tab) drops the selection.
@@ -1623,36 +1715,76 @@ function tabClick(id) {
   }
 }
 
-/** "Más": language, settings (Pro in the app) and About. */
+/** Left-handed mode (phone): map buttons, credits and close buttons on
+ * the other side, within reach of the left thumb. Remembered. */
+const LEFTY_KEY = "lefty";
+const lefty = () => document.body.classList.contains("lefty");
+function setLefty(on) {
+  document.body.classList.toggle("lefty", on);
+  store.set(LEFTY_KEY, on ? "1" : "");
+  renderMore();
+}
+document.body.classList.toggle("lefty", store.get(LEFTY_KEY) === "1");
+
+/** "Más": language, settings, the Pro tools (app) and About. */
+let moreWidgetInfo = false;
+let moreMsg = ""; // e.g. notifications refused
 function renderMore() {
-  const row = (ic, label, value, onclick, id) =>
+  if ($("more").hidden) return;
+  const row = (ic, label, value, onclick, id, attrs = {}) =>
     el(
       "li",
       {},
       el(
         "button",
-        { type: "button", class: "menu-row", id, onclick },
+        { type: "button", class: "menu-row", id, onclick, ...attrs },
         icon(ic),
         el("span", { class: "menu-label" }, label),
         value ? el("span", { class: "menu-value" }, value) : null,
         icon("chevronRight", 18),
       ),
     );
-  $("more-body").replaceChildren(
-    el(
+  const toSettings = () => {
+    openSheet("settings");
+    renderSettings();
+  };
+  // Pro tools (Android app): each opens its screen; without Pro, the Pro offer.
+  const pro = CONFIG.pro;
+  const proTag = pro ? "" : "Pro";
+  const proRows =
+    CONFIG.platform !== "android"
+      ? []
+      : [
+          el("h3", { class: "group-h" }, "TrainRadar Pro"),
+          el(
+            "ul",
+            { class: "menu-list", id: "more-pro" },
+            row("suitcase", t(lang, "tripsTitle"), proTag, pro ? () => (openSheet("trips"), fillArrivals(), renderTrips()) : toSettings, "trips-btn"),
+            replaySource() || !pro ? row("replay", t(lang, "replayTitle"), proTag, pro ? () => startReplay() : toSettings, "replay-btn") : null,
+            row("pin", t(lang, "commuteTitle"), proTag, pro ? () => (openSheet("commute"), renderCommute()) : toSettings, "commute-btn"),
+            appNative.available() || !pro
+              ? row("bell", t(lang, "moreAlerts"), pro ? t(lang, alertsOn ? "moreOn" : "moreOff") : proTag, pro ? () => setAlerts(!alertsOn) : toSettings, "alerts-btn", { "aria-pressed": String(!!(pro && alertsOn)) })
+              : null,
+            row("chart", t(lang, "moreWidget"), proTag, pro ? () => ((moreWidgetInfo = !moreWidgetInfo), renderMore()) : toSettings, "widget-btn", { "aria-expanded": String(moreWidgetInfo) }),
+          ),
+          moreMsg ? el("p", { class: "small warn", id: "more-msg" }, moreMsg) : null,
+          pro && moreWidgetInfo ? el("p", { class: "small muted", id: "widget-help" }, t(lang, "moreWidgetHow")) : null,
+          pro && alertsOn ? el("p", { class: "small muted" }, t(lang, "alertsNote")) : null,
+        ];
+  const general = el(
       "ul",
       { class: "menu-list" },
       row("globe", t(lang, "moreLanguage"), t(lang, "moreLanguageValue"), () => $("lang").click(), "more-lang"),
-      row("settings", t(lang, CONFIG.platform === "android" ? "moreSettingsPro" : "moreSettings"), "", () => {
-        openSheet("settings");
-        renderSettings();
-      }, "more-settings"),
+      row("settings", t(lang, CONFIG.platform === "android" ? "moreSettingsPro" : "moreSettings"), "", toSettings, "more-settings"),
+      row("swap", t(lang, "moreLefty"), t(lang, lefty() ? "moreLeftyOn" : "moreLeftyOff"), () => setLefty(!lefty()), "more-lefty", { "aria-pressed": String(lefty()) }),
       row("info", t(lang, "moreAbout"), "", () => {
         openSheet("about");
         renderAbout();
       }, "more-about"),
-    ),
-  );
+    );
+  // With Pro its tools come first: they're what this tab is mostly for.
+  const pros = proRows.filter(Boolean);
+  $("more-body").replaceChildren(...(pro ? [...pros, el("h3", { class: "group-h" }, t(lang, "moreGeneral")), general] : [general, ...pros]));
 }
 
 /** The home sheet's "Delays now": trains 15+, 5–14 min late and on time.
@@ -1673,7 +1805,13 @@ function renderHomeSummary(st, pos) {
         el("span", { class: "bucket-n", id: `bucket-${cls}-n` }),
       );
     $("delayed-summary").replaceChildren(
-      el("div", { class: "summary-head" }, el("h2", {}, t(lang, "delayedNow")), el("span", { class: "muted", id: "summary-of" })),
+      el(
+        "div",
+        { class: "summary-head" },
+        el("h2", {}, t(lang, "delayedNow")),
+        el("span", { class: "muted", id: "summary-of" }),
+        el("button", { type: "button", class: "icon-btn summary-hide", id: "delayed-hide", "aria-label": t(lang, "delayedHide"), title: t(lang, "delayedHide"), onclick: () => sheets.hideHome(true) }, icon("chevronDown", 18)),
+      ),
       el("div", { class: "buckets" }, bucket("major", "bucketMajor"), bucket("minor", "bucketMinor"), bucket("ontime", "bucketOnTime")),
     );
   }
@@ -1682,6 +1820,13 @@ function renderHomeSummary(st, pos) {
     if (e.textContent !== text) e.textContent = text;
   };
   set("summary-of", t(lang, "delayedOf", { n: formatCount(lang, st.delayed), total: formatCount(lang, st.trains) }));
+  const show = $("delayed-show");
+  if (show.dataset.lang !== lang) {
+    show.dataset.lang = lang;
+    show.replaceChildren(icon("chevronUp", 16), el("span", {}, t(lang, "delayedNow")), el("span", { class: "delayed-show-n", id: "delayed-show-n" }));
+    show.setAttribute("aria-label", t(lang, "delayedShow"));
+  }
+  set("delayed-show-n", formatCount(lang, st.delayed));
   set("bucket-major-n", formatCount(lang, c[2]));
   set("bucket-minor-n", formatCount(lang, c[1]));
   set("bucket-ontime-n", formatCount(lang, c[0]));
@@ -1691,6 +1836,7 @@ function renderHomeSummary(st, pos) {
 function phoneChrome() {
   // Close buttons: an SVG cross instead of the ✕ character (labelled).
   for (const b of document.querySelectorAll('.sheet-head button[id$="-close"], #app-banner-close')) b.replaceChildren(icon("close", 18));
+  $("route-swap").replaceChildren(icon("swap", 20));
   $("search-icon").replaceChildren(icon("search", 20));
   $("net-chip").replaceChildren(el("span", { id: "net-chip-l" }, netName()), icon("chevronDown", 16));
   $("net-chip").setAttribute("aria-label", t(lang, "netChipLabel", { name: netName() }));
@@ -1707,7 +1853,7 @@ function phoneChrome() {
 /** The network the map shows: the Cercanías núcleo under its centre, else Spain. */
 let netPinned = null; // the network just picked, until the user moves the map
 function currentNetwork() {
-  if (netPinned) return netPinned === "es" ? null : ref?.region(netPinned) || null;
+  if (netPinned) return netPinned === "es" ? null : placeByCode(netPinned) || ref?.region(netPinned) || null;
   if (!map || !ref || map.getZoom() < 7.5) return null;
   const c = map.getCenter();
   return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
@@ -1747,17 +1893,21 @@ function openNetworks() {
   renderNetworks();
 }
 
-/** Go to a network (núcleo code, or "es" for all of Spain), as "Ir a…" does. */
+/** Go to a network (núcleo code, "es" for all of Spain, or a place code:
+ * "prov:28", "ccaa:md", "city:madrid"), as "Ir a…" does. */
 function goToNetwork(code) {
   netPinned = code;
   updateNetChip();
-  if (code === "es") map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
-  else {
-    const r = ref?.region(code);
-    if (!r) return;
-    const pad = isPhone() ? { top: 130, bottom: ($("tabbar").offsetHeight || 0) + 180, left: 24, right: 24 } : 40;
-    map.fitBounds([[r.bbox[1], r.bbox[0]], [r.bbox[3], r.bbox[2]]], { padding: pad, maxZoom: 11 });
-  }
+  if (code === "es") return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
+  const place = placeByCode(code);
+  const bbox = place ? place.bbox || cityBox(place) : ref?.region(code)?.bbox;
+  if (bbox) fitBox(bbox, place && !place.bbox ? 13 : 11);
+}
+
+/** Show a box [s, w, n, e] clear of the phone's top bar and sheet. */
+function fitBox(bbox, maxZoom = 11) {
+  const pad = isPhone() ? { top: 130, bottom: ($("tabbar").offsetHeight || 0) + 180, left: 24, right: 24 } : 40;
+  map.fitBounds([[bbox[1], bbox[0]], [bbox[3], bbox[2]]], { padding: pad, maxZoom });
 }
 
 /** Median delay (s) of the Cercanías trains in each núcleo, now. */
@@ -1797,6 +1947,8 @@ function renderNetworks(keepInput = false) {
     near,
     spain: { trains, onPick: () => pick("es") },
     networks: [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
+    communities: byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name, alt: c.alt })),
+    provinces: byName(PROVINCES).map((p) => ({ code: `prov:${p.code}`, name: p.name, alt: p.alt })),
     onPick: pick,
     onQuery: (q) => {
       netQuery = q;
@@ -1829,7 +1981,16 @@ function renderLayers() {
     };
   };
   const base = document.querySelector('input[name="basemap"]:checked')?.value || "standard";
+  const key = el(
+    "div",
+    { class: "map-key", id: "map-key" },
+    el("h3", { class: "group-h" }, t(lang, "legendTitle")),
+    el("p", { class: "legend-row" }, el("span", { class: "legend-head" }, `${t(lang, "legendDelay")}:`), ...legend(lang)),
+    el("p", { class: "legend-row" }, ...serviceLegend(lang)),
+    el("p", { class: "small muted" }, t(lang, "legendStations")),
+  );
   $("layers-panel-body").replaceChildren(
+    key,
     ...layersSheet(lang, {
       base,
       onBase: (v) => {
@@ -1863,22 +2024,206 @@ function renderLayers() {
   );
 }
 
-/** Stations whose name matches a search (phone), accents ignored. */
+/*
+ * Origin → destination: the direct trains of the next hours between two
+ * stations or cities (any of a city's main stations), from the timetables
+ * with live delays (engine.commuteJson per pair of stations).
+ */
+const ROUTE_HORIZON = 4 * 3600;
+const route = { from: null, to: null }; // {kind: "station" | "city", item}
+
+function openRoute(from = route.from, to = route.to) {
+  route.from = from;
+  route.to = to;
+  openSheet("route");
+  $("route-from").value = from?.item.name || "";
+  $("route-to").value = to?.item.name || "";
+  $("route-sugg").hidden = true;
+  renderRoute();
+  // Ask for the missing end (not on a phone with both set: no keyboard).
+  if (!from) $("route-from").focus();
+  else if (!to) $("route-to").focus();
+}
+
+function renderRoute() {
+  if ($("route").hidden || !engine) return;
+  const { from, to } = route;
+  const body = $("route-body");
+  if (!from || !to) return body.replaceChildren(el("p", { class: "small muted", id: "route-help" }, t(lang, "routeHelp")));
+  const a = endStations(from, stationList());
+  const b = endStations(to, stationList());
+  // Their Cercanías timetables may not be loaded yet: load, then redraw.
+  const d = 0.05;
+  for (const st of [...a, ...b]) {
+    for (const r of ref?.regionsIn([st.lon - d, st.lat - d, st.lon + d, st.lat + d]) || []) {
+      if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(renderRoute).catch(() => {});
+    }
+  }
+  const now = Date.now();
+  const pairs = [];
+  for (const f of a) for (const s of b) if (f.id !== s.id) pairs.push({ from: f, to: s, rows: JSON.parse(engine.commuteJson(f.id, s.id, now, ROUTE_HORIZON, 20)) });
+  const rows = mergeRoutes(pairs, now / 1000, 25);
+  body.replaceChildren(
+    ...routeResults(lang, {
+      from,
+      to,
+      rows,
+      multi: from.kind === "city" || to.kind === "city",
+      onTrain: (r) => {
+        const info = liveTrain(r.number);
+        if (info) selectTrain(info, { fly: true });
+      },
+    }),
+  );
+}
+
+/** Suggestions under the field being typed in. */
+function routeSuggest(field) {
+  const input = $(`route-${field}`);
+  const ul = $("route-sugg");
+  route[field] = null;
+  renderRoute();
+  const hits = searchPlaces(input.value, stationList(), 8, ["city", "station"]);
+  ul.hidden = !hits.length;
+  ul.dataset.field = field;
+  ul.replaceChildren(
+    ...hits.map((h) =>
+      el(
+        "li",
+        {},
+        el(
+          "button",
+          { type: "button", class: "route-sugg-row", "data-kind": h.kind, onclick: () => routePick(field, h) },
+          icon(PLACE_ICON[h.kind], 16),
+          el("strong", {}, h.item.name),
+          el("span", { class: "muted" }, ` · ${placeKind(lang, h.kind)}`),
+        ),
+      ),
+    ),
+  );
+}
+
+function routePick(field, hit) {
+  route[field] = { kind: hit.kind, item: hit.item };
+  $(`route-${field}`).value = hit.item.name;
+  $("route-sugg").hidden = true;
+  const other = field === "from" ? "to" : "from";
+  if (!route[other]) $(`route-${other}`).focus();
+  else $(`route-${field}`).blur();
+  renderRoute();
+}
+
+/*
+ * "Añadir" on the Favourites and commute screens: search instead of
+ * finding the thing on the map first. Their fields keep their own state,
+ * so the lists below can redraw while you type.
+ */
+const stationHits = (q, n = 6) =>
+  searchPlaces(q, stationList(), n, ["station"]).map((h) => ({
+    key: `s:${h.item.id}`,
+    icon: "pin",
+    name: h.item.name,
+    sub: t(lang, "searchStation"),
+    value: { id: h.item.id, name: h.item.name, lon: h.item.lon, lat: h.item.lat },
+  }));
+
+function adderButton(open, labelKey, id, onclick) {
+  return el("button", { class: "pill small adder-btn", type: "button", id, "aria-expanded": String(open), onclick }, icon(open ? "close" : "plus", 16), t(lang, open ? "addCancel" : labelKey));
+}
+
+let favAdding = false;
+let favAddMsg = "";
+function renderFavAdd() {
+  const box = $("favs-add");
+  box.dataset.lang = lang;
+  const toggle = adderButton(favAdding, "favAddBtn", "fav-add", () => {
+    favAdding = !favAdding;
+    favAddMsg = "";
+    renderFavAdd();
+    if (favAdding) $("fav-q").focus();
+  });
+  if (!favAdding) return box.replaceChildren(toggle, favAddMsg ? el("p", { class: "small", id: "fav-add-msg" }, favAddMsg) : "");
+  const field = pickField(lang, {
+    id: "fav-q",
+    label: t(lang, "favAddLabel"),
+    placeholder: t(lang, "favAddPh"),
+    search: (q) => [
+      ...(engine ? JSON.parse(engine.searchJson(q, 4)) : []).map((h) => ({
+        key: `t:${h.number}`,
+        icon: "arrowRight",
+        name: trainTitle(h),
+        sub: h.destination ? `→ ${h.destination}` : "",
+        value: { type: "train", number: h.number, label: trainTitle(h) },
+      })),
+      ...stationHits(q).map((h) => ({ ...h, value: { type: "station", ...h.value } })),
+    ],
+    onPick: (v) => {
+      if (!v) return;
+      const name = v.name || v.label;
+      if (isFavourite(favs, v)) favAddMsg = t(lang, "favAddDup", { name });
+      else {
+        const r = toggleFavourite(favs, v, favLimit());
+        if (r.full) favAddMsg = t(lang, "favFull", { n: favLimit() });
+        else {
+          favAddMsg = t(lang, "favAddDone", { name });
+          saveFavourites(r.list);
+        }
+      }
+      favAdding = false;
+      renderFavAdd();
+    },
+  });
+  box.replaceChildren(toggle, field);
+}
+
+let commuteAdding = false;
+const commuteDraftAdd = { from: null, to: null };
+function renderCommuteAdd() {
+  const box = $("commute-add");
+  box.dataset.lang = lang;
+  const toggle = adderButton(commuteAdding, "commuteAddBtn", "commute-add-btn", () => {
+    commuteAdding = !commuteAdding;
+    commuteDraftAdd.from = commuteDraftAdd.to = null;
+    renderCommuteAdd();
+    if (commuteAdding) $("commute-add-from").focus();
+  });
+  if (!commuteAdding) return box.replaceChildren(toggle);
+  const save = el("button", { class: "pill small pill-strong", type: "button", id: "commute-add-save", disabled: true }, t(lang, "commuteAddSave"));
+  const ready = () => (save.disabled = !(commuteDraftAdd.from && commuteDraftAdd.to && commuteDraftAdd.from.id !== commuteDraftAdd.to.id));
+  const field = (end, labelKey, phKey) =>
+    pickField(lang, {
+      id: `commute-add-${end}`,
+      label: t(lang, labelKey),
+      placeholder: t(lang, phKey),
+      search: (q) => stationHits(q),
+      onPick: (v) => {
+        commuteDraftAdd[end] = v;
+        ready();
+        if (v && end === "from" && !commuteDraftAdd.to) $("commute-add-to").focus();
+      },
+    });
+  save.addEventListener("click", () => {
+    const r = setDestination(setOrigin(commutes, commuteDraftAdd.from), commuteDraftAdd.to);
+    commuteNote = r.full ? t(lang, "commuteFull", { max: MAX_COMMUTES }) : "";
+    commuteAdding = false;
+    renderCommuteAdd();
+    saveCommutes(r.state, renderCommute);
+  });
+  box.replaceChildren(toggle, el("div", { class: "adder-form" }, field("from", "routeFrom", "commuteAddFromPh"), field("to", "routeTo", "commuteAddToPh"), save));
+}
+
+/** Every station as {id, name, lat, lon, services}, for the searches. */
 let stationIndex = null;
-function searchStations(q, limit = 5) {
-  const norm = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const nq = norm(q);
-  if (nq.length < 2 || !engine) return [];
+function stationList() {
+  if (!engine) return [];
   stationIndex ??= JSON.parse(engine.stationsGeoJson()).features.map((f) => ({
     id: f.properties.id,
     name: f.properties.name,
-    key: norm(f.properties.name),
+    services: f.properties.services,
     lon: f.geometry.coordinates[0],
     lat: f.geometry.coordinates[1],
   }));
-  const starts = stationIndex.filter((x) => x.key.startsWith(nq));
-  const inside = stationIndex.filter((x) => !x.key.startsWith(nq) && x.key.includes(nq));
-  return [...starts, ...inside].slice(0, limit);
+  return stationIndex;
 }
 
 /** A light tick when a sheet snaps (Android app only). */
@@ -1960,6 +2305,27 @@ function renderDelayedList() {
   );
 }
 
+/** Each train's Cercanías line colour and "C5 +12" label, for the map
+ * zoomed in (rows of replayFrameJson are in the same order as positions).
+ * Refreshed every 2 s or when the trains change. */
+let metaCache = { at: 0, n: -1, rows: [] };
+function trainMeta(pos, now) {
+  if (map.getZoom() < ARROW_ZOOM) return () => null;
+  const n = pos.length / 6;
+  if (n !== metaCache.n || now - metaCache.at > 2000) {
+    const rows = JSON.parse(engine.replayFrameJson(now));
+    metaCache = {
+      at: now,
+      n,
+      rows: rows.map(([, route, number, , , , , delay, flags]) => {
+        const cer = !!(flags & FLAG.commuter);
+        return { lb: trainLabel(route, number, delay, cer), lc: cer && route ? lineColors.get(`|${route}`) || null : null };
+      }),
+    };
+  }
+  return (i) => metaCache.rows[i] || null;
+}
+
 /** Redraw trains. Trains move slowly on screen, so 1–4 updates a second is plenty. */
 function render(force = false) {
   if (!engine || !map || replay) return; // the replay draws the trains meanwhile
@@ -1969,7 +2335,7 @@ function render(force = false) {
   lastRender = now;
   if (selected) updateRoute();
   const pos = engine.positions(now);
-  map.getSource("trains")?.setData(trainsGeoJson(pos, highlight, hiddenByFilter));
+  map.getSource("trains")?.setData(trainsGeoJson(pos, highlight, hiddenByFilter, trainMeta(pos, now)));
   const st = JSON.parse(engine.statsJson(now));
   renderHomeSummary(st, pos);
   renderLiveChip(st, now);
@@ -1988,6 +2354,7 @@ function render(force = false) {
   if (force) {
     renderFavourites();
     renderCommute();
+    renderRoute();
   }
   trackTrips(now);
   checkAlertsLive(now);
@@ -2055,7 +2422,7 @@ async function drawReplay() {
     return;
   }
   r.trains = trains;
-  map.getSource("trains")?.setData(replayGeoJson(trains));
+  map.getSource("trains")?.setData(replayGeoJson(trains, (route) => lineColors.get(`|${route}`) || null));
   const { date, time } = msToMadrid(r.t);
   const day = date.split("-").reverse().slice(0, 2).join("/");
   $("stats").textContent = t(lang, "replayStats", { date: day, time, n: trains.length, late: trains.filter((x) => x.delay >= 300).length });
@@ -2223,6 +2590,12 @@ async function main() {
   applyLang();
   sheets.apply(); // phone: the home sheet peeks from the start
   ({ map, attr } = createMap("map", CONFIG, t(lang, "attribution")));
+  // Open credits close with a tap on the map or on their text (not a link).
+  map.on("click", foldCredits);
+  map.getContainer().addEventListener("click", (e) => {
+    const box = e.target.closest?.(".maplibregl-ctrl-attrib.maplibregl-compact-show");
+    if (box && !e.target.closest("a, summary, .maplibregl-ctrl-attrib-button")) foldCredits();
+  });
   const mapReady = new Promise((r) => map.on("load", r));
 
   await init();
@@ -2279,7 +2652,7 @@ async function main() {
           [e.point.x - pad, e.point.y - pad],
           [e.point.x + pad, e.point.y + pad],
         ],
-        { layers: ["trains"] },
+        { layers: ["trains", "trains-ring"] },
       )[0];
       if (hit) showReplayTrain(hit.properties.i);
       else replayPop?.remove();
@@ -2290,7 +2663,7 @@ async function main() {
         [e.point.x - pad, e.point.y - pad],
         [e.point.x + pad, e.point.y + pad],
       ],
-      { layers: ["trains"] },
+      { layers: ["trains", "trains-ring"] },
     );
     if (!hits.length) {
       const inc = map.queryRenderedFeatures(
@@ -2309,7 +2682,7 @@ async function main() {
           [e.point.x - pad, e.point.y - pad],
           [e.point.x + pad, e.point.y + pad],
         ],
-        { layers: ["stations", "stations-ld"].filter((l) => map.getLayer(l)) },
+        { layers: ["stations-hit", "stations-ld-hit"].filter((l) => map.getLayer(l)) },
       );
       if (st.length) return showStation(st[0]);
       stationPop?.remove();
@@ -2330,13 +2703,13 @@ async function main() {
   }), 3000);
   map.on("mouseenter", "incidents", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "incidents", () => (map.getCanvas().style.cursor = ""));
-  for (const l of ["stations", "stations-ld"]) {
+  for (const l of ["stations-hit", "stations-ld-hit"]) {
     map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
   }
   refreshTrack();
-  map.on("mouseenter", "trains", () => (map.getCanvas().style.cursor = "pointer"));
-  map.on("mouseleave", "trains", () => (map.getCanvas().style.cursor = ""));
+  for (const l of ["trains", "trains-ring"]) map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
+  for (const l of ["trains", "trains-ring"]) map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
   render(true);
   requestAnimationFrame(loop);
   // For tests and debugging (the app's emulator test shares a file with these).
@@ -2432,8 +2805,26 @@ $("delayed-btn").addEventListener("click", () => {
 $("delayed-close").addEventListener("click", () => ($("delayed").hidden = true));
 $("more-close").addEventListener("click", () => ($("more").hidden = true));
 $("net-chip").addEventListener("click", () => openNetworks());
+// The delay key chip opens the full key (in Capas).
+$("legend-chip").addEventListener("click", () => openLayers());
 $("fab-layers").addEventListener("click", () => ($("layers-panel").hidden ? openLayers() : ($("layers-panel").hidden = true)));
 $("networks-close").addEventListener("click", () => ($("networks").hidden = true));
+$("route-close").addEventListener("click", () => ($("route").hidden = true));
+for (const field of ["from", "to"]) {
+  const input = $(`route-${field}`);
+  input.addEventListener("input", () => routeSuggest(field));
+  input.addEventListener("focus", () => input.select());
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("route-sugg").querySelector("button")?.click();
+    if (e.key === "Escape") $("route-sugg").hidden = true;
+  });
+}
+$("route-swap").addEventListener("click", () => {
+  [route.from, route.to] = [route.to, route.from];
+  [$("route-from").value, $("route-to").value] = [$("route-to").value, $("route-from").value];
+  $("route-sugg").hidden = true;
+  renderRoute();
+});
 $("layers-panel-close").addEventListener("click", () => ($("layers-panel").hidden = true));
 $("fab-locate").addEventListener("click", () => {
   if (!locator?.active) return startLocation();

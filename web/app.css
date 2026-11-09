@@ -242,7 +242,7 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 /* Phone layout (≤ 719 px, and the Android app): app tab bar and bottom
  * sheets with snap points (js/sheet.js). The desktop layout above is
  * unchanged; nothing below applies from 720 px. */
-.tabbar, .delayed-summary, .scrim, .sheet-handle, .search-icon, .net-chip, .chips, .fabs { display: none; }
+.tabbar, .delayed-summary, .delayed-show, .scrim, .sheet-handle, .search-icon, .net-chip, .chips, .fabs { display: none; }
 @media (max-width: 719px) {
   :root { --tab-h: calc(58px + var(--safe-bottom)); --sheet-h: 0px; }
   .bottom { display: none; }
@@ -287,6 +287,17 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .delayed-summary { display: block; touch-action: none; padding-bottom: 10px; }
   .summary-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   .summary-head h2 { margin: 0; font-size: 17px; }
+  .summary-head .muted { margin-left: auto; }
+  .summary-head .summary-hide { flex: none; width: 36px; height: 36px; margin: -6px 0; padding: 0; border: 0; border-radius: 18px; background: transparent; box-shadow: none; color: #4b5563; display: grid; place-items: center; }
+  /* "Retrasos ahora" tucked away: a small pill above the tab bar brings it back. */
+  .delayed-show {
+    position: fixed; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(var(--tab-h) + 10px);
+    display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px;
+    border: 0; border-radius: 22px; background: #fff; color: #111827; font: inherit; font-size: 14px; font-weight: 600;
+    box-shadow: 0 4px 16px rgba(17, 24, 39, 0.18);
+  }
+  .delayed-show[hidden], body.replaying .delayed-show { display: none; }
+  .delayed-show-n { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #fee2e2; color: #b91c1c; font-size: 12px; display: grid; place-items: center; box-sizing: border-box; }
   .summary-head .muted { font-size: 13px; color: #4b5563; font-variant-numeric: tabular-nums; }
   .buckets { display: flex; gap: 8px; margin-top: 12px; }
   .bucket {
@@ -506,6 +517,12 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
     bottom: calc(var(--tab-h) + var(--sheet-h) + 12px); transition: bottom 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   body[data-sheet="full"] .fabs, body.replaying .fabs { display: none; }
+  /* Left-handed mode: map buttons left, credits right, ✕ buttons left. */
+  body.lefty .fabs { right: auto; left: 16px; }
+  body.lefty .maplibregl-ctrl-bottom-right { left: auto; right: 0; }
+  body.lefty .sheet-head { justify-content: flex-start; gap: 10px; }
+  body.lefty .sheet-head > button[id$="-close"] { order: -1; }
+  body.lefty .route-form { flex-direction: row-reverse; }
   .fab {
     width: 48px; height: 48px; border: 0; border-radius: 24px; background: #fff; color: #111827;
     box-shadow: 0 4px 14px rgba(17, 24, 39, 0.16); display: flex; align-items: center; justify-content: center;
@@ -516,6 +533,9 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 
   /* Map credits, banner and Replay sit above the tab bar and sheet. */
   .maplibregl-ctrl-bottom-right { right: auto; left: 0; }
+  /* Open credits stop short of the round map buttons, so their ⓘ (which
+   * closes them) stays tappable. */
+  .maplibregl-ctrl-attrib.maplibregl-compact-show { max-width: calc(100vw - 104px); box-sizing: border-box; }
   .maplibregl-ctrl-bottom-right { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   .app-banner { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   body.replaying .tabbar, body.replaying #delayed { display: none; }
@@ -560,6 +580,9 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .scrim { background: rgba(0, 0, 0, 0.55); }
   .muted, .small.muted, .summary-head .muted, .ts-meta, .ts-line, .dep-sub, .menu-value, .switch-text small, .group-h { color: #9ca3af; }
   .icon-btn, .act, .net-search, .net-card, .seg { background: #1f2937; color: #f3f4f6; }
+  .delayed-show { background: #1f2937; color: #f3f4f6; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); }
+  .summary-head .summary-hide { background: transparent; color: #9ca3af; }
+  .delayed-show-n { background: #450a0a; color: #fca5a5; }
   .net-search input { color: #f3f4f6; }
   .net-card-near { background: #1d4ed8; color: #fff; }
   .chip-btn, .base-card { background: #111827; color: #f3f4f6; border-color: #374151; }
@@ -603,3 +626,52 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .maplibregl-ctrl-attrib a { color: #93c5fd; }
   .app-banner { background: #1f2937; color: #f3f4f6; }
 }
+
+/* Origin → destination (#route): two fields with a swap button, then the
+ * direct trains. Desktop side panel and phone sheet alike. */
+.route-form { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; }
+.route-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.route-swap { flex: none; box-sizing: border-box; width: 44px; height: 44px; padding: 0; border: 1px solid #d0d5dd; border-radius: 22px; background: #fff; color: #374151; display: grid; place-items: center; }
+.route-field { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 12px; background: #f3f4f6; }
+.route-field:focus-within { box-shadow: 0 0 0 3px #93c5fd; }
+.route-k { flex: none; width: 46px; font-size: 12px; font-weight: 600; color: #4b5563; }
+.route-field input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; font-size: 16px; color: #111827; outline: none; }
+.route-sugg { list-style: none; margin: 0 0 8px; padding: 4px 0; border-radius: 12px; box-shadow: 0 4px 16px rgba(17, 24, 39, 0.14); background: #fff; }
+.route-sugg-row { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+.route-sugg-row .icon, .search-place .icon, .search-route .icon { flex: none; color: #4b5563; }
+.route-list { list-style: none; margin: 0; padding: 0; }
+.route-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 6px 0; border: 0; border-bottom: 1px solid var(--line, #eee); background: none; color: inherit; font: inherit; text-align: left; }
+.route-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.route-times strong { font-size: 16px; font-variant-numeric: tabular-nums; }
+.route-train { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route-delay { flex: none; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.route-delay.tone-text-ok { color: #15803d; }
+.route-delay.tone-text-minor { color: #c2410c; }
+.route-delay.tone-text-major { color: #b91c1c; }
+.search-results .search-place, .search-results .search-route { display: flex; align-items: center; gap: 6px; }
+@media (max-width: 719px) and (prefers-color-scheme: dark) {
+  .route-field, .route-swap { background: #1f2937; color: #f3f4f6; border-color: #374151; }
+  .route-field input { color: #f3f4f6; }
+  .route-k, .route-sugg-row .icon, .search-place .icon, .search-route .icon { color: #9ca3af; }
+  .route-sugg { background: #1f2937; }
+  .route-row { border-color: #1f2937; }
+  .route-delay.tone-text-ok { color: #86efac; }
+  .route-delay.tone-text-minor { color: #fdba74; }
+  .route-delay.tone-text-major { color: #fca5a5; }
+}
+
+/* "Añadir favorito" / "Añadir trayecto": a button, then search fields. */
+.adder { margin: 4px 0 8px; }
+.adder-btn { display: inline-flex; align-items: center; gap: 6px; }
+.adder .pick-field { margin-top: 8px; }
+.adder-form { display: flex; flex-direction: column; gap: 0; }
+.adder-form #commute-add-save { align-self: flex-start; margin-top: 8px; }
+.adder-form #commute-add-save:disabled { opacity: 0.5; }
+
+/* Map key: delay dots, then the type of service as line swatches. */
+.legend-sep { width: 1px; align-self: stretch; background: rgba(0, 0, 0, 0.15); margin: 0 2px; }
+.legend-head { font-weight: 600; white-space: nowrap; }
+.legend-item i.legend-line { width: 18px; height: 5px; border-radius: 3px; border: 0; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(0, 0, 0, 0.15); }
+.legend-line-cer { background: linear-gradient(90deg, #e2001a 0 25%, #f59e0b 25% 50%, #2563eb 50% 75%, #16a34a 75%); }
+.map-key .legend-row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 6px 0; font-size: 13px; }
+.legend-chip { cursor: pointer; }

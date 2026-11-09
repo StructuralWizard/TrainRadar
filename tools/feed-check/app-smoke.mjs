@@ -90,8 +90,11 @@ await page.waitForSelector(".popup .popup-title", { timeout: 25000 }).catch(() =
 const title = await page.textContent(".popup .popup-title");
 if (!title.includes(live[1].replace(/^0+/, ""))) await fail(`link opened ${title}`);
 
-// About: no coffee link in the app.
+// Más: the Pro tools are listed, tagged "Pro" without it.
 await page.click("#tab-more");
+const proTags = await page.$$eval("#more-pro .menu-row", (r) => r.map((x) => x.querySelector(".menu-value")?.textContent));
+if (proTags.length < 4 || proTags.some((x) => x !== "Pro")) await fail(`Pro rows in Más: ${proTags}`);
+// About: no coffee link in the app.
 await page.click("#more-about");
 if ((await page.textContent("#about")).includes("café")) await fail("coffee link in the app");
 const sw = await page.evaluate(() => navigator.serviceWorker?.getRegistrations().then((r) => r.length) ?? 0);
@@ -155,6 +158,17 @@ await pro.addInitScript(() => {
   };
 });
 const pp = await pro.newPage();
+/** The Más tab (where the Pro tools are), opened if it isn't. */
+const toMore = async () => {
+  if (await pp.isHidden("#more")) await pp.click("#tab-more");
+  await pp.waitForSelector("#more:not([hidden]) #more-pro");
+};
+/** The commute screen (Pro), from the Más tab. */
+const openCommute = async () => {
+  await toMore();
+  await pp.click("#commute-btn");
+  await pp.waitForSelector("#commute:not([hidden])");
+};
 // The history API (absent from the static bundle): made-up days.
 await pp.route("**/v1/history/**", (route) => {
   const u = new URL(route.request().url());
@@ -209,6 +223,7 @@ await pp.click("#more-about");
 await pp.click("#settings-btn");
 await pp.waitForSelector("#pro-state.pro-on");
 console.log("pro:", await pp.textContent("#pro-state"));
+await toMore();
 // Delay alerts: on → permission asked, background check scheduled, config
 // stored for it; favourites refreshed the widget.
 await pp.click("#alerts-btn");
@@ -282,11 +297,8 @@ await pp.route("**/replay/**", async (route) => {
   const doc = { v: 1, hour: `${m[1]}T${m[2]}`, trains: [["a", "C3", "20047", "Aranjuez"], ["b", "C3", "21047", "Atocha"], ["c", "AVE", "03001", "Barcelona-Sants"]], frames };
   return route.fulfill({ contentType: "application/json", body: JSON.stringify(doc) });
 });
-if (await pp.isHidden("#about")) {
-  await pp.click("#tab-more");
-  await pp.click("#more-about");
-}
-await pp.click("#settings-btn");
+await toMore();
+await pp.screenshot({ path: `${out}/app-more-pro.png` });
 await pp.click("#replay-btn");
 await pp.waitForSelector("#replay-bar:not([hidden]) #replay-play", { timeout: 5000 }).catch(() => fail("replay controls didn't show"));
 await pp.waitForFunction(() => /Moviola · .* · 3 trenes · 2 con retraso/.test(document.getElementById("stats").textContent), null, { timeout: 10000 }).catch(async () =>
@@ -304,6 +316,24 @@ await pp.route("**/replay/2020-**", (r) => r.fulfill({ status: 404, body: "" }))
 await pp.click("#replay-live");
 await pp.waitForFunction(() => !/Moviola/.test(document.getElementById("stats").textContent), null, { timeout: 10000 }).catch(() => fail("didn't go back to live"));
 if (!(await pp.isHidden("#replay-bar"))) await fail("replay bar still showing");
+
+// Add a commute by searching (Pro): origin, destination, save.
+await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
+await openCommute();
+const commutesBefore = await pp.$$eval("#commute-body .commute-tabs button", (b) => b.length).catch(() => 0);
+await pp.click("#commute-add-btn");
+await pp.fill("#commute-add-from", "calatay");
+await pp.click("#commute-add-from-sugg button >> nth=0").catch(() => fail("no origin suggestions"));
+if (!(await pp.isDisabled("#commute-add-save"))) await fail("save enabled with one end");
+await pp.fill("#commute-add-to", "zaragoza deli");
+await pp.click("#commute-add-to-sugg button >> nth=0").catch(() => fail("no destination suggestions"));
+await pp.click("#commute-add-save");
+await pp.waitForFunction(() => /Calatayud → Zaragoza-Delicias/.test(document.getElementById("commute-body").textContent), null, { timeout: 5000 }).catch(async () =>
+  fail(`commute not added: ${await pp.textContent("#commute-body")}`),
+);
+console.log("commute added:", commutesBefore, "→", await pp.$$eval("#commute-body .commute-tabs button", (b) => b.length));
+await pp.screenshot({ path: `${out}/app-commute-added.png` });
+await pp.click("#commute-close");
 
 // Search (Pro): a train number not on the map offers its history.
 await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
@@ -346,19 +376,23 @@ await pp.screenshot({ path: `${out}/app-delays-commute.png` });
 await pp.click("#delayed-filter button >> nth=0");
 await pp.click("#tab-map");
 
-// Notices (Pro): "All" or one commute's notices only, remembered.
+// Notices: "All", "My favourites and commutes", or one commute (Pro), remembered.
 await pp.click("#tab-incidents");
 await pp.waitForSelector("#inc-commutes button", { timeout: 5000 }).catch(() => fail("notices filter didn't show"));
 const allNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
-await pp.click("#inc-commutes button >> nth=1");
+await pp.click("#inc-mine");
+const mineNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
+const mineMsg = await pp.$$eval("#inc-body p.muted", (p) => p.some((x) => /favoritos ni trayectos/.test(x.textContent)));
+if (mineNotices > allNotices || (!mineNotices && !mineMsg)) await fail(`my notices: ${mineNotices} of ${allNotices}`);
+await pp.click("#inc-commutes button >> nth=2");
 const commuteNotices = await pp.$$eval("#inc-body ul.incidents > li", (l) => l.length);
 const noneMsg = await pp.$$eval("#inc-body p.muted", (p) => p.some((x) => /Ningún aviso de Renfe en/.test(x.textContent)));
 if (commuteNotices > allNotices || (!commuteNotices && !noneMsg)) await fail(`commute notices: ${commuteNotices} of ${allNotices}`);
 await pp.click("#inc-close");
 await pp.click("#tab-incidents");
-const pressed = await pp.$eval("#inc-commutes button >> nth=1", (b) => b.getAttribute("aria-pressed")).catch(() => null);
+const pressed = await pp.$eval("#inc-commutes button >> nth=2", (b) => b.getAttribute("aria-pressed")).catch(() => null);
 if (pressed !== "true") await fail("notices filter not remembered");
-console.log("notices:", allNotices, "all,", commuteNotices, "on the commute");
+console.log("notices:", allNotices, "all,", mineNotices, "mine,", commuteNotices, "on the commute");
 await pp.click("#inc-commutes button >> nth=0");
 
 if (errors.length) await fail(`page errors: ${errors.join("; ")}`);

@@ -4,6 +4,7 @@
 import { t } from "./i18n.js";
 import { formatAgo, formatClock, formatCount, formatDistance } from "./format.js";
 import { icon } from "./icons.js";
+import { fold, matchScore } from "./places.js";
 import { el, historyBox, minutesUntil, trainAlerts, trainRows, trainTitle } from "./ui.js";
 
 /** "ok" < 5 min, "minor" 5–14, "major" 15+, "none" unknown. */
@@ -223,7 +224,7 @@ export function trainSheet(lang, info, o = {}) {
 /**
  * The station sheet. `o`: { sub, board (stationBoardJson), approaching,
  * tab "dep" | "arr", onTab, onDeparture(row), onTrain(info), onClose, fav,
- * onHistory, onShare, commute, lineColor(route) }.
+ * onHistory, onShare, onRoute, commute, lineColor(route) }.
  */
 export function stationSheet(lang, station, o = {}) {
   const chip = (ic, label, onclick, attrs = {}) =>
@@ -232,6 +233,7 @@ export function stationSheet(lang, station, o = {}) {
   if (o.fav) chips.push(chip("star", t(lang, o.fav.on ? "favOn" : "favAdd"), o.fav.onToggle, { class: "chip-btn fav-btn", "aria-pressed": String(o.fav.on) }));
   if (o.onHistory) chips.push(chip("chart", t(lang, "histStation"), o.onHistory, { id: "station-history" }));
   if (o.onShare) chips.push(chip("share", t(lang, "share"), o.onShare));
+  if (o.onRoute) chips.push(chip("arrowRight", t(lang, "routeFromHere"), o.onRoute, { id: "station-route" }));
   if (o.commute) {
     chips.push(chip(null, t(lang, o.commute.isFrom ? "commuteIsFrom" : "commuteFrom"), o.commute.setFrom, { id: "commute-from" }));
     chips.push(chip(null, t(lang, o.commute.isTo ? "commuteIsTo" : "commuteTo"), o.commute.setTo, { id: "commute-to" }));
@@ -321,9 +323,9 @@ export function stationSheet(lang, station, o = {}) {
  * onPick(code), onQuery(q), onClose }. `median` in seconds or null.
  */
 export function networksSheet(lang, o) {
-  const fold = (x) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  const q = fold(o.query || "");
-  const list = (o.networks || []).filter((n) => !q || fold(n.name).includes(q));
+  const q = o.query || "";
+  const hit = (n) => !fold(q) || [n.name, ...(n.alt || [])].some((x) => matchScore(q, x) >= 0);
+  const list = (o.networks || []).filter(hit);
   const near = o.near;
   const nearCard = el(
     "button",
@@ -350,22 +352,24 @@ export function networksSheet(lang, o) {
     autocomplete: "off",
     placeholder: t(lang, "netSearch"),
     "aria-label": t(lang, "netSearch"),
-    value: o.query || "",
+    value: q,
     oninput: (e) => o.onQuery?.(e.target.value),
   });
+  const row = (n, right) =>
+    el("li", {}, el("button", { class: "net-row", type: "button", "data-code": n.code, onclick: () => o.onPick?.(n.code) }, el("span", { class: "net-name" }, n.name), right));
+  // Communities and provinces: no median (their trains aren't told apart).
+  const group = (id, title, items) => {
+    const shown = items.filter(hit);
+    return shown.length ? [el("h3", { class: "group-h", id }, title), el("ul", { class: "net-list" }, shown.map((n) => row(n, icon("chevronRight", 16))))] : [];
+  };
+  const extra = [...group("net-g-ccaa", t(lang, "netCommunities"), o.communities || []), ...group("net-g-prov", t(lang, "netProvinces"), o.provinces || [])];
   return [
     el("label", { class: "net-search" }, icon("search", 18), input),
-    q ? null : el("div", { class: "net-cards" }, nearCard, spainCard),
-    el("h3", { class: "group-h" }, t(lang, "netGroup")),
-    list.length
-      ? el(
-          "ul",
-          { class: "net-list" },
-          list.map((n) =>
-            el("li", {}, el("button", { class: "net-row", type: "button", "data-code": n.code, onclick: () => o.onPick?.(n.code) }, el("span", { class: "net-name" }, n.name), median(n.median))),
-          ),
-        )
-      : el("p", { class: "muted small" }, t(lang, "netNone")),
+    fold(q) ? null : el("div", { class: "net-cards" }, nearCard, spainCard),
+    // Searching: only the groups with a match ("none" when there's none).
+    ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, t(lang, "netGroup"))] : []),
+    list.length ? el("ul", { class: "net-list" }, list.map((n) => row(n, median(n.median)))) : extra.length ? null : el("p", { class: "muted small" }, t(lang, "netNone")),
+    ...extra,
   ];
 }
 
@@ -441,4 +445,95 @@ export function layersSheet(lang, o) {
       ),
     ]),
   ];
+}
+
+/** Kind label of a place search hit ("Ciudad", "Estación"…). */
+export function placeKind(lang, kind) {
+  return t(lang, { city: "placeCity", station: "searchStation", province: "placeProvince", community: "placeCommunity" }[kind]);
+}
+
+/** Icon for a place search hit. */
+export const PLACE_ICON = { city: "globe", station: "pin", province: "map", community: "map" };
+
+/**
+ * Origin → destination results: `rows` from route.js mergeRoutes (each
+ * with its `from` and `to` station), `multi` when an end is a city (then
+ * each row says which stations). `onTrain(row)` for trains on the map.
+ */
+export function routeResults(lang, { from, to, rows, multi, onTrain }) {
+  if (!rows.length) return [el("p", { class: "muted", id: "route-none" }, t(lang, "routeNone", { from: from.item.name, to: to.item.name }))];
+  return [
+    el("p", { class: "small muted", id: "route-count" }, t(lang, "routeCount", { n: formatCount(lang, rows.length) })),
+    el(
+      "ul",
+      { class: "route-list" },
+      rows.map((r) => {
+        const label = [r.route, r.number].filter(Boolean).join(" ");
+        const main = el(
+          "span",
+          { class: "route-main" },
+          el("span", { class: "route-times" }, el("strong", {}, formatClock(r.expected_dep)), " ", el("span", { class: "muted" }, t(lang, "routeArr", { time: formatClock(r.expected_arr) }))),
+          el("span", { class: "route-train" }, label, multi ? el("span", { class: "muted" }, ` · ${r.from.name} → ${r.to.name}`) : null),
+        );
+        const delay = el(
+          "span",
+          { class: `route-delay tone-text-${r.canceled ? "major" : delayTone(r.delay)}` },
+          r.canceled ? t(lang, "canceled") : r.delay === null || r.delay === undefined ? "" : delayShortMin(lang, r.delay),
+        );
+        return el(
+          "li",
+          {},
+          r.live && onTrain
+            ? el("button", { class: "route-row", type: "button", "data-number": r.number, onclick: () => onTrain(r) }, main, delay, icon("chevronRight", 16))
+            : el("div", { class: "route-row" }, main, delay),
+        );
+      }),
+    ),
+  ];
+}
+
+/**
+ * A search field with suggestions under it, for adding things: `search(q)`
+ * gives [{ key, icon, name, sub, value }], `onPick(value)` on a choice. The
+ * element keeps its own state, so the screen around it can redraw freely.
+ */
+export function pickField(lang, { id, label, placeholder, search, onPick }) {
+  const ul = el("ul", { class: "route-sugg", id: `${id}-sugg`, hidden: true });
+  const input = el("input", { id, type: "search", autocomplete: "off", placeholder, "aria-label": label });
+  const draw = () => {
+    const hits = input.value.trim().length >= 2 ? search(input.value) : [];
+    ul.hidden = !hits.length;
+    ul.replaceChildren(
+      ...hits.map((h) =>
+        el(
+          "li",
+          {},
+          el(
+            "button",
+            {
+              type: "button",
+              class: "route-sugg-row",
+              "data-key": h.key,
+              onclick: () => {
+                input.value = h.name;
+                ul.hidden = true;
+                onPick(h.value);
+              },
+            },
+            icon(h.icon, 16),
+            el("strong", {}, h.name),
+            h.sub ? el("span", { class: "muted" }, ` · ${h.sub}`) : null,
+          ),
+        ),
+      ),
+    );
+  };
+  input.addEventListener("input", () => {
+    onPick(null);
+    draw();
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") ul.querySelector("button")?.click();
+  });
+  return el("div", { class: "pick-field" }, el("label", { class: "route-field" }, el("span", { class: "route-k" }, label), input), ul);
 }
