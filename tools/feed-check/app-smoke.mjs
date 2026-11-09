@@ -89,6 +89,9 @@ await ready();
 await page.waitForSelector(".popup .popup-title", { timeout: 25000 }).catch(() => fail("?train= link didn't open the train"));
 const title = await page.textContent(".popup .popup-title");
 if (!title.includes(live[1].replace(/^0+/, ""))) await fail(`link opened ${title}`);
+// Free edition: no train-ahead/track details, but a row saying Pro has them.
+await page.waitForSelector(".popup #details-pro", { timeout: 5000 }).catch(() => fail("free edition: no 'Más datos con TrainRadar Pro' row"));
+if (/Tren delante/.test(await page.textContent(".popup"))) await fail("free edition shows the Pro details");
 
 // Más: the Pro tools are listed, tagged "Pro" without it.
 await page.click("#tab-more");
@@ -190,6 +193,7 @@ await pp.click("#search-results li button");
 await pp.waitForSelector(".popup .popup-title");
 await pp.waitForFunction(() => /Tren delante|Vía/.test(document.querySelector(".popup")?.textContent || ""), null, { timeout: 8000 })
   .catch(() => fail("Pro didn't unlock the details"));
+if (await pp.$(".popup #details-pro")) await fail("Pro still shows the Pro teaser");
 for (const n of live.slice(0, 3)) {
   await pp.click("#detail-close").catch(() => {});
   await pp.fill("#search-q", n);

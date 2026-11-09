@@ -370,6 +370,16 @@ export function trainRows(
       info.position === "gps" || info.fix_age < 60 ? t(lang, "gpsAgo", { age }) : t(lang, "estimatedPos", { age }),
     ),
   );
+  // Free app: say what Pro adds here, rather than leaving it out silently.
+  if (!enthusiast && proLink && info.origin) {
+    rows.push(
+      el(
+        "button",
+        { class: "link small pro-teaser", type: "button", id: "details-pro", onclick: proLink },
+        t(lang, "detailsPro"),
+      ),
+    );
+  }
   if (enthusiast && info.origin) {
     rows.push(row(t(lang, "ahead"), gapText(lang, info.ahead, onTrain)));
     rows.push(row(t(lang, "behind"), gapText(lang, info.behind, onTrain)));
