@@ -5,7 +5,7 @@ import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
-import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format.js";
+import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
@@ -14,7 +14,9 @@ import { endStations, mergeRoutes } from "./js/route.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
+  ARROW_ZOOM,
   FLAG,
+  SERVICE_COLORS,
   addLayers,
   createMap,
   emptyGeoJson,
@@ -49,6 +51,7 @@ import {
   el,
   incidentsPanel,
   legend,
+  serviceLegend,
   nearPanel,
   onboardBlock,
   stationPopup,
@@ -120,11 +123,11 @@ const show = {
 };
 // Map layers each "Capas" checkbox shows or hides (trains are filtered in render()).
 const LAYER_IDS = {
-  lines: ["lines", "lines-notice"],
-  tav: ["track-av"],
-  tld: ["track-ld"],
-  tmd: ["track-md"],
-  stations: ["stations", "stations-ld", "station-labels"],
+  lines: ["lines-casing", "lines", "lines-notice"],
+  tav: ["track-av-casing", "track-av"],
+  tld: ["track-ld-casing", "track-ld"],
+  tmd: ["track-md-casing", "track-md"],
+  stations: ["stations", "stations-ld", "stations-hit", "stations-ld-hit", "station-labels", "station-labels-big"],
   stopped: ["stopped-ring"],
 };
 // Kinds of Renfe notice (engine incidents::Kind bits), each with a switch.
@@ -150,7 +153,7 @@ function applyLang() {
   btn.textContent = lang === "es" ? "EN" : "ES";
   btn.setAttribute("aria-label", t(lang, "languageLabel"));
   btn.title = t(lang, "language");
-  $("legend").replaceChildren(...legend(lang));
+  $("legend").replaceChildren(...legend(lang), el("span", { class: "legend-sep" }), ...serviceLegend(lang, true));
   $("delayed-btn").textContent = t(lang, "delayedList");
   $("delayed-title").textContent = t(lang, "delayedTitle");
   $("delayed-close").setAttribute("aria-label", t(lang, "close"));
@@ -452,6 +455,7 @@ function updateRoute() {
 
 function refreshLines() {
   if (!engine || !map?.getSource("lines")) return;
+  metaCache.at = 0; // new timetables: line names and colours for the train labels
   const data = JSON.parse(engine.linesGeoJson(Date.now()));
   const mask = kindMask();
   for (const f of data.features) {
@@ -1977,7 +1981,16 @@ function renderLayers() {
     };
   };
   const base = document.querySelector('input[name="basemap"]:checked')?.value || "standard";
+  const key = el(
+    "div",
+    { class: "map-key", id: "map-key" },
+    el("h3", { class: "group-h" }, t(lang, "legendTitle")),
+    el("p", { class: "legend-row" }, el("span", { class: "legend-head" }, `${t(lang, "legendDelay")}:`), ...legend(lang)),
+    el("p", { class: "legend-row" }, ...serviceLegend(lang)),
+    el("p", { class: "small muted" }, t(lang, "legendStations")),
+  );
   $("layers-panel-body").replaceChildren(
+    key,
     ...layersSheet(lang, {
       base,
       onBase: (v) => {
@@ -2292,6 +2305,27 @@ function renderDelayedList() {
   );
 }
 
+/** Each train's Cercanías line colour and "C5 +12" label, for the map
+ * zoomed in (rows of replayFrameJson are in the same order as positions).
+ * Refreshed every 2 s or when the trains change. */
+let metaCache = { at: 0, n: -1, rows: [] };
+function trainMeta(pos, now) {
+  if (map.getZoom() < ARROW_ZOOM) return () => null;
+  const n = pos.length / 6;
+  if (n !== metaCache.n || now - metaCache.at > 2000) {
+    const rows = JSON.parse(engine.replayFrameJson(now));
+    metaCache = {
+      at: now,
+      n,
+      rows: rows.map(([, route, number, , , , , delay, flags]) => {
+        const cer = !!(flags & FLAG.commuter);
+        return { lb: trainLabel(route, number, delay, cer), lc: cer && route ? lineColors.get(`|${route}`) || null : null };
+      }),
+    };
+  }
+  return (i) => metaCache.rows[i] || null;
+}
+
 /** Redraw trains. Trains move slowly on screen, so 1–4 updates a second is plenty. */
 function render(force = false) {
   if (!engine || !map || replay) return; // the replay draws the trains meanwhile
@@ -2301,7 +2335,7 @@ function render(force = false) {
   lastRender = now;
   if (selected) updateRoute();
   const pos = engine.positions(now);
-  map.getSource("trains")?.setData(trainsGeoJson(pos, highlight, hiddenByFilter));
+  map.getSource("trains")?.setData(trainsGeoJson(pos, highlight, hiddenByFilter, trainMeta(pos, now)));
   const st = JSON.parse(engine.statsJson(now));
   renderHomeSummary(st, pos);
   renderLiveChip(st, now);
@@ -2388,7 +2422,7 @@ async function drawReplay() {
     return;
   }
   r.trains = trains;
-  map.getSource("trains")?.setData(replayGeoJson(trains));
+  map.getSource("trains")?.setData(replayGeoJson(trains, (route) => lineColors.get(`|${route}`) || null));
   const { date, time } = msToMadrid(r.t);
   const day = date.split("-").reverse().slice(0, 2).join("/");
   $("stats").textContent = t(lang, "replayStats", { date: day, time, n: trains.length, late: trains.filter((x) => x.delay >= 300).length });
@@ -2618,7 +2652,7 @@ async function main() {
           [e.point.x - pad, e.point.y - pad],
           [e.point.x + pad, e.point.y + pad],
         ],
-        { layers: ["trains"] },
+        { layers: ["trains", "trains-ring"] },
       )[0];
       if (hit) showReplayTrain(hit.properties.i);
       else replayPop?.remove();
@@ -2629,7 +2663,7 @@ async function main() {
         [e.point.x - pad, e.point.y - pad],
         [e.point.x + pad, e.point.y + pad],
       ],
-      { layers: ["trains"] },
+      { layers: ["trains", "trains-ring"] },
     );
     if (!hits.length) {
       const inc = map.queryRenderedFeatures(
@@ -2648,7 +2682,7 @@ async function main() {
           [e.point.x - pad, e.point.y - pad],
           [e.point.x + pad, e.point.y + pad],
         ],
-        { layers: ["stations", "stations-ld"].filter((l) => map.getLayer(l)) },
+        { layers: ["stations-hit", "stations-ld-hit"].filter((l) => map.getLayer(l)) },
       );
       if (st.length) return showStation(st[0]);
       stationPop?.remove();
@@ -2669,13 +2703,13 @@ async function main() {
   }), 3000);
   map.on("mouseenter", "incidents", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "incidents", () => (map.getCanvas().style.cursor = ""));
-  for (const l of ["stations", "stations-ld"]) {
+  for (const l of ["stations-hit", "stations-ld-hit"]) {
     map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
   }
   refreshTrack();
-  map.on("mouseenter", "trains", () => (map.getCanvas().style.cursor = "pointer"));
-  map.on("mouseleave", "trains", () => (map.getCanvas().style.cursor = ""));
+  for (const l of ["trains", "trains-ring"]) map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
+  for (const l of ["trains", "trains-ring"]) map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
   render(true);
   requestAnimationFrame(loop);
   // For tests and debugging (the app's emulator test shares a file with these).
@@ -2771,6 +2805,8 @@ $("delayed-btn").addEventListener("click", () => {
 $("delayed-close").addEventListener("click", () => ($("delayed").hidden = true));
 $("more-close").addEventListener("click", () => ($("more").hidden = true));
 $("net-chip").addEventListener("click", () => openNetworks());
+// The delay key chip opens the full key (in Capas).
+$("legend-chip").addEventListener("click", () => openLayers());
 $("fab-layers").addEventListener("click", () => ($("layers-panel").hidden ? openLayers() : ($("layers-panel").hidden = true)));
 $("networks-close").addEventListener("click", () => ($("networks").hidden = true));
 $("route-close").addEventListener("click", () => ($("route").hidden = true));

@@ -667,3 +667,11 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 .adder-form { display: flex; flex-direction: column; gap: 0; }
 .adder-form #commute-add-save { align-self: flex-start; margin-top: 8px; }
 .adder-form #commute-add-save:disabled { opacity: 0.5; }
+
+/* Map key: delay dots, then the type of service as line swatches. */
+.legend-sep { width: 1px; align-self: stretch; background: rgba(0, 0, 0, 0.15); margin: 0 2px; }
+.legend-head { font-weight: 600; white-space: nowrap; }
+.legend-item i.legend-line { width: 18px; height: 5px; border-radius: 3px; border: 0; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(0, 0, 0, 0.15); }
+.legend-line-cer { background: linear-gradient(90deg, #e2001a 0 25%, #f59e0b 25% 50%, #2563eb 50% 75%, #16a34a 75%); }
+.map-key .legend-row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 6px 0; font-size: 13px; }
+.legend-chip { cursor: pointer; }

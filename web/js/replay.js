@@ -3,6 +3,7 @@
 // (backend/src/replay.js): one frame per minute, trains moved smoothly
 // between frames. Times are UTC in the files; the app shows Madrid time.
 import { FLAG } from "./map.js";
+import { trainLabel } from "./format.js";
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -148,7 +149,7 @@ export function trainsAt(doc, t, next = null) {
 }
 
 /** The map's train layer data for replayed trains (same look as live). */
-export function replayGeoJson(trains) {
+export function replayGeoJson(trains, lineColor = () => null) {
   return {
     type: "FeatureCollection",
     features: trains.map((tr, i) => {
@@ -164,6 +165,10 @@ export function replayGeoJson(trains) {
         dim: 0,
       };
       if (tr.bearing !== null) props.b = tr.bearing;
+      const lb = trainLabel(tr.route, tr.number, tr.delay, props.t === "cer");
+      if (lb) props.lb = lb;
+      const lc = props.t === "cer" && tr.route ? lineColor(tr.route) : null;
+      if (lc) props.lc = lc;
       return { type: "Feature", id: i, geometry: { type: "Point", coordinates: [tr.lon, tr.lat] }, properties: props };
     }),
   };

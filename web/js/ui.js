@@ -10,7 +10,7 @@ import {
   formatDistance,
   formatDuration,
 } from "./format.js";
-import { COLORS, SCHEDULED_COLOR } from "./map.js";
+import { COLORS, SCHEDULED_COLOR, SERVICE_COLORS } from "./map.js";
 
 /** Create an element: el("div", { class: "x", onclick }, child, "text"). */
 export function el(tag, attrs = {}, ...children) {
@@ -47,6 +47,17 @@ export function legend(lang) {
   return items.map(([c, k]) =>
     el("span", { class: "legend-item" }, el("i", { style: `background:${c}` }), t(lang, k)),
   );
+}
+
+/** The kind-of-service key: the colour of track and of each train's ring. */
+export function serviceLegend(lang, short = false) {
+  const item = (cls, style, k) => el("span", { class: "legend-item" }, el("i", { class: `legend-line ${cls}`, style }), t(lang, k));
+  return [
+    el("span", { class: "legend-head" }, `${t(lang, short ? "legendServiceShort" : "legendService")}:`),
+    item("", `background:${SERVICE_COLORS.av}`, "legendAv"),
+    item("", `background:${SERVICE_COLORS.conv}`, "legendConv"),
+    item("legend-line-cer", null, "legendCer"),
+  ];
 }
 
 /** "AVE 03071", "C3 · 20015", or just the number. */
