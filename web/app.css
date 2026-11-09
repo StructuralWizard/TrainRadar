@@ -653,3 +653,11 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .route-delay.tone-text-minor { color: #fdba74; }
   .route-delay.tone-text-major { color: #fca5a5; }
 }
+
+/* "Añadir favorito" / "Añadir trayecto": a button, then search fields. */
+.adder { margin: 4px 0 8px; }
+.adder-btn { display: inline-flex; align-items: center; gap: 6px; }
+.adder .pick-field { margin-top: 8px; }
+.adder-form { display: flex; flex-direction: column; gap: 0; }
+.adder-form #commute-add-save { align-self: flex-start; margin-top: 8px; }
+.adder-form #commute-add-save:disabled { opacity: 0.5; }

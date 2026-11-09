@@ -11,6 +11,7 @@ const ICONS = {
   chevronLeft: [["path", { d: "M15 18l-6-6 6-6" }]],
   chevronRight: [["path", { d: "M9 6l6 6-6 6" }]],
   close: [["path", { d: "M6 6l12 12M18 6L6 18" }]],
+  plus: [["path", { d: "M12 5v14M5 12h14" }]],
   map: [["path", { d: "M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" }], ["path", { d: "M9 4v14M15 6v14" }]],
   pin: [["circle", { cx: 12, cy: 10, r: 3 }], ["path", { d: "M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z" }]],
   warning: [["path", { d: "M12 3L2 20h20L12 3z" }], ["path", { d: "M12 10v4M12 17v.5" }]],

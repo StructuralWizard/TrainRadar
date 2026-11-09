@@ -200,6 +200,15 @@ if ((await page.inputValue("#route-to")) !== "Córdoba") await fail("suggestion 
 await page.click("#route-close");
 
 
+// Favourites: "Añadir favorito" by searching a station.
+await page.click("#tab-favs");
+await page.click("#fav-add");
+await page.fill("#fav-q", "pinto");
+await page.click('#fav-q-sugg button[data-key^="s:"] >> nth=0').catch(() => fail("no station to add"));
+await page.waitForFunction(() => /Pinto/.test(document.getElementById("favs-body").textContent), null, { timeout: 5000 }).catch(() => fail("favourite not added"));
+console.log("favourite added:", await page.textContent("#fav-add-msg"));
+await page.click("#favs-close");
+
 // Desktop (≥ 720 px): trains and stations keep their map popups, and a
 // popup can be dragged out of the way by its title.
 {

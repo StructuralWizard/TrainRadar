@@ -9,7 +9,7 @@ import { formatAgo, formatCount, formatDelay, formatDistance } from "./js/format
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
-import { PLACE_ICON, layersSheet, networksSheet, placeKind, routeResults, stationSheet, trainSheet } from "./js/sheetui.js";
+import { PLACE_ICON, layersSheet, networksSheet, pickField, placeKind, routeResults, stationSheet, trainSheet } from "./js/sheetui.js";
 import { endStations, mergeRoutes } from "./js/route.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
@@ -1347,6 +1347,7 @@ function saveCommutes(next, redraw = () => {}, open = false) {
 /** Commute mode (Pro): next trains between the two saved stations. */
 function renderCommute() {
   if ($("commute").hidden || !engine) return;
+  if ($("commute-add").dataset.lang !== lang) renderCommuteAdd();
   const note = commuteNote;
   commuteNote = "";
   const c = activeCommute(commutes);
@@ -1432,6 +1433,7 @@ function openStation(st) {
 
 function renderFavourites() {
   if ($("favs").hidden) return;
+  if ($("favs-add").dataset.lang !== lang) renderFavAdd();
   $("favs-body").replaceChildren(
     ...favouritesPanel(lang, favs, {
       trainInfo: (f) => liveTrain(f.number),
@@ -2065,6 +2067,105 @@ function routePick(field, hit) {
   if (!route[other]) $(`route-${other}`).focus();
   else $(`route-${field}`).blur();
   renderRoute();
+}
+
+/*
+ * "Añadir" on the Favourites and commute screens: search instead of
+ * finding the thing on the map first. Their fields keep their own state,
+ * so the lists below can redraw while you type.
+ */
+const stationHits = (q, n = 6) =>
+  searchPlaces(q, stationList(), n, ["station"]).map((h) => ({
+    key: `s:${h.item.id}`,
+    icon: "pin",
+    name: h.item.name,
+    sub: t(lang, "searchStation"),
+    value: { id: h.item.id, name: h.item.name, lon: h.item.lon, lat: h.item.lat },
+  }));
+
+function adderButton(open, labelKey, id, onclick) {
+  return el("button", { class: "pill small adder-btn", type: "button", id, "aria-expanded": String(open), onclick }, icon(open ? "close" : "plus", 16), t(lang, open ? "addCancel" : labelKey));
+}
+
+let favAdding = false;
+let favAddMsg = "";
+function renderFavAdd() {
+  const box = $("favs-add");
+  box.dataset.lang = lang;
+  const toggle = adderButton(favAdding, "favAddBtn", "fav-add", () => {
+    favAdding = !favAdding;
+    favAddMsg = "";
+    renderFavAdd();
+    if (favAdding) $("fav-q").focus();
+  });
+  if (!favAdding) return box.replaceChildren(toggle, favAddMsg ? el("p", { class: "small", id: "fav-add-msg" }, favAddMsg) : "");
+  const field = pickField(lang, {
+    id: "fav-q",
+    label: t(lang, "favAddLabel"),
+    placeholder: t(lang, "favAddPh"),
+    search: (q) => [
+      ...(engine ? JSON.parse(engine.searchJson(q, 4)) : []).map((h) => ({
+        key: `t:${h.number}`,
+        icon: "arrowRight",
+        name: trainTitle(h),
+        sub: h.destination ? `→ ${h.destination}` : "",
+        value: { type: "train", number: h.number, label: trainTitle(h) },
+      })),
+      ...stationHits(q).map((h) => ({ ...h, value: { type: "station", ...h.value } })),
+    ],
+    onPick: (v) => {
+      if (!v) return;
+      const name = v.name || v.label;
+      if (isFavourite(favs, v)) favAddMsg = t(lang, "favAddDup", { name });
+      else {
+        const r = toggleFavourite(favs, v, favLimit());
+        if (r.full) favAddMsg = t(lang, "favFull", { n: favLimit() });
+        else {
+          favAddMsg = t(lang, "favAddDone", { name });
+          saveFavourites(r.list);
+        }
+      }
+      favAdding = false;
+      renderFavAdd();
+    },
+  });
+  box.replaceChildren(toggle, field);
+}
+
+let commuteAdding = false;
+const commuteDraftAdd = { from: null, to: null };
+function renderCommuteAdd() {
+  const box = $("commute-add");
+  box.dataset.lang = lang;
+  const toggle = adderButton(commuteAdding, "commuteAddBtn", "commute-add-btn", () => {
+    commuteAdding = !commuteAdding;
+    commuteDraftAdd.from = commuteDraftAdd.to = null;
+    renderCommuteAdd();
+    if (commuteAdding) $("commute-add-from").focus();
+  });
+  if (!commuteAdding) return box.replaceChildren(toggle);
+  const save = el("button", { class: "pill small pill-strong", type: "button", id: "commute-add-save", disabled: true }, t(lang, "commuteAddSave"));
+  const ready = () => (save.disabled = !(commuteDraftAdd.from && commuteDraftAdd.to && commuteDraftAdd.from.id !== commuteDraftAdd.to.id));
+  const field = (end, labelKey, phKey) =>
+    pickField(lang, {
+      id: `commute-add-${end}`,
+      label: t(lang, labelKey),
+      placeholder: t(lang, phKey),
+      search: (q) => stationHits(q),
+      onPick: (v) => {
+        commuteDraftAdd[end] = v;
+        ready();
+        if (v && end === "from" && !commuteDraftAdd.to) $("commute-add-to").focus();
+      },
+    });
+  save.addEventListener("click", () => {
+    const r = setDestination(setOrigin(commutes, commuteDraftAdd.from), commuteDraftAdd.to);
+    commuteNote = r.full ? t(lang, "commuteFull", { max: MAX_COMMUTES }) : "";
+    commuteAdding = false;
+    renderCommuteAdd();
+    saveCommutes(r.state, renderCommute);
+  });
+  box.replaceChildren(toggle, el("div", { class: "adder-form" }, field("from", "routeFrom", "commuteAddFromPh"), field("to", "routeTo", "commuteAddToPh"), save));
 }
 
 /** Every station as {id, name, lat, lon, services}, for the searches. */

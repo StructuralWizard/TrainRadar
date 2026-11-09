@@ -155,6 +155,16 @@ await pro.addInitScript(() => {
   };
 });
 const pp = await pro.newPage();
+/** The commute screen (Pro), from the Más tab. */
+const openCommute = async () => {
+  if (await pp.isHidden("#about")) {
+    await pp.click("#tab-more");
+    await pp.click("#more-about");
+  }
+  await pp.click("#settings-btn");
+  await pp.click("#commute-btn");
+  await pp.waitForSelector("#commute:not([hidden])");
+};
 // The history API (absent from the static bundle): made-up days.
 await pp.route("**/v1/history/**", (route) => {
   const u = new URL(route.request().url());
@@ -304,6 +314,24 @@ await pp.route("**/replay/2020-**", (r) => r.fulfill({ status: 404, body: "" }))
 await pp.click("#replay-live");
 await pp.waitForFunction(() => !/Moviola/.test(document.getElementById("stats").textContent), null, { timeout: 10000 }).catch(() => fail("didn't go back to live"));
 if (!(await pp.isHidden("#replay-bar"))) await fail("replay bar still showing");
+
+// Add a commute by searching (Pro): origin, destination, save.
+await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
+await openCommute();
+const commutesBefore = await pp.$$eval("#commute-body .commute-tabs button", (b) => b.length).catch(() => 0);
+await pp.click("#commute-add-btn");
+await pp.fill("#commute-add-from", "calatay");
+await pp.click("#commute-add-from-sugg button >> nth=0").catch(() => fail("no origin suggestions"));
+if (!(await pp.isDisabled("#commute-add-save"))) await fail("save enabled with one end");
+await pp.fill("#commute-add-to", "zaragoza deli");
+await pp.click("#commute-add-to-sugg button >> nth=0").catch(() => fail("no destination suggestions"));
+await pp.click("#commute-add-save");
+await pp.waitForFunction(() => /Calatayud → Zaragoza-Delicias/.test(document.getElementById("commute-body").textContent), null, { timeout: 5000 }).catch(async () =>
+  fail(`commute not added: ${await pp.textContent("#commute-body")}`),
+);
+console.log("commute added:", commutesBefore, "→", await pp.$$eval("#commute-body .commute-tabs button", (b) => b.length));
+await pp.screenshot({ path: `${out}/app-commute-added.png` });
+await pp.click("#commute-close");
 
 // Search (Pro): a train number not on the map offers its history.
 await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});

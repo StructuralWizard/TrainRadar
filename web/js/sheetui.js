@@ -491,3 +491,49 @@ export function routeResults(lang, { from, to, rows, multi, onTrain }) {
     ),
   ];
 }
+
+/**
+ * A search field with suggestions under it, for adding things: `search(q)`
+ * gives [{ key, icon, name, sub, value }], `onPick(value)` on a choice. The
+ * element keeps its own state, so the screen around it can redraw freely.
+ */
+export function pickField(lang, { id, label, placeholder, search, onPick }) {
+  const ul = el("ul", { class: "route-sugg", id: `${id}-sugg`, hidden: true });
+  const input = el("input", { id, type: "search", autocomplete: "off", placeholder, "aria-label": label });
+  const draw = () => {
+    const hits = input.value.trim().length >= 2 ? search(input.value) : [];
+    ul.hidden = !hits.length;
+    ul.replaceChildren(
+      ...hits.map((h) =>
+        el(
+          "li",
+          {},
+          el(
+            "button",
+            {
+              type: "button",
+              class: "route-sugg-row",
+              "data-key": h.key,
+              onclick: () => {
+                input.value = h.name;
+                ul.hidden = true;
+                onPick(h.value);
+              },
+            },
+            icon(h.icon, 16),
+            el("strong", {}, h.name),
+            h.sub ? el("span", { class: "muted" }, ` · ${h.sub}`) : null,
+          ),
+        ),
+      ),
+    );
+  };
+  input.addEventListener("input", () => {
+    onPick(null);
+    draw();
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") ul.querySelector("button")?.click();
+  });
+  return el("div", { class: "pick-field" }, el("label", { class: "route-field" }, el("span", { class: "route-k" }, label), input), ul);
+}
