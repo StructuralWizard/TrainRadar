@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { BACKUP_SCHEMA, backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./backup.js";
 import { Billing } from "./billing.js";
+import { CONFIG } from "./config.js";
 import { OFFLINE_DAYS, decide, parseCache } from "./entitlement.js";
 
 const DAY = 86_400_000;
@@ -60,6 +61,12 @@ function fakeCdv({ owned = false, initErrors = [] } = {}) {
 }
 
 const PRODUCTS = [{ id: "pro_monthly", kind: "subscription", pro: true }, { id: "tip_small", kind: "tip" }];
+
+test("Pro is sold yearly; the old monthly plan still unlocks Pro but isn't sold", () => {
+  const subs = CONFIG.products.filter((p) => p.kind === "subscription");
+  assert.deepEqual(subs.filter((p) => p.sell !== false).map((p) => p.id), ["pro_yearly"]);
+  assert.ok(subs.every((p) => p.pro), "both unlock Pro");
+});
 
 test("billing: registers products, reads Pro and prices, tips are consumed and thanked", async () => {
   const cdv = fakeCdv({ owned: true });

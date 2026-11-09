@@ -90,7 +90,8 @@ public class AppSmokeTest {
 
         String popup = (String) eval("return document.querySelector('.popup').textContent;");
         assertTrue(popup, popup.contains(number.replaceFirst("^0+", "")));
-        assertFalse("free edition hides gradients: " + popup, popup.contains("Pendiente"));
+        // The train details (trains ahead and behind, track) are free, as on the web.
+        assertTrue("free edition shows the train details: " + popup, popup.contains("Tren anterior"));
         assertTrue("favourite button", (Boolean) eval("return !!document.querySelector('.popup .fav-btn');"));
     }
 

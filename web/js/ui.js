@@ -295,7 +295,7 @@ export function trainRows(
   lang,
   info,
   onIncidents,
-  { napDate, profile, onTrain, appUrl, history, enthusiast = true, proLink = null, onHistory = null } = {},
+  { napDate, profile, onTrain, appUrl, history, proLink = null, onHistory = null } = {},
   skip = new Set(),
 ) {
   const rows = skip.has("alerts") ? [] : trainAlerts(lang, info, onIncidents);
@@ -333,7 +333,7 @@ export function trainRows(
       row(t(lang, "speed"), t(lang, info.speed_measured ? "speedMeasured" : "speedScheduled", { v: info.speed_kmh })),
     );
   }
-  if (enthusiast && (info.gauge_mm || info.max_kmh || info.tracks || info.electrified)) {
+  if ((info.gauge_mm || info.max_kmh || info.tracks || info.electrified)) {
     const parts = [];
     if (info.tracks) parts.push(t(lang, info.tracks === 1 ? "trackSingle" : info.tracks === 2 ? "trackDouble" : "trackMany", { n: info.tracks }));
     if (info.electrified) parts.push(t(lang, info.electrified === 2 ? "electrified" : "notElectrified"));
@@ -343,7 +343,7 @@ export function trainRows(
     const src = info.tracks || info.electrified ? "trackSourceIgn" : "trackSource";
     rows.push(row(t(lang, "track"), parts.join(" · "), el("span", { class: "muted" }, ` ${t(lang, src)}`)));
   }
-  if (enthusiast && info.grade_permille !== undefined) {
+  if (info.grade_permille !== undefined) {
     rows.push(
       row(
         t(lang, "grade"),
@@ -370,17 +370,7 @@ export function trainRows(
       info.position === "gps" || info.fix_age < 60 ? t(lang, "gpsAgo", { age }) : t(lang, "estimatedPos", { age }),
     ),
   );
-  // Free app: say what Pro adds here, rather than leaving it out silently.
-  if (!enthusiast && proLink && info.origin) {
-    rows.push(
-      el(
-        "button",
-        { class: "link small pro-teaser", type: "button", id: "details-pro", onclick: proLink },
-        t(lang, "detailsPro"),
-      ),
-    );
-  }
-  if (enthusiast && info.origin) {
+  if (info.origin) {
     rows.push(row(t(lang, "ahead"), gapText(lang, info.ahead, onTrain)));
     rows.push(row(t(lang, "behind"), gapText(lang, info.behind, onTrain)));
     if (info.oncoming) rows.push(row(t(lang, "oncoming"), oncomingText(lang, info.oncoming, onTrain)));
@@ -416,11 +406,11 @@ function popupActions(lang, fav, onShare) {
 export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete }) {
   const out = [];
   if (platform === "android") {
-    const sub = catalogue?.find((p) => p.kind === "subscription");
+    const sub = catalogue?.find((p) => p.kind === "subscription" && p.sell !== false);
     out.push(el("h3", {}, "TrainRadar Pro"));
     out.push(el("p", { class: pro?.pro ? "pro-on" : "muted", id: "pro-state" }, t(lang, `proState_${pro?.state || "none"}`)));
     out.push(el("p", { class: "small" }, t(lang, "proIncludes")));
-    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails", "proTrips", "proAlerts", "proWidget", "proHistory", "proCommute", "proReplay"].map((k) => el("li", {}, t(lang, k)))));
+    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proTrips", "proAlerts", "proWidget", "proHistory", "proCommute", "proReplay"].map((k) => el("li", {}, t(lang, k)))));
     // Mis viajes, Moviola, Trayecto habitual, alerts and widget: in "Más".
     if (pro?.pro) out.push(el("p", { class: "small muted", id: "pro-in-more" }, t(lang, "proInMore")));
     out.push(el("p", { class: "small muted" }, t(lang, "proSoon")));

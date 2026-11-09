@@ -32,15 +32,15 @@ EN EL MAPA
 GRATIS
 • Todo lo anterior, sin cuentas, sin anuncios.
 • 2 favoritos (trenes o estaciones) y la puntualidad de cada línea en los últimos 7 días.
+• Más datos de cada tren: tren anterior y siguiente, trenes que se cruzan, vía, pendiente y perfil de altura.
 
-TRAINRADAR PRO (suscripción mensual)
+TRAINRADAR PRO (suscripción anual, 1,99 €)
 • Favoritos ilimitados.
 • Avisos de retraso de tus trenes favoritos, también con la app cerrada, y widget para la pantalla de inicio.
 • Mis viajes: registro de tus trayectos con el retraso en cada parada, resumen para reclamar a Renfe, CSV e imagen para compartir.
 • Historial completo de puntualidad de líneas, trenes y estaciones (hasta 12 meses).
 • Trayectos habituales: guarda varios y la app abre con tus próximos trenes.
 • Moviola: mira dónde estaba cada tren, y con cuánto retraso, en cualquier momento pasado.
-• Detalles de vía: pendiente y perfil de altura, velocidad máxima, electrificación, trenes anterior y siguiente.
 
 PRIVACIDAD
 Sin cuentas, sin anuncios, sin rastreo. Tus favoritos y viajes se guardan solo en tu teléfono (y en la copia de seguridad de Android). TrainRadar es de código abierto: https://github.com/StructuralWizard/TrainRadar
@@ -68,15 +68,15 @@ ON THE MAP
 FREE
 • All of the above, no accounts, no ads.
 • 2 favourites (trains or stations) and each line's punctuality over the last 7 days.
+• More about each train: the trains ahead and behind, oncoming trains, track, gradient and height profile.
 
-TRAINRADAR PRO (monthly subscription)
+TRAINRADAR PRO (yearly subscription, €1.99)
 • Unlimited favourites.
 • Delay alerts for your favourite trains, also with the app closed, and a home-screen widget.
 • My trips: a log of your journeys with the delay at each stop, a summary for a claim to Renfe, CSV and a shareable image.
 • Full punctuality history of lines, trains and stations (up to 12 months).
 • Commutes: save several and the app opens on your next trains.
 • Replay: see where every train was, and how late, at any past moment.
-• Track details: gradient and height profile, line speed, electrification, the trains ahead and behind.
 
 PRIVACY
 No accounts, no ads, no tracking. Your favourites and trips stay on your phone (and in Android's backup). TrainRadar is open source: https://github.com/StructuralWizard/TrainRadar
@@ -99,7 +99,7 @@ Open data from Renfe Operadora (CC BY 4.0) and Spain's National Access Point for
 |---|---|
 | Privacy policy | https://trainradar.pages.dev/legal/privacy.html |
 | Ads | **No**, the app contains no ads |
-| App access | **Some functionality is restricted** (Play counts the Pro subscription). No sign-in details; leave "Sign in details … provide full access" unticked. Instructions: no account; Pro (`pro_monthly`) is bought in the app with Google Play Billing (Ajustes → TrainRadar Pro); reviewers can subscribe with a Play test payment method |
+| App access | **Some functionality is restricted** (Play counts the Pro subscription). No sign-in details; leave "Sign in details … provide full access" unticked. Instructions: no account; Pro (`pro_yearly`) is bought in the app with Google Play Billing (Ajustes → TrainRadar Pro); reviewers can subscribe with a Play test payment method |
 | Content rating | See below → expected **PEGI 3 / Everyone** |
 | Target audience | **18 and over** is not required; choose **13–15, 16–17, 18+** (not designed for children; no child-directed content) |
 | News app | No |
