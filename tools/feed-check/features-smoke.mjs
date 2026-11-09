@@ -209,6 +209,17 @@ await page.waitForFunction(() => /Pinto/.test(document.getElementById("favs-body
 console.log("favourite added:", await page.textContent("#fav-add-msg"));
 await page.click("#favs-close");
 
+// Left-handed mode (Más): map buttons move to the left, and back.
+await page.click("#tab-more");
+await page.click("#more-lefty");
+await page.click("#more-close");
+const fabX = await page.$eval("#fab-layers", (e) => e.getBoundingClientRect().x);
+if (fabX > 100) await fail(`left-handed: map buttons at x=${fabX}`);
+await page.click("#tab-more");
+await page.click("#more-lefty");
+await page.click("#more-close");
+if ((await page.$eval("#fab-layers", (e) => e.getBoundingClientRect().x)) < 200) await fail("right-handed again: buttons still left");
+
 // Desktop (≥ 720 px): trains and stations keep their map popups, and a
 // popup can be dragged out of the way by its title.
 {

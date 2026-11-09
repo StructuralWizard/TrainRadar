@@ -1711,6 +1711,17 @@ function tabClick(id) {
   }
 }
 
+/** Left-handed mode (phone): map buttons, credits and close buttons on
+ * the other side, within reach of the left thumb. Remembered. */
+const LEFTY_KEY = "lefty";
+const lefty = () => document.body.classList.contains("lefty");
+function setLefty(on) {
+  document.body.classList.toggle("lefty", on);
+  store.set(LEFTY_KEY, on ? "1" : "");
+  renderMore();
+}
+document.body.classList.toggle("lefty", store.get(LEFTY_KEY) === "1");
+
 /** "Más": language, settings, the Pro tools (app) and About. */
 let moreWidgetInfo = false;
 let moreMsg = ""; // e.g. notifications refused
@@ -1761,6 +1772,7 @@ function renderMore() {
       { class: "menu-list" },
       row("globe", t(lang, "moreLanguage"), t(lang, "moreLanguageValue"), () => $("lang").click(), "more-lang"),
       row("settings", t(lang, CONFIG.platform === "android" ? "moreSettingsPro" : "moreSettings"), "", toSettings, "more-settings"),
+      row("swap", t(lang, "moreLefty"), t(lang, lefty() ? "moreLeftyOn" : "moreLeftyOff"), () => setLefty(!lefty()), "more-lefty", { "aria-pressed": String(lefty()) }),
       row("info", t(lang, "moreAbout"), "", () => {
         openSheet("about");
         renderAbout();

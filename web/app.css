@@ -288,7 +288,7 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .summary-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   .summary-head h2 { margin: 0; font-size: 17px; }
   .summary-head .muted { margin-left: auto; }
-  .summary-hide { flex: none; width: 36px; height: 36px; margin: -6px -6px -6px 0; border: 0; border-radius: 18px; background: transparent; color: #4b5563; display: grid; place-items: center; }
+  .summary-head .summary-hide { flex: none; width: 36px; height: 36px; margin: -6px 0; padding: 0; border: 0; border-radius: 18px; background: transparent; box-shadow: none; color: #4b5563; display: grid; place-items: center; }
   /* "Retrasos ahora" tucked away: a small pill above the tab bar brings it back. */
   .delayed-show {
     position: fixed; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(var(--tab-h) + 10px);
@@ -517,6 +517,12 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
     bottom: calc(var(--tab-h) + var(--sheet-h) + 12px); transition: bottom 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   body[data-sheet="full"] .fabs, body.replaying .fabs { display: none; }
+  /* Left-handed mode: map buttons left, credits right, ✕ buttons left. */
+  body.lefty .fabs { right: auto; left: 16px; }
+  body.lefty .maplibregl-ctrl-bottom-right { left: auto; right: 0; }
+  body.lefty .sheet-head { justify-content: flex-start; gap: 10px; }
+  body.lefty .sheet-head > button[id$="-close"] { order: -1; }
+  body.lefty .route-form { flex-direction: row-reverse; }
   .fab {
     width: 48px; height: 48px; border: 0; border-radius: 24px; background: #fff; color: #111827;
     box-shadow: 0 4px 14px rgba(17, 24, 39, 0.16); display: flex; align-items: center; justify-content: center;
@@ -575,7 +581,7 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
   .muted, .small.muted, .summary-head .muted, .ts-meta, .ts-line, .dep-sub, .menu-value, .switch-text small, .group-h { color: #9ca3af; }
   .icon-btn, .act, .net-search, .net-card, .seg { background: #1f2937; color: #f3f4f6; }
   .delayed-show { background: #1f2937; color: #f3f4f6; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); }
-  .summary-hide { background: transparent; color: #9ca3af; }
+  .summary-head .summary-hide { background: transparent; color: #9ca3af; }
   .delayed-show-n { background: #450a0a; color: #fca5a5; }
   .net-search input { color: #f3f4f6; }
   .net-card-near { background: #1d4ed8; color: #fff; }
