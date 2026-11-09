@@ -35,10 +35,12 @@ export const CONFIG = {
   // TrainRadar Pro unlocked: set at run time from Google Play (Android app,
   // phase C5, js/entitlement.js). Always false on the web.
   pro: false,
-  // Google Play products (Play Console ids). More (yearly, lifetime: phase
-  // C8) can be added here without changing the screens.
+  // Google Play products (Play Console ids). Pro is sold as a yearly
+  // subscription; `sell: false` products still unlock Pro for whoever has
+  // them but aren't offered (the first, monthly plan).
   products: [
-    { id: "pro_monthly", kind: "subscription", pro: true },
+    { id: "pro_yearly", kind: "subscription", pro: true },
+    { id: "pro_monthly", kind: "subscription", pro: true, sell: false },
     { id: "tip_small", kind: "tip" },
     { id: "tip_medium", kind: "tip" },
     { id: "tip_large", kind: "tip" },
@@ -46,6 +48,9 @@ export const CONFIG = {
   // Google Play listing of the Android app; "" hides every app link until
   // the listing is live.
   playUrl: "",
+  // Where people report bugs and suggest changes (the repository's issue
+  // templates: bug, data problem, idea).
+  issuesUrl: "https://github.com/StructuralWizard/TrainRadar/issues/new/choose",
   // "Invítame a un café" page (web only, never in the Android app); "" hides it.
   coffeeUrl: "",
 };

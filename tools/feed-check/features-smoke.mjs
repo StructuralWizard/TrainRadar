@@ -209,6 +209,13 @@ await page.waitForFunction(() => /Pinto/.test(document.getElementById("favs-body
 console.log("favourite added:", await page.textContent("#fav-add-msg"));
 await page.click("#favs-close");
 
+// Más: a link to GitHub issues for ideas and bug reports.
+await page.click("#tab-more");
+const feedback = await page.getAttribute("#more-feedback", "href");
+if (!/github\.com\/StructuralWizard\/TrainRadar\/issues/.test(feedback || "")) await fail(`feedback link: ${feedback}`);
+await page.screenshot({ path: `${out}/more-feedback.png` });
+await page.click("#more-close");
+
 // Left-handed mode (Más): map buttons move to the left, and back.
 await page.click("#tab-more");
 await page.click("#more-lefty");

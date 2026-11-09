@@ -10,9 +10,8 @@ map opens without downloading them; live feeds come from the central bucket
 - **Build flag:** `TARGET=android tools/build-web.sh` sets `CONFIG.platform = "android"`
   in the bundle: no "Invítame a un café" link, no service worker, no "get the app"
   banner.
-- **Free edition:** everything the web has, minus the enthusiast details (track facts,
-  gradient and height profile, spacing to the trains ahead and behind), which come with
-  Pro (phase C5). Plus up to **2 favourites** (trains or stations, ★ in the header),
+- **Free edition:** everything the web has, train details included (track facts,
+  gradient and height profile, the trains ahead and behind, oncoming trains). Plus up to **2 favourites** (trains or stations, ★ in the header),
   sharing a train or station, the Android back button (closes the open panel or popup,
   then leaves the app) and links `trainradar://train/<number>`,
   `trainradar://station/<stop id>`.
@@ -25,13 +24,15 @@ map opens without downloading them; live feeds come from the central bucket
 ## TrainRadar Pro and tips (phase C5)
 
 - **Billing:** Google Play Billing through `cordova-plugin-purchase` (`web/js/billing.js`),
-  with products from `CONFIG.products`: `pro_monthly` (subscription) and the tips
+  with products from `CONFIG.products`: `pro_yearly` (the subscription sold; the first plan, `pro_monthly`, still unlocks
+  Pro for whoever has it but is no longer offered) and the tips
   `tip_small`, `tip_medium`, `tip_large` (consumables, unlock nothing). No server, no
   accounts: Play is asked on the phone at start and on resume, and its answer is cached
   for 7 days offline (`web/js/entitlement.js`, which documents how Play's states map:
   grace period = Pro, cancelled = Pro until the paid period ends, on hold or expired =
   not Pro). "Restore purchases" asks Play again (a new phone, a reinstall).
-- **Pro unlocks now:** unlimited favourites and the enthusiast details. The Pro screen
+- **Pro unlocks now:** unlimited favourites, delay alerts and the widget, My trips,
+  the full history, commutes and Replay. The Pro screen
   lists what's coming as "coming in later versions", not as part of the purchase.
 - **My trips (Pro, `web/js/trips.js`):** "🧳 I'm on this train" in a train popup, or
   "Am I on this train?" at high confidence, starts a trip. While the train is live the
@@ -99,7 +100,7 @@ map opens without downloading them; live feeds come from the central bucket
 1. Create the app `com.metranos.trainradar`, Play App Signing on.
 2. Upload a release build to the **internal testing** track (billing only works for
    an app that Play knows; `docs/android.md` → Release build).
-3. Monetise → Products → **Subscriptions**: `pro_monthly`, a monthly auto-renewing base
+3. Monetise → Products → **Subscriptions**: `pro_yearly`, a **yearly** auto-renewing base
    plan, €1.99 in Spain (set per product since Oct 2025: enter the Spanish price, let Play convert it for the other countries), no free trial.
 4. Monetise → Products → **In-app products**: `tip_small` €1.99, `tip_medium` €4.99,
    `tip_large` €9.99 (managed products; the app consumes them).
@@ -187,6 +188,28 @@ build scripts are bash.
       restore and cancel Pro and a tip.
 - [ ] Tag the release so the store version matches the code:
       `git tag v0.5.0 && git push origin v0.5.0` (or ask Claude to prepare it).
+
+### Updates inside the app
+
+The app checks Google Play each time it opens or comes back to the front
+(`InAppUpdates.java`, Play's in-app updates library). A user only sees a
+version their track has: testers get a test release first, everyone else
+when it reaches production.
+
+- **Flexible** (the default): Play asks once, the new version downloads in
+  the background while the app keeps working, then a dialog offers
+  "Reiniciar". If the user says no, it asks again after 3 days.
+- **Immediate** (mandatory, for critical fixes): Play's full-screen prompt;
+  the app can't be used until it's updated. Used when the release's
+  *in-app update priority* is 4 or 5. Play Console's web pages can't set
+  that priority: it's set when a release is sent through the Play
+  Developer API (`inAppUpdatePriority` on the track release). Releases
+  uploaded by hand are always flexible.
+
+Nothing shows in debug builds, the emulator or sideloaded APKs: the check
+only works for an app installed from Play. To try it, install an older
+version from the testing track, publish a newer one there, then open the app
+(Play may take a while to notice the new release).
 
 ### If something goes wrong
 

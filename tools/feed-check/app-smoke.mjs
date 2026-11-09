@@ -47,13 +47,13 @@ async function openTrain(number) {
   await page.waitForSelector(".popup .popup-title", { timeout: 5000 });
 }
 
-// Free edition: the enthusiast rows are gone.
+// Free edition: the same train details as the web (trains ahead and
+// behind, track), free in the app too.
 await openTrain(live[0]);
+await page.waitForFunction(() => /Tren anterior/.test(document.querySelector(".popup")?.textContent || ""), null, { timeout: 8000 })
+  .catch(() => fail("free app lacks the train-ahead/behind details"));
 const text = (await page.textContent(".popup")).replace(/\s+/g, " ");
 console.log("popup:", text.slice(0, 200));
-for (const gone of ["Pendiente", "Vía", "Tren delante", "Tren detrás"]) {
-  if (text.includes(gone)) await fail(`free app popup shows "${gone}"`);
-}
 if (!text.includes("Retraso")) await fail("popup lacks the delay");
 
 // Favourites: save two trains, the third hits the limit.
@@ -188,8 +188,8 @@ await pp.fill("#search-q", live[0]);
 await pp.waitForSelector("#search-results li button");
 await pp.click("#search-results li button");
 await pp.waitForSelector(".popup .popup-title");
-await pp.waitForFunction(() => /Tren delante|Vía/.test(document.querySelector(".popup")?.textContent || ""), null, { timeout: 8000 })
-  .catch(() => fail("Pro didn't unlock the details"));
+await pp.waitForFunction(() => /Tren anterior|Vía/.test(document.querySelector(".popup")?.textContent || ""), null, { timeout: 8000 })
+  .catch(() => fail("Pro lost the train details"));
 for (const n of live.slice(0, 3)) {
   await pp.click("#detail-close").catch(() => {});
   await pp.fill("#search-q", n);

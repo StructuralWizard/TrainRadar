@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { FREE_LIMIT, isFavourite, parseFavourites, toggleFavourite } from "./favourites.js";
-import { enthusiast } from "./features.js";
 import { isNative, parseLink, prefs } from "./native.js";
 
 test("app links and web links", () => {
@@ -36,12 +35,6 @@ test("favourites: free limit, toggle, no duplicates, bad data dropped", () => {
   assert.deepEqual(parsed, [a, b]);
   assert.deepEqual(parseFavourites("{oops"), []);
   assert.deepEqual(parseFavourites(null), []);
-});
-
-test("free Android edition hides the enthusiast details; web shows them", () => {
-  assert.equal(enthusiast({ platform: "web" }), true);
-  assert.equal(enthusiast({ platform: "android" }), false);
-  assert.equal(enthusiast({ platform: "android", pro: true }), true);
 });
 
 test("outside the app: no native bridge, prefs fall back safely", async () => {

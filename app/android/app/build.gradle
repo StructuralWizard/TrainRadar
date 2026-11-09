@@ -40,6 +40,9 @@ dependencies {
     implementation project(':capacitor-android')
     // Delay alerts: the 15-minute background check (phase C5c).
     implementation "androidx.work:work-runtime:2.10.0"
+    // Google Play in-app updates (InAppUpdates.java): newer versions are
+    // offered from inside the app, testers' track first.
+    implementation "com.google.android.play:app-update:2.1.0"
     testImplementation "junit:junit:$junitVersion"
     // The real org.json for JVM unit tests (Android's is a stub there).
     testImplementation "org.json:json:20250517"

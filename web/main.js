@@ -31,7 +31,6 @@ import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from "./js/replay.js";
 import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
-import { enthusiast } from "./js/features.js";
 import { appNative, canShare, copyText, exportBlob, exportFile, haptic as nativeHaptic, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
 import { backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./js/backup.js";
 import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
@@ -711,7 +710,6 @@ function showPopup(open = false) {
         ? () => openHistory({ kind: "train", trainNo: info.number, line: info.history_line, product: info.history_product, title: trainTitle(info), days: FREE_DAYS })
         : null,
       history: info.timetable_only ? null : history.get(info.history_line, info.history_product),
-      enthusiast: enthusiast(CONFIG),
       fav: favButton({ type: "train", number: info.number, label: trainTitle(info) }),
       onShare: canShare()
         ? () => share({ title: trainTitle(info), text: t(lang, "shareTrain", { train: trainTitle(info) }), url: `${CONFIG.siteUrl}?train=${encodeURIComponent(info.number)}` })
@@ -792,7 +790,6 @@ function showTrainSheet(info, open, now) {
       onTrain: (j) => selectTrain(JSON.parse(engine.trainJson(j, Date.now())), { fly: true }),
       appUrl: CONFIG.platform === "web" ? CONFIG.playUrl : "",
       proLink: CONFIG.platform === "android" && !CONFIG.pro ? () => (openSheet("settings"), renderSettings()) : null,
-      enthusiast: enthusiast(CONFIG),
     },
   });
   $("detail-body").replaceChildren(body);
@@ -1781,6 +1778,18 @@ function renderMore() {
         openSheet("about");
         renderAbout();
       }, "more-about"),
+      // A link, so the phone opens it in the browser (GitHub).
+      el(
+        "li",
+        {},
+        el(
+          "a",
+          { class: "menu-row", id: "more-feedback", href: CONFIG.issuesUrl, target: "_blank", rel: "noopener" },
+          icon("message"),
+          el("span", { class: "menu-label" }, t(lang, "moreFeedback"), el("small", { class: "menu-sub" }, t(lang, "moreFeedbackSub"))),
+          icon("arrowUpRight", 18),
+        ),
+      ),
     );
   // With Pro its tools come first: they're what this tab is mostly for.
   const pros = proRows.filter(Boolean);
