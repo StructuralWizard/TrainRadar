@@ -188,6 +188,28 @@ build scripts are bash.
 - [ ] Tag the release so the store version matches the code:
       `git tag v0.5.0 && git push origin v0.5.0` (or ask Claude to prepare it).
 
+### Updates inside the app
+
+The app checks Google Play each time it opens or comes back to the front
+(`InAppUpdates.java`, Play's in-app updates library). A user only sees a
+version their track has: testers get a test release first, everyone else
+when it reaches production.
+
+- **Flexible** (the default): Play asks once, the new version downloads in
+  the background while the app keeps working, then a dialog offers
+  "Reiniciar". If the user says no, it asks again after 3 days.
+- **Immediate** (mandatory, for critical fixes): Play's full-screen prompt;
+  the app can't be used until it's updated. Used when the release's
+  *in-app update priority* is 4 or 5. Play Console's web pages can't set
+  that priority: it's set when a release is sent through the Play
+  Developer API (`inAppUpdatePriority` on the track release). Releases
+  uploaded by hand are always flexible.
+
+Nothing shows in debug builds, the emulator or sideloaded APKs: the check
+only works for an app installed from Play. To try it, install an older
+version from the testing track, publish a newer one there, then open the app
+(Play may take a while to notice the new release).
+
 ### If something goes wrong
 
 - "SDK location not found": set `ANDROID_HOME` (above) or create

@@ -5,4 +5,9 @@
     <string name="package_name">com.metranos.trainradar</string>
     <string name="custom_url_scheme">com.metranos.trainradar</string>
     <string name="widget_description">Your favourite trains and their delay (TrainRadar Pro)</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Update ready</string>
+    <string name="update_ready_message">A new version of TrainRadar has been downloaded. Restart to use it.</string>
+    <string name="update_restart">Restart</string>
+    <string name="update_later">Later</string>
 </resources>

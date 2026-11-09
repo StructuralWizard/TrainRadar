@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_description">Tus trenes favoritos y su retraso (TrainRadar Pro)</string>
+    <!-- Actualizaciones desde la app (InAppUpdates.java) -->
+    <string name="update_ready_title">Actualización lista</string>
+    <string name="update_ready_message">Se ha descargado una nueva versión de TrainRadar. Reinicia para usarla.</string>
+    <string name="update_restart">Reiniciar</string>
+    <string name="update_later">Más tarde</string>
+</resources>
