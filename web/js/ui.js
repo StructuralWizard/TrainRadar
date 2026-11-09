@@ -220,6 +220,7 @@ export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web
   );
   out.push(...officialLinks(lang));
   out.push(el("p", { class: "small" }, link("https://github.com/StructuralWizard/TrainRadar", `${t(lang, "sourceCode")} ↗`)));
+  out.push(el("p", { class: "small" }, link("https://github.com/StructuralWizard/TrainRadar/issues/new/choose", `${t(lang, "moreFeedback")} ↗`)));
   out.push(el("p", { class: "small muted", id: "about-version" }, t(lang, "aboutBy", { v: version })));
   return out;
 }

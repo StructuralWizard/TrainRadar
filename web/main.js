@@ -1778,6 +1778,18 @@ function renderMore() {
         openSheet("about");
         renderAbout();
       }, "more-about"),
+      // A link, so the phone opens it in the browser (GitHub).
+      el(
+        "li",
+        {},
+        el(
+          "a",
+          { class: "menu-row", id: "more-feedback", href: CONFIG.issuesUrl, target: "_blank", rel: "noopener" },
+          icon("message"),
+          el("span", { class: "menu-label" }, t(lang, "moreFeedback"), el("small", { class: "menu-sub" }, t(lang, "moreFeedbackSub"))),
+          icon("arrowUpRight", 18),
+        ),
+      ),
     );
   // With Pro its tools come first: they're what this tab is mostly for.
   const pros = proRows.filter(Boolean);

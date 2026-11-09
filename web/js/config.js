@@ -48,6 +48,9 @@ export const CONFIG = {
   // Google Play listing of the Android app; "" hides every app link until
   // the listing is live.
   playUrl: "",
+  // Where people report bugs and suggest changes (the repository's issue
+  // templates: bug, data problem, idea).
+  issuesUrl: "https://github.com/StructuralWizard/TrainRadar/issues/new/choose",
   // "Invítame a un café" page (web only, never in the Android app); "" hides it.
   coffeeUrl: "",
 };
