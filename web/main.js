@@ -1016,6 +1016,7 @@ async function refreshEntitlement() {
     appNative.refreshWidget().catch(() => {});
   }
   renderSettings();
+  renderMore();
 }
 
 /** What the background check needs (read natively from Preferences). */
@@ -1026,14 +1027,15 @@ function writeAlertConfig() {
 
 async function setAlerts(on) {
   if (on && !(await appNative.requestNotifications().catch(() => false))) {
-    settingsMsg = t(lang, "alertsDenied");
-    return renderSettings();
+    settingsMsg = moreMsg = t(lang, "alertsDenied");
+    return renderSettings(), renderMore();
   }
   alertsOn = on;
   await writeAlertConfig();
   await appNative.setAlerts(on, lang).catch((e) => console.warn("alerts", e));
-  settingsMsg = "";
+  settingsMsg = moreMsg = "";
   renderSettings();
+  renderMore();
 }
 
 /** While the app is open: the same alerts, live from the engine (every minute). */
@@ -1100,17 +1102,6 @@ function renderSettings() {
         refreshEntitlement();
       },
       onManage: () => billing?.manage(),
-      onTrips: () => {
-        openSheet("trips");
-        fillArrivals();
-        renderTrips();
-      },
-      alerts: appNative.available() ? { on: alertsOn, onToggle: () => setAlerts(!alertsOn) } : null,
-      onCommute: () => {
-        openSheet("commute");
-        renderCommute();
-      },
-      onReplay: replaySource() ? () => startReplay() : null,
       onExport: () =>
         exportFile(backupName(), makeBackup({ favourites: favs, trips, settings: { lang: store.get("lang"), basemap: store.get("basemap") } })).catch((e) => {
           settingsMsg = t(lang, "proError", { error: e.message });
@@ -1720,36 +1711,64 @@ function tabClick(id) {
   }
 }
 
-/** "Más": language, settings (Pro in the app) and About. */
+/** "Más": language, settings, the Pro tools (app) and About. */
+let moreWidgetInfo = false;
+let moreMsg = ""; // e.g. notifications refused
 function renderMore() {
-  const row = (ic, label, value, onclick, id) =>
+  if ($("more").hidden) return;
+  const row = (ic, label, value, onclick, id, attrs = {}) =>
     el(
       "li",
       {},
       el(
         "button",
-        { type: "button", class: "menu-row", id, onclick },
+        { type: "button", class: "menu-row", id, onclick, ...attrs },
         icon(ic),
         el("span", { class: "menu-label" }, label),
         value ? el("span", { class: "menu-value" }, value) : null,
         icon("chevronRight", 18),
       ),
     );
-  $("more-body").replaceChildren(
-    el(
+  const toSettings = () => {
+    openSheet("settings");
+    renderSettings();
+  };
+  // Pro tools (Android app): each opens its screen; without Pro, the Pro offer.
+  const pro = CONFIG.pro;
+  const proTag = pro ? "" : "Pro";
+  const proRows =
+    CONFIG.platform !== "android"
+      ? []
+      : [
+          el("h3", { class: "group-h" }, "TrainRadar Pro"),
+          el(
+            "ul",
+            { class: "menu-list", id: "more-pro" },
+            row("suitcase", t(lang, "tripsTitle"), proTag, pro ? () => (openSheet("trips"), fillArrivals(), renderTrips()) : toSettings, "trips-btn"),
+            replaySource() || !pro ? row("replay", t(lang, "replayTitle"), proTag, pro ? () => startReplay() : toSettings, "replay-btn") : null,
+            row("pin", t(lang, "commuteTitle"), proTag, pro ? () => (openSheet("commute"), renderCommute()) : toSettings, "commute-btn"),
+            appNative.available() || !pro
+              ? row("bell", t(lang, "moreAlerts"), pro ? t(lang, alertsOn ? "moreOn" : "moreOff") : proTag, pro ? () => setAlerts(!alertsOn) : toSettings, "alerts-btn", { "aria-pressed": String(!!(pro && alertsOn)) })
+              : null,
+            row("chart", t(lang, "moreWidget"), proTag, pro ? () => ((moreWidgetInfo = !moreWidgetInfo), renderMore()) : toSettings, "widget-btn", { "aria-expanded": String(moreWidgetInfo) }),
+          ),
+          moreMsg ? el("p", { class: "small warn", id: "more-msg" }, moreMsg) : null,
+          pro && moreWidgetInfo ? el("p", { class: "small muted", id: "widget-help" }, t(lang, "moreWidgetHow")) : null,
+          pro && alertsOn ? el("p", { class: "small muted" }, t(lang, "alertsNote")) : null,
+        ];
+  const general = el(
       "ul",
       { class: "menu-list" },
       row("globe", t(lang, "moreLanguage"), t(lang, "moreLanguageValue"), () => $("lang").click(), "more-lang"),
-      row("settings", t(lang, CONFIG.platform === "android" ? "moreSettingsPro" : "moreSettings"), "", () => {
-        openSheet("settings");
-        renderSettings();
-      }, "more-settings"),
+      row("settings", t(lang, CONFIG.platform === "android" ? "moreSettingsPro" : "moreSettings"), "", toSettings, "more-settings"),
       row("info", t(lang, "moreAbout"), "", () => {
         openSheet("about");
         renderAbout();
       }, "more-about"),
-    ),
-  );
+    );
+  // With Pro its tools come first: they're what this tab is mostly for.
+  const pros = proRows.filter(Boolean);
+  $("more-body").replaceChildren(...(pro ? [...pros, el("h3", { class: "group-h" }, t(lang, "moreGeneral")), general] : [general, ...pros]));
 }
 
 /** The home sheet's "Delays now": trains 15+, 5–14 min late and on time.

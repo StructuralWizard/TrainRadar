@@ -90,8 +90,11 @@ await page.waitForSelector(".popup .popup-title", { timeout: 25000 }).catch(() =
 const title = await page.textContent(".popup .popup-title");
 if (!title.includes(live[1].replace(/^0+/, ""))) await fail(`link opened ${title}`);
 
-// About: no coffee link in the app.
+// Más: the Pro tools are listed, tagged "Pro" without it.
 await page.click("#tab-more");
+const proTags = await page.$$eval("#more-pro .menu-row", (r) => r.map((x) => x.querySelector(".menu-value")?.textContent));
+if (proTags.length < 4 || proTags.some((x) => x !== "Pro")) await fail(`Pro rows in Más: ${proTags}`);
+// About: no coffee link in the app.
 await page.click("#more-about");
 if ((await page.textContent("#about")).includes("café")) await fail("coffee link in the app");
 const sw = await page.evaluate(() => navigator.serviceWorker?.getRegistrations().then((r) => r.length) ?? 0);
@@ -155,13 +158,14 @@ await pro.addInitScript(() => {
   };
 });
 const pp = await pro.newPage();
+/** The Más tab (where the Pro tools are), opened if it isn't. */
+const toMore = async () => {
+  if (await pp.isHidden("#more")) await pp.click("#tab-more");
+  await pp.waitForSelector("#more:not([hidden]) #more-pro");
+};
 /** The commute screen (Pro), from the Más tab. */
 const openCommute = async () => {
-  if (await pp.isHidden("#about")) {
-    await pp.click("#tab-more");
-    await pp.click("#more-about");
-  }
-  await pp.click("#settings-btn");
+  await toMore();
   await pp.click("#commute-btn");
   await pp.waitForSelector("#commute:not([hidden])");
 };
@@ -219,6 +223,7 @@ await pp.click("#more-about");
 await pp.click("#settings-btn");
 await pp.waitForSelector("#pro-state.pro-on");
 console.log("pro:", await pp.textContent("#pro-state"));
+await toMore();
 // Delay alerts: on → permission asked, background check scheduled, config
 // stored for it; favourites refreshed the widget.
 await pp.click("#alerts-btn");
@@ -292,11 +297,8 @@ await pp.route("**/replay/**", async (route) => {
   const doc = { v: 1, hour: `${m[1]}T${m[2]}`, trains: [["a", "C3", "20047", "Aranjuez"], ["b", "C3", "21047", "Atocha"], ["c", "AVE", "03001", "Barcelona-Sants"]], frames };
   return route.fulfill({ contentType: "application/json", body: JSON.stringify(doc) });
 });
-if (await pp.isHidden("#about")) {
-  await pp.click("#tab-more");
-  await pp.click("#more-about");
-}
-await pp.click("#settings-btn");
+await toMore();
+await pp.screenshot({ path: `${out}/app-more-pro.png` });
 await pp.click("#replay-btn");
 await pp.waitForSelector("#replay-bar:not([hidden]) #replay-play", { timeout: 5000 }).catch(() => fail("replay controls didn't show"));
 await pp.waitForFunction(() => /Moviola · .* · 3 trenes · 2 con retraso/.test(document.getElementById("stats").textContent), null, { timeout: 10000 }).catch(async () =>

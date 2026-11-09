@@ -392,7 +392,7 @@ function popupActions(lang, fav, onShare) {
 /** Settings: TrainRadar Pro and tips (Android app), backup of the user's
  * own data (both). `pro`: entitlement.decide()'s result; `catalogue`:
  * Billing.catalogue() (null outside the app or before Play answers). */
-export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete, onTrips = null, alerts = null, onCommute = null, onReplay = null }) {
+export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete }) {
   const out = [];
   if (platform === "android") {
     const sub = catalogue?.find((p) => p.kind === "subscription");
@@ -400,19 +400,8 @@ export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, 
     out.push(el("p", { class: pro?.pro ? "pro-on" : "muted", id: "pro-state" }, t(lang, `proState_${pro?.state || "none"}`)));
     out.push(el("p", { class: "small" }, t(lang, "proIncludes")));
     out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proDetails", "proTrips", "proAlerts", "proWidget", "proHistory", "proCommute", "proReplay"].map((k) => el("li", {}, t(lang, k)))));
-    if (pro?.pro && onTrips) out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "trips-btn", onclick: onTrips }, `🧳 ${t(lang, "tripsTitle")}`)));
-    if (pro?.pro && onReplay) out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "replay-btn", onclick: onReplay }, `⏪ ${t(lang, "replayTitle")}`)));
-    if (pro?.pro && onCommute) out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "commute-btn", onclick: onCommute }, `🏠 ${t(lang, "commuteTitle")}`)));
-    if (pro?.pro && alerts) {
-      out.push(
-        el(
-          "p",
-          {},
-          el("button", { class: "pill", type: "button", id: "alerts-btn", "aria-pressed": String(alerts.on), onclick: alerts.onToggle }, `🔔 ${t(lang, alerts.on ? "alertsOn" : "alertsOff")}`),
-        ),
-        el("p", { class: "small muted" }, t(lang, "alertsNote")),
-      );
-    }
+    // Mis viajes, Moviola, Trayecto habitual, alerts and widget: in "Más".
+    if (pro?.pro) out.push(el("p", { class: "small muted", id: "pro-in-more" }, t(lang, "proInMore")));
     out.push(el("p", { class: "small muted" }, t(lang, "proSoon")));
     if (!pro?.pro) {
       out.push(
