@@ -218,6 +218,14 @@ export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web
       ].map(([href, k]) => el("li", {}, link(href, t(lang, k)))),
     ),
   );
+  if (platform === "web") {
+    // Guide pages (static text on the site; not bundled in the app).
+    const guides = lang === "en"
+      ? [["en/spain-train-delays/", "guideDelays"], ["en/renfe-delay-compensation/", "guideClaims"]]
+      : [["retrasos-trenes-renfe/", "guideDelays"], ["indemnizacion-retrasos-renfe/", "guideClaims"]];
+    out.push(el("h3", {}, t(lang, "guides")));
+    out.push(el("ul", { class: "links" }, guides.map(([href, k]) => el("li", {}, el("a", { href }, t(lang, k))))));
+  }
   out.push(...officialLinks(lang));
   out.push(el("p", { class: "small" }, link("https://github.com/StructuralWizard/TrainRadar", `${t(lang, "sourceCode")} ↗`)));
   out.push(el("p", { class: "small" }, link("https://github.com/StructuralWizard/TrainRadar/issues/new/choose", `${t(lang, "moreFeedback")} ↗`)));

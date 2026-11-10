@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://mytrainradar.com/</loc>
+    <lastmod>2026-11-10</lastmod>
+  </url>
+  <url>
+    <loc>https://mytrainradar.com/retrasos-trenes-renfe/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <xhtml:link rel="alternate" hreflang="es" href="https://mytrainradar.com/retrasos-trenes-renfe/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mytrainradar.com/en/spain-train-delays/"/>
+  </url>
+  <url>
+    <loc>https://mytrainradar.com/en/spain-train-delays/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <xhtml:link rel="alternate" hreflang="es" href="https://mytrainradar.com/retrasos-trenes-renfe/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mytrainradar.com/en/spain-train-delays/"/>
+  </url>
+  <url>
+    <loc>https://mytrainradar.com/indemnizacion-retrasos-renfe/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <xhtml:link rel="alternate" hreflang="es" href="https://mytrainradar.com/indemnizacion-retrasos-renfe/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mytrainradar.com/en/renfe-delay-compensation/"/>
+  </url>
+  <url>
+    <loc>https://mytrainradar.com/en/renfe-delay-compensation/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <xhtml:link rel="alternate" hreflang="es" href="https://mytrainradar.com/indemnizacion-retrasos-renfe/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mytrainradar.com/en/renfe-delay-compensation/"/>
+  </url>
+  <url>
+    <loc>https://mytrainradar.com/legal/provider.html</loc>
+    <lastmod>2026-11-05</lastmod>
+  </url>
+  <url>
+    <loc>https://mytrainradar.com/legal/privacy.html</loc>
+    <lastmod>2026-11-05</lastmod>
+  </url>
+  <url>
+    <loc>https://mytrainradar.com/legal/licences.html</loc>
+    <lastmod>2026-11-05</lastmod>
+  </url>
+</urlset>

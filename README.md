@@ -8,6 +8,8 @@
 
 **Live:** https://mytrainradar.com · installable on your phone's home screen
 
+Guides: [Renfe delays live](https://mytrainradar.com/retrasos-trenes-renfe/) ([English](https://mytrainradar.com/en/spain-train-delays/)) · [Renfe delay compensation](https://mytrainradar.com/indemnizacion-retrasos-renfe/) ([English](https://mytrainradar.com/en/renfe-delay-compensation/))
+
 TrainRadar is an open-source Rust workspace compiled to WebAssembly. Your browser fetches
 Renfe's open realtime feeds, decodes them, matches trains to the timetable, works out delays
 and draws them on a MapLibre map. There is no TrainRadar server.

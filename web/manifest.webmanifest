@@ -1,7 +1,7 @@
 {
   "name": "TrainRadar · trenes de Renfe en directo",
   "short_name": "TrainRadar",
-  "description": "Mapa en directo de trenes de Renfe coloreados por retraso. Funciona en tu navegador.",
+  "description": "Mapa en directo de los trenes de Renfe en España (Cercanías, AVE, Avlo, Alvia, Media Distancia) y OUIGO, con su retraso, avisos y puntualidad.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

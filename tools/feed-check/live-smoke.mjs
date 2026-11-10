@@ -2,7 +2,8 @@
 // - live mode: the app reads rt/status.json every 10 s and downloads a feed
 //   only when its Last-Modified changes (the fixtures don't change, so each
 //   feed is downloaded once);
-// - the About panel (legal pages, data source; no coffee link without a URL);
+// - the About panel (legal pages, guides, data source; no coffee link without a URL);
+// - the guide pages without JavaScript, and robots.txt, sitemap.xml, llms.txt;
 // - the "get the app" banner: from the 3rd visit, once, until dismissed.
 //   Needs the dev server started with TEST_PLAY_URL set.
 //
@@ -62,7 +63,19 @@ for (const want of ["Privacidad", "Términos de uso", "Aviso legal", "Licencias 
   if (!about.includes(want)) await fail(`about lacks "${want}"`);
 }
 if (about.includes("café")) await fail("coffee link shown without a URL");
+// Guides: linked from About on the web, and readable without JavaScript.
+if (!(await page.$("#about-body a[href='indemnizacion-retrasos-renfe/']"))) await fail("about lacks the compensation guide");
 await page.screenshot({ path: `${out}/about.png` });
+for (const [path, want] of [["indemnizacion-retrasos-renfe/", "Compromiso de puntualidad"], ["en/spain-train-delays/", "Live Spanish train delays"]]) {
+  const guide = await browser.newPage({ javaScriptEnabled: false });
+  const g = await guide.goto(new URL(path, url).href);
+  if (!g.ok() || !(await guide.textContent("main")).includes(want)) await fail(`guide ${path}`);
+  await guide.close();
+}
+for (const path of ["robots.txt", "sitemap.xml", "llms.txt"]) {
+  const r = await page.request.get(new URL(path, url).href);
+  if (!r.ok()) await fail(`${path}: ${r.status()}`);
+}
 
 // A legal page loads (static, no scripts).
 const legal = await context.newPage();
