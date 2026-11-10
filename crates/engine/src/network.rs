@@ -475,6 +475,15 @@ impl Network {
             .map_or("", |&s| r.tt.stops[s as usize].name.as_str())
     }
 
+    /// GTFS id of the trip's stop number `index` ("" if out of range).
+    pub fn stop_id(&self, t: TripRef, index: usize) -> &str {
+        let r = &self.regions[t.region as usize];
+        let p = &r.tt.patterns[r.tt.trips[t.trip as usize].pattern as usize];
+        p.stops
+            .get(index)
+            .map_or("", |&s| r.tt.stops[s as usize].id.as_str())
+    }
+
     /// Look up a trip by its GTFS id, ignoring dates.
     pub fn find_trip(&self, trip_id: &str) -> Option<TripRef> {
         self.by_trip_id.get(trip_id).copied()
