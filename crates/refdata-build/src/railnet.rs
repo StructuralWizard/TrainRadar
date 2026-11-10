@@ -245,6 +245,8 @@ pub const ANCHOR_MAIN_M: f64 = 600.0;
 /// With no track of any kind that close, the nearest track within this
 /// distance still gets the station (reported as far).
 pub const ANCHOR_FALLBACK_M: f64 = 1_000.0;
+/// Stations aren't anchored on isolated pieces of track shorter than this.
+pub const MIN_PIECE_M: f64 = 2_000.0;
 /// Tracks of the same kind at most this much further than the nearest one
 /// run alongside it (double track, station loops): the station sits on them too...
 pub const PARALLEL_M: f64 = 50.0;
@@ -453,13 +455,18 @@ impl RailGraph {
         let mut cuts: HashMap<(u32, u32), Vec<(f64, usize)>> = HashMap::new();
         let mut wanted: Vec<(String, Kind, f64)> = Vec::new();
         let index = self.edge_index();
+        let connected = self.connected_nodes(MIN_PIECE_M);
         for st in stations {
             let near = if st.level == 1 {
                 ANCHOR_MAIN_M
             } else {
                 ANCHOR_M
             };
-            let cands = self.candidates(&index, st.at, ANCHOR_FALLBACK_M);
+            let cands: Vec<_> = self
+                .candidates(&index, st.at, ANCHOR_FALLBACK_M)
+                .into_iter()
+                .filter(|c| connected[c.1.0 as usize])
+                .collect();
             let mut chosen: Vec<(Kind, (u32, u32), f64, f64)> = Vec::new();
             for kind in Kind::ALL {
                 let mut of_kind = cands.iter().filter(|c| c.0 == kind && c.3 <= near);
@@ -522,6 +529,35 @@ impl RailGraph {
                 .collect(),
         );
         report
+    }
+
+    /// Per node: is it on a piece of track (drawn or service) at least
+    /// `min_m` long? Short isolated bits (a turntable road, a museum track)
+    /// would otherwise catch a station and cut it off from its line.
+    fn connected_nodes(&self, min_m: f64) -> Vec<bool> {
+        let n = self.nodes().len();
+        let mut piece = vec![u32::MAX; n];
+        let mut lens: Vec<f64> = Vec::new();
+        for start in 0..n {
+            if piece[start] != u32::MAX {
+                continue;
+            }
+            let id = lens.len() as u32;
+            let mut len = 0.0;
+            let mut stack = vec![start as u32];
+            piece[start] = id;
+            while let Some(i) = stack.pop() {
+                for e in self.adj_of(i) {
+                    len += f64::from(e.len_m) / 2.0; // each edge is seen from both ends
+                    if piece[e.to as usize] == u32::MAX {
+                        piece[e.to as usize] = id;
+                        stack.push(e.to);
+                    }
+                }
+            }
+            lens.push(len);
+        }
+        piece.iter().map(|&p| lens[p as usize] >= min_m).collect()
     }
 
     /// Every drawn edge within `max_m` of `p`, nearest first:
@@ -905,6 +941,24 @@ mod tests {
         assert!(
             s.iter()
                 .all(|x| x.kind == Kind::Av && x.pts.iter().all(|p| p.lat == 40.0))
+        );
+    }
+
+    #[test]
+    fn skips_isolated_bits_of_track() {
+        let text = concat!(
+            "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
+            "[[-3.70,40.0],[-3.60,40.0]]},\"properties\":{\"railway\":\"rail\",\"gauge\":\"1668\"}}\n",
+            "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
+            "[[-3.651,40.0015],[-3.649,40.0015]]},\"properties\":{\"railway\":\"rail\",\"gauge\":\"1668\"}}\n",
+        );
+        let mut g = RailGraph::from_geojsonseq(text.as_bytes()).unwrap();
+        let r = g.anchor_stations(&[station("S", 40.0011, -3.65, 2)]);
+        let a = &r.anchors["S"];
+        assert_eq!(a.len(), 1);
+        assert!(
+            g.nodes()[a[0].node as usize].lat == 40.0,
+            "on the line, not the 170 m bit"
         );
     }
 
