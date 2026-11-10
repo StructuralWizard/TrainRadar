@@ -134,6 +134,13 @@ impl Engine {
         Ok(self.net.load_geometry(bytes)?)
     }
 
+    /// Load the rail network (`rail.<hash>.bin`); returns its section count.
+    /// From then on [`Self::track_geojson`] draws it instead of the legs.
+    #[wasm_bindgen(js_name = loadNetwork)]
+    pub fn load_network(&mut self, bytes: &[u8]) -> Result<usize, JsError> {
+        Ok(self.net.load_network(bytes)?)
+    }
+
     /// Feeds to poll, as JSON: `[{key, path, interval, commuter}]`.
     #[wasm_bindgen(js_name = feedsJson)]
     pub fn feeds_json(&self) -> String {
@@ -619,9 +626,16 @@ impl Engine {
     /// `{av, ld, md, gauge, tracks, electrified, max_kmh}` per OpenStreetMap
     /// leg (`av`/`ld`/`md`: which kinds of train run on it), for the track
     /// layers. Grows as geometry files load.
+    ///
+    /// Once the rail network has loaded ([`Self::load_network`]) it draws
+    /// that instead, by kind of track: `av` high speed, `ld` conventional,
+    /// `md` metre gauge, plus `kind`, `mixed`, `disused`, `gauge`, `max_kmh`.
     #[wasm_bindgen(js_name = trackGeoJson)]
     pub fn track_geojson(&self) -> String {
         use std::collections::HashMap;
+        if !self.net.sections.is_empty() {
+            return self.network_geojson();
+        }
         // The same stop pair in either direction, or in two regions.
         let key = |line: &trainradar_proto::geo::Polyline| -> Option<[i64; 4]> {
             let pts = line.points();
@@ -947,6 +961,85 @@ impl Engine {
         self.live.fix_since_text()
     }
 
+    /// Raw GPS log (central recorder): every live train's last GPS fix
+    /// exactly as the feed gave it, never placed on our track, so it can be
+    /// used to check the track. One row per train:
+    /// `[key, number, feed, product, fix_time, lon_e5, lat_e5, speed_kmh|null,
+    /// prev_stop, next_stop, feed_stop]` (key = GTFS trip id, else the train
+    /// number; feed "ld" or "cer"; stops are GTFS ids from our timetable
+    /// match at the fix, "" when unknown; `feed_stop` is the feed's own).
+    #[wasm_bindgen(js_name = gpsFixesJson)]
+    pub fn gps_fixes_json(&self) -> String {
+        use std::fmt::Write;
+        let mut s = String::from("[");
+        let mut first = true;
+        for t in &self.live.trains {
+            let feed = match t.feed {
+                "vp_cer" => "cer",
+                "vp_ld" => "ld",
+                _ => continue, // timetable-only trains have no GPS
+            };
+            if t.scheduled || (t.rt.lat == 0.0 && t.rt.lon == 0.0) {
+                continue;
+            }
+            if !first {
+                s.push(',');
+            }
+            first = false;
+            s.push('[');
+            json::str(
+                &mut s,
+                if t.rt.trip_id.is_empty() {
+                    &t.rt.train_number
+                } else {
+                    &t.rt.trip_id
+                },
+            );
+            s.push(',');
+            json::str(&mut s, &t.rt.train_number);
+            s.push(',');
+            json::str(&mut s, feed);
+            s.push(',');
+            let product = t.matched.map_or(t.rt.line.as_str(), |m| {
+                let r = &self.net.regions[m.trip.region as usize];
+                r.tt.routes[self.net.trip(m.trip).route as usize]
+                    .short_name
+                    .as_str()
+            });
+            json::str(&mut s, product);
+            let _ = write!(
+                s,
+                ",{},{},{},",
+                t.fix_time,
+                (t.rt.lon * 1e5).round() as i64,
+                (t.rt.lat * 1e5).round() as i64
+            );
+            match t.rt.speed {
+                Some(v) if v.is_finite() => {
+                    let _ = write!(s, "{}", (v * 3.6).round() as i64);
+                }
+                _ => s.push_str("null"),
+            }
+            let (prev, next) = match (t.matched, t.fix_along) {
+                (Some(m), Some(d)) => {
+                    let st = self.net.schedule(m.trip);
+                    (
+                        self.net.stop_id(m.trip, schedule::prev_stop(st, d)),
+                        schedule::next_stop(st, d).map_or("", |i| self.net.stop_id(m.trip, i)),
+                    )
+                }
+                _ => ("", ""),
+            };
+            for v in [prev, next, t.rt.stop_id.as_deref().unwrap_or("")] {
+                s.push(',');
+                json::str(&mut s, v);
+            }
+            s.push(']');
+        }
+        s.push(']');
+        s
+    }
+
     /// Take in `rt/fixes.tsv` (see [`Engine::fix_since_text`]); returns how
     /// many positions turned out older than this app had assumed.
     #[wasm_bindgen(js_name = applyFixSince)]
@@ -1106,6 +1199,43 @@ impl Engine {
 }
 
 impl Engine {
+    /// The loaded rail network as GeoJSON, one feature per section.
+    fn network_geojson(&self) -> String {
+        use trainradar_proto::refdata::track_kind;
+        let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
+        for (i, (pts, info)) in self.net.sections.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            s.push_str(r#"{"type":"Feature","geometry":{"type":"LineString","coordinates":["#);
+            for (j, p) in pts.iter().enumerate() {
+                if j > 0 {
+                    s.push(',');
+                }
+                s.push_str(&format!("[{:.5},{:.5}]", p.lon, p.lat));
+            }
+            s.push_str("]},\"properties\":");
+            let kind = match info.kind {
+                track_kind::AV => "av",
+                track_kind::METRIC => "metric",
+                _ => "conv",
+            };
+            json::Obj::new(&mut s)
+                .b("av", info.kind == track_kind::AV)
+                .b("ld", info.kind == track_kind::CONV)
+                .b("md", info.kind == track_kind::METRIC)
+                .s("kind", kind)
+                .b("mixed", info.mixed)
+                .b("disused", info.disused)
+                .n("gauge", info.gauge_mm)
+                .n("max_kmh", info.max_kmh)
+                .end();
+            s.push('}');
+        }
+        s.push_str("]}");
+        s
+    }
+
     /// Index of the train with this spacing label (trip id, or number).
     fn index_of(&self, id: &str) -> Option<usize> {
         self.live.trains.iter().position(|t| {
@@ -1323,6 +1453,52 @@ mod tests {
     }
 
     #[test]
+    fn track_geojson_draws_the_network_by_kind() {
+        use trainradar_proto::LatLon;
+        use trainradar_proto::refdata::{NetworkFile, SectionInfo, ShapeRec, track_kind};
+        let line = |lat: f64| {
+            ShapeRec::encode(
+                String::new(),
+                &[LatLon::new(lat, -3.7), LatLon::new(lat, -3.6)],
+            )
+        };
+        let info = |kind, disused| SectionInfo {
+            kind,
+            disused,
+            gauge_mm: 1668,
+            ..SectionInfo::default()
+        };
+        let f = NetworkFile {
+            header: Header::new(0, 8, 0),
+            sections: vec![line(40.0), line(40.1), line(40.2)],
+            info: vec![
+                info(track_kind::AV, false),
+                info(track_kind::CONV, true),
+                info(track_kind::METRIC, false),
+            ],
+        };
+        let mut e = Engine::new();
+        let empty: serde_json::Value = serde_json::from_str(&e.track_geojson()).unwrap();
+        assert_eq!(empty["features"].as_array().unwrap().len(), 0);
+        assert_eq!(e.load_network(&encode(&f).unwrap()).unwrap(), 3);
+        let v: serde_json::Value = serde_json::from_str(&e.track_geojson()).unwrap();
+        let p = |i: usize| &v["features"][i]["properties"];
+        assert_eq!(
+            (p(0)["av"].as_bool(), p(0)["ld"].as_bool()),
+            (Some(true), Some(false))
+        );
+        assert_eq!(
+            (p(1)["ld"].as_bool(), p(1)["disused"].as_bool()),
+            (Some(true), Some(true))
+        );
+        assert_eq!(
+            (p(2)["md"].as_bool(), p(2)["kind"].as_str()),
+            (Some(true), Some("metric"))
+        );
+        assert_eq!(v["features"][0]["geometry"]["coordinates"][1][0], -3.6);
+    }
+
+    #[test]
     fn location_json_parses() {
         use crate::network::tests::{local, sample_network};
         let mut e = Engine::new();
@@ -1363,6 +1539,22 @@ mod tests {
         assert_eq!(t[3], "Stop C");
         assert!((t[5].as_f64().unwrap() - 40.35).abs() < 0.01, "{t}");
         assert_eq!(t.as_array().unwrap().len(), 9);
+        // Raw GPS log: the fix as the feed gave it, with the stops around it.
+        let g: serde_json::Value = serde_json::from_str(&e.gps_fixes_json()).unwrap();
+        let g = &g[0];
+        assert_eq!(
+            (g[0].as_str(), g[1].as_str(), g[2].as_str(), g[3].as_str()),
+            (Some("1004D100C3"), Some("100"), Some("cer"), Some("C3"))
+        );
+        assert_eq!(
+            (g[4].as_i64(), g[5].as_i64(), g[6].as_i64()),
+            (Some(now), Some(-370_000), Some(4_035_000))
+        );
+        assert!(g[7].is_null(), "no speed in the feed");
+        let (prev, next) = (g[8].as_str().unwrap(), g[9].as_str().unwrap());
+        assert!(!prev.is_empty() && !next.is_empty() && prev != next, "{g}");
+        assert_eq!(g[10], "");
+        assert_eq!(g.as_array().unwrap().len(), 11);
         let t: serde_json::Value = serde_json::from_str(&e.track_geojson()).unwrap();
         assert_eq!(t["type"], "FeatureCollection");
         let b: serde_json::Value =

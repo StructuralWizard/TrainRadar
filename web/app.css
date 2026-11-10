@@ -205,7 +205,7 @@ details.small summary { cursor: pointer; }
 .track-key { width: 14px; height: 4px; border-radius: 2px; flex: none; }
 #f-tav + .track-key { background: #4338ca; }
 #f-tld + .track-key { background: #0f766e; }
-#f-tmd + .track-key { background: #94a3b8; }
+#f-tmd + .track-key { background: #b45309; }
 /* Train kind keys in Capas: a green arrow with the kind's border colour. */
 .train-key { width: 0; height: 0; flex: none; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 12px solid #1a9850; filter: drop-shadow(0 0 1.5px var(--k, #fff)) drop-shadow(0 0 1px var(--k, #fff)); }
 #f-av + .train-key { --k: #4338ca; }

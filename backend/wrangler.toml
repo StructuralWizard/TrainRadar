@@ -36,7 +36,8 @@ new_sqlite_classes = ["Recorder"]
 binding = "LIVE"
 bucket_name = "trainradar-live"
 
-# Private: daily backups (deleted after 90 days) and monthly archives.
+# Private: daily backups (deleted after 90 days), monthly archives and the
+# raw GPS log (deleted after 14 days).
 [[r2_buckets]]
 binding = "ARCHIVE"
 bucket_name = "trainradar-history"
@@ -52,5 +53,8 @@ ALLOWED_ORIGINS = "https://trainradar.pages.dev,https://mytrainradar.com,https:/
 RECORDER_ENABLED = "false"
 # Replay frames (backend/src/replay.js), with the recorder; "false" stops them.
 REPLAY_ENABLED = "true"
+# Raw GPS log (backend/src/gpslog.js), with the recorder, in the private
+# bucket (gps/, deleted after 14 days); "false" stops it.
+GPS_LOG_ENABLED = "true"
 # Where the recorder reads the reference data (the deployed site).
 REFDATA_BASE = "https://trainradar.pages.dev/data/"

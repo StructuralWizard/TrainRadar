@@ -277,6 +277,11 @@ jobs:
             npx --yes "$WRANGLER" r2 bucket lifecycle add trainradar-history backups-90d backups/ \
               --expire-days 90 --force
           fi
+          # Raw GPS log (backend/src/gpslog.js): kept 14 days.
+          if ! npx --yes "$WRANGLER" r2 bucket lifecycle list trainradar-history | grep -q gps-14d; then
+            npx --yes "$WRANGLER" r2 bucket lifecycle add trainradar-history gps-14d gps/ \
+              --expire-days 14 --force
+          fi
       # Only with the recorder: the D1 database (created once) and its
       # migrations; its binding is added to a copy of the config.
       - name: History database (D1)

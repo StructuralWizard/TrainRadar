@@ -1,14 +1,18 @@
 //! Track geometry from OpenStreetMap, for trips whose GTFS has no shape
 //! (all of AV/LD/MD, and the few Cercanías trips whose shape doesn't fit).
 //!
-//! Input: OSM `railway=rail` ways exported by `osmium export -f geojsonseq`
-//! (see `tools/fetch-osm-rail.sh`). We build a graph where ways that share an
-//! OSM node connect, then route each pair of consecutive stops with A*.
+//! Input: OSM `railway=rail` and `railway=narrow_gauge` ways exported by
+//! `osmium export -f geojsonseq` (see `tools/fetch-osm-rail.sh`), classified
+//! and filtered by [`crate::railnet::classify`]. We build a graph where ways
+//! that share an OSM node connect, then route each pair of consecutive stops
+//! with A*, from the stations' anchors on the track ([`crate::railnet`]) and
+//! preferring the kind of track the train runs on.
 //!
 //! OSM data © OpenStreetMap contributors, ODbL 1.0. Shapes derived from it are
 //! published under the ODbL with the generated files.
 
 use crate::gtfs_io::Result;
+use crate::railnet::{Kind, Skip, WayClass, classify};
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 use std::io::BufRead;
@@ -23,8 +27,13 @@ pub const MAX_SNAP_M: f64 = 1_000.0;
 pub const DETOUR_FACTOR: f64 = 1.8;
 pub const DETOUR_SLACK_M: f64 = 20_000.0;
 
-/// Track kinds that aren't through running lines.
-const SKIP_SERVICE: &[&str] = &["yard", "siding", "spur"];
+/// Search cost factor on track of another kind than the train's: an AVE
+/// keeps to high-speed track and a regional train to the conventional line,
+/// unless the other is much shorter.
+pub const OFF_KIND_COST: f64 = 1.5;
+/// Search cost factor on service track (yards, sidings, crossovers): used to
+/// join lines up where OSM maps them that way, not as a shortcut.
+pub const SERVICE_COST: f64 = 4.0;
 
 /// Snapping grid cell in degrees (~1.1 km).
 const CELL_DEG: f64 = 0.01;
@@ -36,16 +45,30 @@ pub struct RailGraph {
     grid: HashMap<(i32, i32), Vec<u32>>,
     /// Track height per node in metres (NaN = unknown), once heights are set.
     elev: Vec<f32>,
+    /// Station code → its nodes on the track ([`crate::railnet`]).
+    anchors: HashMap<String, Vec<u32>>,
+    /// Ways left out, by reason.
+    pub skipped: HashMap<Skip, usize>,
+    /// Ways kept, by kind of track.
+    pub kept: HashMap<Kind, usize>,
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Edge {
-    to: u32,
-    len_m: f32,
-    gauge_mm: u16,
-    max_kmh: u16,
+pub struct Edge {
+    pub to: u32,
+    pub len_m: f32,
+    pub gauge_mm: u16,
+    pub max_kmh: u16,
     /// On a tunnel or bridge: the terrain height there isn't the track's.
-    structure: bool,
+    pub structure: bool,
+    pub kind: Kind,
+    /// More than one gauge on this track.
+    pub mixed: bool,
+    /// Drawn on the map (service track isn't, unless it closes a gap at a
+    /// station: [`RailGraph::bridge_station_gaps`]).
+    pub drawn: bool,
+    /// Out of use (`railway=disused`).
+    pub disused: bool,
 }
 
 /// OSM coordinate key (1e-7 degrees), as used by `dem-sample`.
@@ -189,15 +212,6 @@ impl RailGraph {
             }
             let f: serde_json::Value = serde_json::from_str(line)?;
             let props = &f["properties"];
-            if props["railway"] != "rail" {
-                continue;
-            }
-            if props["service"]
-                .as_str()
-                .is_some_and(|s| SKIP_SERVICE.contains(&s))
-            {
-                continue;
-            }
             let geom = &f["geometry"];
             let lines: Vec<&serde_json::Value> = match geom["type"].as_str() {
                 Some("LineString") => vec![&geom["coordinates"]],
@@ -207,6 +221,7 @@ impl RailGraph {
                     .unwrap_or_default(),
                 _ => continue,
             };
+            let mut class = None;
             for coords in lines {
                 let pts: Vec<LatLon> = coords
                     .as_array()
@@ -214,13 +229,28 @@ impl RailGraph {
                     .flatten()
                     .filter_map(|c| Some(LatLon::new(c.get(1)?.as_f64()?, c.get(0)?.as_f64()?)))
                     .collect();
+                let Some(&first) = pts.first() else { continue };
+                let c = match class {
+                    Some(c) => c,
+                    None => match classify(props, first) {
+                        Ok(c) => *class.insert(c),
+                        Err(why) => {
+                            *g.skipped.entry(why).or_default() += 1;
+                            break;
+                        }
+                    },
+                };
                 g.add_line(
                     &pts,
                     &mut ids,
                     gauge_of(props),
                     maxspeed_of(props),
                     is_structure(props),
+                    c,
                 );
+            }
+            if let Some(c) = class {
+                *g.kept.entry(c.kind).or_default() += 1;
             }
         }
         Ok(g)
@@ -234,6 +264,7 @@ impl RailGraph {
         gauge_mm: u16,
         max_kmh: u16,
         structure: bool,
+        class: WayClass,
     ) {
         let mut prev: Option<u32> = None;
         for &p in pts {
@@ -252,6 +283,10 @@ impl RailGraph {
                     gauge_mm,
                     max_kmh,
                     structure,
+                    kind: class.kind,
+                    mixed: class.mixed,
+                    drawn: class.drawn,
+                    disused: class.disused,
                 };
                 self.adj[q as usize].push(e);
                 self.adj[id as usize].push(Edge { to: q, ..e });
@@ -279,71 +314,240 @@ impl RailGraph {
 
     /// Track path from near `a` to near `b`, or `None` if they aren't
     /// connected without a large detour.
+    #[cfg(test)]
     pub fn route(&self, a: LatLon, b: LatLon) -> Option<RoutedLeg> {
         let (sa, _) = self.snap(a)?;
         let (sb, _) = self.snap(b)?;
-        if sa == sb {
-            let h = self.elev.get(sa as usize).copied().unwrap_or(f32::NAN);
-            return Some((vec![self.nodes[sa as usize]], LegInfo::default(), vec![h]));
-        }
-        let goal = self.nodes[sb as usize];
         let limit = DETOUR_FACTOR * haversine_m(a, b) + DETOUR_SLACK_M;
+        self.route_nodes(&[sa], &[sb], limit, None)
+    }
+
+    /// Shortest track path from any of `starts` to any of `goals`, no longer
+    /// than `limit_m`. With `prefer`, track of other kinds costs
+    /// [`OFF_KIND_COST`] times its length in the search.
+    pub fn route_nodes(
+        &self,
+        starts: &[u32],
+        goals: &[u32],
+        limit_m: f64,
+        prefer: Option<Kind>,
+    ) -> Option<RoutedLeg> {
+        let (ids, _) = self.search(starts, goals, limit_m, prefer)?;
+        let mut gauge: HashMap<u16, f64> = HashMap::new();
+        let mut speed: HashMap<u16, f64> = HashMap::new();
+        for w in ids.windows(2) {
+            if let Some(e) = self.edge(w[0], w[1]) {
+                *gauge.entry(e.gauge_mm).or_default() += f64::from(e.len_m);
+                *speed.entry(e.max_kmh).or_default() += f64::from(e.len_m);
+            }
+        }
+        let info = LegInfo {
+            gauge_mm: most_common(&gauge),
+            max_kmh: most_common(&speed),
+            ..LegInfo::default()
+        };
+        let path = ids.iter().map(|&i| self.nodes[i as usize]).collect();
+        let heights = ids
+            .iter()
+            .map(|&i| self.elev.get(i as usize).copied().unwrap_or(f32::NAN))
+            .collect();
+        Some((path, info, heights))
+    }
+
+    /// A* behind [`Self::route_nodes`]: the node path and its length in metres.
+    pub fn search(
+        &self,
+        starts: &[u32],
+        goals: &[u32],
+        limit_m: f64,
+        prefer: Option<Kind>,
+    ) -> Option<(Vec<u32>, f64)> {
+        let &g0 = goals.first()?;
+        if let Some(&s) = starts.iter().find(|s| goals.contains(s)) {
+            return Some((vec![s], 0.0));
+        }
+        // Aim at the first goal; the others are near it (one station), so
+        // allow for them to keep the estimate from overshooting.
+        let goal = self.nodes[g0 as usize];
+        let spread = goals
+            .iter()
+            .map(|&g| haversine_m(goal, self.nodes[g as usize]))
+            .fold(0.0, f64::max);
+        let h = |n: u32| (haversine_m(self.nodes[n as usize], goal) - spread).max(0.0);
+        // Costs are lengths times the factors above; only prune what can't
+        // be within the length limit.
+        let cost_limit = limit_m * SERVICE_COST * OFF_KIND_COST;
         let mut dist: HashMap<u32, f64> = HashMap::new();
         let mut prev: HashMap<u32, u32> = HashMap::new();
         let mut heap = BinaryHeap::new();
-        dist.insert(sa, 0.0);
-        heap.push(Item {
-            f: haversine_m(self.nodes[sa as usize], goal),
-            node: sa,
-        });
+        for &s in starts {
+            dist.insert(s, 0.0);
+            heap.push(Item { f: h(s), node: s });
+        }
         while let Some(Item { f, node }) = heap.pop() {
-            if node == sb {
-                let mut ids = vec![sb];
-                let mut gauge: HashMap<u16, f64> = HashMap::new();
-                let mut speed: HashMap<u16, f64> = HashMap::new();
-                let mut n = sb;
+            if goals.contains(&node) {
+                let mut ids = vec![node];
+                let mut len = 0.0;
+                let mut n = node;
                 while let Some(&p) = prev.get(&n) {
-                    if let Some(e) = self.adj[p as usize].iter().find(|e| e.to == n) {
-                        *gauge.entry(e.gauge_mm).or_default() += f64::from(e.len_m);
-                        *speed.entry(e.max_kmh).or_default() += f64::from(e.len_m);
+                    if let Some(e) = self.edge(p, n) {
+                        len += f64::from(e.len_m);
                     }
                     ids.push(p);
                     n = p;
                 }
+                if len > limit_m {
+                    return None;
+                }
                 ids.reverse();
-                let info = LegInfo {
-                    gauge_mm: most_common(&gauge),
-                    max_kmh: most_common(&speed),
-                    ..LegInfo::default()
-                };
-                let path = ids.iter().map(|&i| self.nodes[i as usize]).collect();
-                let heights = ids
-                    .iter()
-                    .map(|&i| self.elev.get(i as usize).copied().unwrap_or(f32::NAN))
-                    .collect();
-                return Some((path, info, heights));
+                return Some((ids, len));
             }
-            if f > limit {
+            if f > cost_limit {
                 return None; // the best remaining estimate is already too long
             }
             let g = dist[&node];
-            for &Edge {
-                to: next, len_m, ..
-            } in &self.adj[node as usize]
-            {
-                let ng = g + f64::from(len_m);
-                if dist.get(&next).is_none_or(|&d| ng < d) {
-                    dist.insert(next, ng);
-                    prev.insert(next, node);
+            for e in &self.adj[node as usize] {
+                let mut k = if prefer.is_some_and(|p| p != e.kind) {
+                    OFF_KIND_COST
+                } else {
+                    1.0
+                };
+                if !e.drawn {
+                    k *= SERVICE_COST;
+                }
+                let ng = g + f64::from(e.len_m) * k;
+                if dist.get(&e.to).is_none_or(|&d| ng < d) {
+                    dist.insert(e.to, ng);
+                    prev.insert(e.to, node);
                     heap.push(Item {
-                        f: ng + haversine_m(self.nodes[next as usize], goal),
-                        node: next,
+                        f: ng + h(e.to),
+                        node: e.to,
                     });
                 }
             }
         }
         None
     }
+
+    /// Edges leaving node `i`.
+    pub fn adj_of(&self, i: u32) -> impl Iterator<Item = &Edge> {
+        self.adj[i as usize].iter()
+    }
+
+    /// The edge from `a` to `b`, if any.
+    pub fn edge(&self, a: u32, b: u32) -> Option<&Edge> {
+        self.adj[a as usize].iter().find(|e| e.to == b)
+    }
+
+    /// Every drawn edge once, as (a, b) with a < b.
+    pub fn edge_pairs(&self) -> impl Iterator<Item = (u32, u32)> + '_ {
+        self.adj.iter().enumerate().flat_map(|(a, v)| {
+            v.iter()
+                .filter(move |e| e.drawn && (a as u32) < e.to)
+                .map(move |e| (a as u32, e.to))
+        })
+    }
+
+    /// Cut edge `a`–`b` at the fractions `ts` (ascending, along a→b): returns
+    /// the node at each cut (an end node when the cut is within a metre of it).
+    pub fn cut_edge(&mut self, a: u32, b: u32, ts: &[f64]) -> Vec<u32> {
+        let Some(e) = self.edge(a, b).copied() else {
+            return vec![a; ts.len()];
+        };
+        let (pa, pb) = (self.nodes[a as usize], self.nodes[b as usize]);
+        let len = f64::from(e.len_m);
+        let mut out = Vec::with_capacity(ts.len());
+        let mut chain = vec![a];
+        for &t in ts {
+            let p = lerp(pa, pb, t);
+            let last = *chain.last().unwrap_or(&a);
+            let n = if t * len < 1.0 {
+                a
+            } else if (1.0 - t) * len < 1.0 {
+                b
+            } else if last != a && haversine_m(self.nodes[last as usize], p) < 1.0 {
+                last
+            } else {
+                self.nodes.push(p);
+                self.adj.push(Vec::new());
+                if !self.elev.is_empty() {
+                    let (ha, hb) = (self.elev[a as usize], self.elev[b as usize]);
+                    self.elev.push(ha + (hb - ha) * t as f32);
+                }
+                let id = (self.nodes.len() - 1) as u32;
+                self.grid.entry(cell(p)).or_default().push(id);
+                chain.push(id);
+                id
+            };
+            out.push(n);
+        }
+        if chain.len() == 1 {
+            return out;
+        }
+        chain.push(b);
+        // Replace a–b by a–n1–…–b, with the same track facts.
+        if let Some(i) = self.adj[a as usize].iter().position(|x| x.to == b) {
+            self.adj[a as usize].remove(i);
+        }
+        if let Some(i) = self.adj[b as usize].iter().position(|x| x.to == a) {
+            self.adj[b as usize].remove(i);
+        }
+        for w in chain.windows(2) {
+            let (x, y) = (w[0], w[1]);
+            let len_m = haversine_m(self.nodes[x as usize], self.nodes[y as usize]) as f32;
+            self.adj[x as usize].push(Edge { to: y, len_m, ..e });
+            self.adj[y as usize].push(Edge { to: x, len_m, ..e });
+        }
+        out
+    }
+
+    /// Nodes within `r_m` of `p`.
+    pub fn nodes_near(&self, p: LatLon, r_m: f64) -> Vec<u32> {
+        let (r, c) = cell(p);
+        let k = (r_m / 111_000.0 / CELL_DEG).ceil() as i32;
+        let mut out = Vec::new();
+        for dr in -k..=k {
+            for dc in -k..=k {
+                for &n in self.grid.get(&(r + dr, c + dc)).into_iter().flatten() {
+                    if haversine_m(p, self.nodes[n as usize]) <= r_m {
+                        out.push(n);
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// Draw edge `a`–`b` (both directions).
+    pub fn set_drawn(&mut self, a: u32, b: u32) {
+        for (x, y) in [(a, b), (b, a)] {
+            if let Some(e) = self.adj[x as usize].iter_mut().find(|e| e.to == y) {
+                e.drawn = true;
+            }
+        }
+    }
+
+    /// Set the station anchors used by [`Router::route_stops`].
+    pub fn set_anchors(&mut self, anchors: HashMap<String, Vec<u32>>) {
+        self.anchors = anchors;
+    }
+
+    /// Nodes where some station sits.
+    pub fn anchor_nodes(&self) -> impl Iterator<Item = u32> + '_ {
+        self.anchors.values().flatten().copied()
+    }
+
+    /// A station's nodes on the track, if it was anchored.
+    pub fn anchors_of(&self, code: &str) -> Option<&[u32]> {
+        self.anchors
+            .get(code)
+            .map(Vec::as_slice)
+            .filter(|v| !v.is_empty())
+    }
+}
+
+fn lerp(a: LatLon, b: LatLon, t: f64) -> LatLon {
+    LatLon::new(a.lat + (b.lat - a.lat) * t, a.lon + (b.lon - a.lon) * t)
 }
 
 /// Tunnels, bridges and covered track (OSM `tunnel`, `bridge`, `covered`).
@@ -374,7 +578,7 @@ fn maxspeed_of(props: &serde_json::Value) -> u16 {
 }
 
 /// The value covering the most length, ignoring unknown (0) if anything is known.
-fn most_common(by_len: &HashMap<u16, f64>) -> u16 {
+pub(crate) fn most_common(by_len: &HashMap<u16, f64>) -> u16 {
     by_len
         .iter()
         .filter(|(k, _)| **k != 0)
@@ -394,7 +598,7 @@ pub type RoutedLeg = (Vec<LatLon>, LegInfo, Vec<f32>);
 #[derive(Debug)]
 pub struct Router<'g> {
     graph: &'g RailGraph,
-    cache: HashMap<[i64; 4], Option<RoutedLeg>>,
+    cache: HashMap<([i64; 4], Option<Kind>), Option<RoutedLeg>>,
     pub stats: RouteStats,
 }
 
@@ -409,14 +613,37 @@ impl<'g> Router<'g> {
 
     /// Track path between two stops (cached per pair of places), with at
     /// least two points, or `None` if they can't be routed.
+    #[cfg(test)]
     pub fn route_pair(&mut self, a: LatLon, b: LatLon) -> Option<RoutedLeg> {
+        self.route_stops(("", a), ("", b), None)
+    }
+
+    /// Like [`Self::route_pair`], but from and to the stations' anchors on
+    /// the track when the stop ids are anchored Renfe stations (else the
+    /// nearest track node), preferring track of kind `prefer`.
+    pub fn route_stops(
+        &mut self,
+        (a_id, a): (&str, LatLon),
+        (b_id, b): (&str, LatLon),
+        prefer: Option<Kind>,
+    ) -> Option<RoutedLeg> {
         let (ka, kb) = (node_key(a), node_key(b));
         let graph = self.graph;
         let stats = &mut self.stats;
         self.cache
-            .entry([ka.0, ka.1, kb.0, kb.1])
+            .entry(([ka.0, ka.1, kb.0, kb.1], prefer))
             .or_insert_with(|| {
-                let r = graph.route(a, b).filter(|p| p.0.len() >= 2);
+                let ends = |id: &str, p: LatLon| -> Option<Vec<u32>> {
+                    match graph.anchors_of(id) {
+                        Some(v) => Some(v.to_vec()),
+                        None => Some(vec![graph.snap(p)?.0]),
+                    }
+                };
+                let limit = DETOUR_FACTOR * haversine_m(a, b) + DETOUR_SLACK_M;
+                let r = ends(a_id, a)
+                    .zip(ends(b_id, b))
+                    .and_then(|(s, g)| graph.route_nodes(&s, &g, limit, prefer))
+                    .filter(|p| p.0.len() >= 2);
                 if r.is_some() {
                     stats.pairs_routed += 1;
                 } else {
@@ -432,15 +659,16 @@ impl<'g> Router<'g> {
 pub mod tests {
     use super::*;
 
-    /// Two parallel east–west lines joined at the east end, plus a siding.
-    /// Line 1 runs along lat 40.000 and line 2 along lat 40.020 (~2.2 km apart).
+    /// Two parallel east–west lines joined at the east end, plus an
+    /// industrial branch (left out). Line 1 runs along lat 40.000 and line 2
+    /// along lat 40.020 (~2.2 km apart).
     pub const SAMPLE: &str = concat!(
         "\u{1e}{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
         "[[-3.70,40.00],[-3.65,40.00],[-3.60,40.00]]},\"properties\":{\"railway\":\"rail\",\"gauge\":\"1668\",\"maxspeed\":\"160\"}}\n",
         "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
         "[[-3.60,40.00],[-3.60,40.02],[-3.70,40.02]]},\"properties\":{\"railway\":\"rail\"}}\n",
         "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
-        "[[-3.70,40.00],[-3.70,40.02]]},\"properties\":{\"railway\":\"rail\",\"service\":\"siding\"}}\n",
+        "[[-3.70,40.00],[-3.70,40.02]]},\"properties\":{\"railway\":\"rail\",\"usage\":\"industrial\"}}\n",
         "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
         "[[-3.70,40.00],[-3.70,40.02]]},\"properties\":{\"railway\":\"abandoned\"}}\n",
     );
@@ -456,10 +684,10 @@ pub mod tests {
     }
 
     #[test]
-    fn routes_along_track_not_through_siding() {
+    fn routes_along_track_not_through_industrial_branch() {
         let g = sample_graph();
-        // West ends of both lines: the siding would be 2.2 km, but it's skipped,
-        // so the route goes east, up, and back west (~19 km).
+        // West ends of both lines: the branch would be 2.2 km, but it's left
+        // out, so the route goes east, up, and back west (~19 km).
         let a = LatLon::new(40.0005, -3.7);
         let b = LatLon::new(40.0195, -3.7);
         let (path, info, _) = g.route(a, b).unwrap();
@@ -468,6 +696,31 @@ pub mod tests {
         assert_eq!(info.max_kmh, 160);
         let len: f64 = path.windows(2).map(|w| haversine_m(w[0], w[1])).sum();
         assert!((18_000.0..20_000.0).contains(&len), "{len}");
+    }
+
+    #[test]
+    fn service_track_joins_lines_only_when_needed() {
+        // A 1 km gap in the main line bridged by a siding; and a 300 m
+        // yard shortcut beside 400 m of main line.
+        let text = concat!(
+            "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
+            "[[-3.70,40.0],[-3.69,40.0]]},\"properties\":{\"railway\":\"rail\"}}\n",
+            "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
+            "[[-3.69,40.0],[-3.68,40.0]]},\"properties\":{\"railway\":\"rail\",\"service\":\"siding\"}}\n",
+            "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
+            "[[-3.68,40.0],[-3.678,40.0016],[-3.676,40.0]]},\"properties\":{\"railway\":\"rail\"}}\n",
+            "{\"type\":\"Feature\",\"geometry\":{\"type\":\"LineString\",\"coordinates\":",
+            "[[-3.68,40.0],[-3.676,40.0]]},\"properties\":{\"railway\":\"rail\",\"service\":\"yard\"}}\n",
+        );
+        let g = RailGraph::from_geojsonseq(text.as_bytes()).unwrap();
+        let (path, _, _) = g
+            .route(LatLon::new(40.0, -3.70), LatLon::new(40.0, -3.676))
+            .unwrap();
+        assert_eq!(
+            path.len(),
+            5,
+            "through the siding, round the main line: {path:?}"
+        );
     }
 
     #[test]

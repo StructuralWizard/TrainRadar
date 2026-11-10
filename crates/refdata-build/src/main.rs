@@ -9,8 +9,10 @@ mod gtfs_io;
 mod igr;
 mod inspect;
 mod load;
+mod netcheck;
 mod osm;
 mod profile;
+mod railnet;
 mod verify;
 
 use build::{
@@ -24,8 +26,29 @@ use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 use trainradar_proto::encode;
 use trainradar_proto::refdata::{
-    GeometryFile, LegInfo, Profile, RegionRec, ShapeRec, TimetableFile, from_e5,
+    GeometryFile, LegInfo, NetworkFile, Profile, RegionRec, SectionInfo, ShapeRec, TimetableFile,
+    from_e5,
 };
+
+/// Ways kept by kind and left out by reason, for the build report.
+fn network_note(g: &osm::RailGraph) -> String {
+    let mut kept: Vec<_> = g.kept.iter().collect();
+    kept.sort();
+    let mut skipped: Vec<_> = g.skipped.iter().collect();
+    skipped.sort();
+    format!(
+        "- OpenStreetMap ways kept: {}; left out: {}\n",
+        kept.iter()
+            .map(|(k, n)| format!("{} {n}", k.name()))
+            .collect::<Vec<_>>()
+            .join(", "),
+        skipped
+            .iter()
+            .map(|(k, n)| format!("{} {n}", k.label()))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
+}
 
 const USAGE: &str = "\
 usage:
@@ -36,8 +59,12 @@ usage:
   refdata-build build --out DIR [--ld ZIP] [--cercanias ZIP] [--ouigo ZIP]
                       [--rail FILE.geojsonseq] [--date YYYY-MM-DD] [--days N]
                       [--rail-heights FILE] [--rail-attrs FILE]
+                      [--stations FILE.geojson] [--network-geojson FILE]
                       [--sources FILE.tsv] [--report FILE.md]
                       [--gzip]
+  refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
+                      [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
+                      [--report FILE.md] [--csv FILE.csv]
 
 build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
   --date     service date the window is centred on (default: today, Madrid)
@@ -50,6 +77,14 @@ build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
              height profile to every OpenStreetMap leg, for gradients
   --rail-attrs  IGN railway links (from tools/fetch-igr-rail.py): adds the
              number of tracks and electrification to every OpenStreetMap leg
+  --stations Renfe's estaciones.geojson (from tools/fetch-gtfs.sh): each station is
+             anchored on the track (AV, conventional, metre gauge) and the network
+             file rail.<hash>.bin is cut there; trains start and stop at the anchors
+  --network-geojson  also write the network and the anchors as GeoJSON (to check)
+
+validate-net: for every pair of consecutive stops (live trains collected by
+  tools/collect-renfe-ld.py, and the AV/LD/MD timetable with --ld), checks there
+  is a track path no longer than 1.5 x the straight distance; lists the failures.
 
 dem-tiles: prints the URLs of the Copernicus DEM tiles covering the rail nodes.
 dem-sample: looks up every rail node in the tiles in DIR (<name>.tif) and writes
@@ -64,6 +99,8 @@ struct BuildArgs {
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
+    stations: Option<PathBuf>,
+    network_geojson: Option<PathBuf>,
     date: Option<String>,
     days: u8,
     sources: Option<PathBuf>,
@@ -80,6 +117,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         rail: None,
         rail_heights: None,
         rail_attrs: None,
+        stations: None,
+        network_geojson: None,
         date: None,
         days: 8,
         sources: None,
@@ -100,6 +139,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--rail" => a.rail = Some(val()?.into()),
             "--rail-heights" => a.rail_heights = Some(val()?.into()),
             "--rail-attrs" => a.rail_attrs = Some(val()?.into()),
+            "--stations" => a.stations = Some(val()?.into()),
+            "--network-geojson" => a.network_geojson = Some(val()?.into()),
             "--ouigo" => a.ouigo = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
@@ -216,6 +257,21 @@ fn run_build(a: BuildArgs) -> Result<()> {
         }
         None => None,
     };
+    // Anchor the Renfe stations on the track (cutting it there) before any
+    // routing, so trains start and stop at the anchors.
+    let mut net_report = String::new();
+    let mut anchored = None;
+    let mut graph = graph;
+    if let Some(g) = graph.as_mut() {
+        net_report.push_str(&network_note(g));
+        if let Some(p) = &a.stations {
+            let stations = railnet::read_stations(&std::fs::read_to_string(p)?)?;
+            let r = g.anchor_stations(&stations);
+            net_report.push_str(&r.markdown(stations.len()));
+            anchored = Some((stations, r));
+        }
+    }
+    let graph = graph;
     let mut router = graph.as_ref().map(osm::Router::new);
 
     type Built = (
@@ -369,6 +425,61 @@ fn run_build(a: BuildArgs) -> Result<()> {
         });
     }
 
+    let network = match &graph {
+        Some(g) => {
+            let sections = g.sections(railnet::NET_SIMPLIFY_M);
+            let (shapes, info): (Vec<ShapeRec>, Vec<SectionInfo>) = sections
+                .iter()
+                .map(|s| {
+                    (
+                        ShapeRec::encode(String::new(), &s.pts),
+                        SectionInfo {
+                            kind: s.kind.code(),
+                            mixed: s.mixed,
+                            disused: s.disused,
+                            gauge_mm: s.gauge_mm,
+                            max_kmh: s.max_kmh,
+                        },
+                    )
+                })
+                .unzip();
+            let nf = NetworkFile {
+                header: window_header(&window, generated_at),
+                sections: shapes,
+                info,
+            };
+            let nb = encode(&nf)?;
+            let km = |k: railnet::Kind| -> f64 {
+                sections
+                    .iter()
+                    .filter(|s| s.kind == k)
+                    .map(|s| trainradar_proto::geo::Polyline::new(s.pts.clone()).length_m())
+                    .sum::<f64>()
+                    / 1000.0
+            };
+            net_report.push_str(&format!(
+                "- Network: {} sections, {:.0} km AV, {:.0} km conventional, {:.0} km metre gauge \
+                 (each track counted), {} points\n",
+                sections.len(),
+                km(railnet::Kind::Av),
+                km(railnet::Kind::Conv),
+                km(railnet::Kind::Metric),
+                sections.iter().map(|s| s.pts.len()).sum::<usize>()
+            ));
+            if let Some(p) = &a.network_geojson {
+                let empty = (Vec::new(), railnet::AnchorReport::default());
+                let (st, r) = anchored.as_ref().unwrap_or(&empty);
+                std::fs::write(p, railnet::debug_geojson(&sections, st, r, g))?;
+            }
+            Some(FileEntry {
+                file: write_hashed(&a.out, "rail", &nb, a.gzip)?,
+                bytes: nb.len(),
+            })
+        }
+        None => None,
+    };
+    report.push_str(&net_report);
+
     let manifest = Manifest {
         format: trainradar_proto::FORMAT_VERSION,
         generated_at,
@@ -383,6 +494,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
             bytes: st_bytes.len(),
         },
         regions,
+        network,
         attribution: ATTRIBUTION,
     };
     std::fs::write(
@@ -486,9 +598,96 @@ fn dem_sample(args: &[String]) -> Result<()> {
     Ok(())
 }
 
+/// `validate-net`: check the track network against real pairs of stops.
+fn validate_net(args: &[String]) -> Result<()> {
+    use std::collections::{BTreeMap, HashMap};
+    let (mut rail, mut stations, mut ld, mut date, mut report, mut csv) =
+        (None, None, None, None, None, None);
+    let mut pair_files = Vec::new();
+    for pair in args.chunks(2) {
+        let v = pair.get(1).ok_or("missing value")?.clone();
+        match pair[0].as_str() {
+            "--rail" => rail = Some(v),
+            "--stations" => stations = Some(v),
+            "--pairs" => pair_files.push(v),
+            "--ld" => ld = Some(v),
+            "--date" => date = Some(v),
+            "--report" => report = Some(v),
+            "--csv" => csv = Some(v),
+            other => return Err(format!("unknown option {other}").into()),
+        }
+    }
+    let mut g = read_graph(Path::new(&rail.ok_or("missing --rail")?))?;
+    let st = railnet::read_stations(&std::fs::read_to_string(
+        stations.ok_or("missing --stations")?,
+    )?)?;
+    let anchors = g.anchor_stations(&st);
+    let mut names: HashMap<String, String> = st
+        .iter()
+        .map(|s| (s.code.clone(), s.name.clone()))
+        .collect();
+    let mut pairs = BTreeMap::new();
+    for p in &pair_files {
+        netcheck::read_pairs(&std::fs::read_to_string(p)?, &mut pairs);
+    }
+    let mut extra = HashMap::new();
+    if let Some(z) = ld {
+        let today = match &date {
+            Some(d) => parse_date(d).ok_or("bad --date")?,
+            None => (now_unix() + 3600).div_euclid(86_400),
+        };
+        let window = Window {
+            start: today - 1,
+            days: 8,
+        };
+        let feed = load::load(&mut Gtfs::open(Path::new(&z))?, &window)?;
+        for s in &feed.stops {
+            extra.insert(s.id.clone(), s.coord);
+            names.entry(s.id.clone()).or_insert_with(|| s.name.clone());
+        }
+        for t in &feed.trips {
+            for w in t.stop_times.windows(2) {
+                let (a, b) = (&feed.stops[w[0].0].id, &feed.stops[w[1].0].id);
+                if a == b {
+                    continue;
+                }
+                let s = pairs.entry(netcheck::key(a, b)).or_default();
+                s.timetable = true;
+                if s.trains.len() < 5
+                    && !t.short_name.is_empty()
+                    && !s.trains.contains(&t.short_name)
+                {
+                    s.trains.push(t.short_name.clone());
+                }
+            }
+        }
+    }
+    let checked = netcheck::check(&g, &st, &extra, &pairs);
+    let md = netcheck::markdown(&checked, &names);
+    let md = md.replacen(
+        "\n\n| Pairs",
+        &format!(
+            "\n\n{}{}\n| Pairs",
+            network_note(&g),
+            anchors.markdown(st.len())
+        ),
+        1,
+    );
+    let summary_end = md.find("## Failing").unwrap_or(md.len());
+    print!("{}", &md[..summary_end]);
+    if let Some(p) = report {
+        std::fs::write(p, &md)?;
+    }
+    if let Some(p) = csv {
+        std::fs::write(p, netcheck::csv(&checked, &names))?;
+    }
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let result = match args.first().map(String::as_str) {
+        Some("validate-net") => validate_net(&args[1..]),
         Some("inspect") if args.len() > 1 => args[1..]
             .iter()
             .try_for_each(|p| inspect::run(&PathBuf::from(p))),

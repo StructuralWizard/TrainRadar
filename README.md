@@ -131,9 +131,9 @@ cd tools/feed-check && npm ci && npx playwright install chromium && npm run chec
 - OUIGO timetable: National Access Point (NAP), **Powered by
   [MITRAMS](https://www.transportes.gob.es/)**, processed data, under the
   [NAP open-data licence](https://nap.transportes.gob.es/licencia-datos).
-- Track geometry for AV/LD/MD trains: © [OpenStreetMap](https://www.openstreetmap.org/copyright)
+- Rail network and track geometry: © [OpenStreetMap](https://www.openstreetmap.org/copyright)
   contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/). The derived
-  `geo-*.bin` files are published with the site under the same licence.
+  `geo-*.bin` and `rail.*.bin` files are published with the site under the same licence.
 - Track count and electrification: © Instituto Geográfico Nacional (SCNE,
   [IGR-RT](https://www.idee.es/csw-codsi-idee/srv/api/records/spaign_IGR_Transporte)),
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); rail data from ADIF.

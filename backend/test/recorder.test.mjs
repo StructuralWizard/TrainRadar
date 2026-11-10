@@ -8,6 +8,7 @@ import { RecorderCore, STALE_FEED_MS, manifestKey } from "../src/recorder.js";
 import { Engine, initSync } from "../../web/pkg/engine.js";
 import wasmModule from "../../web/pkg/engine_bg.wasm";
 import { fakeD1, fakeR2 } from "./fakes.mjs";
+import { gunzipText } from "../src/replay.js";
 
 const root = new URL("../../", import.meta.url);
 const DATA = new URL(process.env.DEMO_DATA || "demo/data/", root);
@@ -54,7 +55,8 @@ test("records demo trains: summary, runs in progress, finished runs in D1, resta
   const live = await liveBucket(now - 5_000);
   const db = fakeD1();
   const storage = memoryStorage();
-  const env = { RECORDER_ENABLED: "true", REFDATA_BASE: "https://site.example/data", LIVE: live, HISTORY: db };
+  const archive = fakeR2();
+  const env = { RECORDER_ENABLED: "true", REFDATA_BASE: "https://site.example/data", LIVE: live, HISTORY: db, ARCHIVE: archive };
   const core = new RecorderCore({ makeEngine, storage, env, fetchFn: fetchData });
 
   const first = await core.cycle(now);
@@ -78,6 +80,16 @@ test("records demo trains: summary, runs in progress, finished runs in D1, resta
   assert.ok([...live.objects.keys()].some((k) => /^replay\/\d{4}-\d\d-\d\d\/\d\d\.json\.gz$/.test(k)), [...live.objects.keys()].join(","));
   const status = JSON.parse(await (await live.get("rt/recorder.json")).text());
   assert.equal(status.ok, true);
+  // Raw GPS log: every train with a GPS fix, as the feed gave it, in the
+  // private bucket (not the public one).
+  assert.ok(first.res.gps.fixes > 0 && first.res.gps.fixes <= first.res.trains, JSON.stringify(first.res.gps));
+  await core.gps.flush();
+  const gpsKeys = [...archive.objects.keys()].filter((k) => /^gps\/\d{4}-\d\d-\d\d\/\d\d\.ndjson\.gz$/.test(k));
+  assert.equal(gpsKeys.length, 1, [...archive.objects.keys()].join(","));
+  assert.ok(![...live.objects.keys()].some((k) => k.startsWith("gps/")), "never in the public bucket");
+  const gpsText = await gunzipText(await (await archive.get(gpsKeys[0])).arrayBuffer());
+  const gpsRows = gpsText.split("\n").filter(Boolean).map((l) => JSON.parse(l));
+  assert.ok(gpsRows.every((r) => r.length === 11 && ["ld", "cer"].includes(r[3]) && Number.isInteger(r[5]) && Number.isInteger(r[6])), JSON.stringify(gpsRows[0]));
 
   // Restart: a new object restores the runs in progress.
   await core.save();

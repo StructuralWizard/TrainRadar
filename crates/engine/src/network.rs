@@ -78,6 +78,12 @@ pub struct Network {
     /// Track heights per OSM leg, per region: evenly spaced samples from the
     /// leg's start to its end (empty when unknown).
     pub profiles: Vec<Vec<Vec<f32>>>,
+    /// The rail network drawn on the map (`rail.<hash>.bin`), by kind of
+    /// track; empty until loaded (the map then draws the trains' legs).
+    pub sections: Vec<(
+        Vec<trainradar_proto::LatLon>,
+        trainradar_proto::refdata::SectionInfo,
+    )>,
     station_gid: HashMap<String, u32>,
     by_trip_id: HashMap<String, TripRef>,
     by_number: HashMap<String, Vec<TripRef>>,
@@ -281,6 +287,25 @@ impl Network {
         Ok(g.region)
     }
 
+    /// Load `rail.<hash>.bin`: the whole network by kind of track. Returns
+    /// the number of sections.
+    pub fn load_network(&mut self, bytes: &[u8]) -> Result<usize, FormatError> {
+        let n: trainradar_proto::refdata::NetworkFile = decode_file(bytes)?;
+        if n.sections.len() != n.info.len() {
+            return Err(FormatError::Decode(
+                "network: sections and info differ".into(),
+            ));
+        }
+        self.sections = n
+            .sections
+            .iter()
+            .map(|s| s.points())
+            .zip(n.info)
+            .filter(|(p, _)| p.len() >= 2)
+            .collect();
+        Ok(self.sections.len())
+    }
+
     /// Gauge and line speed of the track at `d` metres along the trip, when
     /// it runs on OpenStreetMap legs and their facts are known.
     pub fn track_info(&self, t: TripRef, d: f64) -> Option<trainradar_proto::refdata::LegInfo> {
@@ -448,6 +473,15 @@ impl Network {
         p.stops
             .get(index)
             .map_or("", |&s| r.tt.stops[s as usize].name.as_str())
+    }
+
+    /// GTFS id of the trip's stop number `index` ("" if out of range).
+    pub fn stop_id(&self, t: TripRef, index: usize) -> &str {
+        let r = &self.regions[t.region as usize];
+        let p = &r.tt.patterns[r.tt.trips[t.trip as usize].pattern as usize];
+        p.stops
+            .get(index)
+            .map_or("", |&s| r.tt.stops[s as usize].id.as_str())
     }
 
     /// Look up a trip by its GTFS id, ignoring dates.
