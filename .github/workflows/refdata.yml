@@ -81,6 +81,14 @@ jobs:
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data
+      - name: Track network validation (consecutive stops joined by track)
+        continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
+        run: |
+          python3 -I tools/collect-renfe-ld.py gtfs/renfe-ld-pairs.tsv || true
+          target/release/refdata-build validate-net --rail gtfs/rail.geojsonseq \
+            --stations gtfs/estaciones.geojson --ld gtfs/ld.zip \
+            $([ -s gtfs/renfe-ld-pairs.tsv ] && echo --pairs gtfs/renfe-ld-pairs.tsv) \
+            --report validate-net.md --csv validate-net.csv | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Live check (engine against current Renfe feeds)
         run: |
           mkdir -p gtfs/rt

@@ -9,6 +9,7 @@ mod gtfs_io;
 mod igr;
 mod inspect;
 mod load;
+mod netcheck;
 mod osm;
 mod profile;
 mod railnet;
@@ -61,6 +62,9 @@ usage:
                       [--stations FILE.geojson] [--network-geojson FILE]
                       [--sources FILE.tsv] [--report FILE.md]
                       [--gzip]
+  refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
+                      [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
+                      [--report FILE.md] [--csv FILE.csv]
 
 build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
   --date     service date the window is centred on (default: today, Madrid)
@@ -78,6 +82,9 @@ build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
              file rail.<hash>.bin is cut there; trains start and stop at the anchors
   --network-geojson  also write the network and the anchors as GeoJSON (to check)
 
+validate-net: for every pair of consecutive stops (live trains collected by
+  tools/collect-renfe-ld.py, and the AV/LD/MD timetable with --ld), checks there
+  is a track path no longer than 1.5 x the straight distance; lists the failures.
 
 dem-tiles: prints the URLs of the Copernicus DEM tiles covering the rail nodes.
 dem-sample: looks up every rail node in the tiles in DIR (<name>.tif) and writes
@@ -591,9 +598,96 @@ fn dem_sample(args: &[String]) -> Result<()> {
     Ok(())
 }
 
+/// `validate-net`: check the track network against real pairs of stops.
+fn validate_net(args: &[String]) -> Result<()> {
+    use std::collections::{BTreeMap, HashMap};
+    let (mut rail, mut stations, mut ld, mut date, mut report, mut csv) =
+        (None, None, None, None, None, None);
+    let mut pair_files = Vec::new();
+    for pair in args.chunks(2) {
+        let v = pair.get(1).ok_or("missing value")?.clone();
+        match pair[0].as_str() {
+            "--rail" => rail = Some(v),
+            "--stations" => stations = Some(v),
+            "--pairs" => pair_files.push(v),
+            "--ld" => ld = Some(v),
+            "--date" => date = Some(v),
+            "--report" => report = Some(v),
+            "--csv" => csv = Some(v),
+            other => return Err(format!("unknown option {other}").into()),
+        }
+    }
+    let mut g = read_graph(Path::new(&rail.ok_or("missing --rail")?))?;
+    let st = railnet::read_stations(&std::fs::read_to_string(
+        stations.ok_or("missing --stations")?,
+    )?)?;
+    let anchors = g.anchor_stations(&st);
+    let mut names: HashMap<String, String> = st
+        .iter()
+        .map(|s| (s.code.clone(), s.name.clone()))
+        .collect();
+    let mut pairs = BTreeMap::new();
+    for p in &pair_files {
+        netcheck::read_pairs(&std::fs::read_to_string(p)?, &mut pairs);
+    }
+    let mut extra = HashMap::new();
+    if let Some(z) = ld {
+        let today = match &date {
+            Some(d) => parse_date(d).ok_or("bad --date")?,
+            None => (now_unix() + 3600).div_euclid(86_400),
+        };
+        let window = Window {
+            start: today - 1,
+            days: 8,
+        };
+        let feed = load::load(&mut Gtfs::open(Path::new(&z))?, &window)?;
+        for s in &feed.stops {
+            extra.insert(s.id.clone(), s.coord);
+            names.entry(s.id.clone()).or_insert_with(|| s.name.clone());
+        }
+        for t in &feed.trips {
+            for w in t.stop_times.windows(2) {
+                let (a, b) = (&feed.stops[w[0].0].id, &feed.stops[w[1].0].id);
+                if a == b {
+                    continue;
+                }
+                let s = pairs.entry(netcheck::key(a, b)).or_default();
+                s.timetable = true;
+                if s.trains.len() < 5
+                    && !t.short_name.is_empty()
+                    && !s.trains.contains(&t.short_name)
+                {
+                    s.trains.push(t.short_name.clone());
+                }
+            }
+        }
+    }
+    let checked = netcheck::check(&g, &st, &extra, &pairs);
+    let md = netcheck::markdown(&checked, &names);
+    let md = md.replacen(
+        "\n\n| Pairs",
+        &format!(
+            "\n\n{}{}\n| Pairs",
+            network_note(&g),
+            anchors.markdown(st.len())
+        ),
+        1,
+    );
+    let summary_end = md.find("## Failing").unwrap_or(md.len());
+    print!("{}", &md[..summary_end]);
+    if let Some(p) = report {
+        std::fs::write(p, &md)?;
+    }
+    if let Some(p) = csv {
+        std::fs::write(p, netcheck::csv(&checked, &names))?;
+    }
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let result = match args.first().map(String::as_str) {
+        Some("validate-net") => validate_net(&args[1..]),
         Some("inspect") if args.len() > 1 => args[1..]
             .iter()
             .try_for_each(|p| inspect::run(&PathBuf::from(p))),
