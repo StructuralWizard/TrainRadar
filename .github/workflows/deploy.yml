@@ -66,7 +66,7 @@ jobs:
     needs: check
     if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment:
       name: production
       url: ${{ steps.urls.outputs.site }}
@@ -95,11 +95,16 @@ jobs:
         with:
           path: gtfs/rail.geojsonseq
           key: osm-rail-v2-${{ steps.week.outputs.week }}
+          # A failed download falls back to the latest earlier week's file.
+          restore-keys: osm-rail-v2-
       - name: Download OpenStreetMap rail lines
         if: steps.osm.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y osmium-tool
-          tools/fetch-osm-rail.sh
+          if ! timeout 25m tools/fetch-osm-rail.sh; then
+            [ -s gtfs/rail.geojsonseq ] || exit 1
+            echo "::warning::OSM download failed; building from an earlier week's rail lines"
+          fi
       # Terrain heights for gradients: the rail nodes only change with the
       # OSM file, so sample the Copernicus DEM at most weekly too.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
