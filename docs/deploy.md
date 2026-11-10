@@ -150,7 +150,7 @@ stays off until you turn it on, because it needs a paid plan:
 3. **Turn it on.** Repository variable `RECORDER_ENABLED` = `true`, then Actions →
    Deploy → Run workflow. The job creates the database (once), applies
    `backend/migrations/`, creates the private bucket with a 90-day expiry for
-   `backups/`, and deploys with the recorder on.
+   `backups/` and a 14-day one for `gps/`, and deploys with the recorder on.
 4. **Check.** `https://live.<your-domain>/rt/recorder.json` shows `"ok": true` and an
    `updatedAt` from the last 5 minutes; `rt/summary.json` lists every live train;
    `replay/<date>/<hour>.json.gz` (UTC) holds a frame a minute of every train as the map
@@ -162,6 +162,9 @@ stays off until you turn it on, because it needs a paid plan:
    gives positions no time: apps use it so a frozen position isn't taken as fresh). The
    "Live check" workflow also checks the recorder (stale over 15 min, an error, or the
    database over 4 GB) once `RECORDER_ENABLED` is set.
+   `trainradar-history/gps/<date>/<hour>.ndjson.gz` (private) logs every train's raw
+   GPS fix, at most one a minute per train, to check the track network later; kept 14
+   days. `rt/recorder.json` shows how many fixes the current hour holds (`last.gps`).
 5. **API domain (optional).** Workers & Pages → `trainradar-live` → Settings → Domains &
    Routes → Add → Custom domain → `api.<your-domain>`. The API then answers at
    `https://api.<your-domain>/v1/history/lines?days=7` (also on the `workers.dev` URL).
@@ -175,7 +178,8 @@ stays off until you turn it on, because it needs a paid plan:
 **Data kept:** every finished run in `trips` for 12 months (then moved to the archive),
 daily per-line and per-station figures forever. Daily backups in
 `trainradar-history/backups/days/` (kept 90 days), one archive file per month in
-`trainradar-history/archive/` (never deleted). D1 Time Travel restores the last 30 days.
+`trainradar-history/archive/` (never deleted). Raw GPS fixes in
+`trainradar-history/gps/` (kept 14 days). D1 Time Travel restores the last 30 days.
 
 **Kill switch:** delete `RECORDER_ENABLED` (or set it to anything else) and run Deploy:
 the recorder stops after its next cycle; the API keeps serving what's stored.

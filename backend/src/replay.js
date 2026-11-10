@@ -124,4 +124,4 @@ export class ReplayStore {
   }
 }
 
-export { gunzipText };
+export { gunzipText, gzip };

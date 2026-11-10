@@ -63,7 +63,15 @@ variable of the same name; it needs Workers Paid and D1, see
   - writes **`rt/summary.json`**: every live train
     `{trainNo, line, product, delayMin, nextStopId, status, updatedAt}` (for the
     Android widget and alerts);
-  - writes **`rt/recorder.json`** every 5 min (health, runs in progress, database size).
+  - writes **`rt/recorder.json`** every 5 min (health, runs in progress, database size);
+  - logs every new **raw GPS fix** (`src/gpslog.js`) to the private bucket
+    `trainradar-history` as `gps/<date>/<hour>.ndjson.gz` (UTC), one fix per line:
+    `[fix_time, key, number, feed, product, lon_e5, lat_e5, speed_kmh|null, prev_stop,
+    next_stop, feed_stop]`. Positions exactly as Renfe's feeds give them, never placed
+    on our track (the replay frames are), so the track network can be checked against
+    where trains really ran. A fix is logged when its time or position changed; the
+    hour file is written every 10 min. Deleted after 14 days (lifecycle rule
+    `gps-14d`); `GPS_LOG_ENABLED` = `"false"` stops it. Only train data.
   Runs in progress are saved to the object's storage every 5 min, so a restart only
   loses a few minutes. Feeds the poller hasn't fetched for 10 min are treated as empty
   (nothing old is recorded); alerts aren't recorded.

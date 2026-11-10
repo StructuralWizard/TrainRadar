@@ -4,12 +4,15 @@
 // - writes `rt/summary.json` (every live train: delay, next stop, status),
 //   for the Android widget and alerts,
 // - writes `rt/recorder.json` (health and database size) for monitoring,
+// - logs every new raw GPS fix to the private bucket (`gps/`, kept 14 days;
+//   see gpslog.js), to check the track network against real positions,
 // - writes `rt/fixes.tsv`: since when each AV/LD/MD GPS position (the feed
 //   gives them no time) has stayed put, so apps opened later don't take a
 //   frozen position for a fresh one (trains "hours late" at their last fix).
 // The engine is passed in, so this runs in tests on the real WebAssembly.
 
 import { dbStats, writeTrips } from "./history.js";
+import { GpsLog } from "./gpslog.js";
 import { ReplayStore } from "./replay.js";
 
 export const CYCLE_MS = 60_000;
@@ -129,6 +132,8 @@ export class RecorderCore {
     this.totals = { finished: 0, written: 0 };
     // Replay frames (TrainRadar Pro): where every train was, each minute.
     this.replay = env.REPLAY_ENABLED === "false" ? null : new ReplayStore(env.LIVE);
+    // Raw GPS fixes (private bucket), to check the track network later.
+    this.gps = env.GPS_LOG_ENABLED === "false" || !env.ARCHIVE ? null : new GpsLog(env.ARCHIVE);
   }
 
   enabled() {
@@ -173,6 +178,13 @@ export class RecorderCore {
         });
         res.replay = this.replay.status();
       }
+      if (this.gps) {
+        // Nor a GPS-log problem.
+        await this.gps.add(this.engine.gpsFixesJson(), now).catch((e) => {
+          res.gpsError = String(e?.message || e);
+        });
+        res.gps = this.gps.status();
+      }
       this.totals.finished += res.finished;
       this.totals.written += res.written;
       this.cycles += 1;
@@ -199,6 +211,7 @@ export class RecorderCore {
   /** Save before the object is evicted or redeployed (best effort). */
   async save() {
     await this.replay?.flush(false).catch(() => {});
+    await this.gps?.flush().catch(() => {});
     if (this.engine) await this.storage.put("runs", this.engine.recorderSave());
   }
 }
