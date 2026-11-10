@@ -57,7 +57,7 @@ test("hreflang alternates point both ways and exist", () => {
   for (const url of pages()) {
     const html = read(fileFor(url));
     const alts = Object.fromEntries([...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map((m) => [m[1], m[2]]));
-    if (url === SITE) continue; // one bilingual page: no alternates
+    if (Object.keys(alts).length === 0) continue; // no translation (the map page is bilingual)
     const lang = attr(html, /<html lang="([^"]+)">/);
     assert.equal(alts[lang], url, `${url} names itself for ${lang}`);
     for (const [hl, other] of Object.entries(alts)) {

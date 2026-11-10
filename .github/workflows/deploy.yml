@@ -178,6 +178,20 @@ jobs:
           npx --yes "$WRANGLER" pages deploy dist --project-name "$PAGES_PROJECT" \
             --branch main --commit-hash "$GITHUB_SHA" --commit-dirty=true
 
+      # Tell Bing (which feeds ChatGPT search and Copilot), Yandex and other
+      # IndexNow engines that the pages changed, so they recrawl in hours,
+      # not weeks. The key file is public by design. docs/seo.md.
+      - name: Notify search engines (IndexNow)
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          key=$(basename "$(ls web/[0-9a-f]*[0-9a-f].txt)" .txt)
+          urls=$(grep -o '<loc>[^<]*</loc>' web/sitemap.xml | sed 's#</\?loc>##g' | jq -R . | jq -s .)
+          jq -n --arg key "$key" --argjson urls "$urls" \
+            '{host: "mytrainradar.com", key: $key, keyLocation: "https://mytrainradar.com/\($key).txt", urlList: $urls}' \
+            | curl -sS -o /dev/null -w "IndexNow: HTTP %{http_code}\n" -X POST https://api.indexnow.org/indexnow \
+                -H "Content-Type: application/json; charset=utf-8" --data-binary @- | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Smoke test the live site
         env:
           SITE: ${{ steps.urls.outputs.site }}
