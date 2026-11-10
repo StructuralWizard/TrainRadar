@@ -13,7 +13,7 @@ SITE="${SITE:-https://trainradar.pages.dev}"
 data=build/app-data
 rm -rf "$data" && mkdir -p "$data"
 curl -fsS "$SITE/data/manifest.json" -o "$data/manifest.json"
-for f in $(jq -r '.stations.file, (.regions[] | .file, (.geometry.file // empty))' "$data/manifest.json"); do
+for f in $(jq -r '.stations.file, (.network.file // empty), (.regions[] | .file, (.geometry.file // empty))' "$data/manifest.json"); do
   case "$f" in *[!A-Za-z0-9._-]*) echo "odd file name in the manifest: $f" >&2; exit 1 ;; esac
   curl -fsS "$SITE/data/$f" -o "$data/$f"
 done
@@ -30,7 +30,7 @@ for f in "$data"/*.gz; do
 done
 jq '(.. | objects | select(has("file")) | .file) |= sub("\\.gz$"; "")' "$data/manifest.json" > "$data/m.json"
 mv "$data/m.json" "$data/manifest.json"
-for f in $(jq -r '.stations.file, (.regions[] | .file, (.geometry.file // empty))' "$data/manifest.json"); do
+for f in $(jq -r '.stations.file, (.network.file // empty), (.regions[] | .file, (.geometry.file // empty))' "$data/manifest.json"); do
   [ -f "$data/$f" ] || { echo "manifest names $f, which isn't in $data" >&2; exit 1; }
 done
 if ls "$data" | grep -q '\.gz$'; then echo "gzip files left in $data" >&2; exit 1; fi
