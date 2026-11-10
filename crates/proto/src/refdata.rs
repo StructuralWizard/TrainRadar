@@ -355,6 +355,49 @@ impl HasHeader for GeometryFile {
     }
 }
 
+/// The whole rail network for the map, from OpenStreetMap: every section of
+/// running track between junctions and stations, with its kind of track.
+/// Independent of the timetable, so lines show even where no train runs.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NetworkFile {
+    pub header: Header,
+    /// Section geometry (ids are empty).
+    pub sections: Vec<ShapeRec>,
+    /// Facts per section, same order as `sections`.
+    pub info: Vec<SectionInfo>,
+}
+
+impl HasHeader for NetworkFile {
+    fn header(&self) -> &Header {
+        &self.header
+    }
+}
+
+/// Kind of track of a [`NetworkFile`] section.
+pub mod track_kind {
+    /// High speed: `highspeed=yes`, or standard gauge in Spain.
+    pub const AV: u8 = 1;
+    /// Conventional: Iberian gauge (and standard gauge outside Spain).
+    pub const CONV: u8 = 2;
+    /// Metre gauge.
+    pub const METRIC: u8 = 3;
+}
+
+/// Facts for one network section.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct SectionInfo {
+    /// [`track_kind`]: 1 AV, 2 conventional, 3 metre gauge.
+    pub kind: u8,
+    /// More than one gauge on the track (third rail).
+    pub mixed: bool,
+    /// Track in place but out of use (OSM `railway=disused`), e.g. closed for works.
+    pub disused: bool,
+    /// Most common gauge in mm (0 unknown).
+    pub gauge_mm: u16,
+    /// Most common line speed in km/h (0 unknown).
+    pub max_kmh: u16,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StopRec {
     pub id: String,

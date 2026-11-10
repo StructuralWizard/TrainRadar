@@ -3,6 +3,7 @@
 use crate::calendar::Window;
 use crate::load::{Feed, Trip};
 use crate::osm::Router;
+use crate::railnet::Kind;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 use trainradar_proto::LatLon;
@@ -49,6 +50,27 @@ pub fn normalise_ouigo(feed: &mut Feed) {
     }
     for t in &mut feed.trips {
         t.short_name = t.short_name.chars().filter(char::is_ascii_digit).collect();
+    }
+}
+
+/// Kind of track a train keeps to, from its product (route short name):
+/// high-speed products to AV track, regional ones to the conventional line;
+/// Alvia, Intercity and the rest run on both, so they get no preference.
+pub fn preferred_track(short_name: &str) -> Option<Kind> {
+    let s = short_name.trim().to_uppercase();
+    let starts = |p: &str| s.starts_with(p);
+    if ["AVE", "AVLO", "AVANT", "EUROMED", "AV ", "OUIGO"]
+        .iter()
+        .any(|p| starts(p))
+    {
+        Some(Kind::Av)
+    } else if ["MD", "REG", "R-", "PROXIM", "TRENCELTA", "MEDIA"]
+        .iter()
+        .any(|p| starts(p))
+    {
+        Some(Kind::Conv)
+    } else {
+        None
     }
 }
 
@@ -154,8 +176,10 @@ pub fn build_timetable(
     // Cache per (shape, stop sequence): projecting is the slow part.
     type Placed = Option<(u32, u32, Vec<u32>)>;
     let mut placed_cache: HashMap<(&str, Vec<usize>), Placed> = HashMap::new();
-    // OpenStreetMap legs per (stop, next stop): (index in legs_out, length m).
-    let mut leg_map: HashMap<(usize, usize), Option<(u32, f64)>> = HashMap::new();
+    // OpenStreetMap legs per (stop, next stop, preferred kind of track):
+    // (index in legs_out, length m).
+    type LegKey = (usize, usize, Option<Kind>);
+    let mut leg_map: HashMap<LegKey, Option<(u32, f64)>> = HashMap::new();
 
     for trip in trips {
         let stops: Vec<u32> = trip
@@ -268,11 +292,15 @@ pub fn build_timetable(
             None => match router.as_deref_mut() {
                 Some(router) => {
                     let (mut legs, mut cum, mut d, mut any) = (Vec::new(), vec![0u32], 0.0, false);
+                    let prefer = preferred_track(&feed.routes[trip.route].short_name);
                     for i in 1..coords.len() {
-                        let key = (stop_ids[i - 1], stop_ids[i]);
+                        let key = (stop_ids[i - 1], stop_ids[i], prefer);
                         let leg = *leg_map.entry(key).or_insert_with(|| {
-                            let (pts, info, heights) =
-                                router.route_pair(coords[i - 1], coords[i])?;
+                            let (pts, info, heights) = router.route_stops(
+                                (&feed.stops[key.0].id, coords[i - 1]),
+                                (&feed.stops[key.1].id, coords[i]),
+                                prefer,
+                            )?;
                             let profile = crate::profile::leg_profile(&pts, &heights);
                             if !profile.deltas.is_empty() {
                                 st.legs_with_profile += 1;
@@ -500,6 +528,9 @@ pub struct Manifest {
     pub sources: Vec<Source>,
     pub stations: FileEntry,
     pub regions: Vec<RegionEntry>,
+    /// The rail network drawn on the map (OpenStreetMap, by kind of track).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network: Option<FileEntry>,
     pub attribution: &'static str,
 }
 

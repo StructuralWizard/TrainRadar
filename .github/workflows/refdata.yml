@@ -77,6 +77,7 @@ jobs:
             --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
             $([ -s gtfs/rail-heights.txt ] && echo --rail-heights gtfs/rail-heights.txt) \
             $([ -s gtfs/igr-rail.geojsonseq ] && echo --rail-attrs gtfs/igr-rail.geojsonseq) \
+            --stations gtfs/estaciones.geojson \
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data
