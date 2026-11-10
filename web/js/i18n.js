@@ -4,7 +4,7 @@ export const LANGS = ["es", "en"];
 
 export const STRINGS = {
   es: {
-    title: "TrainRadar · trenes de Renfe en directo",
+    title: "TrainRadar · Trenes de Renfe en directo y sus retrasos",
     loading: "Cargando…",
     loadError: "No se pudieron cargar los datos. Reintentando…",
     feedError: "Sin respuesta de Renfe. Reintentando…",
@@ -228,6 +228,9 @@ export const STRINGS = {
     legalTerms: "Términos de uso",
     legalProvider: "Aviso legal",
     legalLicences: "Licencias y atribución",
+    guides: "Guías",
+    guideDelays: "Cómo ver los retrasos de Renfe en directo",
+    guideClaims: "Indemnización por retraso: cuánto y cómo reclamar",
     feedSource: "Datos en directo: {source}",
     feedLive: "servidor central de TrainRadar (copia de los datos abiertos de Renfe)",
     feedProxy: "datos abiertos de Renfe, a través de un reenvío sin cambios",
@@ -439,7 +442,7 @@ export const STRINGS = {
       'Datos: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Alturas: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sin relación con Renfe, Adif ni OUIGO',
   },
   en: {
-    title: "TrainRadar · live Renfe trains",
+    title: "TrainRadar · Live Renfe trains and delays in Spain",
     loading: "Loading…",
     loadError: "Couldn't load the data. Retrying…",
     feedError: "No response from Renfe. Retrying…",
@@ -663,6 +666,9 @@ export const STRINGS = {
     legalTerms: "Terms of use",
     legalProvider: "Provider identification",
     legalLicences: "Data licences and attribution",
+    guides: "Guides",
+    guideDelays: "How to check live Renfe delays",
+    guideClaims: "Delay compensation: how much and how to claim",
     feedSource: "Live data: {source}",
     feedLive: "TrainRadar's central server (a copy of Renfe's open data)",
     feedProxy: "Renfe's open data, through an unchanged pass-through",

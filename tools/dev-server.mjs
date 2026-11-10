@@ -28,6 +28,9 @@ const TYPES = {
   ".pb": "application/octet-stream",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml",
   ".webmanifest": "application/manifest+json",
 };
 

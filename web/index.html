@@ -3,19 +3,88 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Mapa en directo de trenes de Renfe, coloreados por retraso. Funciona en tu navegador.">
+  <meta name="description" content="Mapa en directo de los trenes de Renfe (Cercanías, AVE, Avlo, Alvia, Media Distancia) y OUIGO en España, con su retraso, avisos y puntualidad. Gratis, sin cuentas.">
+  <link rel="canonical" href="https://mytrainradar.com/">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TrainRadar">
+  <meta property="og:title" content="TrainRadar · Trenes de Renfe en directo y sus retrasos">
+  <meta property="og:description" content="Dónde está cada tren de Renfe ahora mismo y cuánto retraso lleva: Cercanías, AVE, Avlo, Alvia, Media Distancia y OUIGO, en un mapa.">
+  <meta property="og:url" content="https://mytrainradar.com/">
+  <meta property="og:image" content="https://mytrainradar.com/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Mapa de TrainRadar con los trenes de Cercanías de Madrid coloreados por su retraso">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:locale:alternate" content="en_GB">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#1d4ed8">
   <!-- Feed text is untrusted: no inline scripts, no third-party scripts.
        connect-src: map tiles, and the feed pass-through (set at deploy). -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tms-pnoa-ma.idee.es; font-src 'self'; connect-src 'self' https://tiles.openfreemap.org https://tms-pnoa-ma.idee.es; base-uri 'none'; form-action 'none'; object-src 'none'">
-  <title>TrainRadar</title>
+  <title>TrainRadar · Trenes de Renfe en directo y sus retrasos</title>
   <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
   <link rel="stylesheet" href="app.css">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="TrainRadar para modelos de lenguaje">
+  <!-- Structured data for search engines and AI assistants (a data block:
+       never executed, so the CSP's script-src doesn't apply). -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://mytrainradar.com/#org",
+        "name": "Metranos Ltd",
+        "url": "https://mytrainradar.com/",
+        "email": "support@metranos.com",
+        "logo": "https://mytrainradar.com/icons/icon-512.png",
+        "sameAs": ["https://github.com/StructuralWizard/TrainRadar"]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://mytrainradar.com/#site",
+        "name": "TrainRadar",
+        "url": "https://mytrainradar.com/",
+        "inLanguage": ["es", "en"],
+        "publisher": { "@id": "https://mytrainradar.com/#org" }
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://mytrainradar.com/#app",
+        "name": "TrainRadar",
+        "alternateName": "TrainRadar: trenes de Renfe en directo",
+        "url": "https://mytrainradar.com/",
+        "description": "Mapa en directo de los trenes de Renfe en España (Cercanías y Rodalies, AVE, Avlo, Alvia, Euromed, Intercity, Media Distancia) y de OUIGO según su horario, coloreados por su retraso, con los avisos de Renfe y la puntualidad de cada línea.",
+        "applicationCategory": "TravelApplication",
+        "operatingSystem": "Web, Android",
+        "browserRequirements": "Requiere JavaScript y WebAssembly",
+        "inLanguage": ["es", "en"],
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "image": "https://mytrainradar.com/og-image.jpg",
+        "screenshot": "https://mytrainradar.com/og-image.jpg",
+        "featureList": [
+          "Posición en directo de los trenes de Renfe en toda España",
+          "Retraso de cada tren, coloreado: verde a su hora, ámbar desde 5 minutos, rojo desde 15",
+          "Próximas salidas y trenes que se acercan a cada estación",
+          "Avisos de Renfe (obras, huelgas, incidencias) en el mapa",
+          "Búsqueda por número de tren, estación, ciudad o de origen a destino",
+          "Puntualidad de cada línea en los últimos 7 días",
+          "Sin cuentas, sin anuncios; la ubicación no sale del dispositivo"
+        ],
+        "publisher": { "@id": "https://mytrainradar.com/#org" },
+        "isPartOf": { "@id": "https://mytrainradar.com/#site" }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
+  <h1 class="sr-only">TrainRadar: trenes de Renfe en directo y sus retrasos</h1>
   <div id="map" role="application" aria-label="Mapa de trenes"></div>
 
   <header class="bar">
@@ -229,6 +298,19 @@
   <div id="scrim" class="scrim" hidden></div>
   <button id="delayed-show" class="delayed-show" type="button" hidden></button>
   <nav id="tabbar" class="tabbar" aria-label="Secciones"></nav>
+
+  <!-- Without JavaScript (and for crawlers that don't run it): what this is. -->
+  <noscript>
+    <div class="noscript">
+      <p><strong>TrainRadar</strong> es un mapa en directo de los trenes de Renfe en España (Cercanías y Rodalies, AVE, Avlo, Alvia, Media Distancia) y de OUIGO, coloreados por su retraso, con los avisos de Renfe y la puntualidad de cada línea. Necesita JavaScript.</p>
+      <ul>
+        <li><a href="/retrasos-trenes-renfe/">Retrasos de trenes Renfe en directo: cómo verlos</a></li>
+        <li><a href="/indemnizacion-retrasos-renfe/">Indemnización por retraso de Renfe: cuánto te devuelven y cómo reclamar</a></li>
+        <li lang="en"><a href="/en/spain-train-delays/">Live Spanish train delays (English)</a></li>
+        <li lang="en"><a href="/en/renfe-delay-compensation/">Renfe delay compensation (English)</a></li>
+      </ul>
+    </div>
+  </noscript>
 
   <script type="module" src="main.js"></script>
 </body>

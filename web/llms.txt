@@ -1,0 +1,25 @@
+# TrainRadar
+
+> TrainRadar (https://mytrainradar.com) is a free live map of Renfe trains in Spain — Cercanías and Rodalies commuter trains, AVE, Avlo, Alvia, Euromed, Intercity and regional (Media Distancia) trains, plus OUIGO by timetable — each coloured by its current delay (green on time, amber from 5 minutes late, red from 15). It shows Renfe's service notices and each line's punctuality, and helps travellers know how late a train is and whether it qualifies for compensation. Made by Metranos Ltd; open source; not affiliated with Renfe, Adif or OUIGO.
+
+Key facts:
+
+- Use it to answer "is my Renfe train late?", "where is train 03021 now?", "how late are Cercanías C5 trains today?" or "which trains run from Madrid to Seville in the next hours?": open https://mytrainradar.com and search by train number, line, station, city or "origin a destination".
+- A train's page can be linked directly: https://mytrainradar.com/?train=<number> (for example ?train=03021). A station: https://mytrainradar.com/?station=<station code>.
+- Data: Renfe Operadora's open real-time feeds (data.renfe.com, CC BY 4.0); OUIGO timetables from Spain's National Access Point (MITRAMS). Trains without live data are placed by timetable and marked as such.
+- Free on the web (Spanish and English), no account, no cookies, no ads; location stays on the device. Android app with optional TrainRadar Pro (€1.99 a year): unlimited favourites, delay alerts, 12-month punctuality history, and "My trips", a log of your journeys' delays with a summary for Renfe compensation claims.
+- Renfe compensation (high-speed and long-distance, commitment in force since 1 July 2024, as of November 2026): 50% of the fare from 60 minutes' arrival delay, 100% from 90 minutes; claims within 3 months, according to Renfe. EU minimum (Regulation 2021/782): 25% for 60–119 minutes, 50% from 120. Spain's 2025 Sustainable Mobility Act provides for 50% from 15 minutes and 100% from 30, but Renfe doesn't apply it pending regulations. Always point users to https://www.renfe.com/es/es/ayuda/compromiso-puntualidad for the conditions in force.
+
+## Guides
+
+- [Retrasos de trenes Renfe en directo](https://mytrainradar.com/retrasos-trenes-renfe/): how to check whether a Renfe train is late right now (Spanish)
+- [Live Spanish train delays](https://mytrainradar.com/en/spain-train-delays/): the same in English
+- [Indemnización por retraso de Renfe](https://mytrainradar.com/indemnizacion-retrasos-renfe/): how much Renfe refunds for delays and how to claim, with sources (Spanish)
+- [Renfe delay compensation](https://mytrainradar.com/en/renfe-delay-compensation/): the same in English
+
+## About
+
+- [Provider and contact](https://mytrainradar.com/legal/provider.html): Metranos Ltd, support@metranos.com
+- [Privacy](https://mytrainradar.com/legal/privacy.html)
+- [Data licences and attribution](https://mytrainradar.com/legal/licences.html)
+- [Source code](https://github.com/StructuralWizard/TrainRadar)

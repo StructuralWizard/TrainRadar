@@ -48,6 +48,10 @@ if [ -n "${DIST:-}" ]; then
   rm -rf "$DIST" && mkdir -p "$DIST"
   cp -r web/index.html web/main.js web/app.css web/icon.svg web/icons web/js web/pkg web/vendor web/legal \
     web/manifest.webmanifest web/sw.js web/_headers "$DIST"/
+  # Search engines and AI assistants: crawl files, guide pages (static text,
+  # no scripts) and the link preview image. docs/seo.md.
+  cp -r web/robots.txt web/sitemap.xml web/llms.txt web/404.html web/og-image.jpg web/guides.css \
+    web/retrasos-trenes-renfe web/indemnizacion-retrasos-renfe web/en "$DIST"/
   rm -f "$DIST"/js/*.test.mjs "$DIST"/pkg/.gitignore "$DIST"/pkg/.gitkeep
   sed -i "s#const VERSION = \"dev\";#const VERSION = \"${VERSION:-$(date +%s)}\";#" "$DIST/sw.js"
   if [ -n "${DATA_DIR:-}" ]; then cp -r "$DATA_DIR" "$DIST/data"; fi
@@ -59,6 +63,9 @@ if [ -n "${DIST:-}" ]; then
     # In the app the files are on the phone: no service worker, no Pages
     # headers; the coffee link never shows (Play rules on external payments).
     rm -f "$DIST/sw.js" "$DIST/_headers"
+    # Nor the website's crawl files and guide pages.
+    rm -rf "$DIST"/robots.txt "$DIST"/sitemap.xml "$DIST"/llms.txt "$DIST"/404.html "$DIST"/og-image.jpg \
+      "$DIST"/guides.css "$DIST"/retrasos-trenes-renfe "$DIST"/indemnizacion-retrasos-renfe "$DIST"/en
     sed -i 's#platform: "web"#platform: "android"#; s#coffeeUrl: "[^"]*"#coffeeUrl: ""#' "$DIST/js/config.js"
     grep -q 'platform: "android"' "$DIST/js/config.js" || { echo "platform not set" >&2; exit 1; }
   fi

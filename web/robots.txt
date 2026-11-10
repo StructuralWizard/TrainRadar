@@ -1,0 +1,20 @@
+# TrainRadar: everything public may be crawled and indexed, by search
+# engines and AI assistants alike (OpenAI, Anthropic, Perplexity, Google…).
+User-agent: *
+Allow: /
+
+# Named so it's explicit that answer engines and AI search are welcome.
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: GPTBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: ClaudeBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://mytrainradar.com/sitemap.xml

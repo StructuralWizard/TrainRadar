@@ -1,0 +1,28 @@
+/* Guide pages (retrasos, indemnizaciones…): plain, fast, readable text. */
+:root { color-scheme: light dark; --fg: #101828; --muted: #475467; --bg: #fff; --line: #eaecf0; --soft: #f2f4f7; --link: #1d4ed8; --note: #fff4e5; --note-line: #f79009; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #e4e7ec; --muted: #98a2b3; --bg: #101828; --line: #344054; --soft: #1d2939; --link: #84adff; --note: #2b2111; --note-line: #b54708; }
+}
+body { font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; }
+main { max-width: 46rem; margin: 0 auto; padding: 16px 16px 48px; }
+header.top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 12px 0 4px; border-bottom: 1px solid var(--line); }
+header.top .brand { font-weight: 700; color: var(--fg); text-decoration: none; }
+header.top nav a { margin-left: 12px; }
+h1 { font-size: 1.75rem; line-height: 1.25; margin: 24px 0 8px; }
+h2 { font-size: 1.25rem; margin: 32px 0 8px; }
+h3 { font-size: 1.05rem; margin: 20px 0 6px; }
+a { color: var(--link); }
+.meta { color: var(--muted); font-size: .9rem; margin: 0 0 16px; }
+.lead { font-size: 1.1rem; }
+.cta { display: inline-block; margin: 8px 0; padding: 10px 18px; border-radius: 999px; background: #1d4ed8; color: #fff; font-weight: 600; text-decoration: none; }
+.note { background: var(--note); border: 1px solid var(--note-line); border-radius: 8px; padding: 10px 14px; }
+.summary { background: var(--soft); border-radius: 10px; padding: 4px 16px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; margin: 8px 0; }
+th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--line); }
+th { background: var(--soft); }
+dt { font-weight: 600; margin-top: 16px; }
+dd { margin: 4px 0 0; }
+.sources { font-size: .9rem; color: var(--muted); }
+footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 12px; font-size: .9rem; color: var(--muted); }
+footer a { margin-right: 12px; }
