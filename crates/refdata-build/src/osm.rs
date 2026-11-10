@@ -64,10 +64,9 @@ pub struct Edge {
     pub kind: Kind,
     /// More than one gauge on this track.
     pub mixed: bool,
-    /// Drawn on the map (service track isn't, except station sidings).
+    /// Drawn on the map (service track isn't, unless it closes a gap at a
+    /// station: [`RailGraph::bridge_station_gaps`]).
     pub drawn: bool,
-    /// `service=siding`.
-    pub siding: bool,
     /// Out of use (`railway=disused`).
     pub disused: bool,
 }
@@ -287,7 +286,6 @@ impl RailGraph {
                     kind: class.kind,
                     mixed: class.mixed,
                     drawn: class.drawn,
-                    siding: class.siding,
                     disused: class.disused,
                 };
                 self.adj[q as usize].push(e);
@@ -520,23 +518,13 @@ impl RailGraph {
         out
     }
 
-    /// Draw the siding edges at node `i` (both directions); returns how many.
-    pub fn draw_sidings_at(&mut self, i: u32) -> usize {
-        let mut ends = Vec::new();
-        for e in &mut self.adj[i as usize] {
-            if e.siding && !e.drawn {
+    /// Draw edge `a`–`b` (both directions).
+    pub fn set_drawn(&mut self, a: u32, b: u32) {
+        for (x, y) in [(a, b), (b, a)] {
+            if let Some(e) = self.adj[x as usize].iter_mut().find(|e| e.to == y) {
                 e.drawn = true;
-                ends.push(e.to);
             }
         }
-        for &j in &ends {
-            for e in &mut self.adj[j as usize] {
-                if e.to == i && e.siding {
-                    e.drawn = true;
-                }
-            }
-        }
-        ends.len()
     }
 
     /// Set the station anchors used by [`Router::route_stops`].

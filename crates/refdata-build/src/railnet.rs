@@ -15,6 +15,7 @@ use crate::gtfs_io::Result;
 use crate::osm::RailGraph;
 use std::collections::HashMap;
 use trainradar_proto::LatLon;
+use trainradar_proto::geo::haversine_m;
 
 /// Kind of track, from its own OSM tags (never from the trains that use it).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -55,12 +56,10 @@ pub struct WayClass {
     /// More than one gauge on the same track (e.g. "1668;1435", third rail).
     pub mixed: bool,
     /// Drawn on the map. Service track (`service=*`: yards, sidings, spurs,
-    /// crossovers) isn't, but trains can use it so lines stay connected.
+    /// crossovers) isn't, but trains can use it so lines stay connected, and
+    /// the bits that close a gap in a line at a station are drawn
+    /// ([`RailGraph::bridge_station_gaps`]).
     pub drawn: bool,
-    /// `service=siding`: drawn after all when it is next to a station
-    /// ([`RailGraph::draw_station_sidings`]), because OSM often maps platform
-    /// tracks, and even the through line in a station, as sidings.
-    pub siding: bool,
     /// Track in place but out of use (`railway=disused`), e.g. closed for works.
     pub disused: bool,
 }
@@ -167,7 +166,6 @@ pub fn classify(props: &serde_json::Value, first: LatLon) -> std::result::Result
         || tag(props, "service") == "disused";
     let service = tag(props, "service");
     let drawn = matches!(service, "" | "disused");
-    let siding = service == "siding";
     let g = gauges(props);
     if !g.is_empty() && g.iter().all(|&x| x < 1000) {
         return Err(Skip::Gauge);
@@ -200,7 +198,6 @@ pub fn classify(props: &serde_json::Value, first: LatLon) -> std::result::Result
         kind,
         mixed: g.iter().filter(|&&x| x >= 1000).count() > 1,
         drawn,
-        siding,
         disused,
     })
 }
@@ -253,10 +250,12 @@ pub const ANCHOR_FALLBACK_M: f64 = 1_000.0;
 pub const PARALLEL_M: f64 = 50.0;
 /// ...up to this many per kind.
 pub const MAX_TRACKS: usize = 4;
-/// Sidings within this distance of a station are drawn (platform tracks)...
-pub const SIDING_M: f64 = 500.0;
+/// Lines that stop short within this distance of a station (OSM maps
+/// platform tracks, and sometimes the through line in a station, as service
+/// track) are joined up through it...
+pub const BRIDGE_M: f64 = 1_000.0;
 /// ...or this, for main stations.
-pub const SIDING_MAIN_M: f64 = 800.0;
+pub const BRIDGE_MAIN_M: f64 = 1_500.0;
 
 /// Where one station sits on the track.
 #[derive(Debug, Clone, PartialEq)]
@@ -277,8 +276,8 @@ pub struct AnchorReport {
     pub far: Vec<(RenfeStation, f64)>,
     /// No track within [`ANCHOR_FALLBACK_M`].
     pub unanchored: Vec<RenfeStation>,
-    /// Siding edges drawn because they are at a station.
-    pub sidings_drawn: usize,
+    /// Service-track edges drawn to close gaps in lines at stations.
+    pub bridged: usize,
 }
 
 impl AnchorReport {
@@ -292,13 +291,13 @@ impl AnchorReport {
         let mut s = format!(
             "- Renfe stations: {n} of {stations} projected onto track \
              (AV {}, conventional {}, metre gauge {} anchors); {} only beyond {ANCHOR_M} m; \
-             {} not projected; {} station siding edges drawn\n",
+             {} not projected; {} service-track edges drawn to join lines up at stations\n",
             by_kind.get(&Kind::Av).unwrap_or(&0),
             by_kind.get(&Kind::Conv).unwrap_or(&0),
             by_kind.get(&Kind::Metric).unwrap_or(&0),
             self.far.len(),
             self.unanchored.len(),
-            self.sidings_drawn,
+            self.bridged,
         );
         for (st, d) in &self.far {
             s.push_str(&format!(
@@ -330,23 +329,115 @@ pub struct Section {
 }
 
 impl RailGraph {
-    /// Draw the `service=siding` track within [`SIDING_M`] of a station
-    /// ([`SIDING_MAIN_M`] for main ones): OSM often maps platform tracks, and
-    /// even the through line in a station, as sidings, so without them lines
-    /// would stop short of the station. Returns how many edges.
-    pub fn draw_station_sidings(&mut self, stations: &[RenfeStation]) -> usize {
-        let mut n = 0;
+    /// Join up lines that stop short at a station because OSM maps the track
+    /// through it as service track: around each station, connect the loose
+    /// ends of drawn track of one kind to each other, or else towards the
+    /// station, along the shortest service track of that kind, and draw it.
+    /// Returns how many edges were drawn.
+    pub fn bridge_station_gaps(&mut self, stations: &[RenfeStation]) -> usize {
+        let mut drawn = 0;
         for st in stations {
             let r = if st.level == 1 {
-                SIDING_MAIN_M
+                BRIDGE_MAIN_M
             } else {
-                SIDING_M
+                BRIDGE_M
             };
-            for node in self.nodes_near(st.at, r) {
-                n += self.draw_sidings_at(node);
+            let loose: Vec<(u32, Kind)> = self
+                .nodes_near(st.at, r)
+                .into_iter()
+                .filter_map(|n| {
+                    let mut it = self.adj_of(n).filter(|e| e.drawn);
+                    match (it.next(), it.next()) {
+                        (Some(e), None) => Some((n, e.kind)),
+                        _ => None,
+                    }
+                })
+                .collect();
+            let mut joined: Vec<u32> = Vec::new();
+            for &(u, kind) in &loose {
+                if joined.contains(&u) {
+                    continue;
+                }
+                let others: Vec<u32> = loose
+                    .iter()
+                    .filter(|o| o.1 == kind && o.0 != u)
+                    .map(|o| o.0)
+                    .collect();
+                // To another loose end, or else as close to the station as
+                // service track gets (when that is closer than the end).
+                let path = self
+                    .service_path(u, kind, st.at, 2.0 * r, &others)
+                    .or_else(|| {
+                        let p = self.service_path(u, kind, st.at, r, &[])?;
+                        let gain = haversine_m(self.nodes()[u as usize], st.at)
+                            - haversine_m(self.nodes()[*p.last()? as usize], st.at);
+                        (gain > BRIDGE_MIN_GAIN_M).then_some(p)
+                    });
+                let Some(path) = path else { continue };
+                joined.extend([u, *path.last().unwrap_or(&u)]);
+                for w in path.windows(2) {
+                    self.set_drawn(w[0], w[1]);
+                    drawn += 1;
+                }
             }
         }
-        n
+        drawn
+    }
+
+    /// Shortest path from `u` along service track of `kind` within `r_m` of
+    /// `centre`: to the first of `goals` reached, or (with no goals) to the
+    /// node reached that is nearest `centre`.
+    fn service_path(
+        &self,
+        u: u32,
+        kind: Kind,
+        centre: LatLon,
+        r_m: f64,
+        goals: &[u32],
+    ) -> Option<Vec<u32>> {
+        use std::collections::{BTreeMap, HashSet};
+        let mut dist: HashMap<u32, f64> = HashMap::from([(u, 0.0)]);
+        let mut prev: HashMap<u32, u32> = HashMap::new();
+        let mut todo: BTreeMap<(u64, u32), ()> = BTreeMap::from([((0, u), ())]);
+        let mut done: HashSet<u32> = HashSet::new();
+        let mut best = (haversine_m(self.nodes()[u as usize], centre), u);
+        let mut end = None;
+        while let Some(((_, n), ())) = todo.pop_first() {
+            if !done.insert(n) {
+                continue;
+            }
+            if n != u && goals.contains(&n) {
+                end = Some(n);
+                break;
+            }
+            let d_here = haversine_m(self.nodes()[n as usize], centre);
+            if d_here < best.0 {
+                best = (d_here, n);
+            }
+            for e in self.adj_of(n).filter(|e| !e.drawn && e.kind == kind) {
+                if haversine_m(self.nodes()[e.to as usize], centre) > r_m {
+                    continue;
+                }
+                let nd = dist[&n] + f64::from(e.len_m);
+                if dist.get(&e.to).is_none_or(|&d| nd < d) {
+                    dist.insert(e.to, nd);
+                    prev.insert(e.to, n);
+                    todo.insert(((nd * 100.0) as u64, e.to), ());
+                }
+            }
+        }
+        let mut n = match (goals.is_empty(), end) {
+            (_, Some(n)) => n,
+            (true, None) if best.1 != u => best.1,
+            _ => return None,
+        };
+        let mut path = vec![n];
+        while let Some(&p) = prev.get(&n) {
+            path.push(p);
+            n = p;
+        }
+        path.reverse();
+        Some(path)
     }
 
     /// Project each station onto the nearest track of every kind within
@@ -355,7 +446,7 @@ impl RailGraph {
     /// nearest track within [`ANCHOR_FALLBACK_M`]; cut the track there.
     pub fn anchor_stations(&mut self, stations: &[RenfeStation]) -> AnchorReport {
         let mut report = AnchorReport {
-            sidings_drawn: self.draw_station_sidings(stations),
+            bridged: self.bridge_station_gaps(stations),
             ..AnchorReport::default()
         };
         // Every projection first (on the graph as read), then all cuts.
@@ -549,8 +640,12 @@ impl RailGraph {
     }
 }
 
-/// Douglas–Peucker tolerance for the drawn network, metres.
-pub const NET_SIMPLIFY_M: f64 = 10.0;
+/// Douglas–Peucker tolerance for the drawn network, metres: as for the
+/// trains' legs, under a pixel up to zoom 12 (236 KB gzipped for Spain).
+pub const NET_SIMPLIFY_M: f64 = 15.0;
+
+/// Extending a loose end towards a station must bring it this much closer.
+const BRIDGE_MIN_GAIN_M: f64 = 20.0;
 
 /// Edge index cell in degrees (~550 m).
 const INDEX_CELL_DEG: f64 = 0.005;
@@ -673,11 +768,17 @@ mod tests {
     fn skips_service_dead_and_toy_track() {
         let c = |p: serde_json::Value| classify(&p, MADRID);
         assert_eq!(c(json!({"railway": "abandoned"})), Err(Skip::NotTrack));
-        // Service track joins lines up but isn't drawn (sidings: unless at a station).
-        let siding = c(json!({"railway": "rail", "service": "siding"})).unwrap();
-        assert_eq!((siding.drawn, siding.siding), (false, true));
-        let yard = c(json!({"railway": "rail", "service": "yard"})).unwrap();
-        assert_eq!((yard.drawn, yard.siding), (false, false));
+        // Service track joins lines up but isn't drawn.
+        assert!(
+            !c(json!({"railway": "rail", "service": "siding"}))
+                .unwrap()
+                .drawn
+        );
+        assert!(
+            !c(json!({"railway": "rail", "service": "yard"}))
+                .unwrap()
+                .drawn
+        );
         assert!(
             !c(json!({"railway": "rail", "service": "crossover"}))
                 .unwrap()
@@ -772,6 +873,39 @@ mod tests {
             level,
             at: LatLon::new(lat, lon),
         }
+    }
+
+    #[test]
+    fn bridges_lines_through_stations_mapped_as_sidings() {
+        let line = |coords: &str, tags: &str| {
+            format!(
+                "{{\"type\":\"Feature\",\"geometry\":{{\"type\":\"LineString\",\"coordinates\":{coords}}},\"properties\":{tags}}}\n"
+            )
+        };
+        let av = r#"{"railway":"rail","gauge":"1435","highspeed":"yes"}"#;
+        let siding = r#"{"railway":"rail","gauge":"1435","service":"siding"}"#;
+        let yard = r#"{"railway":"rail","gauge":"1435","service":"yard"}"#;
+        let text = [
+            line("[[-3.70,40.0],[-3.66,40.0]]", av),
+            line("[[-3.66,40.0],[-3.65,40.0],[-3.64,40.0]]", siding), // through the station
+            line("[[-3.64,40.0],[-3.60,40.0]]", av),
+            line("[[-3.66,40.0],[-3.65,40.002],[-3.64,40.0]]", yard), // a longer loop
+            line("[[-3.65,40.0],[-3.65,40.004]]", siding),            // a stub: not drawn
+        ]
+        .concat();
+        let mut g = RailGraph::from_geojsonseq(text.as_bytes()).unwrap();
+        let r = g.anchor_stations(&[station("S", 40.0003, -3.65, 2)]);
+        assert_eq!(r.bridged, 2, "the two through-line edges");
+        assert_eq!(
+            r.anchors["S"].iter().map(|a| a.kind).collect::<Vec<_>>(),
+            [Kind::Av]
+        );
+        let s = g.sections(5.0);
+        assert_eq!(s.len(), 2, "one line, cut at the station: {s:?}");
+        assert!(
+            s.iter()
+                .all(|x| x.kind == Kind::Av && x.pts.iter().all(|p| p.lat == 40.0))
+        );
     }
 
     #[test]
