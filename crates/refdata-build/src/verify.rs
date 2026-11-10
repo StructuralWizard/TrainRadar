@@ -3,7 +3,9 @@
 
 use crate::gtfs_io::Result;
 use std::path::Path;
-use trainradar_proto::refdata::{GeometryFile, NO_LEG, StationsFile, TimetableFile, decode_file};
+use trainradar_proto::refdata::{
+    GeometryFile, NO_LEG, NetworkFile, StationsFile, TimetableFile, decode_file,
+};
 
 pub fn run(dir: &Path) -> Result<()> {
     let manifest: serde_json::Value =
@@ -80,6 +82,31 @@ pub fn run(dir: &Path) -> Result<()> {
             tt.patterns.len(),
             tt.stops.len()
         );
+    }
+
+    if !manifest["network"].is_null() {
+        let n: NetworkFile = decode_file(&file(&manifest["network"])?)?;
+        check_network(&n)?;
+        println!("ok  network: {} sections", n.sections.len());
+    }
+    Ok(())
+}
+
+pub fn check_network(n: &NetworkFile) -> Result<()> {
+    ensure(n.info.len() == n.sections.len(), || {
+        format!(
+            "network: {} section facts for {} sections",
+            n.info.len(),
+            n.sections.len()
+        )
+    })?;
+    for (i, (s, info)) in n.sections.iter().zip(&n.info).enumerate() {
+        ensure(s.deltas.len() % 2 == 0 && s.deltas.len() >= 4, || {
+            format!("network: section {i} is malformed")
+        })?;
+        ensure((1..=3).contains(&info.kind), || {
+            format!("network: section {i} has unknown kind {}", info.kind)
+        })?;
     }
     Ok(())
 }

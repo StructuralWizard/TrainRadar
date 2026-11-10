@@ -258,8 +258,8 @@ export const STRINGS = {
     showScheduled: "OUIGO (según horario)",
     showLines: "Líneas de Cercanías",
     showTrackAv: "Vías de alta velocidad",
-    showTrackLd: "Vías de larga distancia",
-    showTrackMd: "Vías de media distancia",
+    showTrackLd: "Vías convencionales",
+    showTrackMd: "Vías de ancho métrico",
     showStations: "Estaciones",
     baseStandard: "Mapa",
     baseSatellite: "Satélite",
@@ -436,7 +436,7 @@ export const STRINGS = {
     moreSettingsPro: "TrainRadar Pro y ajustes",
     noticesCount: "{n} avisos",
     attribution:
-      'Datos: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Alturas: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sin relación con Renfe, Adif ni OUIGO',
+      'Datos: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL), IGN (IGR-RT, CC BY 4.0) · Alturas: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sin relación con Renfe, Adif ni OUIGO',
   },
   en: {
     title: "TrainRadar · live Renfe trains",
@@ -693,8 +693,8 @@ export const STRINGS = {
     showScheduled: "OUIGO (timetable)",
     showLines: "Cercanías lines",
     showTrackAv: "High-speed track",
-    showTrackLd: "Long-distance track",
-    showTrackMd: "Medium-distance track",
+    showTrackLd: "Conventional track",
+    showTrackMd: "Metre-gauge track",
     showStations: "Stations",
     baseStandard: "Map",
     baseSatellite: "Satellite",
@@ -871,7 +871,7 @@ export const STRINGS = {
     moreSettingsPro: "TrainRadar Pro and settings",
     noticesCount: "{n} notices",
     attribution:
-      'Data: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Heights: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Not affiliated with Renfe, Adif or OUIGO',
+      'Data: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL), IGN (IGR-RT, CC BY 4.0) · Heights: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Not affiliated with Renfe, Adif or OUIGO',
   },
 };
 

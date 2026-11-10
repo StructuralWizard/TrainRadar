@@ -78,6 +78,12 @@ pub struct Network {
     /// Track heights per OSM leg, per region: evenly spaced samples from the
     /// leg's start to its end (empty when unknown).
     pub profiles: Vec<Vec<Vec<f32>>>,
+    /// The rail network drawn on the map (`rail.<hash>.bin`), by kind of
+    /// track; empty until loaded (the map then draws the trains' legs).
+    pub sections: Vec<(
+        Vec<trainradar_proto::LatLon>,
+        trainradar_proto::refdata::SectionInfo,
+    )>,
     station_gid: HashMap<String, u32>,
     by_trip_id: HashMap<String, TripRef>,
     by_number: HashMap<String, Vec<TripRef>>,
@@ -279,6 +285,25 @@ impl Network {
         self.leg_info[ri] = g.info;
         self.profiles[ri] = g.profiles.iter().map(|p| p.heights_m()).collect();
         Ok(g.region)
+    }
+
+    /// Load `rail.<hash>.bin`: the whole network by kind of track. Returns
+    /// the number of sections.
+    pub fn load_network(&mut self, bytes: &[u8]) -> Result<usize, FormatError> {
+        let n: trainradar_proto::refdata::NetworkFile = decode_file(bytes)?;
+        if n.sections.len() != n.info.len() {
+            return Err(FormatError::Decode(
+                "network: sections and info differ".into(),
+            ));
+        }
+        self.sections = n
+            .sections
+            .iter()
+            .map(|s| s.points())
+            .zip(n.info)
+            .filter(|(p, _)| p.len() >= 2)
+            .collect();
+        Ok(self.sections.len())
     }
 
     /// Gauge and line speed of the track at `d` metres along the trip, when

@@ -11,6 +11,8 @@ export const FLAG = { stopped: 1, likely: 2, scheduled: 4, commuter: 8, highSpee
 // Cercanías lines keep their official colours.
 export const SERVICE_COLORS = { av: "#6d28d9", conv: "#0f766e", cer: "#dc2626" };
 export const TRACK_COLORS = { av: SERVICE_COLORS.av, ld: SERVICE_COLORS.conv, md: SERVICE_COLORS.conv };
+/** Metre-gauge track (ex-FEVE and regional narrow-gauge lines). */
+export const METRIC_COLOR = "#b45309";
 /** Line widths (px by zoom), thicker for readability on a phone; a white
  * casing 3 px wider goes under each line. */
 const TRACK_W = [5, 2.5, 6, 4, 9, 5.5, 11, 7, 13, 10, 16, 13];
@@ -258,11 +260,15 @@ export function setBasemap(map, kind) {
 
 export function addLayers(map) {
   addIcons(map);
-  // AV/LD/MD track we have geometry for (OpenStreetMap legs).
+  // The rail network from OpenStreetMap, by kind of track: `av` high speed,
+  // `ld` conventional, `md` metre gauge (engine.trackGeoJson). Until the
+  // network file loads, the trains' legs by kind of train instead.
   map.addSource("track", { type: "geojson", data: empty() });
-  // One layer per kind of train using the track (a section used by several
-  // kinds is in each; the high-speed one is drawn on top).
+  // One layer per kind (the high-speed one drawn on top). Track out of use
+  // (closed for works) is faded.
+  const trackOpacity = ["case", ["==", ["get", "disused"], true], 0.4, 0.95];
   for (const [kind, prop] of [["md", "md"], ["ld", "ld"], ["av", "av"]]) {
+    const color = kind === "md" ? ["match", ["get", "kind"], "metric", METRIC_COLOR, TRACK_COLORS.md] : TRACK_COLORS[kind];
     map.addLayer({
       id: `track-${kind}-casing`,
       type: "line",
@@ -277,7 +283,7 @@ export function addLayers(map) {
       source: "track",
       filter: ["==", ["get", prop], true],
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": TRACK_COLORS[kind], "line-width": width(TRACK_W), "line-opacity": 0.95 },
+      paint: { "line-color": color, "line-width": width(TRACK_W), "line-opacity": trackOpacity },
     });
   }
   // Cercanías lines in their colours (dashed orange when a notice names them),

@@ -134,6 +134,13 @@ impl Engine {
         Ok(self.net.load_geometry(bytes)?)
     }
 
+    /// Load the rail network (`rail.<hash>.bin`); returns its section count.
+    /// From then on [`Self::track_geojson`] draws it instead of the legs.
+    #[wasm_bindgen(js_name = loadNetwork)]
+    pub fn load_network(&mut self, bytes: &[u8]) -> Result<usize, JsError> {
+        Ok(self.net.load_network(bytes)?)
+    }
+
     /// Feeds to poll, as JSON: `[{key, path, interval, commuter}]`.
     #[wasm_bindgen(js_name = feedsJson)]
     pub fn feeds_json(&self) -> String {
@@ -619,9 +626,16 @@ impl Engine {
     /// `{av, ld, md, gauge, tracks, electrified, max_kmh}` per OpenStreetMap
     /// leg (`av`/`ld`/`md`: which kinds of train run on it), for the track
     /// layers. Grows as geometry files load.
+    ///
+    /// Once the rail network has loaded ([`Self::load_network`]) it draws
+    /// that instead, by kind of track: `av` high speed, `ld` conventional,
+    /// `md` metre gauge, plus `kind`, `mixed`, `disused`, `gauge`, `max_kmh`.
     #[wasm_bindgen(js_name = trackGeoJson)]
     pub fn track_geojson(&self) -> String {
         use std::collections::HashMap;
+        if !self.net.sections.is_empty() {
+            return self.network_geojson();
+        }
         // The same stop pair in either direction, or in two regions.
         let key = |line: &trainradar_proto::geo::Polyline| -> Option<[i64; 4]> {
             let pts = line.points();
@@ -1106,6 +1120,43 @@ impl Engine {
 }
 
 impl Engine {
+    /// The loaded rail network as GeoJSON, one feature per section.
+    fn network_geojson(&self) -> String {
+        use trainradar_proto::refdata::track_kind;
+        let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
+        for (i, (pts, info)) in self.net.sections.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            s.push_str(r#"{"type":"Feature","geometry":{"type":"LineString","coordinates":["#);
+            for (j, p) in pts.iter().enumerate() {
+                if j > 0 {
+                    s.push(',');
+                }
+                s.push_str(&format!("[{:.5},{:.5}]", p.lon, p.lat));
+            }
+            s.push_str("]},\"properties\":");
+            let kind = match info.kind {
+                track_kind::AV => "av",
+                track_kind::METRIC => "metric",
+                _ => "conv",
+            };
+            json::Obj::new(&mut s)
+                .b("av", info.kind == track_kind::AV)
+                .b("ld", info.kind == track_kind::CONV)
+                .b("md", info.kind == track_kind::METRIC)
+                .s("kind", kind)
+                .b("mixed", info.mixed)
+                .b("disused", info.disused)
+                .n("gauge", info.gauge_mm)
+                .n("max_kmh", info.max_kmh)
+                .end();
+            s.push('}');
+        }
+        s.push_str("]}");
+        s
+    }
+
     /// Index of the train with this spacing label (trip id, or number).
     fn index_of(&self, id: &str) -> Option<usize> {
         self.live.trains.iter().position(|t| {
@@ -1320,6 +1371,52 @@ mod tests {
         assert_eq!(feat["properties"]["name"], "Madrid \"Chamartín\"");
         assert_eq!(feat["properties"]["services"], 3);
         assert_eq!(e.find_train("x", "1"), -1);
+    }
+
+    #[test]
+    fn track_geojson_draws_the_network_by_kind() {
+        use trainradar_proto::LatLon;
+        use trainradar_proto::refdata::{NetworkFile, SectionInfo, ShapeRec, track_kind};
+        let line = |lat: f64| {
+            ShapeRec::encode(
+                String::new(),
+                &[LatLon::new(lat, -3.7), LatLon::new(lat, -3.6)],
+            )
+        };
+        let info = |kind, disused| SectionInfo {
+            kind,
+            disused,
+            gauge_mm: 1668,
+            ..SectionInfo::default()
+        };
+        let f = NetworkFile {
+            header: Header::new(0, 8, 0),
+            sections: vec![line(40.0), line(40.1), line(40.2)],
+            info: vec![
+                info(track_kind::AV, false),
+                info(track_kind::CONV, true),
+                info(track_kind::METRIC, false),
+            ],
+        };
+        let mut e = Engine::new();
+        let empty: serde_json::Value = serde_json::from_str(&e.track_geojson()).unwrap();
+        assert_eq!(empty["features"].as_array().unwrap().len(), 0);
+        assert_eq!(e.load_network(&encode(&f).unwrap()).unwrap(), 3);
+        let v: serde_json::Value = serde_json::from_str(&e.track_geojson()).unwrap();
+        let p = |i: usize| &v["features"][i]["properties"];
+        assert_eq!(
+            (p(0)["av"].as_bool(), p(0)["ld"].as_bool()),
+            (Some(true), Some(false))
+        );
+        assert_eq!(
+            (p(1)["ld"].as_bool(), p(1)["disused"].as_bool()),
+            (Some(true), Some(true))
+        );
+        assert_eq!(
+            (p(2)["md"].as_bool(), p(2)["kind"].as_str()),
+            (Some(true), Some("metric"))
+        );
+        assert_eq!(v["features"][0]["geometry"]["coordinates"][1][0], -3.6);
     }
 
     #[test]

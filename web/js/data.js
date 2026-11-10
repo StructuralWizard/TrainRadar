@@ -33,6 +33,23 @@ export class RefData {
     for (const r of this.manifest.regions.filter((r) => r.live === false)) {
       await this.loadRegion(r.code).catch((e) => console.warn("region", r.code, e));
     }
+    this.loadNetwork();
+  }
+
+  /** The rail network by kind of track (when the build has one), loaded when
+   * the browser is idle; the map draws the trains' legs until then. */
+  loadNetwork() {
+    const n = this.manifest?.network;
+    if (!n) return;
+    const idle = window.requestIdleCallback || ((f) => setTimeout(f, 200));
+    idle(async () => {
+      try {
+        this.engine.loadNetwork(await fetchBytes(this.base + n.file));
+        this.onGeometry?.("network");
+      } catch (e) {
+        console.warn("network", e); // the map keeps the trains' legs
+      }
+    });
   }
 
   /** Unix seconds when the NAP last updated a timetable-only source, if known. */
