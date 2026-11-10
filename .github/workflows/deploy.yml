@@ -66,7 +66,7 @@ jobs:
     needs: check
     if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment:
       name: production
       url: ${{ steps.urls.outputs.site }}
@@ -94,19 +94,24 @@ jobs:
         id: osm
         with:
           path: gtfs/rail.geojsonseq
-          key: osm-rail-${{ steps.week.outputs.week }}
+          key: osm-rail-v2-${{ steps.week.outputs.week }}
+          # A failed download falls back to the latest earlier week's file.
+          restore-keys: osm-rail-v2-
       - name: Download OpenStreetMap rail lines
         if: steps.osm.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y osmium-tool
-          tools/fetch-osm-rail.sh
+          if ! timeout 25m tools/fetch-osm-rail.sh; then
+            [ -s gtfs/rail.geojsonseq ] || exit 1
+            echo "::warning::OSM download failed; building from an earlier week's rail lines"
+          fi
       # Terrain heights for gradients: the rail nodes only change with the
       # OSM file, so sample the Copernicus DEM at most weekly too.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: dem
         with:
           path: gtfs/rail-heights.txt
-          key: dem-heights-v1-${{ steps.week.outputs.week }}
+          key: dem-heights-v2-${{ steps.week.outputs.week }}
       # The IGN API is slow and drops connections: fetch at most weekly.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: igr
@@ -129,6 +134,7 @@ jobs:
             --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip --rail gtfs/rail.geojsonseq $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
             $([ -s gtfs/rail-heights.txt ] && echo --rail-heights gtfs/rail-heights.txt) \
             $([ -s gtfs/igr-rail.geojsonseq ] && echo --rail-attrs gtfs/igr-rail.geojsonseq) \
+            --stations gtfs/estaciones.geojson \
             --sources gtfs/sources.tsv --report refdata.md
           cargo run --release -q -p trainradar-refdata-build -- verify build/data
           cat refdata.md >> "$GITHUB_STEP_SUMMARY"

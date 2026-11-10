@@ -118,7 +118,15 @@ public class AppSmokeTest {
         // up to 30 s for the share sheet, failing early if the call fails.
         long until = System.currentTimeMillis() + 30_000;
         while (appInFront()) {
-            String state = String.valueOf(eval("return window.__shared;"));
+            String state;
+            try {
+                state = String.valueOf(eval("return window.__shared;"));
+            } catch (RuntimeException e) {
+                // The sheet opened between the check and the script, so
+                // the app has no resumed screen: that's the pass we wait for.
+                if (!appInFront()) break;
+                throw e;
+            }
             if (state.startsWith("error") || System.currentTimeMillis() > until) {
                 throw new AssertionError("the share sheet didn't open; export: " + state);
             }

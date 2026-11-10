@@ -23,7 +23,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -44,18 +44,23 @@ jobs:
         with:
           path: gtfs/rail.geojsonseq
           key: osm-rail-v2-${{ steps.week.outputs.week }}
+          # A failed download falls back to the latest earlier week's file.
+          restore-keys: osm-rail-v2-
       - name: Download OpenStreetMap rail lines
         if: steps.osm.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y osmium-tool
-          tools/fetch-osm-rail.sh
+          if ! timeout 25m tools/fetch-osm-rail.sh; then
+            [ -s gtfs/rail.geojsonseq ] || exit 1
+            echo "::warning::OSM download failed; building from an earlier week's rail lines"
+          fi
       # Terrain heights for gradients: the rail nodes only change with the
       # OSM file, so sample the Copernicus DEM at most weekly too.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: dem
         with:
           path: gtfs/rail-heights.txt
-          key: dem-heights-v1-${{ steps.week.outputs.week }}
+          key: dem-heights-v2-${{ steps.week.outputs.week }}
       # The IGN API is slow and drops connections: fetch at most weekly.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: igr
