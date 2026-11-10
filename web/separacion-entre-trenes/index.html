@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<title>App para ver la separación entre trenes en directo (tren anterior y siguiente) · TrainRadar</title>
+<meta name="description" content="TrainRadar calcula en directo la separación entre trenes de Renfe: minutos y kilómetros hasta el tren anterior y el siguiente por la misma vía. Gratis, en la web y en Android.">
+<link rel="canonical" href="https://mytrainradar.com/separacion-entre-trenes/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="TrainRadar">
+<meta property="og:title" content="Separación entre trenes en directo: tren anterior y siguiente">
+<meta property="og:description" content="Minutos y kilómetros hasta el tren de delante y el de detrás, para cualquier tren de Renfe.">
+<meta property="og:url" content="https://mytrainradar.com/separacion-entre-trenes/">
+<meta property="og:image" content="https://mytrainradar.com/og-image.jpg">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/guides.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "@id": "https://mytrainradar.com/separacion-entre-trenes/#article",
+      "headline": "Separación entre trenes en directo: cuánto falta para el tren anterior y el siguiente",
+      "description": "Cómo TrainRadar calcula la separación en tiempo y distancia entre trenes de Renfe que circulan por la misma vía.",
+      "inLanguage": "es",
+      "datePublished": "2026-11-10",
+      "dateModified": "2026-11-10",
+      "mainEntityOfPage": "https://mytrainradar.com/separacion-entre-trenes/",
+      "image": "https://mytrainradar.com/og-image.jpg",
+      "author": { "@type": "Organization", "name": "Metranos Ltd", "url": "https://mytrainradar.com/" },
+      "publisher": { "@type": "Organization", "name": "Metranos Ltd", "url": "https://mytrainradar.com/", "logo": { "@type": "ImageObject", "url": "https://mytrainradar.com/icons/icon-512.png" } },
+      "about": { "@type": "WebApplication", "name": "TrainRadar", "url": "https://mytrainradar.com/", "applicationCategory": "TravelApplication", "operatingSystem": "Web, Android", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" } }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "TrainRadar", "item": "https://mytrainradar.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Separación entre trenes", "item": "https://mytrainradar.com/separacion-entre-trenes/" }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "¿Hay alguna app para calcular la separación entre trenes?", "acceptedAnswer": { "@type": "Answer", "text": "Sí. TrainRadar (mytrainradar.com, también app de Android) calcula en directo, para cualquier tren de Renfe, el tiempo y la distancia hasta el tren anterior (el que va delante por la misma vía y en el mismo sentido) y hasta el siguiente (el que viene detrás), y muestra los trenes que se cruzan en sentido contrario. Es gratis." } },
+        { "@type": "Question", "name": "¿Cómo se calcula la separación?", "acceptedAnswer": { "@type": "Answer", "text": "TrainRadar proyecta la posición en tiempo real de los trenes cercanos sobre la vía del tren elegido. Cuenta como tren anterior el que está sobre esa misma vía, más adelante y en el mismo sentido, aunque tenga otras paradas (un AVE directo y otro con paradas, Cercanías y Media Distancia en vía compartida). La distancia se mide a lo largo de la vía; el tiempo es cuándo llegaría el tren a la posición del otro según su horario y su retraso." } },
+        { "@type": "Question", "name": "¿Sirve para Cercanías y para AVE?", "acceptedAnswer": { "@type": "Answer", "text": "Sí, para todos los trenes de Renfe con posición en tiempo real: Cercanías y Rodalies, AVE, Avlo, Alvia, Euromed, Intercity y Media Distancia, en toda España." } },
+        { "@type": "Question", "name": "¿Es un dato oficial de Adif o Renfe?", "acceptedAnswer": { "@type": "Answer", "text": "No. Es un cálculo de TrainRadar a partir de los datos abiertos en tiempo real de Renfe. No refleja la señalización ni los cantones de Adif, y no debe usarse para nada relacionado con la seguridad." } }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<main>
+<header class="top">
+  <a class="brand" href="/">TrainRadar</a>
+  <nav><a href="/retrasos-trenes-renfe/">Retrasos en directo</a><a href="/historico-trenes-renfe/">Histórico</a></nav>
+</header>
+
+<article>
+<h1>Separación entre trenes en directo: cuánto falta para el tren anterior y el siguiente</h1>
+<p class="meta">Actualizado el 10 de noviembre de 2026 · TrainRadar (Metranos Ltd)</p>
+
+<p class="lead"><strong>Sí, hay una app para calcular la separación entre trenes:</strong> <strong>TrainRadar</strong> muestra, para cualquier tren de Renfe en circulación, a cuántos <strong>minutos y kilómetros</strong> está el <strong>tren anterior</strong> (el de delante) y el <strong>tren siguiente</strong> (el de detrás) por la misma vía, y qué trenes se cruzan en sentido contrario. Gratis, en <a href="/">mytrainradar.com</a> y en la app de Android.</p>
+<p><a class="cta" href="/">Abrir el mapa y tocar un tren</a></p>
+
+<h2>Qué muestra</h2>
+<p>Al tocar un tren en el mapa, su ficha incluye:</p>
+<ul>
+  <li><strong>Tren anterior</strong>: el que va delante por la misma vía y en el mismo sentido, con el tiempo y la distancia que lo separan (por ejemplo «4 min · 3,2 km»). Se puede tocar para ir a ese tren.</li>
+  <li><strong>Tren siguiente</strong>: el que viene detrás, con su separación.</li>
+  <li><strong>Cruce</strong>: los trenes que vienen de frente por la misma línea.</li>
+</ul>
+<p>Además de la separación, la ficha da el retraso, la velocidad, la próxima parada, la vía (velocidad máxima de la línea, electrificación, número de vías) y la pendiente con su perfil de altura.</p>
+
+<h2>Cómo se calcula</h2>
+<p>TrainRadar proyecta la posición en tiempo real de los trenes cercanos sobre la vía del tren elegido:</p>
+<ul>
+  <li>Un tren cuenta como <strong>anterior</strong> si está sobre esa misma vía (a menos de 250 m de su trazado), más adelante y con el mismo rumbo. Funciona aunque los trenes tengan paradas distintas: un AVE directo y otro con paradas, Cercanías semidirectos y ómnibus, o Cercanías y Media Distancia en vía compartida.</li>
+  <li>La <strong>distancia</strong> se mide a lo largo de la vía, no en línea recta.</li>
+  <li>El <strong>tiempo</strong> hasta el tren anterior es cuándo llegaría tu tren a donde está ahora el otro, según su horario y su retraso; el del tren siguiente, cuándo llegaría ese tren a tu posición.</li>
+  <li>Trenes a menos de 150 m se descartan: van por una vía paralela, como en los tramos de cuatro vías de Madrid.</li>
+</ul>
+<p class="note">Es un cálculo de TrainRadar con los datos abiertos de Renfe, no un dato de Adif: no refleja la señalización ni los cantones, y nunca debe usarse para nada relacionado con la seguridad.</p>
+
+<h2>Para qué sirve</h2>
+<ul>
+  <li>Saber si el siguiente Cercanías viene justo detrás del que va lleno o con retraso.</li>
+  <li>Ver si tu tren va retenido detrás de otro más lento.</li>
+  <li>Entender la frecuencia real de una línea en este momento, no la del horario.</li>
+</ul>
+
+<h2>Preguntas frecuentes</h2>
+<dl>
+  <dt>¿Hay alguna app para calcular la separación entre trenes?</dt>
+  <dd>Sí: TrainRadar, gratis en <a href="/">mytrainradar.com</a> y en Android. Toca cualquier tren de Renfe y verás el tiempo y la distancia al tren anterior y al siguiente.</dd>
+  <dt>¿Cómo se calcula la separación?</dt>
+  <dd>Proyectando la posición en tiempo real de los trenes cercanos sobre la vía del tren elegido: la distancia es a lo largo de la vía y el tiempo usa el horario y el retraso de cada tren.</dd>
+  <dt>¿Sirve para Cercanías y para AVE?</dt>
+  <dd>Sí, para todos los trenes de Renfe con posición en tiempo real: Cercanías y Rodalies, AVE, Avlo, Alvia, Euromed, Intercity y Media Distancia.</dd>
+  <dt>¿Es un dato oficial de Adif o Renfe?</dt>
+  <dd>No. Es un cálculo de TrainRadar con los datos abiertos de Renfe. No refleja la señalización de Adif y no sirve para nada relacionado con la seguridad.</dd>
+</dl>
+</article>
+
+<footer>
+  <a href="/">Mapa en directo</a><a href="/registrar-viajes-tren/">Registrar tus viajes</a><a href="/historico-trenes-renfe/">Histórico de trenes</a><a href="/indemnizacion-retrasos-renfe/">Indemnizaciones</a><a href="/legal/provider.html">Aviso legal</a>
+  <p>Datos: © Renfe Operadora, CC BY 4.0. Sin relación con Renfe, Adif ni OUIGO.</p>
+</footer>
+</main>
+</body>
+</html>

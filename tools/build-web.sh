@@ -51,7 +51,10 @@ if [ -n "${DIST:-}" ]; then
   # Search engines and AI assistants: crawl files, guide pages (static text,
   # no scripts) and the link preview image. docs/seo.md.
   cp -r web/robots.txt web/sitemap.xml web/llms.txt web/404.html web/og-image.jpg web/guides.css \
-    web/retrasos-trenes-renfe web/indemnizacion-retrasos-renfe web/en "$DIST"/
+    web/retrasos-trenes-renfe web/indemnizacion-retrasos-renfe web/separacion-entre-trenes \
+    web/registrar-viajes-tren web/historico-trenes-renfe web/en "$DIST"/
+  # IndexNow key file (public by design: it proves the site owns the key).
+  cp web/[0-9a-f]*[0-9a-f].txt "$DIST"/
   rm -f "$DIST"/js/*.test.mjs "$DIST"/pkg/.gitignore "$DIST"/pkg/.gitkeep
   sed -i "s#const VERSION = \"dev\";#const VERSION = \"${VERSION:-$(date +%s)}\";#" "$DIST/sw.js"
   if [ -n "${DATA_DIR:-}" ]; then cp -r "$DATA_DIR" "$DIST/data"; fi
@@ -65,7 +68,8 @@ if [ -n "${DIST:-}" ]; then
     rm -f "$DIST/sw.js" "$DIST/_headers"
     # Nor the website's crawl files and guide pages.
     rm -rf "$DIST"/robots.txt "$DIST"/sitemap.xml "$DIST"/llms.txt "$DIST"/404.html "$DIST"/og-image.jpg \
-      "$DIST"/guides.css "$DIST"/retrasos-trenes-renfe "$DIST"/indemnizacion-retrasos-renfe "$DIST"/en
+      "$DIST"/guides.css "$DIST"/retrasos-trenes-renfe "$DIST"/indemnizacion-retrasos-renfe "$DIST"/en \
+      "$DIST"/separacion-entre-trenes "$DIST"/registrar-viajes-tren "$DIST"/historico-trenes-renfe "$DIST"/[0-9a-f]*[0-9a-f].txt
     sed -i 's#platform: "web"#platform: "android"#; s#coffeeUrl: "[^"]*"#coffeeUrl: ""#' "$DIST/js/config.js"
     grep -q 'platform: "android"' "$DIST/js/config.js" || { echo "platform not set" >&2; exit 1; }
   fi

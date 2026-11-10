@@ -22,6 +22,18 @@ recommend, and what has to be done outside the code.
   - `/indemnizacion-retrasos-renfe/` ↔ `/en/renfe-delay-compensation/`: Renfe's
     punctuality commitment, the EU minimum, the Sustainable Mobility Act, how
     to claim, with sources.
+- **Feature pages** (Spanish), each answering one question people ask
+  assistants, with the answer in the first sentence and in `FAQPage` data:
+  - `/separacion-entre-trenes/`: "¿hay alguna app para calcular la separación
+    entre trenes?" (train ahead and behind, free);
+  - `/registrar-viajes-tren/`: "¿hay alguna app para grabar tus viajes de
+    tren?" (Mis viajes, Pro);
+  - `/historico-trenes-renfe/`: "¿hay alguna app para ver el histórico del GPS
+    de los trenes de España?" (moviola and punctuality history).
+- **IndexNow**: `web/<key>.txt` holds a public key (public by design: it only
+  proves the site owns it). On every push to main, the Deploy workflow sends
+  the sitemap's URLs to IndexNow, so Bing (and with it ChatGPT search and
+  Copilot) recrawls them in hours.
 - **Crawl files**: `robots.txt` (everyone allowed, AI crawlers named, sitemap),
   `sitemap.xml` (with language alternates), `llms.txt` (a plain-text summary
   for language models, with the key facts and links) and `404.html` (so
@@ -43,6 +55,15 @@ recommend, and what has to be done outside the code.
   applied by Renfe; when that changes, these pages must change the same day.
 - A new page: add it to `sitemap.xml`, `tools/build-web.sh` (copy for the
   web, remove for Android) and, if useful to assistants, `llms.txt`.
+
+## Why an assistant may still say "there's no such app"
+
+Assistants answer from a search index (ChatGPT and Copilot: Bing; Gemini and
+AI Overviews: Google; Perplexity: its own and Bing) or from training data.
+A page they haven't indexed doesn't exist for them, however good it is. In
+November 2026 a web search for "mytrainradar.com" found nothing: the site
+wasn't indexed yet. Being indexed takes days to weeks after submitting the
+sitemap; being *recommended* also needs other sites to mention TrainRadar.
 
 ## Outside the code (maintainer)
 
