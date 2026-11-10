@@ -95,10 +95,23 @@ this sandbox couldn't reach it.
 |---|---|---|
 | Spain extract | `https://download.geofabrik.de/europe/spain-latest.osm.pbf` | ODbL 1.0 |
 | Portugal extract (cross-border trains) | `https://download.geofabrik.de/europe/portugal-latest.osm.pbf` | ODbL 1.0 |
+| French Mediterranean corridor (Figueres–Perpignan–Montpellier–Marseille), clipped to 2.5,42.3–5.6,44.0 | `https://download.geofabrik.de/europe/france/languedoc-roussillon-latest.osm.pbf`, `…/france/provence-alpes-cote-d-azur-latest.osm.pbf` | ODbL 1.0 |
 
-Downloaded at most weekly (GitHub Actions cache), filtered to `railway=rail`.
-Attribution: "© OpenStreetMap contributors". Approved by the maintainer on
-2026-11-01.
+Downloaded at most weekly (GitHub Actions cache), filtered to `railway=rail`,
+`narrow_gauge` and `disused` (approved 2026-11-10 for the rail network map; see
+[refdata.md](refdata.md#rail-network-railhashbin)). The French corridor comes
+from Geofabrik too, not Overpass: the public Overpass instance turns away
+automated clients. Attribution: "© OpenStreetMap contributors". Approved by
+the maintainer on 2026-11-01.
+
+## Renfe long-distance live map (stations and live stop sequences, approved 2026-11-10)
+
+| What | URL | Used for |
+|---|---|---|
+| Station points (1010, WGS84; `CODIGO` = GTFS `stop_id`, `NOMBRE`, `NIVEL` 1–3) | `https://tiempo-real.largorecorrido.renfe.com/data/estaciones.geojson` | Anchoring stations on the track (`tools/fetch-gtfs.sh`, CI) |
+| Trains running now, with their stops in order (`p`: station code) | `https://tiempo-real.largorecorrido.renfe.com/renfe-visor/trenesConEstacionesLD.json` | Validating the network (`tools/collect-renfe-ld.py`, CI and by hand) |
+
+Not used: the live map's WFS/WMTS layers.
 
 ## Copernicus DEM (track heights, built in CI)
 

@@ -49,20 +49,73 @@ version, date window). Postcard writes integers as varints, so:
 | Cercanías | Yes, one shape per line (e.g. `10_C1`), single direction | Stops are projected onto the shape in order. Trips running the other way use a reversed copy. 90% of patterns fit. The rest (a stop > 400 m off, or out of order) use straight segments. |
 | AV/LD/MD | **No** | Routed along OpenStreetMap track (below). |
 
-**OpenStreetMap track (approved 2026-11-01).** CI downloads the Spain and
-Portugal extracts from Geofabrik (cached weekly), keeps `railway=rail` ways
-(not yards, sidings or spurs) with `osmium`, and builds a track graph where
-ways sharing a node connect. Each pair of consecutive stops is routed with A*
-(stops snap to track within 1 km; routes more than 1.8× the straight distance
-+ 20 km are rejected). Each routed stop pair is stored once as a *leg*,
-simplified at 15 m, and shared by every trip between those stops. Pairs that
-can't be routed (e.g. into France, or gaps in OSM) stay straight.
+**OpenStreetMap track (approved 2026-11-01).** CI downloads the Spain,
+Portugal and French-corridor extracts from Geofabrik (cached weekly), keeps
+`railway=rail`, `narrow_gauge` and `disused` ways with `osmium`, and builds a
+track graph where ways sharing a node connect (see the rail network below
+for which ways count). Each pair of consecutive stops is routed with A*, from
+the stations' anchors on the track (other stops snap within 1 km), preferring
+the train's kind of track (AVE, Avlo, Avant, OUIGO: AV track; MD and
+regionals: conventional; other track costs 1.5×) and keeping to running lines
+(service track costs 4×). Routes more than 1.8× the straight distance + 20 km
+are rejected. Each routed stop pair is stored once as a *leg*, simplified at
+15 m, and shared by every trip between those stops. Pairs that can't be
+routed (gaps in OSM) stay straight.
 
-Result: 2,334 of 3,049 stop pairs follow track. 1,630 of 1,655 AV/LD/MD
-patterns use OSM track for at least one section.
+Result (build of 2026-11-10): 3,517 stop pairs follow track, 41 don't.
+
+### Rail network (`rail.<hash>.bin`)
+
+The map draws the whole network from OpenStreetMap, independent of the
+timetable, by kind of track (`crates/refdata-build/src/railnet.rs`):
+
+| Kind | Rule (the way's own tags) |
+|---|---|
+| AV | `highspeed=yes`, or 1435 mm in Spain (not FGC's Barcelona–Vallès line) |
+| Conventional | 1668 mm (also third rail, flagged `mixed`), and 1435 mm in France |
+| Metre gauge | 1000 mm, or `railway=narrow_gauge` with no gauge |
+
+- Each OSM way keeps its own kind, so parallel AV and conventional track stay
+  separate sections.
+- Left out: abandoned/razed track, `usage=industrial|military|test`, gauges
+  under 1000 mm. Disused track (`railway=disused`, e.g. closed for works) is
+  kept and drawn faded.
+- Service track (`service=*`: yards, sidings, crossovers) isn't drawn but
+  joins lines up for routing. Where OSM maps the through line or platform
+  tracks of a station as sidings (Cuenca, Alicante AV), the loose ends of a
+  line within 1 km of the station (1.5 km for main ones) are joined along the
+  shortest service track of the same kind, and that is drawn.
+- Renfe stations (`--stations`, the live map's `estaciones.geojson`) are
+  projected onto the nearest track of each kind within 300 m (600 m for main
+  stations) and the parallel tracks beside it (within 50 m more, up to 4),
+  falling back to the nearest track within 1 km. The track is cut there, so
+  lines pass through the station's point on the track; the build report
+  lists the stations that can't be projected.
+- Sections run between junctions and stations, simplified at 15 m. Spain,
+  Portugal and the French corridor: 7,738 sections, 328 KB raw, 236 KB gzip.
+
+`--network-geojson FILE` also writes the network and the anchors as GeoJSON,
+to check on a map.
+
+### Validation
+
+```sh
+python3 -I tools/collect-renfe-ld.py gtfs/renfe-ld-pairs.tsv   # several times a day
+cargo run --release -p trainradar-refdata-build -- validate-net \
+  --rail gtfs/rail.geojsonseq --stations gtfs/estaciones.geojson \
+  --pairs gtfs/renfe-ld-pairs.tsv --ld gtfs/ld.zip --report validate-net.md --csv validate-net.csv
+```
+
+For every pair of consecutive stops (live trains, and the timetable with
+`--ld`) it looks for a track path between the stations' anchors and reports
+the pairs with none, or with one longer than 1.5× the straight distance
+(straight + 1 km for short hops). Many of those are real: mountain lines
+(Pajares, Brañuelas, Canfranc, the Cantabrian metre gauge) and terminal
+stations (Valencia Nord, Barcelona-França) run well over 1.5× straight. CI
+adds the summary to every run.
 
 Licence: OSM data © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/).
-The `geo-*.bin` files are a derived database, published openly with the site
+The `geo-*.bin` and `rail.*.bin` files are a derived database, published openly with the site
 under the ODbL. Attribution is in `manifest.json`, the README and the map.
 
 ### Height profiles (gradients)
