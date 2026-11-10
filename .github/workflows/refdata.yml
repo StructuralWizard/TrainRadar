@@ -43,7 +43,7 @@ jobs:
         id: osm
         with:
           path: gtfs/rail.geojsonseq
-          key: osm-rail-${{ steps.week.outputs.week }}
+          key: osm-rail-v2-${{ steps.week.outputs.week }}
       - name: Download OpenStreetMap rail lines
         if: steps.osm.outputs.cache-hit != 'true'
         run: |

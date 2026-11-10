@@ -17,6 +17,9 @@ fetch() {
 }
 fetch "Renfe AV/LD/MD GTFS" https://ssl.renfe.com/gtransit/Fichero_AV_LD/google_transit.zip ld.zip
 fetch "Renfe Cercanías GTFS" https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip cercanias.zip
+# Station points of Renfe's long-distance live map: the track network anchors
+# each one onto the right kind of track (AV, Iberian or metre gauge).
+fetch "Renfe estaciones (visor LD)" https://tiempo-real.largorecorrido.renfe.com/data/estaciones.geojson estaciones.geojson
 
 # OUIGO publishes only its timetable, on the National Access Point (NAP,
 # MITRAMS). Needs a free NAP API key in $NAP_API_KEY; skipped without it.
