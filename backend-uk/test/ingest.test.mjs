@@ -147,6 +147,9 @@ test("cycle: writes trip updates and status; a failed login keeps the last feed"
   assert.equal(st.ok, true);
   assert.equal(st.published, 2);
   assert.equal(st.lastDrain.messages, 2);
+  // Spain's poller status shape, so the app reads it the same way.
+  assert.equal(st.feeds["trip_updates.pb"].ok, true);
+  assert.equal(st.feeds["trip_updates.pb"].renfeLastModified, new Date(T0).toUTCString());
   const pb = bucket.objects.get("uk/rt/trip_updates.pb");
   assert.equal(pb.o.httpMetadata.cacheControl, "public, max-age=30");
   assert.equal(decode(pb.v)[2].length, 2);

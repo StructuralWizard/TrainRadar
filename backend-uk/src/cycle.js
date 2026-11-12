@@ -43,6 +43,7 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
   expire(state, now);
   const updates = tripUpdates(state);
   if (cycle.ok) {
+    state.feedLm = new Date(now).toUTCString();
     await env.LIVE.put("uk/rt/trip_updates.pb", encodeTripUpdates(updates, Math.round(now / 1000)), {
       httpMetadata: { contentType: "application/x-protobuf", cacheControl: CACHE },
     });
@@ -64,6 +65,11 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
     published: updates.length,
     totals: state.counts,
     incidents: state.kb || null,
+    // The same shape as Spain's poller status (backend/src/poller.js), so
+    // the app's live mode reads the UK feed with the same code.
+    feeds: {
+      "trip_updates.pb": { ok: cycle.ok, fetchedAt: cycle.at, renfeLastModified: state.feedLm || null },
+    },
   };
   await env.LIVE.put("uk/rt/status.json", JSON.stringify(status), {
     httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=10" },
