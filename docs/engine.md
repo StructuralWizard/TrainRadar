@@ -102,3 +102,16 @@ Fixed along the way, thanks to these checks:
 - 42 trains didn't match. They report positions up to ~50 min before departure
   while waiting at the origin; the window is now 60 min.
 - Duplicate listings in the AV/LD/MD feed showed up as "0 km" spacings.
+
+## The UK (plan 3)
+
+`engine.setCountry("uk")` switches the live feeds to Network Rail's (`networkrail.rs`):
+one GTFS-Realtime TripUpdates feed, `tu_uk` (`uk/rt/trip_updates.pb`, written by
+`backend-uk/` from TRUST). UK open data has no train positions, so the `uk` region's
+trains are placed like OUIGO's, by their timetable (`live::scheduled_trains`), but
+shifted by their live delay: trip updates are matched by trip id (`UID:start:STP`), a
+delay moves the train back along its route and keeps it on the map that much longer,
+and a run cancelled in its trip update is left off. Timetable times are London's, an
+hour behind Madrid all year (same summer-time dates), so the service day and its start
+are shifted by an hour (`networkrail::behind_madrid_secs`). Positions show as
+`scheduled` (estimated); the delay as Renfe's, from the trip update.
