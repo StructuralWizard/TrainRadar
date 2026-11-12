@@ -99,10 +99,16 @@ export function parseIncidents(xml) {
   return out;
 }
 
-/** What the app shows: not cleared, not over; unplanned first, then by priority and start. */
+/** Planned works starting later than this aren't shown yet (the feed lists
+ * them months ahead: 875 notices on 12 Nov 2026). */
+export const AHEAD_SECS = 3 * 86_400;
+
+/** What the app shows: not cleared, not over, started or starting within
+ * three days; unplanned first, then by priority and start. */
 export function activeIncidents(list, nowS) {
   return list
     .filter((i) => i.id && !i.cleared && (i.until === null || i.until >= nowS))
+    .filter((i) => !Number.isFinite(i.from) || i.from === null || i.from <= nowS + AHEAD_SECS)
     .map(({ cleared: _cleared, ...i }) => {
       if (!Number.isFinite(i.from)) i.from = null;
       return i;
