@@ -94,6 +94,10 @@ test("kb: active list: not over, not cleared; unplanned first", () => {
   assert.ok(!("cleared" in active[0]));
   const doc = incidentsDoc(parseIncidents(XML), NOW);
   assert.equal(doc.source, KB_SOURCE);
+  // "Próximas obras": next March's works, without the long text.
+  assert.deepEqual(doc.upcoming.map((i) => i.id), ["LATER"]);
+  assert.equal(doc.upcoming[0].summary, "Works next March");
+  assert.ok(!("text" in doc.upcoming[0]));
   assert.match(doc.notice, /out of date/);
   assert.equal(htmlToText("a&nbsp;<b>b</b>&#233;&#x41;"), "a béA");
 });
