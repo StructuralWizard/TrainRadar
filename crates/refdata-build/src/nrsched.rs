@@ -26,6 +26,10 @@ pub struct NrStats {
     pub calls: usize,
     pub calls_unplaced: usize,
     pub unplaced_tiplocs: usize,
+    /// Calls placed through a sibling TIPLOC (same STANOX in CORPUS).
+    pub calls_via_corpus: usize,
+    /// The unplaced TIPLOCs with the most calls: (TIPLOC, CORPUS name, calls).
+    pub top_unplaced: Vec<(String, String, usize)>,
     pub stations: usize,
 }
 
@@ -80,6 +84,34 @@ pub fn station_name(s: &str) -> String {
         }
     }
     s.to_owned()
+}
+
+/// Network Rail CORPUS: which TIPLOCs share a STANOX (one station often has
+/// several TIPLOCs, e.g. for different platforms or lines), and their names.
+#[derive(Debug, Default)]
+pub struct Corpus {
+    pub stanox: HashMap<String, String>,
+    pub name: HashMap<String, String>,
+}
+
+/// CORPUS JSON (`{"TIPLOCDATA": [{"TIPLOC", "STANOX", "NLCDESC", …}]}`;
+/// empty values are a single space).
+pub fn read_corpus<R: std::io::Read>(json: R) -> Result<Corpus, String> {
+    let v: serde_json::Value = serde_json::from_reader(json).map_err(|e| format!("CORPUS: {e}"))?;
+    let mut c = Corpus::default();
+    for r in v["TIPLOCDATA"].as_array().ok_or("CORPUS: no TIPLOCDATA")? {
+        let f = |k: &str| r[k].as_str().unwrap_or("").trim().to_owned();
+        let tiploc = f("TIPLOC");
+        if tiploc.is_empty() {
+            continue;
+        }
+        let stanox = f("STANOX");
+        if !stanox.is_empty() {
+            c.stanox.insert(tiploc.clone(), stanox);
+        }
+        c.name.insert(tiploc, f("NLCDESC"));
+    }
+    Ok(c)
 }
 
 /// "0907" or "0908H" → seconds after midnight (H = half a minute).
@@ -227,8 +259,29 @@ fn operator_name(atoc: &str) -> &'static str {
 pub fn load<R: BufRead>(
     schedule: R,
     naptan: &HashMap<String, (String, LatLon)>,
+    corpus: Option<&Corpus>,
     window: &Window,
 ) -> Result<(Feed, NrStats), String> {
+    // A TIPLOC NaPTAN doesn't place may share its STANOX with one it does.
+    let mut placed_by_stanox: HashMap<&str, &str> = HashMap::new();
+    if let Some(c) = corpus {
+        let mut placed: Vec<&String> = naptan.keys().collect();
+        placed.sort();
+        for t in placed {
+            if let Some(sx) = c.stanox.get(t) {
+                placed_by_stanox.entry(sx.as_str()).or_insert(t.as_str());
+            }
+        }
+    }
+    let resolve = |tiploc: &str| -> Option<(String, bool)> {
+        if naptan.contains_key(tiploc) {
+            return Some((tiploc.to_owned(), false));
+        }
+        let sx = corpus?.stanox.get(tiploc)?;
+        placed_by_stanox
+            .get(sx.as_str())
+            .map(|t| ((*t).to_owned(), true))
+    };
     let mut stats = NrStats::default();
     let mut cands: Vec<Cand> = Vec::new();
     for line in schedule.lines() {
@@ -272,7 +325,7 @@ pub fn load<R: BufRead>(
     let mut feed = Feed::default();
     let mut stop_idx: HashMap<String, usize> = HashMap::new();
     let mut route_idx: HashMap<String, usize> = HashMap::new();
-    let mut unplaced: std::collections::HashSet<String> = Default::default();
+    let mut unplaced: HashMap<String, usize> = HashMap::new();
     for (c, &days) in cands.iter().zip(&final_mask) {
         if days == 0 || !c.passenger {
             continue;
@@ -282,11 +335,13 @@ pub fn load<R: BufRead>(
         let mut offset = 0u32; // after midnight: times keep counting past 24:00
         for call in &c.calls {
             stats.calls += 1;
-            let Some((name, coord)) = naptan.get(&call.tiploc) else {
+            let Some((tiploc, via)) = resolve(&call.tiploc) else {
                 stats.calls_unplaced += 1;
-                unplaced.insert(call.tiploc.clone());
+                *unplaced.entry(call.tiploc.clone()).or_default() += 1;
                 continue;
             };
+            stats.calls_via_corpus += usize::from(via);
+            let (name, coord) = &naptan[&tiploc];
             let raw_a = call.arr.or(call.dep).unwrap_or(0);
             let raw_d = call.dep.or(call.arr).unwrap_or(raw_a);
             let mut a = raw_a + offset;
@@ -300,9 +355,9 @@ pub fn load<R: BufRead>(
                 d += 86_400;
             }
             last = d;
-            let s = *stop_idx.entry(call.tiploc.clone()).or_insert_with(|| {
+            let s = *stop_idx.entry(tiploc.clone()).or_insert_with(|| {
                 feed.stops.push(Stop {
-                    id: call.tiploc.clone(),
+                    id: tiploc.clone(),
                     name: name.clone(),
                     coord: *coord,
                 });
@@ -339,6 +394,19 @@ pub fn load<R: BufRead>(
     }
     stats.passenger_trips = feed.trips.len();
     stats.unplaced_tiplocs = unplaced.len();
+    let mut top: Vec<(String, usize)> = unplaced.into_iter().collect();
+    top.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    stats.top_unplaced = top
+        .into_iter()
+        .take(15)
+        .map(|(t, n)| {
+            let name = corpus
+                .and_then(|c| c.name.get(&t))
+                .cloned()
+                .unwrap_or_default();
+            (t, name, n)
+        })
+        .collect();
     stats.stations = feed.stops.len();
     feed.stats.trips_total = stats.schedules;
     feed.stats.trips_outside_window = stats.schedules - stats.in_window;
@@ -413,7 +481,7 @@ mod tests {
             sched("Z00001", "P", "2027-01-01", "2027-02-01", "1111111", "P", "0800"),
         ];
         let text = lines.join("\n");
-        let (feed, st) = load(text.as_bytes(), &naptan(), &w).unwrap();
+        let (feed, st) = load(text.as_bytes(), &naptan(), None, &w).unwrap();
         assert_eq!(st.schedules, 7);
         assert_eq!(st.cancelled_days, 1);
         let p = feed
@@ -443,6 +511,7 @@ mod tests {
                 .any(|t| t.id.starts_with('B') || t.id.starts_with('F') || t.id.starts_with('Z'))
         );
         assert_eq!(st.unplaced_tiplocs, 1);
+        assert_eq!(st.top_unplaced[0].0, "NOWHERE");
         // After midnight: times keep increasing past 24:00.
         let l = feed
             .trips
@@ -451,5 +520,39 @@ mod tests {
             .unwrap();
         assert_eq!(l.stop_times[0].1, 23 * 3600 + 50 * 60);
         assert!(l.stop_times[1].1 > 86_400 && l.stop_times.windows(2).all(|w| w[1].1 >= w[0].2));
+    }
+
+    #[test]
+    fn corpus_places_sibling_tiplocs() {
+        let corpus = read_corpus(
+            r#"{"TIPLOCDATA":[
+            {"TIPLOC":"HAYMRKT","STANOX":"62006","NLCDESC":"HAYMARKET"},
+            {"TIPLOC":"NOWHERE","STANOX":"62006","NLCDESC":"HAYMARKET (PLATFORM 4)"},
+            {"TIPLOC":" ","STANOX":" ","NLCDESC":"AN OFFICE"}]}"#
+                .as_bytes(),
+        )
+        .unwrap();
+        assert_eq!(corpus.stanox.len(), 2);
+        let w = Window {
+            start: parse_date("2026-11-09").unwrap(),
+            days: 7,
+        };
+        let text = sched(
+            "C15016",
+            "P",
+            "2026-05-17",
+            "2026-12-06",
+            "1111111",
+            "P",
+            "0907",
+        );
+        let (feed, st) = load(text.as_bytes(), &naptan(), Some(&corpus), &w).unwrap();
+        // NOWHERE shares Haymarket's STANOX: placed there, as the same station.
+        assert_eq!(st.calls_unplaced, 0);
+        assert_eq!(st.calls_via_corpus, 1);
+        let t = &feed.trips[0];
+        assert_eq!(t.stop_times.len(), 4);
+        assert_eq!(t.stop_times[1].0, t.stop_times[2].0, "one stop, two calls");
+        assert_eq!(feed.stops.len(), 3);
     }
 }

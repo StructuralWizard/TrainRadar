@@ -172,7 +172,8 @@ gzipped) and NaPTAN's stops CSV instead of a GTFS feed (`crates/refdata-build/sr
 and builds one region, `uk` (Great Britain), in its own output directory:
 
 - passenger trains only (`train_status` P or 1), calls with public times, at stations
-  NaPTAN places (`ATCOCode` = `9100` + TIPLOC);
+  NaPTAN places (`ATCOCode` = `9100` + TIPLOC); with `--corpus`, a call at a TIPLOC NaPTAN
+  doesn't know is placed at a station sharing its STANOX (one station, several TIPLOCs);
 - for each train and day, the schedule with the highest STP priority (C cancels; N, O over P);
 - trip id `UID:start date:STP` (what TRUST's activation names), short name the headcode,
   headsign the last call, route = the operator (ATOC code);
@@ -180,3 +181,9 @@ and builds one region, `uk` (Great Britain), in its own output directory:
 
 `tools/fetch-uk.sh` downloads the three inputs into `gtfs/uk/`; the "Refdata UK" workflow
 (manual, main only: it needs the Network Rail login) builds and reports them.
+
+First run on real data (2026-11-12): 724,656 schedules → 127,818 in the 8-day window →
+59,994 passenger trips in 24,161 patterns at 2,623 stations; 96 % of public calls placed
+(28,474 calls at 60 TIPLOCs had no NaPTAN station before the CORPUS fallback). Timetable
+5.6 MB raw (about 2 MB gzipped), track 0.9 MB, stations 80 KB; 8,266 stop pairs routed on
+Great Britain's OSM track, 31 drawn straight. The build takes under 20 s.

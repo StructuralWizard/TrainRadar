@@ -100,6 +100,8 @@ struct BuildArgs {
     /// Network Rail SCHEDULE (JSON lines, .gz or plain) and NaPTAN CSV: the UK.
     uk_schedule: Option<PathBuf>,
     naptan: Option<PathBuf>,
+    /// Network Rail CORPUS (JSON, .gz or plain): sibling TIPLOCs of a station.
+    corpus: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -120,6 +122,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         ouigo: None,
         uk_schedule: None,
         naptan: None,
+        corpus: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -150,6 +153,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--ouigo" => a.ouigo = Some(val()?.into()),
             "--uk-schedule" => a.uk_schedule = Some(val()?.into()),
             "--naptan" => a.naptan = Some(val()?.into()),
+            "--corpus" => a.corpus = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -317,7 +321,19 @@ fn run_build(a: BuildArgs) -> Result<()> {
             } else {
                 Box::new(std::io::BufReader::with_capacity(1 << 20, file))
             };
-            let (feed, st) = nrsched::load(reader, &naptan, &window)?;
+            let corpus = match &a.corpus {
+                Some(p) => {
+                    let f = std::fs::File::open(p).map_err(|e| format!("{}: {e}", p.display()))?;
+                    let r: Box<dyn std::io::Read> = if p.extension().is_some_and(|x| x == "gz") {
+                        Box::new(flate2::read::MultiGzDecoder::new(f))
+                    } else {
+                        Box::new(f)
+                    };
+                    Some(nrsched::read_corpus(std::io::BufReader::new(r))?)
+                }
+                None => None,
+            };
+            let (feed, st) = nrsched::load(reader, &naptan, corpus.as_ref(), &window)?;
             report.push_str(&format!(
                 "- `{}` (Network Rail): {} schedules, {} in window, {} passenger trips; {} cancelled \
                  train-days; {} public calls, {} at {} TIPLOCs without NaPTAN coordinates; {} stations \
@@ -333,7 +349,16 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 st.stations,
                 naptan.len()
             ));
-            eprintln!("{}", report.lines().last().unwrap_or(""));
+            report.push_str(&format!(
+                "  - {} calls placed at a sibling TIPLOC (same STANOX in CORPUS). Unplaced, most calls first: {}\n",
+                st.calls_via_corpus,
+                st.top_unplaced
+                    .iter()
+                    .map(|(t, n, c)| format!("`{t}` {n} ({c})"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+            eprintln!("{report}");
             let trips: Vec<&load::Trip> = feed.trips.iter().collect();
             let (mut tt, legs, rs) =
                 build_timetable(&feed, &trips, build::UK, header.clone(), router.as_mut());
