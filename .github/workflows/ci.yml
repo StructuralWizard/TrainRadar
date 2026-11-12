@@ -43,6 +43,7 @@ jobs:
       - run: node --test worker/test/index.test.mjs
       # Without the engine built, the recorder tests skip here; the web job runs them.
       - run: node --import ./backend/test/hooks.mjs --test backend/test/*.test.mjs
+      - run: node --test tools/uk-feed-check/stomp.test.mjs
 
   web:
     name: web tests (unit + browser, demo data)
