@@ -310,14 +310,42 @@ async function finish(code = 0) {
   if (shown.length) say("## Samples (shortened)"), say(), report.push(...shown);
   const md = report.join("\n");
   // Belt and braces: the report must never contain the credentials.
-  for (const s of [login, passcode]) if (s && s.length > 3 && md.includes(s)) throw new Error("report would contain a credential");
+  for (const s of [login, passcode, process.env.NATIONAL_RAIL_KB_KEY || ""]) if (s && s.length > 3 && md.includes(s)) throw new Error("report would contain a credential");
   await writeFile(`${out}/report.md`, md + "\n");
   console.log(md);
   process.exit(code);
+}
+
+// ---- National Rail Knowledgebase incidents (Rail Data Marketplace) ----
+async function kbIncidents() {
+  say("## National Rail incidents (Rail Data Marketplace)");
+  say();
+  const key = process.env.NATIONAL_RAIL_KB_KEY || "";
+  if (!key) return say("- No `NATIONAL_RAIL_KB_KEY` secret: skipped."), say();
+  const url = "https://api1.raildata.org.uk/1010-knowlegebase-incidents-xml-feed1_0/incidents.xml";
+  const t0 = Date.now();
+  let res;
+  try {
+    res = await fetch(url, { headers: { "x-apikey": key, accept: "application/xml" } });
+  } catch (e) {
+    return say(`- **error**: ${e.message}`), say();
+  }
+  const text = await res.text();
+  const tags = new Map();
+  for (const m of text.matchAll(/<(?:[\w-]+:)?([A-Za-z]+)[\s>/]/g)) tags.set(m[1], (tags.get(m[1]) || 0) + 1);
+  say(`- HTTP ${res.status}, ${fmtBytes(text.length)}, ${Date.now() - t0} ms; content-type ${res.headers.get("content-type")}; cache-control ${res.headers.get("cache-control") || "—"}; last-modified ${res.headers.get("last-modified") || "—"}`);
+  say(`- Elements: ${[...tags].sort((a, b) => b[1] - a[1]).slice(0, 60).map(([k, n]) => `${k} ×${n}`).join(", ")}`);
+  say();
+  await writeFile(`${out}/samples/kb-incidents.xml`, text);
+  // The start of the document and of its second incident, for the format.
+  const second = text.search(/<(?:[\w-]+:)?PtIncident[\s>]/g) >= 0 ? text.indexOf("PtIncident", text.indexOf("PtIncident") + 200) : -1;
+  shown.push("**KB incidents XML (start)**", "", "```xml", text.slice(0, 5000), "```", "");
+  if (second > 0) shown.push("**KB incidents XML (around a later incident)**", "", "```xml", text.slice(Math.max(0, second - 50), second + 3500), "```", "");
 }
 
 await live();
 await durable();
 await files();
 await naptan();
+await kbIncidents();
 await finish(0);

@@ -3,7 +3,7 @@
 # for 5 minutes, or (with RECORDER_ENABLED) the recorder hasn't reported for
 # 15 minutes, reports an error, or the database passes 4 GB (80 % of what
 # Workers Paid includes). Reads only the public rt/status.json and
-# rt/recorder.json. Off until the repository variable LIVE_BASE is set
+# rt/recorder.json (and, with UK_ENABLED, uk/rt/status.json). Off until the repository variable LIVE_BASE is set
 # (e.g. https://live.example.org/ or the Worker's workers.dev URL).
 name: Live check
 
@@ -61,3 +61,22 @@ jobs:
             exit 1
           fi
           echo "Recorder reporting; database $((bytes / 1000000)) MB." >> "$GITHUB_STEP_SUMMARY"
+      # The UK ingest (backend-uk/, plan 3): drains Network Rail every minute.
+      - name: Check uk/rt/status.json
+        if: vars.UK_ENABLED == 'true'
+        env:
+          LIVE_BASE: ${{ vars.LIVE_BASE }}
+        run: |
+          curl -fsS --retry 3 "${LIVE_BASE%/}/uk/rt/status.json" -o uk.json
+          jq . uk.json | tee -a "$GITHUB_STEP_SUMMARY"
+          now=$(date -u +%s)
+          at=$(jq -r '.updatedAt | sub("\\.[0-9]+Z$"; "Z") | fromdate' uk.json)
+          if [ $((now - at)) -gt 300 ]; then
+            echo "::error::The UK ingest hasn't reported for $(( (now - at) / 60 )) minutes."
+            exit 1
+          fi
+          if [ "$(jq -r .ok uk.json)" != "true" ]; then
+            echo "::error::UK ingest error: $(jq -r '.error // "unknown"' uk.json | tr -cd '[:alnum:] .,_/()=-' | head -c 300)"
+            exit 1
+          fi
+          echo "UK ingest reporting: $(jq -r .trains uk.json) trains, $(jq -r .published uk.json) trip updates." >> "$GITHUB_STEP_SUMMARY"

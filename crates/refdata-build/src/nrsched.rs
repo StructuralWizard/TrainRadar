@@ -71,6 +71,7 @@ pub fn norm_name(s: &str) -> String {
         " RAIL STATION",
         " RAILWAY STATION",
         " UNDERGROUND STATION",
+        " METRO STATION",
         " DLR STATION",
         " STATION",
         " ELL",
@@ -78,6 +79,7 @@ pub fn norm_name(s: &str) -> String {
         " LT",
         " LUL",
         " DLR",
+        " METRO",
     ] {
         if let Some(x) = n.strip_suffix(suffix) {
             n = x.to_owned();
@@ -104,7 +106,8 @@ pub fn read_naptan<R: std::io::Read>(csv: R) -> Result<Naptan, String> {
     );
     let status = h.iter().position(|x| x == "Status");
     let mut out = Naptan::default();
-    let mut rail_names: HashMap<String, Option<String>> = HashMap::new();
+    // Name → TIPLOC, or None when two rail stations far apart share it.
+    let mut rail_names: HashMap<String, Option<(String, LatLon)>> = HashMap::new();
     let mut metro: HashMap<String, (String, LatLon)> = HashMap::new();
     let mut rec = csv::StringRecord::new();
     while rdr.read_record(&mut rec).map_err(|e| e.to_string())? {
@@ -129,19 +132,22 @@ pub fn read_naptan<R: std::io::Read>(csv: R) -> Result<Naptan, String> {
         let Some(tiploc) = rec[atco].strip_prefix(RAIL_ATCO_PREFIX) else {
             continue;
         };
+        let here = LatLon::new(la, lo);
         rail_names
             .entry(key)
             .and_modify(|t| {
-                if t.as_deref() != Some(tiploc) {
-                    *t = None; // two rail stations with this name: ambiguous
+                // Two TIPLOCs for one station (e.g. Abbey Wood and its
+                // Elizabeth line platforms) are close; two towns aren't.
+                if t.as_ref().is_some_and(|(_, c)| km(*c, here) > 2.0) {
+                    *t = None;
                 }
             })
-            .or_insert_with(|| Some(tiploc.to_owned()));
+            .or_insert_with(|| Some((tiploc.to_owned(), here)));
         out.stations
             .insert(tiploc.to_owned(), (shown, LatLon::new(la, lo)));
     }
     for (key, tiploc) in rail_names {
-        if let Some(t) = tiploc {
+        if let Some((t, _)) = tiploc {
             let (n, c) = out.stations[&t].clone();
             out.names.insert(key, (Some(t), n, c));
         }
@@ -152,6 +158,13 @@ pub fn read_naptan<R: std::io::Read>(csv: R) -> Result<Naptan, String> {
     Ok(out)
 }
 
+/// Distance in km (equirectangular; fine for a few km).
+fn km(a: LatLon, b: LatLon) -> f64 {
+    let x = (b.lon - a.lon).to_radians() * ((a.lat + b.lat) / 2.0).to_radians().cos();
+    let y = (b.lat - a.lat).to_radians();
+    (x * x + y * y).sqrt() * 6371.0
+}
+
 /// "Aberdare Rail Station" → "Aberdare".
 pub fn station_name(s: &str) -> String {
     let s = s.trim();
@@ -159,6 +172,7 @@ pub fn station_name(s: &str) -> String {
         " Rail Station",
         " Railway Station",
         " Underground Station",
+        " Metro Station",
         " Station",
     ] {
         if let Some(x) = s.strip_suffix(suffix) {
@@ -525,7 +539,12 @@ mod tests {
                    9100LIVST,London Liverpool Street Rail Station,RLY,-0.0814,51.5178,active\n\
                    940GZZLUBST,Bond Street Underground Station,MET,-0.1494,51.5142,active\n\
                    9100NWPTRTG,Newport (South Wales) Rail Station,RLY,-2.9993,51.5888,active\n\
-                   9100NEWPORT,Newport (Essex) Rail Station,RLY,0.2163,51.9800,active\n";
+                   9100NEWPORT,Newport (Essex) Rail Station,RLY,0.2163,51.9800,active\n\
+                   9100ABWD,Abbey Wood Rail Station,RLY,0.1213,51.4910,active\n\
+                   9100ABWDXR,Abbey Wood Rail Station,RLY,0.1218,51.4912,active\n\
+                   9100STHPTN,Southampton Central Rail Station,RLY,-1.4136,50.9075,active\n\
+                   9100STHPTNX,Southampton Central Rail Station,RLY,-0.1,51.5,active\n\
+                   9400ZZTWFEL,Fellgate Metro Station,MET,-1.5249,54.9415,active\n";
         read_naptan(csv.as_bytes()).unwrap()
     }
 
@@ -553,7 +572,7 @@ mod tests {
     #[test]
     fn naptan_and_times() {
         let n = naptan();
-        assert_eq!(n.stations.len(), 6, "rail stations only, active only");
+        assert_eq!(n.stations.len(), 10, "rail stations only, active only");
         assert_eq!(n.stations["EDINBUR"].0, "Edinburgh");
         assert_eq!(
             norm_name("London Liverpool Street Rail Station"),
@@ -568,6 +587,17 @@ mod tests {
         assert_eq!(n.names["LIVERPOOL STREET"].0.as_deref(), Some("LIVST"));
         assert_eq!(n.names["BOND STREET"].0, None, "a metro station");
         assert_eq!(n.names["BOND STREET"].1, "Bond Street");
+        assert!(
+            n.names["ABBEY WOOD"].0.is_some(),
+            "two TIPLOCs, one station"
+        );
+        assert!(
+            !n.names.contains_key("SOUTHAMPTON CENTRAL"),
+            "same name far apart"
+        );
+        assert_eq!(norm_name("Fellgate Metro Station"), "FELLGATE");
+        assert_eq!(norm_name("HEWORTH (METRO)"), "HEWORTH");
+        assert_eq!(n.names["FELLGATE"].1, "Fellgate");
         assert_eq!(parse_hhmm("0908H"), Some(9 * 3600 + 8 * 60 + 30));
         assert_eq!(parse_hhmm("2359"), Some(86_340));
         assert_eq!(parse_hhmm("x"), None);
