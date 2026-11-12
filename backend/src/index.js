@@ -20,6 +20,9 @@ export const SERVED = new Set([
   "rt/status.json",
   "rt/summary.json",
   "rt/recorder.json",
+  // Written by the UK ingest Worker (backend-uk/), same bucket.
+  "uk/rt/status.json",
+  "uk/rt/trip_updates.pb",
 ]);
 /** Must match the daily entry in wrangler.toml's crons (UTC). */
 export const DAILY_CRON = "40 2 * * *";
