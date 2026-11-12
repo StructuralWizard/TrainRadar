@@ -83,6 +83,9 @@ jobs:
           node tools/feed-check/location-smoke.mjs http://localhost:8080/ shots
           node tools/feed-check/incidents-smoke.mjs http://localhost:8080/ shots
           node tools/feed-check/features-smoke.mjs http://localhost:8080/ shots
+          # The UK view (plan 3) on synthetic Network Rail data.
+          tools/demo-uk.sh
+          node tools/feed-check/uk-smoke.mjs http://localhost:8080/ shots
           # Live mode, About panel and app banner (test-only Play URL).
           TEST_PLAY_URL=https://play.example/app PORT=8081 DATA=demo/data FIXTURES=demo/rt node tools/dev-server.mjs &
           sleep 1

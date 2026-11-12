@@ -3,6 +3,7 @@
 // works out delays, positions and spacing.
 import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
+import { COUNTRY_KEY, applyCountry, pickCountry } from "./js/country.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
@@ -26,7 +27,7 @@ import {
   setMapLanguage,
   trainsGeoJson,
 } from "./js/map.js";
-import { formatClock } from "./js/format.js";
+import { formatClock, setTimeZone } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from "./js/replay.js";
 import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
@@ -50,6 +51,7 @@ import {
   claimBox,
   el,
   incidentsPanel,
+  ukIncidentsPanel,
   noticesHistoryPanel,
   legend,
   serviceLegend,
@@ -79,6 +81,25 @@ const store = {
     }
   },
 };
+
+// Which country (plan 3): Spain or the UK, one at a time; CONFIG then
+// points at that country's data and feeds, times show in its time zone.
+const country = pickCountry({ search: location.search, saved: store.get(COUNTRY_KEY), languages: navigator.languages || [] });
+applyCountry(CONFIG, country);
+setTimeZone(CONFIG.timeZone);
+const UK = country === "uk";
+const attribution = () => t(lang, UK ? "attributionUk" : "attribution");
+
+/** Show the other country: remembered, then the page reloads with its data. */
+function switchCountry(code) {
+  if (code === country) return;
+  store.set(COUNTRY_KEY, code);
+  const u = new URL(location.href);
+  u.searchParams.delete("country");
+  u.searchParams.delete("train");
+  u.searchParams.delete("station");
+  location.replace(u.toString());
+}
 
 let lang = pickLang(store.get("lang"));
 let engine, ref, feeds, map, attr;
@@ -160,7 +181,7 @@ function applyLang() {
   $("delayed-close").setAttribute("aria-label", t(lang, "close"));
   $("near-close").setAttribute("aria-label", t(lang, "close"));
   $("near-title").textContent = t(lang, "nearYou");
-  $("inc-title").textContent = t(lang, "incidentsTitle");
+  $("inc-title").textContent = t(lang, UK ? "ukIncidentsTitle" : "incidentsTitle");
   $("inc-close").setAttribute("aria-label", t(lang, "close"));
   $("layers-title").textContent = t(lang, "layers");
   for (const [id, k] of [
@@ -236,7 +257,7 @@ function applyLang() {
   updateLocButton();
   renderNear(true);
   if (attr) {
-    attr.options.customAttribution = t(lang, "attribution");
+    attr.options.customAttribution = attribution();
     attr._updateAttributions?.();
   }
   if (map?.isStyleLoaded()) setMapLanguage(map, lang);
@@ -477,9 +498,21 @@ function fillJump() {
   const nucleos = (ref?.manifest?.regions || [])
     .filter((r) => r.code !== "ld" && r.live !== false)
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  // The country (plan 3): the other one reloads the page with its data.
+  const countries = el(
+    "optgroup",
+    { label: t(lang, "country") },
+    el("option", { value: "country:es" }, t(lang, "countryEs")),
+    el("option", { value: "country:uk" }, t(lang, "countryUk")),
+  );
+  if (UK) {
+    sel.replaceChildren(el("option", { value: "" }, t(lang, "goTo")), el("option", { value: "es" }, t(lang, "allUk")), countries);
+    return;
+  }
   sel.replaceChildren(
     el("option", { value: "" }, t(lang, "goTo")),
     el("option", { value: "es" }, t(lang, "allSpain")),
+    countries,
     nucleos.length
       ? el("optgroup", { label: t(lang, "cercaniasNetworks") }, nucleos.map((r) => el("option", { value: r.code }, r.name)))
       : null,
@@ -496,7 +529,32 @@ function openSheet(id) {
 }
 
 /** Refresh the notices button, map markers and (if open) the panel. */
+/** The UK's notices (uk/rt/incidents.json, plan 3): refreshed every 5 minutes. */
+let ukIncidents = null;
+async function loadUkIncidents() {
+  try {
+    const r = await fetch(`${CONFIG.liveBase}incidents.json?t=${Math.floor(Date.now() / 120_000)}`);
+    if (r.ok) ukIncidents = await r.json();
+  } catch {
+    // keep what we have
+  }
+  renderIncidents();
+}
+
+function renderUkIncidents() {
+  const n = ukIncidents?.incidents?.length || 0;
+  $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}${n ? ` (${n})` : ""}`;
+  const badge = $("tab-incidents-n");
+  if (badge) {
+    badge.hidden = !n;
+    badge.textContent = n > 99 ? "99+" : String(n);
+    $("tab-incidents").setAttribute("aria-label", n ? `${t(lang, "tabNotices")}: ${t(lang, "noticesCount", { n })}` : t(lang, "tabNotices"));
+  }
+  if (!$("incidents").hidden) $("inc-body").replaceChildren(...ukIncidentsPanel(lang, ukIncidents));
+}
+
 function renderIncidents() {
+  if (UK) return renderUkIncidents();
   if (engine) incidents = JSON.parse(engine.incidentsJson(Date.now()));
   refreshLines();
   $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}${incidents.length ? ` (${incidents.length})` : ""}`;
@@ -1964,7 +2022,7 @@ function currentNetwork() {
   const c = map.getCenter();
   return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
 }
-const netName = () => currentNetwork()?.name || t(lang, "netSpain");
+const netName = () => currentNetwork()?.name || t(lang, UK ? "countryUk" : "netSpain");
 
 function updateNetChip() {
   const l = $("net-chip-l");
@@ -2051,10 +2109,15 @@ function renderNetworks(keepInput = false) {
   const parts = networksSheet(lang, {
     query: netQuery,
     near,
-    spain: { trains, onPick: () => pick("es") },
-    networks: [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
-    communities: byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name, alt: c.alt })),
-    provinces: byName(PROVINCES).map((p) => ({ code: `prov:${p.code}`, name: p.name, alt: p.alt })),
+    spain: { trains, onPick: () => pick("es"), label: UK ? t(lang, "allUk") : null },
+    countries: [
+      { code: "es", name: t(lang, "countryEs"), current: !UK, onPick: () => switchCountry("es") },
+      { code: "uk", name: t(lang, "countryUk"), current: UK, onPick: () => switchCountry("uk") },
+    ],
+    // Spain's núcleos, communities and provinces; the UK is one network (for now).
+    networks: UK ? [] : [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
+    communities: UK ? [] : byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name, alt: c.alt })),
+    provinces: UK ? [] : byName(PROVINCES).map((p) => ({ code: `prov:${p.code}`, name: p.name, alt: p.alt })),
     onPick: pick,
     onQuery: (q) => {
       netQuery = q;
@@ -2475,7 +2538,7 @@ let replay = null; // { data, t (ms), playing, speed, since, last, busy }
 const REPLAY_SPEEDS = [1, 10, 60, 300];
 const REPLAY_STEP = 5 * 60_000; // ⏪ / ⏩: five minutes
 
-const replaySource = () => CONFIG.replayBase || replayRoot(CONFIG.liveBase);
+const replaySource = () => (CONFIG.replay === false ? "" : CONFIG.replayBase || replayRoot(CONFIG.liveBase));
 
 async function startReplay() {
   if (!CONFIG.pro || !replaySource()) return;
@@ -2702,7 +2765,7 @@ function loadVisibleRegions() {
 async function main() {
   applyLang();
   sheets.apply(); // phone: the home sheet peeks from the start
-  ({ map, attr } = createMap("map", CONFIG, t(lang, "attribution")));
+  ({ map, attr } = createMap("map", CONFIG, attribution()));
   // Open credits close with a tap on the map or on their text (not a link).
   map.on("click", foldCredits);
   map.getContainer().addEventListener("click", (e) => {
@@ -2713,6 +2776,7 @@ async function main() {
 
   await init();
   engine = new Engine();
+  engine.setCountry(country);
   ref = new RefData(engine, CONFIG.dataBase);
   ref.onGeometry = () => {
     refreshLines();
@@ -2735,6 +2799,10 @@ async function main() {
     onError: (k, e) => console.warn("feed", k, e.message),
   });
   feeds.start();
+  if (UK) {
+    loadUkIncidents();
+    setInterval(loadUkIncidents, 5 * 60_000);
+  }
 
   await mapReady;
   setMapLanguage(map, lang);
@@ -2952,6 +3020,7 @@ matchMedia("(max-width: 719px)").addEventListener?.("change", () => applyLang())
 $("jump").addEventListener("change", (e) => {
   const v = e.target.value;
   e.target.value = "";
+  if (v.startsWith("country:")) return switchCountry(v.slice(8));
   if (v) goToNetwork(v);
 });
 function applyLayerVisibility() {

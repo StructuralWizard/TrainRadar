@@ -376,7 +376,11 @@ export function trainRows(
     row(
       t(lang, "position"),
       // Under a minute old, the dot is effectively at the GPS fix.
-      info.position === "gps" || info.fix_age < 60 ? t(lang, "gpsAgo", { age }) : t(lang, "estimatedPos", { age }),
+      info.position === "scheduled"
+        ? t(lang, "ukPosition") // the UK: no GPS in its open data (plan 3)
+        : info.position === "gps" || info.fix_age < 60
+          ? t(lang, "gpsAgo", { age })
+          : t(lang, "estimatedPos", { age }),
     ),
   );
   if (info.origin) {
@@ -1023,6 +1027,52 @@ export function noticesHistoryPanel(lang, { day, min, max, state, doc, regionNam
           ? el("p", { class: "muted" }, t(lang, "noticesNone", { since: min.split("-").reverse().join("/") }))
           : [el("p", { class: "small muted" }, t(lang, "noticesCountDay", { n: list.length })), incidentList(lang, list, regionName, onStop)],
   ].flat();
+}
+
+/**
+ * The UK's notices (plan 3): National Rail's Knowledgebase incidents from
+ * uk/rt/incidents.json (backend-uk/src/kb.js). Text only. `doc` null =
+ * loading. The credit to the Rail Delivery Group and the accuracy notice
+ * come with the data, as its licence asks.
+ */
+export function ukIncidentsPanel(lang, doc) {
+  const out = [];
+  if (!doc) return [el("p", { class: "muted" }, t(lang, "ukIncidentsLoading"))];
+  const list = doc.incidents || [];
+  if (!list.length) out.push(el("p", { class: "muted" }, t(lang, "ukIncidentsNone")));
+  out.push(
+    el(
+      "ul",
+      { class: "incidents", id: "uk-incidents" },
+      list.map((i) =>
+        el(
+          "li",
+          {},
+          el(
+            "div",
+            { class: "incident-meta" },
+            el("span", { class: `chip chip-kind ${i.planned ? "kind-works" : "kind-disruption"}` }, t(lang, i.planned ? "ukPlanned" : "ukDisruption")),
+            (i.operators || []).map((o) => el("span", { class: "chip" }, o.name || o.code)),
+            el(
+              "span",
+              { class: "muted" },
+              i.from ? t(lang, "published", { date: formatDay(lang, i.from) }) : "",
+              i.until ? ` ${t(lang, "untilDate", { date: formatDay(lang, i.until) })}` : "",
+            ),
+          ),
+          el("p", { class: "incident-text" }, el("strong", {}, i.summary || "")),
+          i.routes ? el("p", { class: "small" }, i.routes) : null,
+          i.text ? el("details", { class: "small" }, el("summary", {}, t(lang, "moreInfo")), el("p", { class: "incident-text uk-text" }, i.text)) : null,
+          // Only National Rail's own pages (the server keeps no other links).
+          /^https:\/\/www\.nationalrail\.co\.uk\//.test(i.url || "")
+            ? el("a", { class: "small", href: i.url, target: "_blank", rel: "noopener" }, t(lang, "ukMore"))
+            : null,
+        ),
+      ),
+    ),
+  );
+  out.push(el("p", { class: "small muted", id: "uk-incidents-source" }, `${doc.notice || ""} ${t(lang, "ukSource", { source: doc.source || "" })}`));
+  return out;
 }
 
 /** Trains stopped between stations, grouped by section to flag likely problems. */

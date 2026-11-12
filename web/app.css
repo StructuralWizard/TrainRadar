@@ -707,3 +707,8 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 @media (max-width: 719px) and (prefers-color-scheme: dark) {
   .notices-history-bar input[type="date"] { background: #1f2937; color: #f3f4f6; border-color: #374151; color-scheme: dark; }
 }
+
+/* Country (plan 3): España / Reino Unido at the top of the network picker. */
+.net-countries { display: flex; gap: 8px; margin: 2px 0 10px; }
+.net-countries .chip-btn { flex: 1; }
+.uk-text { white-space: pre-line; }

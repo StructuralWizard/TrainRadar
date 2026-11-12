@@ -28,7 +28,8 @@ export class RefData {
     if (!r.ok) throw new Error(`manifest: HTTP ${r.status}`);
     this.manifest = await r.json();
     this.engine.loadStations(await fetchBytes(this.base + this.manifest.stations.file));
-    await this.loadRegion("ld");
+    // Spain's AV/LD/MD up front; the UK is one region (uk), also up front.
+    for (const code of ["ld", "uk"]) if (this.region(code)) await this.loadRegion(code);
     // Timetable-only operators (OUIGO) are small; load them up front.
     for (const r of this.manifest.regions.filter((r) => r.live === false)) {
       await this.loadRegion(r.code).catch((e) => console.warn("region", r.code, e));
@@ -95,7 +96,7 @@ export class RefData {
   async loadAllInBackground(onEach) {
     if (navigator.connection?.saveData) return;
     const idle = () => new Promise((r) => (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(r));
-    const rest = (this.manifest?.regions || []).filter((r) => r.code !== "ld" && r.live !== false);
+    const rest = (this.manifest?.regions || []).filter((r) => r.code !== "ld" && r.code !== "uk" && r.live !== false);
     rest.sort((a, b) => a.bytes - b.bytes); // small ones first: more colour sooner
     for (const r of rest) {
       if (this.loaded.has(r.code)) continue;

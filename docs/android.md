@@ -244,3 +244,13 @@ for a `release-android.yml` that runs on tags only (plan C, phase C6).
   Share, Status Bar, Splash Screen. Reached from `web/js/native.js` through Capacitor's
   bridge; the web falls back to the browser.
 - Icons and splash screens are generated from `web/icons/`.
+
+## Country (plan 3)
+
+The network chip's picker starts with **España / Reino Unido**. Choosing one is remembered
+(`country` in local storage) and the app reloads with that country's data (`data/uk/`) and
+feeds (`uk/rt/`): one country at a time. `?country=uk` in a link opens the UK; a British
+English device starts in the UK. In the UK, trains are placed by timetable + the live TRUST
+delay ("posición estimada"), times are London's, and Avisos shows National Rail's notices
+with the Rail Delivery Group credit. Not in the UK yet: delay history, the replay and the
+notices history (Pro features stay Spain-only for now), Cercanías networks.

@@ -326,9 +326,11 @@ impl Engine {
     #[wasm_bindgen(js_name = statsJson)]
     pub fn stats_json(&self, now_ms: f64) -> String {
         let views = self.live.views(&self.net, secs(now_ms), false);
-        let live = views
-            .iter()
-            .filter(|v| v.source != PositionSource::Scheduled);
+        // Live: GPS trains, and timetable-placed ones with a live delay (the UK).
+        let live = views.iter().filter(|v| {
+            v.source != PositionSource::Scheduled
+                || self.live.trains[v.index].delay_source.is_some()
+        });
         let s = stats::compute(live.map(|v| v.delay));
         let scheduled = views.len() - s.trains;
         let mut out = String::new();

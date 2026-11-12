@@ -78,7 +78,7 @@ public class AppSmokeTest {
         String number = (String) eval(
                 "var e = window.__trainradar.engine, n = e.positions(Date.now()).length / 6;"
                         + "for (var i = 0; i < n; i++) { var t = JSON.parse(e.trainJson(i, Date.now()));"
-                        + "  if (t.origin && !t.timetable_only) return t.number; }"
+                        + "  if (t.origin && !t.timetable_only && t.next_stop && t.next_stop !== t.destination) return t.number; }"
                         + "return null;");
         assertTrue("a matched train", number != null);
         eval("var q = document.getElementById('search-q'); q.value = '" + number + "';"
@@ -86,7 +86,9 @@ public class AppSmokeTest {
         waitFor("document.querySelector('#search-results li button')", 10_000);
         onWebView().withTimeout(60, TimeUnit.SECONDS)
                 .withElement(findElement(Locator.CSS_SELECTOR, "#search-results li button")).perform(webClick());
-        waitFor("document.querySelector('.popup .popup-title')", 10_000);
+        // The map flies to the train first: slow on the emulator (one run
+        // took over 10 s), so give it time.
+        waitFor("document.querySelector('.popup .popup-title')", 30_000);
 
         String popup = (String) eval("return document.querySelector('.popup').textContent;");
         assertTrue(popup, popup.contains(number.replaceFirst("^0+", "")));
