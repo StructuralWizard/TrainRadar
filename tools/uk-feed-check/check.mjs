@@ -37,6 +37,13 @@ const fmtBytes = (n) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : n > 1e3 ? `${(
 
 await mkdir(`${out}/samples`, { recursive: true });
 const sample = (name, v) => writeFile(`${out}/samples/${name}.json`, JSON.stringify(v, null, 2));
+// One shortened record of each kind, printed in the log (public data), so
+// the formats can be read without downloading the artifact.
+const shown = [];
+const show = (label, v, max = 1500) => {
+  const j = JSON.stringify(v);
+  shown.push(`**${label}**`, "", "```json", j.length > max ? `${j.slice(0, max)} …(${j.length} chars)` : j, "```", "");
+};
 
 say("# Network Rail open data: feed check");
 say();
@@ -121,6 +128,8 @@ async function live() {
     say(`**${t}** message types: ${[...s.types].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ×${n}`).join(", ")}`);
     say();
     await sample(t.split("/").pop(), s.kept);
+    const seenTypes = new Set();
+    for (const k of s.kept) if (!seenTypes.has(k.type)) seenTypes.add(k.type), show(`${t} ${k.type}`, k.message, 1200);
   }
   // TRUST movements (0003): which fields carry the delay.
   const trust = stats.get("/topic/TRAIN_MVT_ALL_TOC");
@@ -158,6 +167,7 @@ async function download(label, url, { lines = false, keep = 3 } = {}) {
   let raw = 0;
   const kinds = new Map();
   const kept = new Map();
+  const statuses = new Map(); // train_status/STP indicator → count
   if (lines) {
     // Schedule: one JSON object per line, keyed by record type.
     const rl = readline.createInterface({ input: unzipped, crlfDelay: Infinity });
@@ -173,7 +183,15 @@ async function download(label, url, { lines = false, keep = 3 } = {}) {
       kinds.set(k, (kinds.get(k) || 0) + 1);
       const list = kept.get(k) || [];
       if (list.length < keep) list.push(o), kept.set(k, list);
+      // A passenger train with public times, and one STP overlay / cancellation.
+      const sch = o.JsonScheduleV1;
+      if (sch) {
+        const tag = sch.train_status === "P" && sch.CIF_stp_indicator === "P" ? "passenger" : ["O", "C", "N"].includes(sch.CIF_stp_indicator) ? `stp-${sch.CIF_stp_indicator}` : null;
+        if (tag && !kept.has(`JsonScheduleV1:${tag}`)) kept.set(`JsonScheduleV1:${tag}`, [o]);
+        statuses.set(`${sch.train_status}/${sch.CIF_stp_indicator}`, (statuses.get(`${sch.train_status}/${sch.CIF_stp_indicator}`) || 0) + 1);
+      }
     }
+    if (statuses.size) (statusLine = [...statuses].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ×${n}`).join(", "));
   } else {
     const chunks = [];
     for await (const c of unzipped) chunks.push(c), (raw += c.length);
@@ -184,8 +202,13 @@ async function download(label, url, { lines = false, keep = 3 } = {}) {
     }
   }
   await sample(label.replace(/\W+/g, "-").toLowerCase(), Object.fromEntries(kept));
+  if (!label.startsWith("SCHEDULE full")) {
+    for (const [k, v] of kept) show(`${label}: ${k}`, Array.isArray(v) ? v.slice(0, k.startsWith("JsonScheduleV1:") ? 1 : 2) : v, k === "JsonScheduleV1:passenger" ? 6000 : 1500);
+  }
   say(`| ${label} | OK | ${fmtBytes(gz)} | ${fmtBytes(raw)} | ${[...kinds].map(([k, n]) => `${k} ×${n}`).join(", ")} (${((Date.now() - t0) / 1000).toFixed(0)} s) |`);
 }
+
+let statusLine = "";
 
 async function files() {
   say("## Reference files (HTTPS)");
@@ -200,9 +223,91 @@ async function files() {
   await download("CORPUS", `${base}/SupportingFileAuthenticate?type=CORPUS`);
   await download("SMART", `${base}/SupportingFileAuthenticate?type=SMART`);
   say();
+  if (statusLine) say(`Schedules by train_status/STP indicator (last file read): ${statusLine}`), say();
+}
+
+// ---- NaPTAN (public): station coordinates by TIPLOC ----
+async function naptan() {
+  say("## NaPTAN (public)");
+  say();
+  const url = "https://naptan.api.dft.gov.uk/v1/access-nodes?dataFormat=csv";
+  let res;
+  try {
+    res = await fetch(url);
+  } catch (e) {
+    return say(`- **error**: ${e.message}`), say();
+  }
+  if (!res.ok) return say(`- **HTTP ${res.status}**`), say();
+  const rl = readline.createInterface({ input: Readable.fromWeb(res.body), crlfDelay: Infinity });
+  let header = null;
+  let rows = 0;
+  let bytes = 0;
+  const types = new Map();
+  const rail = [];
+  const split = (l) => l.match(/("([^"]|"")*"|[^,]*)(,|$)/g).map((x) => x.replace(/,$/, "").replace(/^"|"$/g, "").replace(/""/g, '"'));
+  for await (const line of rl) {
+    bytes += line.length + 1;
+    if (!header) {
+      header = split(line);
+      continue;
+    }
+    rows += 1;
+    const r = split(line);
+    const type = r[header.indexOf("StopType")];
+    types.set(type, (types.get(type) || 0) + 1);
+    if (type === "RLY" && rail.length < 3) rail.push(Object.fromEntries(header.map((h, i) => [h, r[i]])));
+  }
+  say(`- ${rows} rows, ${fmtBytes(bytes)}; rail stops (RLY): ${types.get("RLY") || 0}, entrances (RSE): ${types.get("RSE") || 0}, platforms (RPL): ${types.get("RPL") || 0}`);
+  say(`- Columns: \`${(header || []).join("`, `")}\``);
+  say();
+  show("NaPTAN RLY rows", rail, 3000);
+}
+
+// ---- Durable subscription (Artemis): messages kept while disconnected ----
+async function durable() {
+  say("## Durable subscription");
+  say();
+  const name = "trainradar-feedcheck";
+  const open = async (onMessage) => {
+    const sock = net.connect(STOMP_PORT, HOST);
+    await new Promise((resolve, reject) => {
+      sock.once("connect", resolve);
+      sock.once("error", reject);
+    });
+    sock.on("error", () => {});
+    const session = new StompSession({ write: (b) => sock.write(b), close: () => sock.end() }, { onMessage });
+    sock.on("data", (d) => session.receive(new Uint8Array(d)));
+    await session.connect({ host: HOST, login, passcode, extra: { "client-id": name } });
+    return session;
+  };
+  const headers = { "durable-subscription-name": name, "activemq.subscriptionName": name };
+  try {
+    let n1 = 0;
+    const a = await open(() => n1++);
+    const id = a.subscribe("/topic/TRAIN_MVT_ALL_TOC", headers);
+    await new Promise((r) => setTimeout(r, 5000));
+    a.disconnect();
+    await new Promise((r) => setTimeout(r, 30_000)); // away for 30 s
+    let n2 = 0;
+    const t0 = Date.now();
+    let firstBurst = 0;
+    const b = await open(() => (n2++, Date.now() - t0 < 1500 && firstBurst++));
+    b.subscribe("/topic/TRAIN_MVT_ALL_TOC", headers);
+    await new Promise((r) => setTimeout(r, 3000));
+    // Remove the subscription so the broker doesn't keep queueing for it.
+    b.unsubscribe(id, headers);
+    await new Promise((r) => setTimeout(r, 500));
+    b.disconnect();
+    say(`- First 5 s: ${n1} frames. After 30 s away: ${firstBurst} frames in the first 1.5 s, ${n2} in 3 s.`);
+    say(`- ${firstBurst >= 5 ? "**Kept while away**: durable subscriptions work (client-id + durable-subscription-name)." : "Nothing queued while away: durable subscriptions may not be allowed; plan B is a connection held open."}`);
+  } catch (e) {
+    say(`- **Failed:** ${e.message}`);
+  }
+  say();
 }
 
 async function finish(code = 0) {
+  if (shown.length) say("## Samples (shortened)"), say(), report.push(...shown);
   const md = report.join("\n");
   // Belt and braces: the report must never contain the credentials.
   for (const s of [login, passcode]) if (s && s.length > 3 && md.includes(s)) throw new Error("report would contain a credential");
@@ -212,5 +317,7 @@ async function finish(code = 0) {
 }
 
 await live();
+await durable();
 await files();
+await naptan();
 await finish(0);
