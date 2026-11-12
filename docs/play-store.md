@@ -41,6 +41,7 @@ TRAINRADAR PRO (suscripción anual, 1,99 €)
 • Historial completo de puntualidad de líneas, trenes y estaciones (hasta 12 meses).
 • Trayectos habituales: guarda varios y la app abre con tus próximos trenes.
 • Moviola: mira dónde estaba cada tren, y con cuánto retraso, en cualquier momento pasado.
+• Histórico de avisos: los avisos de Renfe (obras, huelgas, incidencias) de cualquier día pasado.
 
 PRIVACIDAD
 Sin cuentas, sin anuncios, sin rastreo. Tus favoritos y viajes se guardan solo en tu teléfono (y en la copia de seguridad de Android). TrainRadar es de código abierto: https://github.com/StructuralWizard/TrainRadar
@@ -77,6 +78,7 @@ TRAINRADAR PRO (yearly subscription, €1.99)
 • Full punctuality history of lines, trains and stations (up to 12 months).
 • Commutes: save several and the app opens on your next trains.
 • Replay: see where every train was, and how late, at any past moment.
+• Notices history: Renfe's notices (works, strikes, disruptions) of any past day.
 
 PRIVACY
 No accounts, no ads, no tracking. Your favourites and trips stay on your phone (and in Android's backup). TrainRadar is open source: https://github.com/StructuralWizard/TrainRadar

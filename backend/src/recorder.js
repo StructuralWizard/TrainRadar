@@ -14,6 +14,7 @@
 import { dbStats, writeTrips } from "./history.js";
 import { GpsLog } from "./gpslog.js";
 import { ReplayStore } from "./replay.js";
+import { NoticeLog } from "./notices.js";
 
 export const CYCLE_MS = 60_000;
 /** A feed the poller hasn't fetched for this long is treated as empty:
@@ -106,6 +107,35 @@ export async function recordCycle({ engine, live, db, now, seen }) {
   return { freshFeeds: fresh, finished: rows.length, written, active: engine.recorderActive(), trains: summary.length > 2 ? JSON.parse(summary).length : 0 };
 }
 
+/**
+ * Renfe's notices (alerts feeds), for the notices history: ingested only
+ * here, when they changed; a feed not fetched lately counts as empty.
+ */
+export async function ingestAlerts({ engine, live, now, seen }) {
+  const obj = await live.get("rt/status.json");
+  if (!obj) return 0;
+  const status = JSON.parse(await obj.text());
+  let fresh = 0;
+  for (const f of JSON.parse(engine.feedsJson()).filter((x) => x.key.startsWith("al"))) {
+    const s = status.feeds?.[f.path];
+    const fetchedAt = Date.parse(s?.fetchedAt || "") || 0;
+    if (!s?.renfeLastModified || now - fetchedAt > STALE_FEED_MS) {
+      if (seen[f.path] !== "stale") {
+        engine.ingest(f.key, new Uint8Array(0), now);
+        seen[f.path] = "stale";
+      }
+      continue;
+    }
+    fresh += 1;
+    if (seen[f.path] === s.renfeLastModified) continue;
+    const o = await live.get(`rt/${f.path}`);
+    if (!o) continue;
+    engine.ingest(f.key, new Uint8Array(await o.arrayBuffer()), now);
+    seen[f.path] = s.renfeLastModified;
+  }
+  return fresh;
+}
+
 /** Health document at `rt/recorder.json` (public; no secrets, no personal data). */
 export async function writeRecorderStatus(live, doc) {
   await live.put("rt/recorder.json", JSON.stringify(doc), {
@@ -132,6 +162,8 @@ export class RecorderCore {
     this.totals = { finished: 0, written: 0 };
     // Replay frames (TrainRadar Pro): where every train was, each minute.
     this.replay = env.REPLAY_ENABLED === "false" ? null : new ReplayStore(env.LIVE);
+    // Renfe's notices, a file per day (TrainRadar Pro: notices history).
+    this.notices = env.NOTICES_ENABLED === "false" ? null : new NoticeLog(env.LIVE);
     // Raw GPS fixes (private bucket), to check the track network later.
     this.gps = env.GPS_LOG_ENABLED === "false" || !env.ARCHIVE ? null : new GpsLog(env.ARCHIVE);
   }
@@ -178,6 +210,17 @@ export class RecorderCore {
         });
         res.replay = this.replay.status();
       }
+      if (this.notices) {
+        // Nor a notices problem.
+        try {
+          if (await ingestAlerts({ engine: this.engine, live: this.env.LIVE, now, seen: this.seen })) {
+            await this.notices.add(this.engine.incidentsJson(now), now);
+          }
+        } catch (e) {
+          res.noticesError = String(e?.message || e);
+        }
+        res.notices = this.notices.status();
+      }
       if (this.gps) {
         // Nor a GPS-log problem.
         await this.gps.add(this.engine.gpsFixesJson(), now).catch((e) => {
@@ -211,6 +254,7 @@ export class RecorderCore {
   /** Save before the object is evicted or redeployed (best effort). */
   async save() {
     await this.replay?.flush(false).catch(() => {});
+    await this.notices?.flush(false).catch(() => {});
     await this.gps?.flush().catch(() => {});
     if (this.engine) await this.storage.put("runs", this.engine.recorderSave());
   }

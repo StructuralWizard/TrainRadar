@@ -419,7 +419,7 @@ export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, 
     out.push(el("h3", {}, "TrainRadar Pro"));
     out.push(el("p", { class: pro?.pro ? "pro-on" : "muted", id: "pro-state" }, t(lang, `proState_${pro?.state || "none"}`)));
     out.push(el("p", { class: "small" }, t(lang, "proIncludes")));
-    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proTrips", "proAlerts", "proWidget", "proHistory", "proCommute", "proReplay"].map((k) => el("li", {}, t(lang, k)))));
+    out.push(el("ul", { class: "small pro-features" }, ["proFavourites", "proTrips", "proAlerts", "proWidget", "proHistory", "proCommute", "proReplay", "proNotices"].map((k) => el("li", {}, t(lang, k)))));
     // Mis viajes, Moviola, Trayecto habitual, alerts and widget: in "Más".
     if (pro?.pro) out.push(el("p", { class: "small muted", id: "pro-in-more" }, t(lang, "proInMore")));
     out.push(el("p", { class: "small muted" }, t(lang, "proSoon")));
@@ -709,6 +709,26 @@ export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onR
   return [el("ul", { class: "board" }, items), el("p", { class: "small muted" }, Number.isFinite(limit) ? t(lang, "favNote", { n: limit }) : t(lang, "favNotePro"))];
 }
 
+/**
+ * "Trayecto habitual" in Favoritos (Android): each saved commute opens its
+ * next trains; with none, a button to add one; without Pro, the offer.
+ */
+export function favCommutes(lang, { list, active, pro, onOpen, onAdd, onPro }) {
+  const head = el("h3", { class: "group-h", id: "favs-commutes-h" }, t(lang, "commuteTitle"), pro ? null : el("span", { class: "pro-tag" }, "Pro"));
+  if (!pro) return [head, el("button", { class: "link small", type: "button", id: "favs-commute-pro", onclick: onPro }, t(lang, "favCommutePro"))];
+  if (!list.length) return [head, el("button", { class: "pill small", type: "button", id: "favs-commute-add", onclick: onAdd }, `+ ${t(lang, "commuteAddBtn")}`)];
+  return [
+    head,
+    el(
+      "ul",
+      { class: "board", id: "favs-commutes" },
+      list.map((c, i) =>
+        el("li", {}, el("button", { class: "link", type: "button", onclick: () => onOpen(i), "aria-current": i === active ? "true" : null }, el("strong", {}, `${c.from.name} → ${c.to.name}`))),
+      ),
+    ),
+  ];
+}
+
 /** The line's last 7 days (phase C2b), from the history API's summary. */
 export function historyBox(lang, h, proUrl, onPro = null, onHistory = null) {
   const n = (x) => x.toLocaleString(lang === "en" ? "en-GB" : "es-ES");
@@ -934,41 +954,75 @@ export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onS
   }
   const shown = filter ? list.filter(filter.test) : list;
   if (!shown.length) out.push(el("p", { class: "muted" }, filter?.none || (filter?.commute ? t(lang, "noIncidentsCommute", { what: filter.label }) : t(lang, "noIncidents"))));
-  out.push(
-    el(
-      "ul",
-      { class: "incidents" },
-      shown.map((i) =>
+  out.push(incidentList(lang, shown, regionName, onStop));
+  out.push(...officialLinks(lang));
+  return out;
+}
+
+/** Renfe notices as a list (feed text shown as text only). `seen`: the
+ * notices history's [first, last] unix seconds, shown when present. */
+export function incidentList(lang, shown, regionName, onStop) {
+  return el(
+    "ul",
+    { class: "incidents" },
+    shown.map((i) =>
+      el(
+        "li",
+        {},
         el(
-          "li",
-          {},
+          "div",
+          { class: "incident-meta" },
+          i.kind ? el("span", { class: `chip chip-kind kind-${i.kind}` }, t(lang, `kind_${i.kind}`)) : null,
+          (i.nucleos || []).map((n) => el("span", { class: "chip chip-region" }, regionName(n) || n)),
+          (i.lines || []).map((l) => el("span", { class: "chip" }, l)),
           el(
-            "div",
-            { class: "incident-meta" },
-            i.kind ? el("span", { class: `chip chip-kind kind-${i.kind}` }, t(lang, `kind_${i.kind}`)) : null,
-            i.nucleos.map((n) => el("span", { class: "chip chip-region" }, regionName(n) || n)),
-            i.lines.map((l) => el("span", { class: "chip" }, l)),
-            el(
-              "span",
-              { class: "muted" },
-              i.from ? t(lang, "published", { date: formatDay(lang, i.from) }) : "",
-              i.until ? ` ${t(lang, "untilDate", { date: formatDay(lang, i.until) })}` : "",
-            ),
+            "span",
+            { class: "muted" },
+            i.from ? t(lang, "published", { date: formatDay(lang, i.from) }) : "",
+            i.until ? ` ${t(lang, "untilDate", { date: formatDay(lang, i.until) })}` : "",
           ),
-          el("p", { class: "incident-text" }, i.text),
-          i.stops.length
-            ? el(
-                "p",
-                { class: "small" },
-                i.stops.map((s, k) => [k ? ", " : "", s.lat !== null ? el("button", { class: "link", onclick: () => onStop(s) }, s.name) : s.name]),
-              )
-            : null,
         ),
+        el("p", { class: "incident-text" }, i.text),
+        i.seen ? el("p", { class: "small muted" }, t(lang, "noticesSeen", { from: clock(i.seen[0]), to: clock(i.seen[1]) })) : null,
+        i.stops?.length
+          ? el(
+              "p",
+              { class: "small" },
+              i.stops.map((s, k) => [k ? ", " : "", s.lat !== null && s.lat !== undefined ? el("button", { class: "link", onclick: () => onStop(s) }, s.name) : s.name]),
+            )
+          : null,
       ),
     ),
   );
-  out.push(...officialLinks(lang));
-  return out;
+}
+
+/** Madrid clock time ("14:05") of unix seconds. */
+function clock(unix) {
+  return new Date(unix * 1000).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * Notices history (TrainRadar Pro): the Renfe notices seen on a past day.
+ * `state`: "loading" | "ok" | "none" | "error"; `doc`: the day file.
+ */
+export function noticesHistoryPanel(lang, { day, min, max, state, doc, regionName, onDay, onLive, onStop }) {
+  const list = doc?.notices || [];
+  return [
+    el(
+      "div",
+      { class: "notices-history-bar" },
+      el("button", { class: "pill small", type: "button", id: "notices-live", onclick: onLive }, `← ${t(lang, "noticesLive")}`),
+      el("input", { type: "date", id: "notices-day", value: day, min, max, "aria-label": t(lang, "noticesDay"), onchange: (e) => e.target.value && onDay(e.target.value) }),
+    ),
+    el("h3", {}, t(lang, "noticesHistoryTitle")),
+    state === "loading"
+      ? el("p", { class: "muted" }, t(lang, "replayLoading"))
+      : state === "error"
+        ? el("p", { class: "warn" }, t(lang, "noticesError"))
+        : !list.length
+          ? el("p", { class: "muted" }, t(lang, "noticesNone", { since: min.split("-").reverse().join("/") }))
+          : [el("p", { class: "small muted" }, t(lang, "noticesCountDay", { n: list.length })), incidentList(lang, list, regionName, onStop)],
+  ].flat();
 }
 
 /** Trains stopped between stations, grouped by section to flag likely problems. */
