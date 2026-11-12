@@ -136,6 +136,11 @@ export class StompSession {
     return id;
   }
 
+  /** Unsubscribe; with a durable name header, Artemis deletes the subscription. */
+  unsubscribe(id, extra = {}) {
+    this.transport.write(encodeFrame("UNSUBSCRIBE", { id, ...extra }));
+  }
+
   disconnect() {
     try {
       this.transport.write(encodeFrame("DISCONNECT", {}));
