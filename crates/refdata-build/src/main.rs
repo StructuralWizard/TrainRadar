@@ -347,11 +347,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 st.calls_unplaced,
                 st.unplaced_tiplocs,
                 st.stations,
-                naptan.len()
+                naptan.stations.len()
             ));
             report.push_str(&format!(
-                "  - {} calls placed at a sibling TIPLOC (same STANOX in CORPUS). Unplaced, most calls first: {}\n",
+                "  - {} calls placed at a sibling TIPLOC (same STANOX in CORPUS), {} by station name. Unplaced, most calls first: {}\n",
                 st.calls_via_corpus,
+                st.calls_via_name,
                 st.top_unplaced
                     .iter()
                     .map(|(t, n, c)| format!("`{t}` {n} ({c})"))
