@@ -28,6 +28,8 @@ pub struct NrStats {
     pub unplaced_tiplocs: usize,
     /// Calls placed through a sibling TIPLOC (same STANOX in CORPUS).
     pub calls_via_corpus: usize,
+    /// Calls placed by station name (CORPUS name → NaPTAN, rail or metro).
+    pub calls_via_name: usize,
     /// The unplaced TIPLOCs with the most calls: (TIPLOC, CORPUS name, calls).
     pub top_unplaced: Vec<(String, String, usize)>,
     pub stations: usize,
@@ -35,7 +37,57 @@ pub struct NrStats {
 
 /// NaPTAN rail stations: TIPLOC → (name, coordinates). `csv` is NaPTAN's
 /// access-nodes CSV (all stops; only `StopType` RLY rows are kept).
-pub fn read_naptan<R: std::io::Read>(csv: R) -> Result<HashMap<String, (String, LatLon)>, String> {
+/// NaPTAN, as the UK build uses it: rail stations by TIPLOC, and rail and
+/// Underground/metro stations by normalised name ([`norm_name`]) for calls
+/// at TIPLOCs NaPTAN doesn't list (the Elizabeth line's core, stations
+/// shared with the Underground).
+#[derive(Debug, Default)]
+pub struct Naptan {
+    pub stations: HashMap<String, (String, LatLon)>,
+    /// Normalised name → (the rail station's TIPLOC if one, name, coordinates).
+    /// Rail stations win over metro ones; a name two rail stations share
+    /// (e.g. two Newports) is left out.
+    pub names: HashMap<String, (Option<String>, String, LatLon)>,
+}
+
+/// A station name for matching: upper case, "&" as "AND", without
+/// "London " in front or a kind of station (" Rail Station", " EL", " LT"…)
+/// behind. "London Liverpool Street Rail Station" and CORPUS's
+/// "LIVERPOOL STREET EL" both give "LIVERPOOL STREET".
+pub fn norm_name(s: &str) -> String {
+    let mut n: String = s
+        .to_uppercase()
+        .replace('&', " AND ")
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { ' ' })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if let Some(x) = n.strip_prefix("LONDON ") {
+        n = x.to_owned();
+    }
+    for suffix in [
+        " RAIL STATION",
+        " RAILWAY STATION",
+        " UNDERGROUND STATION",
+        " DLR STATION",
+        " STATION",
+        " ELL",
+        " EL",
+        " LT",
+        " LUL",
+        " DLR",
+    ] {
+        if let Some(x) = n.strip_suffix(suffix) {
+            n = x.to_owned();
+            break;
+        }
+    }
+    n
+}
+
+pub fn read_naptan<R: std::io::Read>(csv: R) -> Result<Naptan, String> {
     let mut rdr = csv::ReaderBuilder::new().flexible(true).from_reader(csv);
     let h = rdr.headers().map_err(|e| e.to_string())?.clone();
     let col = |n: &str| {
@@ -51,26 +103,51 @@ pub fn read_naptan<R: std::io::Read>(csv: R) -> Result<HashMap<String, (String, 
         col("Longitude")?,
     );
     let status = h.iter().position(|x| x == "Status");
-    let mut out = HashMap::new();
+    let mut out = Naptan::default();
+    let mut rail_names: HashMap<String, Option<String>> = HashMap::new();
+    let mut metro: HashMap<String, (String, LatLon)> = HashMap::new();
     let mut rec = csv::StringRecord::new();
     while rdr.read_record(&mut rec).map_err(|e| e.to_string())? {
-        if &rec[typ] != "RLY" || status.is_some_and(|s| rec.get(s).is_some_and(|v| v == "inactive"))
+        let kind = &rec[typ];
+        if !matches!(kind, "RLY" | "MET")
+            || status.is_some_and(|s| rec.get(s).is_some_and(|v| v == "inactive"))
         {
             continue;
         }
-        let Some(tiploc) = rec[atco].strip_prefix(RAIL_ATCO_PREFIX) else {
-            continue;
-        };
         let (Ok(la), Ok(lo)) = (rec[lat].parse::<f64>(), rec[lon].parse::<f64>()) else {
             continue;
         };
         if !(49.0..61.5).contains(&la) || !(-9.0..2.5).contains(&lo) {
             continue;
         }
-        out.insert(
-            tiploc.to_owned(),
-            (station_name(&rec[name]), LatLon::new(la, lo)),
-        );
+        let shown = station_name(&rec[name]);
+        let key = norm_name(&rec[name]);
+        if kind == "MET" {
+            metro.entry(key).or_insert((shown, LatLon::new(la, lo)));
+            continue;
+        }
+        let Some(tiploc) = rec[atco].strip_prefix(RAIL_ATCO_PREFIX) else {
+            continue;
+        };
+        rail_names
+            .entry(key)
+            .and_modify(|t| {
+                if t.as_deref() != Some(tiploc) {
+                    *t = None; // two rail stations with this name: ambiguous
+                }
+            })
+            .or_insert_with(|| Some(tiploc.to_owned()));
+        out.stations
+            .insert(tiploc.to_owned(), (shown, LatLon::new(la, lo)));
+    }
+    for (key, tiploc) in rail_names {
+        if let Some(t) = tiploc {
+            let (n, c) = out.stations[&t].clone();
+            out.names.insert(key, (Some(t), n, c));
+        }
+    }
+    for (key, (n, c)) in metro {
+        out.names.entry(key).or_insert((None, n, c));
     }
     Ok(out)
 }
@@ -78,7 +155,12 @@ pub fn read_naptan<R: std::io::Read>(csv: R) -> Result<HashMap<String, (String, 
 /// "Aberdare Rail Station" → "Aberdare".
 pub fn station_name(s: &str) -> String {
     let s = s.trim();
-    for suffix in [" Rail Station", " Railway Station", " Station"] {
+    for suffix in [
+        " Rail Station",
+        " Railway Station",
+        " Underground Station",
+        " Station",
+    ] {
         if let Some(x) = s.strip_suffix(suffix) {
             return x.to_owned();
         }
@@ -258,14 +340,14 @@ fn operator_name(atoc: &str) -> &'static str {
 /// Read a SCHEDULE extract (decompressed JSON lines) into a [`Feed`].
 pub fn load<R: BufRead>(
     schedule: R,
-    naptan: &HashMap<String, (String, LatLon)>,
+    naptan: &Naptan,
     corpus: Option<&Corpus>,
     window: &Window,
 ) -> Result<(Feed, NrStats), String> {
     // A TIPLOC NaPTAN doesn't place may share its STANOX with one it does.
     let mut placed_by_stanox: HashMap<&str, &str> = HashMap::new();
     if let Some(c) = corpus {
-        let mut placed: Vec<&String> = naptan.keys().collect();
+        let mut placed: Vec<&String> = naptan.stations.keys().collect();
         placed.sort();
         for t in placed {
             if let Some(sx) = c.stanox.get(t) {
@@ -273,14 +355,29 @@ pub fn load<R: BufRead>(
             }
         }
     }
-    let resolve = |tiploc: &str| -> Option<(String, bool)> {
-        if naptan.contains_key(tiploc) {
-            return Some((tiploc.to_owned(), false));
+    // → (stop id, name, coordinates, how): 0 NaPTAN, 1 CORPUS sibling, 2 by name.
+    let resolve = |tiploc: &str| -> Option<(String, String, LatLon, u8)> {
+        if let Some((n, c)) = naptan.stations.get(tiploc) {
+            return Some((tiploc.to_owned(), n.clone(), *c, 0));
         }
-        let sx = corpus?.stanox.get(tiploc)?;
-        placed_by_stanox
-            .get(sx.as_str())
-            .map(|t| ((*t).to_owned(), true))
+        let corpus = corpus?;
+        if let Some(t) = corpus
+            .stanox
+            .get(tiploc)
+            .and_then(|sx| placed_by_stanox.get(sx.as_str()))
+        {
+            let (n, c) = &naptan.stations[*t];
+            return Some(((*t).to_owned(), n.clone(), *c, 1));
+        }
+        // By name: a rail station's TIPLOC if NaPTAN has one (same stop),
+        // else an Underground/metro station under this TIPLOC.
+        let (t, n, c) = naptan.names.get(&norm_name(corpus.name.get(tiploc)?))?;
+        Some((
+            t.clone().unwrap_or_else(|| tiploc.to_owned()),
+            n.clone(),
+            *c,
+            2,
+        ))
     };
     let mut stats = NrStats::default();
     let mut cands: Vec<Cand> = Vec::new();
@@ -335,13 +432,13 @@ pub fn load<R: BufRead>(
         let mut offset = 0u32; // after midnight: times keep counting past 24:00
         for call in &c.calls {
             stats.calls += 1;
-            let Some((tiploc, via)) = resolve(&call.tiploc) else {
+            let Some((tiploc, name, coord, how)) = resolve(&call.tiploc) else {
                 stats.calls_unplaced += 1;
                 *unplaced.entry(call.tiploc.clone()).or_default() += 1;
                 continue;
             };
-            stats.calls_via_corpus += usize::from(via);
-            let (name, coord) = &naptan[&tiploc];
+            stats.calls_via_corpus += usize::from(how == 1);
+            stats.calls_via_name += usize::from(how == 2);
             let raw_a = call.arr.or(call.dep).unwrap_or(0);
             let raw_d = call.dep.or(call.arr).unwrap_or(raw_a);
             let mut a = raw_a + offset;
@@ -359,7 +456,7 @@ pub fn load<R: BufRead>(
                 feed.stops.push(Stop {
                     id: tiploc.clone(),
                     name: name.clone(),
-                    coord: *coord,
+                    coord,
                 });
                 feed.stops.len() - 1
             });
@@ -418,13 +515,17 @@ mod tests {
     use super::*;
     use crate::calendar::parse_date;
 
-    fn naptan() -> HashMap<String, (String, LatLon)> {
+    fn naptan() -> Naptan {
         let csv = "ATCOCode,CommonName,StopType,Longitude,Latitude,Status\n\
                    9100EDINBUR,Edinburgh Rail Station,RLY,-3.1891,55.9521,active\n\
                    9100HAYMRKT,Haymarket Rail Station,RLY,-3.2183,55.9458,active\n\
                    9100UPHALL,Uphall Rail Station,RLY,-3.5016,55.9189,active\n\
                    9100XXXX,Old Rail Station,RLY,-3.5,55.9,inactive\n\
-                   490000001,Some bus stop,BCT,-0.1,51.5,active\n";
+                   490000001,Some bus stop,BCT,-0.1,51.5,active\n\
+                   9100LIVST,London Liverpool Street Rail Station,RLY,-0.0814,51.5178,active\n\
+                   940GZZLUBST,Bond Street Underground Station,MET,-0.1494,51.5142,active\n\
+                   9100NWPTRTG,Newport (South Wales) Rail Station,RLY,-2.9993,51.5888,active\n\
+                   9100NEWPORT,Newport (Essex) Rail Station,RLY,0.2163,51.9800,active\n";
         read_naptan(csv.as_bytes()).unwrap()
     }
 
@@ -452,8 +553,21 @@ mod tests {
     #[test]
     fn naptan_and_times() {
         let n = naptan();
-        assert_eq!(n.len(), 3, "rail stations only, active only");
-        assert_eq!(n["EDINBUR"].0, "Edinburgh");
+        assert_eq!(n.stations.len(), 6, "rail stations only, active only");
+        assert_eq!(n.stations["EDINBUR"].0, "Edinburgh");
+        assert_eq!(
+            norm_name("London Liverpool Street Rail Station"),
+            "LIVERPOOL STREET"
+        );
+        assert_eq!(norm_name("LIVERPOOL STREET EL"), "LIVERPOOL STREET");
+        assert_eq!(
+            norm_name("HIGHBURY AND ISLINGTON ELL"),
+            norm_name("Highbury & Islington Rail Station")
+        );
+        assert_eq!(norm_name("Bond Street Underground Station"), "BOND STREET");
+        assert_eq!(n.names["LIVERPOOL STREET"].0.as_deref(), Some("LIVST"));
+        assert_eq!(n.names["BOND STREET"].0, None, "a metro station");
+        assert_eq!(n.names["BOND STREET"].1, "Bond Street");
         assert_eq!(parse_hhmm("0908H"), Some(9 * 3600 + 8 * 60 + 30));
         assert_eq!(parse_hhmm("2359"), Some(86_340));
         assert_eq!(parse_hhmm("x"), None);
@@ -554,5 +668,37 @@ mod tests {
         assert_eq!(t.stop_times.len(), 4);
         assert_eq!(t.stop_times[1].0, t.stop_times[2].0, "one stop, two calls");
         assert_eq!(feed.stops.len(), 3);
+    }
+
+    #[test]
+    fn places_elizabeth_line_calls_by_name() {
+        let corpus = read_corpus(
+            r#"{"TIPLOCDATA":[
+            {"TIPLOC":"HAYMRKT","STANOX":"62006","NLCDESC":"HAYMARKET"},
+            {"TIPLOC":"NOWHERE","STANOX":"99999","NLCDESC":"BOND STREET EL"}]}"#
+                .as_bytes(),
+        )
+        .unwrap();
+        let w = Window {
+            start: parse_date("2026-11-09").unwrap(),
+            days: 7,
+        };
+        let text = sched(
+            "C15016",
+            "P",
+            "2026-05-17",
+            "2026-12-06",
+            "1111111",
+            "P",
+            "0907",
+        );
+        let (feed, st) = load(text.as_bytes(), &naptan(), Some(&corpus), &w).unwrap();
+        assert_eq!(st.calls_unplaced, 0);
+        assert_eq!(st.calls_via_name, 1);
+        let bond = feed.stops.iter().find(|s| s.name == "Bond Street").unwrap();
+        assert_eq!(
+            bond.id, "NOWHERE",
+            "a metro station keeps the call's TIPLOC"
+        );
     }
 }
