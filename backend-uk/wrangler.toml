@@ -1,0 +1,28 @@
+# TrainRadar UK ingest (plan 3, phase 3c): drains Network Rail's TRUST feed
+# every minute (a Durable Object alarm) and writes GTFS-Realtime trip updates
+# to the shared live bucket under uk/rt/. Separate from backend/ (Spain).
+# No secrets here: NETWORK_RAIL_USERNAME and NETWORK_RAIL_PASSWORD are Worker
+# secrets, set by the deploy job from GitHub Actions secrets.
+name = "trainradar-uk"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Every minute: re-arm the alarm in case it ever stops.
+[triggers]
+crons = ["* * * * *"]
+
+[[durable_objects.bindings]]
+name = "UK_INGEST"
+class_name = "UkIngest"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["UkIngest"]
+
+[[r2_buckets]]
+binding = "LIVE"
+bucket_name = "trainradar-live"
+
+[vars]
+# Kill switch: anything but "true" stops all connections to Network Rail.
+UK_ENABLED = "false"

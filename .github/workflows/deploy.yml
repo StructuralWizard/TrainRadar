@@ -214,6 +214,52 @@ jobs:
           path: shots
           retention-days: 14
 
+  uk:
+    # UK ingest (backend-uk/, plan 3): drains Network Rail's TRUST feed every
+    # minute into uk/rt/ in the live bucket. Off until the maintainer sets the
+    # variable UK_ENABLED=true; uses the Network Rail login secrets.
+    name: deploy the UK ingest
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Is the UK ingest enabled?
+        id: gate
+        env:
+          UK_ENABLED: ${{ vars.UK_ENABLED }}
+        run: |
+          norm() { printf %s "$1" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]'; }
+          if [ "$(norm "$UK_ENABLED")" = "true" ]; then
+            echo "on=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "UK_ENABLED is not true: skipping the UK ingest." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.gate.outputs.on == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.gate.outputs.on == 'true'
+        with:
+          node-version: 22
+      - run: node --test backend-uk/test/*.test.mjs
+        if: steps.gate.outputs.on == 'true'
+      - name: Deploy the UK ingest Worker
+        if: steps.gate.outputs.on == 'true'
+        env:
+          NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
+          NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
+        run: |
+          npx --yes "$WRANGLER" deploy --config backend-uk/wrangler.toml --var "UK_ENABLED:true"
+          # Secrets on stdin, never on the command line.
+          printf '%s' "$NETWORK_RAIL_USERNAME" | npx --yes "$WRANGLER" secret put NETWORK_RAIL_USERNAME --config backend-uk/wrangler.toml
+          printf '%s' "$NETWORK_RAIL_PASSWORD" | npx --yes "$WRANGLER" secret put NETWORK_RAIL_PASSWORD --config backend-uk/wrangler.toml
+          echo "UK ingest deployed: its status is uk/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
+
   live:
     # Central poller and history recorder (backend/): Renfe fetched once for
     # everyone, bytes in R2; delays recorded to D1. Off until the maintainer

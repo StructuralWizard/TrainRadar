@@ -1,0 +1,9 @@
+{
+  "name": "trainradar-uk",
+  "private": true,
+  "type": "module",
+  "description": "UK ingest: drains Network Rail's TRUST feed every minute into GTFS-Realtime in R2",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
