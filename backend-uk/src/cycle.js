@@ -2,7 +2,7 @@
 // imports so it runs in Node tests: drain TRUST, update the trains, write
 // uk/rt/trip_updates.pb and uk/rt/status.json to the live bucket.
 
-import { drain } from "./drain.js";
+import { OLD_SUBSCRIPTIONS, drain, removeSubscription } from "./drain.js";
 import { applyMessage, expire, tripUpdates } from "./trust.js";
 import { encodeTripUpdates } from "./gtfsrt.js";
 import { refreshIncidents } from "./kb.js";
@@ -48,6 +48,19 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
       httpMetadata: { contentType: "application/x-protobuf", cacheControl: CACHE },
     });
   }
+  // Old durable subscriptions: removed once the broker lets us (at most every
+  // 10 minutes each), so it stops queueing messages nobody reads.
+  state.removed ||= [];
+  for (const name of OLD_SUBSCRIPTIONS) {
+    if (state.removed.includes(name) || now - (state.removeTriedAt || 0) < 10 * 60_000) continue;
+    state.removeTriedAt = now;
+    try {
+      await removeSubscription({ open, login: env.NETWORK_RAIL_USERNAME, passcode: env.NETWORK_RAIL_PASSWORD, name });
+      state.removed.push(name);
+    } catch {
+      // still held: next time
+    }
+  }
   // National Rail incidents, every few minutes (never stops the TRUST work).
   await refreshIncidents({ state, env, fetchFn, now }).catch(() => {});
   const trains = Object.values(state.trains);
@@ -65,6 +78,7 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
     published: updates.length,
     totals: state.counts,
     incidents: state.kb || null,
+    oldSubscriptionsRemoved: state.removed,
     // The same shape as Spain's poller status (backend/src/poller.js), so
     // the app's live mode reads the UK feed with the same code.
     feeds: {

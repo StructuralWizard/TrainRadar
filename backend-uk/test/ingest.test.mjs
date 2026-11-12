@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { CANCELED, decode, encodeTripUpdates } from "../src/gtfsrt.js";
 import { applyMessage, emptyState, expire, tripUpdates, KEEP_TERMINATED_MS } from "../src/trust.js";
 import { FrameReader, encodeFrame } from "../src/stomp.js";
-import { SUBSCRIPTION, TOPIC, drain } from "../src/drain.js";
+import { HEARTBEAT_MS, OLD_SUBSCRIPTIONS, SUBSCRIPTION, TOPIC, drain } from "../src/drain.js";
 import { runCycle } from "../src/cycle.js";
 
 const T0 = Date.parse("2026-11-12T17:47:00Z");
@@ -179,4 +179,30 @@ test("cycle: retries once when the broker still holds last minute's session", as
   assert.equal(st2.failingSince, new Date(T0 + 60_000).toISOString());
   const st3 = await runCycle({ state, env, open: fakeBroker([], { busy: 2 }).open, now: T0 + 120_000, retryMs: 10 });
   assert.equal(st3.failingSince, new Date(T0 + 60_000).toISOString(), "kept from the first failure");
+});
+
+test("drain: promises heart-beats and sends them, so a lost connection frees the client-id", async () => {
+  const b = fakeBroker([[movement("1", 1)]]);
+  await drain({ open: b.open, login: "me", passcode: "pw", onMessages: () => {}, idleMs: 300, firstMs: 1000 });
+  const connect = b.seen.find((f) => f.command === "CONNECT");
+  assert.equal(connect.headers["heart-beat"], `${HEARTBEAT_MS},0`);
+  assert.equal(connect.headers["client-id"], SUBSCRIPTION);
+});
+
+test("cycle: removes the old durable subscription once, then never again", async () => {
+  const bucket = fakeBucket();
+  const env = { LIVE: bucket, NETWORK_RAIL_USERNAME: "me", NETWORK_RAIL_PASSWORD: "pw" };
+  const state = emptyState();
+  const b = fakeBroker([]);
+  await runCycle({ state, env, open: b.open, now: T0 });
+  const unsub = b.seen.filter((f) => f.command === "UNSUBSCRIBE");
+  assert.equal(unsub.length, 1);
+  assert.equal(unsub[0].headers["durable-subscription-name"], OLD_SUBSCRIPTIONS[0]);
+  const old = b.seen.filter((f) => f.command === "CONNECT" && f.headers["client-id"] === OLD_SUBSCRIPTIONS[0]);
+  assert.equal(old.length, 1);
+  assert.deepEqual(state.removed, OLD_SUBSCRIPTIONS);
+  await runCycle({ state, env, open: b.open, now: T0 + 3_600_000 });
+  assert.equal(b.seen.filter((f) => f.command === "UNSUBSCRIBE").length, 1, "only once");
+  // Our own subscription is never unsubscribed.
+  assert.ok(!b.seen.some((f) => f.command === "UNSUBSCRIBE" && f.headers["durable-subscription-name"] === SUBSCRIPTION));
 });
