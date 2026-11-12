@@ -13,7 +13,7 @@ import zlib from "node:zlib";
 import readline from "node:readline";
 import { Readable } from "node:stream";
 import { mkdir, writeFile } from "node:fs/promises";
-import { StompSession } from "./stomp.mjs";
+import { StompSession } from "../../backend-uk/src/stomp.js";
 
 const HOST = "publicdatafeeds.networkrail.co.uk";
 const STOMP_PORT = 61618;

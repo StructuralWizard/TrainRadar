@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import net from "node:net";
-import { FrameReader, StompSession, encodeFrame, escapeHeader, unescapeHeader } from "./stomp.mjs";
+import { FrameReader, StompSession, encodeFrame, escapeHeader, unescapeHeader } from "../src/stomp.js";
 
 const text = (b) => new TextDecoder().decode(b);
 

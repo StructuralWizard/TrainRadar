@@ -90,7 +90,7 @@ The same app and Play listing: a country switch, not a new app.
 |---|---|---|
 | **3a** | This plan, AGENTS.md secrets rule, the UK feed check (`.github/workflows/uk-feed-check.yml`, `tools/uk-feed-check/`): login, live rates and message types, SCHEDULE/CORPUS/SMART sizes and real samples → `docs/data-sources-uk.md` | the secrets |
 | 3b | UK reference data: SCHEDULE → timetables by area, stations (CORPUS + NaPTAN), OSM GB track → `web/data/uk/` | 3a |
-| 3c | `backend-uk/`: STOMP drain, TRUST → GTFS-RT TripUpdates, status and summary; deploy job | 3a |
+| 3c | `backend-uk/`: STOMP drain, TRUST → GTFS-RT TripUpdates, status; deploy job (off until `UK_ENABLED`) — see [backend-uk/README.md](../backend-uk/README.md) | 3a |
 | 3d | App: country switch, per-country config and storage, Network Rail adapter, estimated positions, UK attribution | 3b, 3c |
 | 3e | UK recorder, history API prefix, replay; KB incidents → Avisos (once the key exists) | 3c |
 | 3f | Release 3.0 (Play notes, store texts, screenshots for the UK) | all |
