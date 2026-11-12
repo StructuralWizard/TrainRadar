@@ -1,0 +1,59 @@
+# Plan 3, phase 3b: builds the UK reference data (Great Britain timetable,
+# stations, OpenStreetMap track) from Network Rail's SCHEDULE and NaPTAN, and
+# reports what came out. Manual and main only: the schedule download needs
+# the Network Rail login (repository secrets). Nothing is deployed yet; the
+# files are uploaded as an artifact for checking.
+name: Refdata UK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refdata-uk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo build --release -p trainradar-refdata-build
+      - name: Week number (OSM cache key)
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      # Great Britain's track changes slowly: download from Geofabrik at most weekly.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: osm
+        with:
+          path: gtfs/uk/rail.geojsonseq
+          key: osm-rail-uk-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-uk-v1-
+      - if: steps.osm.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y osmium-tool
+      - name: Download Network Rail SCHEDULE, NaPTAN and OSM track
+        env:
+          NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
+          NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
+        run: tools/fetch-uk.sh | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Build .bin files
+        run: |
+          target/release/refdata-build build --out build/uk --gzip \
+            --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv \
+            --rail gtfs/uk/rail.geojsonseq --report refdata-uk.md 2> build.log || { tail -50 build.log; exit 1; }
+          tail -20 build.log
+          target/release/refdata-build verify build/uk
+          { echo "## UK reference data"; echo; cat refdata-uk.md; } >> "$GITHUB_STEP_SUMMARY"
+          cat refdata-uk.md
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: refdata-uk
+          path: build/uk/

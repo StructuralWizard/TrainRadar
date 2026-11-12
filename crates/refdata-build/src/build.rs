@@ -28,6 +28,8 @@ pub const MAX_STOP_OFFSET_M: f64 = 400.0;
 pub const LONG_DISTANCE: &str = "ld";
 /// Region code for OUIGO (timetable only, from the NAP).
 pub const OUIGO: &str = "ouigo";
+/// Great Britain (Network Rail), the only region of the UK data (plan 3).
+pub const UK: &str = "uk";
 
 /// OUIGO's GTFS (a UIC MERITS export) uses 9-digit UIC station codes; the
 /// last five digits are the Adif code Renfe uses (`007160000` → `60000`).
