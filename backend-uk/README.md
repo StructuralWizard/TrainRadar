@@ -22,6 +22,15 @@ Every minute a Durable Object alarm:
    - `uk/rt/status.json`: last drain (frames, messages, bytes, time), trains, delays,
      cancellations, errors. Never the login.
 
+4. **National Rail incidents** (`kb.js`), every 5 minutes when `NATIONAL_RAIL_KB_KEY` is set:
+   the Knowledgebase incidents XML (Rail Data Marketplace, NRE incident schema v5) →
+   `uk/rt/incidents.json` `{ updatedAt, source, notice, incidents: [{ id, summary, text,
+   routes, operators, planned, priority, from, until, updated, url }] }`: incidents not
+   cleared and not over, unplanned first. HTML is reduced to plain text; only links to
+   `www.nationalrail.co.uk` are kept. The licence (docs/licenses/) asks for a credit to the
+   Rail Delivery Group, without implying endorsement, and an accuracy notice: both are in
+   the file (`source`, `notice`) for the app to show. A failed fetch keeps the last file.
+
 A failed drain (login refused, network) keeps the last `trip_updates.pb` and says why in
 `status.json`. Measured volumes: about 424 TRUST messages and 300 KB a minute at peak
 (docs/data-sources-uk.md).
@@ -29,8 +38,9 @@ A failed drain (login refused, network) keeps the last `trip_updates.pb` and say
 ## Settings
 
 - `UK_ENABLED` (wrangler var): the kill switch; the deploy job sets it `true`.
-- `NETWORK_RAIL_USERNAME`, `NETWORK_RAIL_PASSWORD`: Worker secrets, put by the deploy job
-  from the GitHub Actions secrets of the same names (stdin, never the command line).
+- `NETWORK_RAIL_USERNAME`, `NETWORK_RAIL_PASSWORD`, `NATIONAL_RAIL_KB_KEY`: Worker secrets,
+  put by the deploy job from the GitHub Actions secrets of the same names (stdin, never the
+  command line). Without the KB key there are no incidents; everything else runs.
 - Deploy: the `uk` job in `.github/workflows/deploy.yml`, only when the repository (or
   production environment) variable `UK_ENABLED` is `true`.
 

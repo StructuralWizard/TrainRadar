@@ -253,11 +253,16 @@ jobs:
         env:
           NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
           NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
+          NATIONAL_RAIL_KB_KEY: ${{ secrets.NATIONAL_RAIL_KB_KEY }}
         run: |
           npx --yes "$WRANGLER" deploy --config backend-uk/wrangler.toml --var "UK_ENABLED:true"
           # Secrets on stdin, never on the command line.
           printf '%s' "$NETWORK_RAIL_USERNAME" | npx --yes "$WRANGLER" secret put NETWORK_RAIL_USERNAME --config backend-uk/wrangler.toml
           printf '%s' "$NETWORK_RAIL_PASSWORD" | npx --yes "$WRANGLER" secret put NETWORK_RAIL_PASSWORD --config backend-uk/wrangler.toml
+          # National Rail incidents (Rail Data Marketplace), when the key is set.
+          if [ -n "$NATIONAL_RAIL_KB_KEY" ]; then
+            printf '%s' "$NATIONAL_RAIL_KB_KEY" | npx --yes "$WRANGLER" secret put NATIONAL_RAIL_KB_KEY --config backend-uk/wrangler.toml
+          fi
           echo "UK ingest deployed: its status is uk/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 
   live:

@@ -5,12 +5,13 @@
 import { drain } from "./drain.js";
 import { applyMessage, expire, tripUpdates } from "./trust.js";
 import { encodeTripUpdates } from "./gtfsrt.js";
+import { refreshIncidents } from "./kb.js";
 
 export const CYCLE_MS = 60_000;
 export const CACHE = "public, max-age=30";
 
 /** One minute's work, with the I/O injected (tests run it in Node). */
-export async function runCycle({ state, env, open, now = Date.now() }) {
+export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.now() }) {
   const cycle = { at: new Date(now).toISOString(), ok: true };
   try {
     const r = await drain({
@@ -33,6 +34,8 @@ export async function runCycle({ state, env, open, now = Date.now() }) {
       httpMetadata: { contentType: "application/x-protobuf", cacheControl: CACHE },
     });
   }
+  // National Rail incidents, every few minutes (never stops the TRUST work).
+  await refreshIncidents({ state, env, fetchFn, now }).catch(() => {});
   const trains = Object.values(state.trains);
   const status = {
     updatedAt: cycle.at,
@@ -45,6 +48,7 @@ export async function runCycle({ state, env, open, now = Date.now() }) {
     canceled: trains.filter((t) => t.canceled).length,
     published: updates.length,
     totals: state.counts,
+    incidents: state.kb || null,
   };
   await env.LIVE.put("uk/rt/status.json", JSON.stringify(status), {
     httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=10" },

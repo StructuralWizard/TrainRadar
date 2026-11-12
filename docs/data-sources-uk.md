@@ -107,6 +107,24 @@ STANOX to the schedule's TIPLOC.
 directly. `CommonName` ends in " Rail Station" for many (to strip). Heritage lines appear
 too (e.g. Corfe Castle); they have no Network Rail schedules, so they drop out.
 
+## National Rail incidents (Rail Data Marketplace)
+
+`https://api1.raildata.org.uk/1010-knowlegebase-incidents-xml-feed1_0/incidents.xml`, header
+`x-apikey` (secret `NATIONAL_RAIL_KB_KEY`); product "Knowledgebase Incidents"
+(P-cf16832d-d971-46e7-8883-4fca2101d3fa), checked on 2026-11-12. NRE incident schema v5:
+`<Incidents xmlns="http://nationalrail.co.uk/xml/incident" xmlns:com="…/common">`, one
+`<PtIncident>` per incident with `IncidentNumber`, `Version`, `CreationTime`,
+`ChangeHistory/com:LastChangedDate`, `ValidityPeriod/com:StartTime|com:EndTime` (with
+offsets, e.g. `+01:00`), `Planned`, `Summary` and `Description` (CDATA; the description is
+HTML), `InfoLinks/InfoLink/Uri` (the National Rail page), `Affects/Operators/AffectedOperator/
+OperatorRef|OperatorName` (ATOC codes, e.g. NT Northern), `Affects/RoutesAffected` (CDATA
+HTML) and `IncidentPriority`. Long-running engineering works are listed too (planned).
+
+Licence (docs/licenses/): free ("Open"); the raw data may be made freely available or
+distributed to third parties; credit the publisher, the Rail Delivery Group, without
+implying endorsement (3.3.1); pass on an accuracy notice (3.3.2); territory "UK" (asked
+about use by app users outside the UK by email, 2026-11-12).
+
 ## Licence
 
 Network Rail open data: Open Government Licence v3.0. Attribution: "Contains information of
