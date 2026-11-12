@@ -27,6 +27,7 @@ function workersOpen() {
       writer.close().catch(() => {});
       s.close().catch(() => {});
     },
+    closed: s.closed.catch(() => {}),
   };
 }
 
@@ -42,7 +43,7 @@ export class UkIngest {
 
   async load() {
     const meta = (await this.ctx.storage.get("meta")) || { chunks: 0, counts: emptyState().counts };
-    const state = { trains: {}, counts: meta.counts, kbAt: meta.kbAt || 0, kb: meta.kb || null };
+    const state = { trains: {}, counts: meta.counts, kbAt: meta.kbAt || 0, kb: meta.kb || null, failingSince: meta.failingSince || null };
     for (let i = 0; i < meta.chunks; i++) {
       for (const t of (await this.ctx.storage.get(`trains:${i}`)) || []) state.trains[t.id] = t;
     }
@@ -52,7 +53,7 @@ export class UkIngest {
   async save(state, meta) {
     const list = Object.values(state.trains);
     const chunks = Math.ceil(list.length / CHUNK);
-    const puts = { meta: { chunks, counts: state.counts, kbAt: state.kbAt || 0, kb: state.kb || null } };
+    const puts = { meta: { chunks, counts: state.counts, kbAt: state.kbAt || 0, kb: state.kb || null, failingSince: state.failingSince || null } };
     for (let i = 0; i < chunks; i++) puts[`trains:${i}`] = list.slice(i * CHUNK, (i + 1) * CHUNK);
     await this.ctx.storage.put(puts);
     for (let i = chunks; i < meta.chunks; i++) await this.ctx.storage.delete(`trains:${i}`);

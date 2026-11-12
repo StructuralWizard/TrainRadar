@@ -80,23 +80,27 @@ test("trust: activation + movements → delay; P/O swap; cancellation; expiry", 
 });
 
 /** A fake broker on an in-memory transport: CONNECTED, then queued frames. */
-function fakeBroker(frames, { badLogin = false } = {}) {
-  const r = new FrameReader();
+function fakeBroker(frames, { badLogin = false, busy = 0 } = {}) {
+  let busyLeft = busy;
   const seen = [];
-  const queue = [];
-  let wake = null;
-  let closed = false;
-  const push = (b) => {
-    queue.push(b);
-    wake?.();
-  };
-  return {
-    seen,
-    open: async () => ({
+  // Each open() is a new connection with its own state.
+  const open = async () => {
+    const r = new FrameReader();
+    const queue = [];
+    let wake = null;
+    let closed = false;
+    const push = (b) => {
+      queue.push(b);
+      wake?.();
+    };
+    return {
       write: async (bytes) => {
         for (const f of r.push(bytes)) {
           seen.push(f);
-          if (f.command === "CONNECT") push(badLogin ? encodeFrame("ERROR", { message: "bad login" }) : encodeFrame("CONNECTED", { version: "1.2" }));
+          if (f.command === "CONNECT") {
+            if (busyLeft > 0) (busyLeft -= 1), push(encodeFrame("ERROR", { message: "AMQ339009 Exception getting session" }));
+            else push(badLogin ? encodeFrame("ERROR", { message: "bad login" }) : encodeFrame("CONNECTED", { version: "1.2" }));
+          }
           if (f.command === "SUBSCRIBE") {
             for (const body of frames) push(encodeFrame("MESSAGE", { destination: f.headers.destination }, JSON.stringify(body)));
           }
@@ -108,8 +112,9 @@ function fakeBroker(frames, { badLogin = false } = {}) {
         return queue.length ? { value: queue.shift(), done: false } : { done: true };
       },
       close: () => ((closed = true), wake?.()),
-    }),
+    };
   };
+  return { seen, open };
 }
 
 test("drain: durable subscription, reads until quiet", async () => {
@@ -154,4 +159,21 @@ test("cycle: writes trip updates and status; a failed login keeps the last feed"
   const status = JSON.parse(bucket.objects.get("uk/rt/status.json").v);
   assert.equal(status.ok, false);
   assert.ok(!JSON.stringify(status).includes("pw"), "never the password");
+});
+
+test("cycle: retries once when the broker still holds last minute's session", async () => {
+  const bucket = fakeBucket();
+  const env = { LIVE: bucket, NETWORK_RAIL_USERNAME: "me", NETWORK_RAIL_PASSWORD: "pw" };
+  const state = emptyState();
+  const b = fakeBroker([[activation("512J06MX12", "C34353", "2026-05-18", "O"), movement("512J06MX12", 4)]], { busy: 1 });
+  const st = await runCycle({ state, env, open: b.open, now: T0, retryMs: 10 });
+  assert.equal(st.ok, true);
+  assert.equal(st.retried, true);
+  assert.equal(st.failingSince, null);
+  // Failing twice: reported, with since when.
+  const st2 = await runCycle({ state, env, open: fakeBroker([], { busy: 2 }).open, now: T0 + 60_000, retryMs: 10 });
+  assert.equal(st2.ok, false);
+  assert.equal(st2.failingSince, new Date(T0 + 60_000).toISOString());
+  const st3 = await runCycle({ state, env, open: fakeBroker([], { busy: 2 }).open, now: T0 + 120_000, retryMs: 10 });
+  assert.equal(st3.failingSince, new Date(T0 + 60_000).toISOString(), "kept from the first failure");
 });
