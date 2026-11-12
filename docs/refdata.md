@@ -164,3 +164,19 @@ Reproduce: the "Refdata" GitHub Actions workflow prints this table on every run.
   matching ids. We'll revisit it if we need extra fields (address, province).
 - Renfe's replacement and connecting **buses** (`route_type` 3, 19,276
   Cercanías trips) are skipped: they're not trains and have no live positions.
+
+## The UK (plan 3, phase 3b)
+
+`build --uk-schedule FILE --naptan FILE` reads Network Rail's SCHEDULE (JSON lines,
+gzipped) and NaPTAN's stops CSV instead of a GTFS feed (`crates/refdata-build/src/nrsched.rs`)
+and builds one region, `uk` (Great Britain), in its own output directory:
+
+- passenger trains only (`train_status` P or 1), calls with public times, at stations
+  NaPTAN places (`ATCOCode` = `9100` + TIPLOC);
+- for each train and day, the schedule with the highest STP priority (C cancels; N, O over P);
+- trip id `UID:start date:STP` (what TRUST's activation names), short name the headcode,
+  headsign the last call, route = the operator (ATOC code);
+- `--rail` with Great Britain's OpenStreetMap track routes the legs, as for Renfe.
+
+`tools/fetch-uk.sh` downloads the three inputs into `gtfs/uk/`; the "Refdata UK" workflow
+(manual, main only: it needs the Network Rail login) builds and reports them.

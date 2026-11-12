@@ -10,6 +10,7 @@ mod igr;
 mod inspect;
 mod load;
 mod netcheck;
+mod nrsched;
 mod osm;
 mod profile;
 mod railnet;
@@ -96,6 +97,9 @@ struct BuildArgs {
     ld: Option<PathBuf>,
     cercanias: Option<PathBuf>,
     ouigo: Option<PathBuf>,
+    /// Network Rail SCHEDULE (JSON lines, .gz or plain) and NaPTAN CSV: the UK.
+    uk_schedule: Option<PathBuf>,
+    naptan: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -114,6 +118,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         ld: None,
         cercanias: None,
         ouigo: None,
+        uk_schedule: None,
+        naptan: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -142,6 +148,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--stations" => a.stations = Some(val()?.into()),
             "--network-geojson" => a.network_geojson = Some(val()?.into()),
             "--ouigo" => a.ouigo = Some(val()?.into()),
+            "--uk-schedule" => a.uk_schedule = Some(val()?.into()),
+            "--naptan" => a.naptan = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -159,8 +167,11 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
     if a.out.as_os_str().is_empty() {
         return Err("--out is required".into());
     }
-    if a.ld.is_none() && a.cercanias.is_none() && a.ouigo.is_none() {
-        return Err("give --ld, --cercanias and/or --ouigo".into());
+    if a.ld.is_none() && a.cercanias.is_none() && a.ouigo.is_none() && a.uk_schedule.is_none() {
+        return Err("give --ld, --cercanias and/or --ouigo, or --uk-schedule".into());
+    }
+    if a.uk_schedule.is_some() != a.naptan.is_some() {
+        return Err("--uk-schedule and --naptan go together".into());
     }
     Ok(a)
 }
@@ -286,9 +297,55 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.ld, "ld"),
         (&a.cercanias, "cercanias"),
         (&a.ouigo, "ouigo"),
+        (&a.uk_schedule, "uk"),
     ] {
         let Some(path) = path else { continue };
         let commuter = kind == "cercanias";
+        if kind == "uk" {
+            // Network Rail: one region for Great Britain (plan 3, phase 3b).
+            let naptan_path = a.naptan.as_ref().ok_or("--naptan missing")?;
+            let naptan = nrsched::read_naptan(
+                std::fs::File::open(naptan_path)
+                    .map_err(|e| format!("{}: {e}", naptan_path.display()))?,
+            )?;
+            let file = std::fs::File::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
+            let reader: Box<dyn std::io::BufRead> = if path.extension().is_some_and(|x| x == "gz") {
+                Box::new(std::io::BufReader::with_capacity(
+                    1 << 20,
+                    flate2::read::MultiGzDecoder::new(file),
+                ))
+            } else {
+                Box::new(std::io::BufReader::with_capacity(1 << 20, file))
+            };
+            let (feed, st) = nrsched::load(reader, &naptan, &window)?;
+            report.push_str(&format!(
+                "- `{}` (Network Rail): {} schedules, {} in window, {} passenger trips; {} cancelled \
+                 train-days; {} public calls, {} at {} TIPLOCs without NaPTAN coordinates; {} stations \
+                 ({} NaPTAN rail stations)\n",
+                path.display(),
+                st.schedules,
+                st.in_window,
+                st.passenger_trips,
+                st.cancelled_days,
+                st.calls,
+                st.calls_unplaced,
+                st.unplaced_tiplocs,
+                st.stations,
+                naptan.len()
+            ));
+            eprintln!("{}", report.lines().last().unwrap_or(""));
+            let trips: Vec<&load::Trip> = feed.trips.iter().collect();
+            let (mut tt, legs, rs) =
+                build_timetable(&feed, &trips, build::UK, header.clone(), router.as_mut());
+            tt.operator = "National Rail".into();
+            let rec = RegionRec {
+                code: build::UK.into(),
+                name: "Great Britain".into(),
+                bbox_e5: bbox_e5(&tt),
+            };
+            built.push((rec, tt, legs, rs));
+            continue;
+        }
         let mut g = Gtfs::open(path)?;
         let mut feed = load::load(&mut g, &window)?;
         if kind == "ouigo" {
