@@ -127,7 +127,10 @@ export function trainSheet(lang, info, o = {}) {
             );
   const meta = [];
   if (info.platform) meta.push(t(lang, "platform", { p: info.platform }));
-  if (!info.timetable_only) {
+  if (info.position === "scheduled" && !info.timetable_only) {
+    // The UK: no GPS in its open data (plan 3).
+    meta.push(t(lang, "ukPosition"));
+  } else if (!info.timetable_only) {
     const age = formatAgo(lang, info.fix_age);
     meta.push(info.position === "gps" || info.fix_age < 60 ? t(lang, "gpsAgo", { age }) : t(lang, "estimatedPos", { age }));
   }
@@ -338,8 +341,18 @@ export function networksSheet(lang, o) {
     "button",
     { class: "net-card", type: "button", id: "net-spain", onclick: o.spain?.onPick },
     el("span", { class: "net-card-k" }, t(lang, "netTrains", { n: formatCount(lang, o.spain?.trains || 0) })),
-    el("span", { class: "net-card-v" }, t(lang, "allSpain")),
+    el("span", { class: "net-card-v" }, o.spain?.label || t(lang, "allSpain")),
   );
+  // The country (plan 3): España or Reino Unido, one at a time.
+  const countries = o.countries
+    ? el(
+        "div",
+        { class: "net-countries", role: "group", "aria-label": t(lang, "country") },
+        o.countries.map((c) =>
+          el("button", { class: "chip-btn", type: "button", "data-country": c.code, "aria-pressed": String(!!c.current), onclick: c.onPick }, c.name),
+        ),
+      )
+    : null;
   const median = (m) => {
     if (m === null || m === undefined) return el("span", { class: "net-median muted" }, t(lang, "netNoData"));
     const tone = delayTone(m);
@@ -364,11 +377,17 @@ export function networksSheet(lang, o) {
   };
   const extra = [...group("net-g-ccaa", t(lang, "netCommunities"), o.communities || []), ...group("net-g-prov", t(lang, "netProvinces"), o.provinces || [])];
   return [
+    fold(q) ? null : countries,
     el("label", { class: "net-search" }, icon("search", 18), input),
     fold(q) ? null : el("div", { class: "net-cards" }, nearCard, spainCard),
     // Searching: only the groups with a match ("none" when there's none).
-    ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, t(lang, "netGroup"))] : []),
-    list.length ? el("ul", { class: "net-list" }, list.map((n) => row(n, median(n.median)))) : extra.length ? null : el("p", { class: "muted small" }, t(lang, "netNone")),
+    // No networks to list at all (the UK, for now): just the cards.
+    ...(o.networks?.length || o.communities?.length || o.provinces?.length
+      ? [
+          ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, t(lang, "netGroup"))] : []),
+          list.length ? el("ul", { class: "net-list" }, list.map((n) => row(n, median(n.median)))) : extra.length ? null : el("p", { class: "muted small" }, t(lang, "netNone")),
+        ]
+      : []),
     ...extra,
   ];
 }

@@ -48,13 +48,20 @@ export function formatDistance(lang, metres) {
   return `${n} km`;
 }
 
-const clock = new Intl.DateTimeFormat("es-ES", {
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: "Europe/Madrid",
-});
+// Times and dates are shown in the country's own time zone (Madrid, or
+// London for the UK: plan 3); set once at start with setTimeZone.
+let clock = null;
+let dayFmt = null;
+export function setTimeZone(timeZone = "Europe/Madrid") {
+  clock = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", timeZone });
+  dayFmt = {
+    es: new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone }),
+    en: new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone }),
+  };
+}
+setTimeZone();
 
-/** Madrid wall-clock time "18:42" for a unix timestamp in seconds. */
+/** Local wall-clock time "18:42" for a unix timestamp in seconds. */
 export function formatClock(unixSecs) {
   return clock.format(new Date(unixSecs * 1000));
 }
@@ -64,12 +71,7 @@ export function formatCount(lang, n) {
   return new Intl.NumberFormat(lang === "en" ? "en-GB" : "es-ES").format(n);
 }
 
-const dayFmt = {
-  es: new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone: "Europe/Madrid" }),
-  en: new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Europe/Madrid" }),
-};
-
-/** "7 oct" / "7 Oct" for a unix timestamp in seconds (Madrid date). */
+/** "7 oct" / "7 Oct" for a unix timestamp in seconds (local date). */
 export function formatDay(lang, unixSecs) {
   return (dayFmt[lang] || dayFmt.es).format(new Date(unixSecs * 1000)).replace(".", "");
 }

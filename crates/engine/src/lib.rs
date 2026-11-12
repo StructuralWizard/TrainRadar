@@ -11,6 +11,7 @@ pub mod incidents;
 mod json;
 pub mod live;
 pub mod network;
+pub mod networkrail;
 pub mod onboard;
 pub mod places;
 pub mod poll;
@@ -23,7 +24,6 @@ pub mod stats;
 
 use live::{DelaySource, Live, TrainView};
 use network::Network;
-use source::SourceAdapter;
 use trainradar_proto::{Delay, DelayClass, PositionSource};
 use wasm_bindgen::prelude::*;
 
@@ -104,6 +104,25 @@ pub struct Engine {
     live: Live,
     onboard: onboard::Onboard,
     recorder: history::Recorder,
+    /// Whose live feeds to read: Renfe (Spain, the default) or Network Rail (UK).
+    country: Country,
+}
+
+/// The country an engine shows (plan 3: one at a time).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum Country {
+    #[default]
+    Spain,
+    UnitedKingdom,
+}
+
+impl Country {
+    fn adapter(self) -> &'static dyn source::SourceAdapter {
+        match self {
+            Country::Spain => &renfe::Renfe,
+            Country::UnitedKingdom => &networkrail::NetworkRail,
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -141,11 +160,23 @@ impl Engine {
         Ok(self.net.load_network(bytes)?)
     }
 
+    /// Which country's live feeds this engine reads: `"es"` (Renfe, the
+    /// default) or `"uk"` (Network Rail). Set before ingesting anything.
+    #[wasm_bindgen(js_name = setCountry)]
+    pub fn set_country(&mut self, code: &str) -> Result<(), JsError> {
+        self.country = match code {
+            "es" => Country::Spain,
+            "uk" => Country::UnitedKingdom,
+            _ => return Err(JsError::new(&format!("unknown country {code}"))),
+        };
+        Ok(())
+    }
+
     /// Feeds to poll, as JSON: `[{key, path, interval, commuter}]`.
     #[wasm_bindgen(js_name = feedsJson)]
     pub fn feeds_json(&self) -> String {
         let mut s = String::from("[");
-        for (i, f) in renfe::Renfe.feeds().iter().enumerate() {
+        for (i, f) in self.country.adapter().feeds().iter().enumerate() {
             if i > 0 {
                 s.push(',');
             }
@@ -162,12 +193,13 @@ impl Engine {
 
     /// Decode and apply one feed fetch. Returns the number of records.
     pub fn ingest(&mut self, key: &str, bytes: &[u8], now_ms: f64) -> Result<u32, JsError> {
-        let spec = renfe::Renfe
+        let adapter = self.country.adapter();
+        let spec = adapter
             .feeds()
             .iter()
             .find(|f| f.key == key)
             .ok_or_else(|| JsError::new(&format!("unknown feed {key}")))?;
-        let data = renfe::Renfe.decode(spec.kind, bytes)?;
+        let data = adapter.decode(spec.kind, bytes)?;
         let n = match &data {
             source::FeedData::Vehicles(v) => v.len(),
             source::FeedData::TripUpdates(u) => u.len(),
@@ -294,9 +326,11 @@ impl Engine {
     #[wasm_bindgen(js_name = statsJson)]
     pub fn stats_json(&self, now_ms: f64) -> String {
         let views = self.live.views(&self.net, secs(now_ms), false);
-        let live = views
-            .iter()
-            .filter(|v| v.source != PositionSource::Scheduled);
+        // Live: GPS trains, and timetable-placed ones with a live delay (the UK).
+        let live = views.iter().filter(|v| {
+            v.source != PositionSource::Scheduled
+                || self.live.trains[v.index].delay_source.is_some()
+        });
         let s = stats::compute(live.map(|v| v.delay));
         let scheduled = views.len() - s.trains;
         let mut out = String::new();

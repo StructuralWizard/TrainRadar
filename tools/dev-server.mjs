@@ -99,6 +99,12 @@ function send(res, status, text) {
 
 createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
+  // The UK's feeds (plan 3): static fixture files in $FIXTURES/uk/
+  // (status.json, trip_updates.pb, incidents.json), like backend-uk writes.
+  if (url.pathname.startsWith("/uk/rt/")) {
+    if (!FIXTURES) return send(res, 404, "no UK fixtures");
+    return sendFile(res, join(FIXTURES, "uk"), url.pathname.slice("/uk/rt/".length));
+  }
   if (url.pathname.startsWith("/rt/")) {
     const path = url.pathname.slice(4);
     // Like the central poller's status.json (backend/), from the fixtures'

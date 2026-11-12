@@ -5,9 +5,10 @@ from `backend/` (Spain) so a UK problem never touches Renfe's poller or recorder
 
 Every minute a Durable Object alarm:
 
-1. **Drains** the durable subscription `trainradar-uk` on `TRAIN_MVT_ALL_TOC` (`drain.js`):
+1. **Drains** the durable subscription `trainradar-uk-2` on `TRAIN_MVT_ALL_TOC` (`drain.js`):
    connect to `publicdatafeeds.networkrail.co.uk:61618` (STOMP, ActiveMQ Artemis), log in
-   with `client-id: trainradar-uk`, subscribe with `durable-subscription-name`, read what the
+   with `client-id: trainradar-uk-2` and `heart-beat: 5000,0` (a newline every 5 s while
+   connected), subscribe with `durable-subscription-name`, read what the
    broker queued since the last minute until it's quiet (≤ 25 s), disconnect. The broker
    keeps queueing while we're away, so nothing is lost between minutes or across restarts.
 2. **Updates the trains** (`trust.js`): an activation links TRUST's `train_id` to its schedule
@@ -50,3 +51,14 @@ A failed drain (login refused, network) keeps the last `trip_updates.pb` and say
 messages in their real shape, the GTFS-Realtime encoding (decoded back), a drain on a fake
 broker (durable headers, never unsubscribes), and a full cycle writing to a fake bucket,
 including a refused login.
+
+## Heart-beats and the old subscription
+
+The first version connected without heart-beats. A redeploy that stopped the Worker in the
+middle of a drain left its connection open on the broker, which then kept the client-id
+`trainradar-uk` taken: every login after it failed with `AMQ339009 Exception getting
+session` (2026-11-12, 21:08 onwards). Now the Worker promises a heart-beat every 5 s and
+sends one, so the broker drops a lost connection within seconds. The subscription moved to
+`trainradar-uk-2`; the cycle tries (at most every 10 minutes) to remove the old one
+(`OLD_SUBSCRIPTIONS`), so the broker stops queueing for it, and records when it has
+(`oldSubscriptionsRemoved` in `status.json`).

@@ -51,6 +51,11 @@ const XML = `<?xml version="1.0" encoding="utf-8"?>
     <Planned>true</Planned><Summary>Old works</Summary>
   </PtIncident>
   <PtIncident>
+    <IncidentNumber>LATER</IncidentNumber>
+    <ValidityPeriod><com:StartTime>2027-03-01T00:00:00Z</com:StartTime><com:EndTime>2027-03-02T00:00:00Z</com:EndTime></ValidityPeriod>
+    <Planned>true</Planned><Summary>Works next March</Summary>
+  </PtIncident>
+  <PtIncident>
     <IncidentNumber>CLEARED</IncidentNumber><ClearedIncident>true</ClearedIncident>
     <Planned>false</Planned><Summary>Cleared</Summary>
   </PtIncident>
@@ -60,7 +65,7 @@ const NOW = Date.parse("2026-11-12T21:00:00Z");
 
 test("kb: parses NRE incident v5 XML", () => {
   const list = parseIncidents(XML);
-  assert.equal(list.length, 4);
+  assert.equal(list.length, 5);
   const [a, b] = list;
   assert.equal(a.id, "C9289151915F4695BE0B50DC85518B83");
   assert.match(a.summary, /^Bransty Tunnel track renewal/);

@@ -153,7 +153,9 @@ export class Feeds {
 
   /** Time of the most recent successful vehicle-position update. */
   lastUpdate() {
-    return Math.max(0, ...this.feeds.filter((f) => f.key.startsWith("vp")).map((f) => f.last));
+    // The UK has no positions feed (plan 3): its trip updates then.
+    const vp = this.feeds.filter((f) => f.key.startsWith("vp"));
+    return Math.max(0, ...(vp.length ? vp : this.feeds).map((f) => f.last));
   }
 
   /** Last-Modified (ms) of a feed, as reported by Renfe, if known. */

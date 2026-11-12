@@ -40,6 +40,7 @@ jobs:
         id: decide
         env:
           EVENT: ${{ github.event_name }}
+          UK_ENABLED: ${{ vars.UK_ENABLED }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -59,6 +60,9 @@ jobs:
           # The data covers yesterday + 7 days; refresh at least every 3 days.
           start=$(echo "$deployed" | jq -r '.window_start')
           if [ "$(date -u -d "$start + 3 days" +%s)" -lt "$(date -u +%s)" ]; then changed=true; fi
+          # The UK's timetable changes every day (short-term changes,
+          # cancellations): with the UK on, rebuild daily.
+          if [ "$UK_ENABLED" = "true" ]; then changed=true; fi
           echo "run=$changed" >> "$GITHUB_OUTPUT"
 
   deploy:
@@ -138,6 +142,37 @@ jobs:
             --sources gtfs/sources.tsv --report refdata.md
           cargo run --release -q -p trainradar-refdata-build -- verify build/data
           cat refdata.md >> "$GITHUB_STEP_SUMMARY"
+
+      # The UK (plan 3), with UK_ENABLED: Network Rail's timetable, NaPTAN and
+      # Great Britain's OSM track → data/uk/. A UK failure never stops
+      # Spain's deploy: the site then just has no (or the previous) UK data.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.UK_ENABLED == 'true'
+        id: osm_uk
+        with:
+          path: gtfs/uk/rail.geojsonseq
+          key: osm-rail-uk-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-uk-v1-
+      - name: UK reference data
+        if: vars.UK_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
+          NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
+          OSM_CACHED: ${{ steps.osm_uk.outputs.cache-hit }}
+        run: |
+          [ "$OSM_CACHED" = "true" ] || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-uk.sh | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/uk-data --gzip \
+              --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
+              --rail gtfs/uk/rail.geojsonseq --report refdata-uk.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/uk-data; then
+            mv build/uk-data build/data/uk
+            { echo "## UK reference data"; echo; cat refdata-uk.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::UK reference data failed: deploying Spain only."
+            exit 1
+          fi
 
       - name: Cloudflare names
         id: urls

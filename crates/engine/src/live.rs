@@ -160,16 +160,25 @@ pub const GHOST_FROZEN_SECS: i64 = 3_600;
 /// ...when its trip should have ended this long ago is left off the map.
 pub const GHOST_AFTER_END_SECS: i64 = 1_800;
 
-/// Trains of timetable-only operators (no live feed) that should be running
-/// now, placed by their timetable.
-fn scheduled_trains(net: &Network, now: i64) -> Vec<LiveTrain> {
+/// Trains placed by their timetable that should be running now: those of
+/// operators with no live feed (OUIGO), and the UK's, which have a live
+/// delay (`updates`, by trip id) but no position. A delay shifts the run;
+/// a run cancelled in its trip update is left off the map.
+fn scheduled_trains(
+    net: &Network,
+    now: i64,
+    updates: &HashMap<&str, &RtTripUpdate>,
+) -> Vec<LiveTrain> {
+    use crate::networkrail::{behind_madrid_secs, placed_by_timetable};
     use trainradar_proto::time::{madrid_day, service_day_base};
-    let today = madrid_day(now);
     let mut out = Vec::new();
     for (ri, r) in net.regions.iter().enumerate() {
-        if r.tt.live {
+        if !placed_by_timetable(&r.tt.region, r.tt.live) {
             continue;
         }
+        // Timetable times are local: an hour behind Madrid in the UK.
+        let behind = behind_madrid_secs(&r.tt.region);
+        let today = madrid_day(now - behind);
         for (ti, trip) in r.tt.trips.iter().enumerate() {
             let tref = crate::network::TripRef {
                 region: ri as u16,
@@ -177,20 +186,27 @@ fn scheduled_trains(net: &Network, now: i64) -> Vec<LiveTrain> {
             };
             let st = net.schedule(tref);
             let dur = st.last().map_or(0, |s| i64::from(s.arrival));
+            let trip_id = r.tt.trip_id(trip);
+            let tu = r.tt.live.then(|| updates.get(trip_id.as_str())).flatten();
+            if tu.is_some_and(|u| u.canceled) {
+                continue;
+            }
+            let delay = tu.and_then(|u| u.delay);
+            let late = i64::from(delay.unwrap_or(0).max(0));
             for day in [today - 1, today] {
                 let bit = day - i64::from(r.tt.header.window_start_day);
                 if !(0..16).contains(&bit) || trip.days & (1 << bit) == 0 {
                     continue;
                 }
-                let start = service_day_base(day) + i64::from(trip.start);
-                if now < start || now > start + dur {
+                let start = service_day_base(day) + behind + i64::from(trip.start);
+                if now < start || now > start + dur + late {
                     continue;
                 }
                 let first =
                     r.tt.stops[r.tt.patterns[trip.pattern as usize].stops[0] as usize].coord();
                 out.push(LiveTrain {
                     rt: RtVehicle {
-                        trip_id: r.tt.trip_id(trip),
+                        trip_id: trip_id.clone(),
                         train_number: crate::network::train_number(trip),
                         line: r.tt.routes[trip.route as usize].short_name.clone(),
                         platform: None,
@@ -211,8 +227,8 @@ fn scheduled_trains(net: &Network, now: i64) -> Vec<LiveTrain> {
                     }),
                     fix_time: now,
                     fix_along: Some(0.0),
-                    delay: None,
-                    delay_source: None,
+                    delay,
+                    delay_source: delay.map(|_| DelaySource::TripUpdate),
                     canceled: false,
                     still_since: now,
                     last_fix: now,
@@ -518,7 +534,7 @@ impl Live {
             }
         }
         let mut trains = dedupe(trains);
-        trains.extend(scheduled_trains(net, now));
+        trains.extend(scheduled_trains(net, now, &updates));
         self.trains = trains;
     }
 
@@ -563,7 +579,8 @@ fn view(net: &Network, index: usize, t: &LiveTrain, now: i64) -> TrainView {
     let delay = f64::from(t.delay.unwrap_or(0));
     let rel = |x: i64| (x - m.start_utc) as f64;
     if t.scheduled {
-        let along = crate::schedule::dist_at(st, rel(now));
+        // Where the timetable puts it, shifted by its live delay (UK).
+        let along = crate::schedule::dist_at(st, rel(now) - delay);
         let Some((coord, bearing)) = net.point_at(m.trip, along) else {
             return raw;
         };
@@ -575,8 +592,8 @@ fn view(net: &Network, index: usize, t: &LiveTrain, now: i64) -> TrainView {
             fix_age_secs: 0,
             source: PositionSource::Scheduled,
             next_stop: next,
-            next_arrival: next.map(|i| m.start_utc + i64::from(st[i].arrival)),
-            speed: crate::schedule::scheduled_speed(st, rel(now))
+            next_arrival: next.map(|i| m.start_utc + i64::from(st[i].arrival) + delay as i64),
+            speed: crate::schedule::scheduled_speed(st, rel(now) - delay)
                 .map(|ms| (ms as f32 * 3.6, false)),
             ..raw
         };
@@ -937,6 +954,77 @@ mod tests {
         assert_eq!(v.delay, None);
         assert!((v.coord.lat - 40.35).abs() < 2e-3, "{:?}", v.coord);
         assert_eq!(live.trains[0].rt.trip_id, "1004D100C3");
+    }
+
+    #[test]
+    fn uk_trains_run_on_london_time_shifted_by_their_trust_delay() {
+        use crate::network::tests::sample_timetable;
+        use crate::source::RtTripUpdate;
+        let mut tt = sample_timetable();
+        tt.region = "uk".into();
+        tt.operator = "National Rail".into();
+        // Trip ids as refdata-build writes them for Network Rail.
+        for (t, id) in tt.trips.iter_mut().zip([
+            "C15016:2026-05-17:P",
+            "C15017:2026-05-17:P",
+            "C15018:2026-05-17:O",
+        ]) {
+            t.service = None;
+            t.id_rest = id.into();
+        }
+        let mut net = crate::network::Network::default();
+        net.load_timetable(&trainradar_proto::encode(&tt).unwrap())
+            .unwrap();
+        // 08:05 in London is 09:05 in Madrid: C15016 (08:00) is halfway A→B,
+        // C15017 (08:10) hasn't started.
+        let now = local(9, 5);
+        let mut live = Live::default();
+        live.rebuild(&net, now);
+        let views = live.views(&net, now, false);
+        assert_eq!(views.len(), 1, "London time, not Madrid's");
+        assert_eq!(live.trains[0].rt.trip_id, "C15016:2026-05-17:P");
+        assert!(
+            (views[0].coord.lat - 40.35).abs() < 2e-3,
+            "{:?}",
+            views[0].coord
+        );
+        assert_eq!(views[0].delay, None);
+
+        // TRUST says 5 minutes late: it's still at A; the next train is
+        // cancelled; a delay for a trip we don't have is ignored.
+        let tu = |id: &str, delay: Option<i32>, canceled: bool| RtTripUpdate {
+            trip_id: id.into(),
+            delay,
+            canceled,
+            accessible: None,
+            stops: vec![],
+        };
+        live.ingest(
+            &net,
+            "tu_uk",
+            FeedData::TripUpdates(vec![
+                tu("C15016:2026-05-17:P", Some(300), false),
+                tu("C15017:2026-05-17:P", None, true),
+                tu("X99999:2026-05-17:O", Some(60), false),
+            ]),
+            now,
+        );
+        let views = live.views(&net, now, false);
+        assert_eq!(views.len(), 1);
+        assert_eq!(views[0].delay, Some(Delay(300)));
+        assert!(
+            (views[0].coord.lat - 40.40).abs() < 2e-3,
+            "at A: {:?}",
+            views[0].coord
+        );
+        assert_eq!(views[0].source, PositionSource::Scheduled);
+        assert_eq!(live.trains[0].delay_source, Some(DelaySource::TripUpdate));
+        // At 08:15 London C15017 would be running, but it's cancelled; and
+        // C15016, due at C at 08:21, is kept 5 minutes longer than planned.
+        let later = local(9, 25);
+        live.rebuild(&net, later);
+        let ids: Vec<_> = live.trains.iter().map(|t| t.rt.trip_id.as_str()).collect();
+        assert_eq!(ids, ["C15016:2026-05-17:P"], "{ids:?}");
     }
 
     #[test]
