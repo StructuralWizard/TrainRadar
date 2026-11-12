@@ -41,6 +41,7 @@ import { MAX_COMMUTES, activeCommute, emptyCommutes, parseCommutes, removeActive
 import { CLAIMS_URL, TRIPS_KEY, activeTrip, claimText, completeFromRun, monthlyStats, needsArrival, parseTrips, runForTrip, serializeTrips, startTrip, tripsCsv, updateTrip } from "./js/trips.js";
 import {
   delayedItem,
+  favCommutes,
   favouritesPanel,
   settingsPanel,
   tripsPanel,
@@ -49,6 +50,7 @@ import {
   claimBox,
   el,
   incidentsPanel,
+  noticesHistoryPanel,
   legend,
   serviceLegend,
   nearPanel,
@@ -522,6 +524,7 @@ function renderIncidents() {
   }));
   map?.getSource("incidents")?.setData({ type: "FeatureCollection", features });
   if ($("incidents").hidden) return;
+  if (noticesHist) return renderNoticesHistory();
   $("inc-body").replaceChildren(
     ...incidentsPanel(lang, {
       list: incidents,
@@ -543,6 +546,77 @@ function renderIncidents() {
   }
   const chips = noticeChips();
   if (chips) $("inc-body").prepend(chips);
+  // Notices history (Android): past days' notices; without Pro, the offer.
+  if (CONFIG.platform === "android" && replaySource()) {
+    $("inc-body").prepend(
+      el(
+        "button",
+        { class: "pill small", type: "button", id: "notices-history-btn", onclick: () => (CONFIG.pro ? openNoticesHistory() : (openSheet("settings"), renderSettings())) },
+        icon("replay", 16),
+        ` ${t(lang, "noticesHistoryBtn")}`,
+        CONFIG.pro ? null : el("span", { class: "pro-tag" }, "Pro"),
+      ),
+    );
+  }
+}
+
+/**
+ * Notices history (TrainRadar Pro): the Renfe notices the recorder saw on a
+ * past day (backend/src/notices.js), in the Avisos sheet.
+ */
+let noticesHist = null; // { day, min, state, doc }
+
+async function openNoticesHistory(day = null) {
+  const today = msToMadrid(Date.now()).date;
+  if (!noticesHist) {
+    noticesHist = { day: today, min: CONFIG.historySince, state: "loading", doc: null };
+    fetch(`${replaySource()}notices/first.json`, { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((f) => {
+        if (noticesHist && f?.day) {
+          noticesHist.min = f.day;
+          renderNoticesHistory();
+        }
+      })
+      .catch(() => {});
+  }
+  const h = noticesHist;
+  h.day = day || h.day;
+  h.state = "loading";
+  h.doc = null;
+  renderNoticesHistory();
+  try {
+    const r = await fetch(`${replaySource()}notices/${h.day}.json`, { cache: h.day === today ? "no-cache" : "default" });
+    if (noticesHist !== h || h.day !== (day || h.day)) return;
+    h.doc = r.ok ? await r.json() : null;
+    h.state = r.ok || r.status === 404 ? "ok" : "error";
+  } catch {
+    if (noticesHist !== h) return;
+    h.state = "error";
+  }
+  renderNoticesHistory();
+}
+
+function renderNoticesHistory() {
+  const h = noticesHist;
+  if (!h || $("incidents").hidden) return;
+  $("inc-body").replaceChildren(
+    ...noticesHistoryPanel(lang, {
+      day: h.day,
+      min: h.min,
+      max: msToMadrid(Date.now()).date,
+      state: h.state,
+      doc: h.doc,
+      regionName,
+      onDay: (d) => openNoticesHistory(d),
+      onLive: () => {
+        noticesHist = null;
+        renderIncidents();
+      },
+      onStop: (st) => flyToVisible(st.lon, st.lat, 13),
+    }),
+  );
+  $("incidents").scrollTop = 0;
 }
 
 /** The Notices filter for a commute (Pro): notices at any station between
@@ -632,6 +706,7 @@ function noticeChips() {
 
 function showIncidents(filter = null) {
   incFilter = filter;
+  noticesHist = null; // the live notices first
   openSheet("incidents");
   renderIncidents();
 }
@@ -1016,6 +1091,7 @@ async function refreshEntitlement() {
     if (!next.pro && alertsOn) setAlerts(false);
     appNative.refreshWidget().catch(() => {});
   }
+  $("pro-chip").hidden = !next.pro;
   renderSettings();
   renderMore();
 }
@@ -1441,6 +1517,22 @@ function renderFavourites() {
       limit: favLimit(),
     }),
   );
+  // Usual commutes (Android): first with Pro, else the offer at the end.
+  if (CONFIG.platform !== "android") return;
+  const c = favCommutes(lang, {
+    list: commutes.list,
+    active: commutes.active,
+    pro: CONFIG.pro,
+    onOpen: (i) => {
+      saveCommutes(selectCommute(commutes, i));
+      openSheet("commute");
+      renderCommute();
+    },
+    onAdd: () => (openSheet("commute"), renderCommute()),
+    onPro: () => (openSheet("settings"), renderSettings()),
+  });
+  if (CONFIG.pro) $("favs-body").prepend(...c, el("h3", { class: "group-h" }, t(lang, "favItems")));
+  else $("favs-body").append(...c);
 }
 
 /** Open what a link asks for (app link or the web's ?train= / ?station=). */
@@ -1458,14 +1550,18 @@ function openLink(link) {
 
 /** Android back button: close the top-most thing; false when nothing was open. */
 function goBack() {
+  // The moviola hides the sheets: Back acts on it, not on a hidden sheet.
+  if (replay) {
+    if (replayPop?.isOpen()) replayPop.remove();
+    else stopReplay();
+    return true;
+  }
   if (isPhone() && sheets.back()) return true;
   const sheet = SHEETS.map($).find((x) => !x.hidden);
   if (sheet) return (sheet.hidden = true), true;
   if (popup) return popup.remove(), true;
   if (stationPop?.isOpen()) return stationPop.remove(), true;
   if (!$("search-results").hidden) return ($("search-results").hidden = true), true;
-  if (replayPop?.isOpen()) return replayPop.remove(), true;
-  if (replay) return stopReplay(), true;
   return false;
 }
 
@@ -1853,6 +1949,7 @@ function phoneChrome() {
   $("legend-chip").replaceChildren(dot("#16a34a", "<5"), dot("#ea8a0c", "5–14"), dot("#dc2626", "15+"));
   $("legend-chip").setAttribute("aria-label", t(lang, "legendChipLabel"));
   $("legend-chip").setAttribute("role", "img");
+  $("pro-chip").setAttribute("aria-label", t(lang, "proChipLabel"));
   $("fab-layers").replaceChildren(icon("layers", 22));
   $("fab-layers").setAttribute("aria-label", t(lang, "layers"));
   $("fab-locate").replaceChildren(icon("locate", 22));
@@ -2376,6 +2473,7 @@ function render(force = false) {
  */
 let replay = null; // { data, t (ms), playing, speed, since, last, busy }
 const REPLAY_SPEEDS = [1, 10, 60, 300];
+const REPLAY_STEP = 5 * 60_000; // ⏪ / ⏩: five minutes
 
 const replaySource = () => CONFIG.replayBase || replayRoot(CONFIG.liveBase);
 
@@ -2475,7 +2573,7 @@ function renderReplayBar() {
     el(
       "div",
       { class: "row" },
-      el("strong", { class: "grow" }, `⏪ ${t(lang, "replayTitle")}`),
+      el("strong", { class: "grow" }, t(lang, "replayTitle")),
       el("button", { class: "pill small", type: "button", id: "replay-live", onclick: stopReplay }, t(lang, "replayLive")),
     ),
     el(
@@ -2483,6 +2581,11 @@ function renderReplayBar() {
       { class: "row" },
       el("input", { type: "date", id: "replay-date", value: date, min, max: today, "aria-label": t(lang, "replayDate"), onchange: (e) => e.target.value && setReplayTime(madridToMs(e.target.value, $("replay-time").value || time)) }),
       el("input", { type: "time", id: "replay-time", value: time, "aria-label": t(lang, "replayTime"), onchange: (e) => e.target.value && setReplayTime(madridToMs($("replay-date").value || date, e.target.value)) }),
+    ),
+    el(
+      "div",
+      { class: "row" },
+      el("button", { class: "pill small", type: "button", id: "replay-back", "aria-label": t(lang, "replayBack"), title: t(lang, "replayBack"), onclick: () => setReplayTime(replay.t - REPLAY_STEP) }, "⏪"),
       el(
         "button",
         {
@@ -2498,6 +2601,7 @@ function renderReplayBar() {
         },
         replay.playing ? "⏸" : "▶",
       ),
+      el("button", { class: "pill small", type: "button", id: "replay-fwd", "aria-label": t(lang, "replayForward"), title: t(lang, "replayForward"), onclick: () => setReplayTime(replay.t + REPLAY_STEP) }, "⏩"),
       ...REPLAY_SPEEDS.map((x) =>
         el(
           "button",
@@ -2816,6 +2920,7 @@ $("more-close").addEventListener("click", () => ($("more").hidden = true));
 $("net-chip").addEventListener("click", () => openNetworks());
 // The delay key chip opens the full key (in Capas).
 $("legend-chip").addEventListener("click", () => openLayers());
+$("pro-chip").addEventListener("click", () => (openSheet("settings"), renderSettings()));
 $("fab-layers").addEventListener("click", () => ($("layers-panel").hidden ? openLayers() : ($("layers-panel").hidden = true)));
 $("networks-close").addEventListener("click", () => ($("networks").hidden = true));
 $("route-close").addEventListener("click", () => ($("route").hidden = true));

@@ -77,6 +77,12 @@ test("records demo trains: summary, runs in progress, finished runs in D1, resta
   // Replay: this minute's frame, kept for the hour file.
   assert.ok(core.replay.hour.frames.length === 1 && core.replay.hour.trains.length > 0, "replay frame");
   await core.replay.flush();
+  // Notices history: the demo's alerts, in today's (Madrid) file.
+  assert.equal(first.res.noticesError, undefined);
+  assert.ok(first.res.notices?.notices > 0, JSON.stringify(first.res.notices));
+  const nkey = [...live.objects.keys()].find((k) => /^notices\/\d{4}-\d\d-\d\d\.json$/.test(k));
+  const ndoc = JSON.parse(await (await live.get(nkey)).text());
+  assert.ok(ndoc.notices.every((n) => typeof n.text === "string" && n.seen.length === 2), nkey);
   assert.ok([...live.objects.keys()].some((k) => /^replay\/\d{4}-\d\d-\d\d\/\d\d\.json\.gz$/.test(k)), [...live.objects.keys()].join(","));
   const status = JSON.parse(await (await live.get("rt/recorder.json")).text());
   assert.equal(status.ok, true);

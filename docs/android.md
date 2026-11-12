@@ -57,6 +57,16 @@ map opens without downloading them; live feeds come from the central bucket
   written by `backend/src/replay.js`) and are coloured by their delay then; tap one
   for its delay at that moment. Live drawing pauses meanwhile; "Volver al directo" or
   Back returns. Data from the first hour the recorder wrote (`replay/first.json`).
+  ⏪ and ⏩ go 5 minutes back and forward. In phone dark mode the replay bar and the
+  train's popup are dark too.
+- **Notices history (Pro):** Avisos → «Histórico de avisos». Pick a day: the Renfe
+  notices active that day (`notices/<date>.json`, written by `backend/src/notices.js`),
+  with when each was seen active. «Avisos actuales» returns. Without Pro the button
+  opens the Pro screen.
+- **Commutes in Favoritos (Pro):** the usual commutes are listed first in Favoritos;
+  tapping one opens its next trains. Without Pro, an offer at the end.
+- **Pro sticker:** with Pro, a small «PRO» badge sits next to the map chips; it opens
+  the Pro screen.
 - **Delay alerts (Pro):** ⓘ → TrainRadar Pro y ajustes → 🔔. Android asks for the
   notification permission then. Every 15 min (WorkManager, only with a network) the
   app reads the public `rt/summary.json` and notifies a favourite train once per level

@@ -53,6 +53,8 @@ ALLOWED_ORIGINS = "https://trainradar.pages.dev,https://mytrainradar.com,https:/
 RECORDER_ENABLED = "false"
 # Replay frames (backend/src/replay.js), with the recorder; "false" stops them.
 REPLAY_ENABLED = "true"
+# Notices history (TrainRadar Pro): notices/<date>.json, one file a day.
+NOTICES_ENABLED = "true"
 # Raw GPS log (backend/src/gpslog.js), with the recorder, in the private
 # bucket (gps/, deleted after 14 days); "false" stops it.
 GPS_LOG_ENABLED = "true"

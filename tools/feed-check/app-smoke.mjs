@@ -47,6 +47,9 @@ async function openTrain(number) {
   await page.waitForSelector(".popup .popup-title", { timeout: 5000 });
 }
 
+// No Pro sticker without Pro.
+if (await page.isVisible("#pro-chip")) await fail("Pro sticker without Pro");
+
 // Free edition: the same train details as the web (trains ahead and
 // behind, track), free in the app too.
 await openTrain(live[0]);
@@ -223,6 +226,7 @@ await pp.click("#more-about");
 await pp.click("#settings-btn");
 await pp.waitForSelector("#pro-state.pro-on");
 console.log("pro:", await pp.textContent("#pro-state"));
+if (!(await pp.isVisible("#pro-chip"))) await fail("no Pro sticker with Pro");
 await toMore();
 // Delay alerts: on → permission asked, background check scheduled, config
 // stored for it; favourites refreshed the widget.
@@ -278,6 +282,17 @@ const savedActive = await pp.evaluate(() => JSON.parse(localStorage.getItem("com
 if (savedActive !== 0) await fail(`active commute not saved: ${savedActive}`);
 console.log("commutes:", tabs.map((t) => t[0]).join(" | "));
 await pp.screenshot({ path: `${out}/app-commutes.png` });
+// …also in Favoritos: tapping one opens it.
+await pp.click("#commute-close");
+await pp.click("#tab-favs");
+await pp.waitForSelector("#favs:not([hidden]) #favs-commutes li", { timeout: 5000 }).catch(() => fail("commutes not in Favoritos"));
+const favCommutes = await pp.$$eval("#favs-commutes li", (l) => l.map((x) => x.textContent));
+if (favCommutes.length !== 2) await fail(`Favoritos commutes: ${favCommutes}`);
+await pp.screenshot({ path: `${out}/app-favs-commutes.png` });
+await pp.click("#favs-commutes li:nth-child(2) button");
+await pp.waitForFunction((name) => !document.getElementById("commute").hidden && document.querySelector("#commute-body strong")?.textContent.startsWith(name), back.from.name, { timeout: 5000 }).catch(() =>
+  fail("commute from Favoritos didn't open"),
+);
 
 // Replay (Pro): a made-up hour of three trains moving, served for any hour
 // asked (the recorder writes these files in production).
@@ -309,6 +324,27 @@ await pp.click("#replay-bar button:text-is('×300')");
 await pp.click("#replay-play");
 await pp.waitForFunction((t) => document.getElementById("replay-time").value !== t, at0, { timeout: 10000 }).catch(() => fail("replay didn't play"));
 await pp.click("#replay-play"); // pause
+// ⏪ / ⏩: five minutes back and forward.
+const mins = (v) => Number(v.slice(0, 2)) * 60 + Number(v.slice(3, 5));
+const before = await pp.inputValue("#replay-time");
+await pp.click("#replay-back");
+await pp.waitForFunction((t) => document.getElementById("replay-time").value !== t, before, { timeout: 5000 }).catch(() => fail("⏪ didn't go back"));
+const stepped = await pp.inputValue("#replay-time");
+if ((mins(before) - mins(stepped) + 1440) % 1440 !== 5) await fail(`⏪: ${before} → ${stepped}`);
+await pp.click("#replay-fwd");
+await pp.waitForFunction((t) => document.getElementById("replay-time").value === t, before, { timeout: 5000 }).catch(() => fail("⏩ didn't go forward"));
+// Phone dark mode: map popups (the replay's train) dark, text light.
+await pp.emulateMedia({ colorScheme: "dark" });
+const darkPop = await pp.evaluate(() => {
+  const d = Object.assign(document.createElement("div"), { className: "maplibregl-popup-content" });
+  d.append(Object.assign(document.createElement("div"), { className: "popup", textContent: "x" }));
+  document.body.append(d);
+  const out = [getComputedStyle(d).backgroundColor, getComputedStyle(d.firstChild).color];
+  d.remove();
+  return out;
+});
+await pp.emulateMedia({ colorScheme: "light" });
+if (darkPop[0] !== "rgb(17, 24, 39)" || darkPop[1] !== "rgb(243, 244, 246)") await fail(`dark popup colours: ${darkPop}`);
 console.log("replay:", await pp.textContent("#stats"), "| from", at0, "to", await pp.inputValue("#replay-time"));
 await pp.screenshot({ path: `${out}/app-replay.png` });
 // An hour with no file: no trains, and it says so.
@@ -334,6 +370,30 @@ await pp.waitForFunction(() => /Calatayud → Zaragoza-Delicias/.test(document.g
 console.log("commute added:", commutesBefore, "→", await pp.$$eval("#commute-body .commute-tabs button", (b) => b.length));
 await pp.screenshot({ path: `${out}/app-commute-added.png` });
 await pp.click("#commute-close");
+
+// Notices history (Pro): a past day's notices from the recorder's file.
+await pp.route("**/notices/**", (route) => {
+  const url = route.request().url();
+  if (url.endsWith("/notices/first.json")) return route.fulfill({ contentType: "application/json", body: JSON.stringify({ day: "2026-11-05" }) });
+  const m = url.match(/notices\/(\d{4}-\d\d-\d\d)\.json/);
+  if (!m || m[1] === "2026-11-06") return route.fulfill({ status: 404, body: "" });
+  const s = Date.parse(`${m[1]}T08:00:00Z`) / 1000;
+  const notices = [{ id: "n1", text: `Obras en Atocha (${m[1]})`, kind: "works", tags: [], lines: ["C3"], nucleos: [], stops: [{ id: "18000", name: "Madrid-Atocha", lat: 40.406, lon: -3.69 }], from: s, until: null, seen: [s, s + 3600] }];
+  return route.fulfill({ contentType: "application/json", body: JSON.stringify({ v: 1, day: m[1], notices }) });
+});
+await pp.click("#tab-incidents");
+await pp.click("#notices-history-btn", { timeout: 5000 }).catch(() => fail("no notices history button"));
+await pp.waitForFunction(() => /Obras en Atocha/.test(document.getElementById("inc-body").textContent), null, { timeout: 5000 }).catch(async () => fail(`notices history: ${await pp.textContent("#inc-body")}`));
+if ((await pp.getAttribute("#notices-day", "min")) !== "2026-11-05") await fail("notices history: first day not used");
+await pp.fill("#notices-day", "2026-11-06");
+await pp.waitForFunction(() => /No hay avisos registrados ese día/.test(document.getElementById("inc-body").textContent), null, { timeout: 5000 }).catch(() => fail("empty day not explained"));
+await pp.fill("#notices-day", "2026-11-07");
+await pp.waitForFunction(() => /Obras en Atocha \(2026-11-07\)/.test(document.getElementById("inc-body").textContent), null, { timeout: 5000 }).catch(() => fail("day change didn't load"));
+console.log("notices history:", (await pp.textContent("#inc-body")).replace(/\s+/g, " ").slice(0, 160));
+await pp.screenshot({ path: `${out}/app-notices-history.png` });
+await pp.click("#notices-live");
+await pp.waitForSelector("#notices-history-btn");
+await pp.click("#tab-incidents"); // back to the map
 
 // Search (Pro): a train number not on the map offers its history.
 await pp.click("#commute-close", { timeout: 2000 }).catch(() => {});
