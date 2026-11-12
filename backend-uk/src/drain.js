@@ -76,7 +76,9 @@ export async function drain({ open, login, passcode, onMessages, maxMs = 25_000,
     }
   } finally {
     session.disconnect();
-    await Promise.race([pump, sleep(1000)]);
+    // Wait for the connection to close, so the broker has let go of our
+    // client-id before the next minute's login (else AMQ339009).
+    await Promise.race([Promise.all([pump, sock.closed || Promise.resolve()]), sleep(5000)]);
   }
   return { frames, messages, bytes, ms: now() - t0, quiet: !closed && now() - t0 <= maxMs + 1000 };
 }

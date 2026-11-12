@@ -75,8 +75,10 @@ jobs:
             echo "::error::The UK ingest hasn't reported for $(( (now - at) / 60 )) minutes."
             exit 1
           fi
-          if [ "$(jq -r .ok uk.json)" != "true" ]; then
-            echo "::error::UK ingest error: $(jq -r '.error // "unknown"' uk.json | tr -cd '[:alnum:] .,_/()=-' | head -c 300)"
+          # One failed minute isn't an outage: alert after 5 minutes of failures.
+          since=$(jq -r '.failingSince // empty | sub("\\.[0-9]+Z$"; "Z") | fromdate' uk.json)
+          if [ "$(jq -r .ok uk.json)" != "true" ] && [ -n "$since" ] && [ $((now - since)) -gt 300 ]; then
+            echo "::error::UK ingest failing for $(( (now - since) / 60 )) minutes: $(jq -r '.error // "unknown"' uk.json | tr -cd '[:alnum:] .,_/()=-' | head -c 300)"
             exit 1
           fi
           echo "UK ingest reporting: $(jq -r .trains uk.json) trains, $(jq -r .published uk.json) trip updates." >> "$GITHUB_STEP_SUMMARY"
