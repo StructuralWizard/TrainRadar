@@ -3,6 +3,7 @@
 # gtfs/uk/ (gitignored):
 #   schedule.json.gz  Network Rail SCHEDULE, full daily extract (needs the
 #                     login: NETWORK_RAIL_USERNAME / NETWORK_RAIL_PASSWORD)
+#   corpus.json.gz    Network Rail CORPUS (location codes; same login)
 #   naptan.csv        NaPTAN stops (public; rail stations give coordinates)
 #   rail.geojsonseq   OpenStreetMap track in Great Britain (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -26,6 +27,13 @@ printf 'user = "%s:%s"\n' "$(esc "$NETWORK_RAIL_USERNAME")" "$(esc "$NETWORK_RAI
     "https://publicdatafeeds.networkrail.co.uk/ntrod/CifFileAuthenticate?type=CIF_ALL_FULL_DAILY&day=toc-full"
 mv gtfs/uk/schedule.json.gz.part gtfs/uk/schedule.json.gz
 echo "schedule.json.gz: $(du -h gtfs/uk/schedule.json.gz | cut -f1) in $((SECONDS - start)) s"
+
+# CORPUS: the TIPLOCs of each STANOX, to place calls at a station's other TIPLOCs.
+printf 'user = "%s:%s"\n' "$(esc "$NETWORK_RAIL_USERNAME")" "$(esc "$NETWORK_RAIL_PASSWORD")" |
+  curl -fsSL --retry 4 --retry-delay 15 --config - -o gtfs/uk/corpus.json.gz.part \
+    "https://publicdatafeeds.networkrail.co.uk/ntrod/SupportingFileAuthenticate?type=CORPUS"
+mv gtfs/uk/corpus.json.gz.part gtfs/uk/corpus.json.gz
+echo "corpus.json.gz: $(du -h gtfs/uk/corpus.json.gz | cut -f1)"
 
 start=$SECONDS
 curl -fsSL --retry 4 --retry-delay 15 -o gtfs/uk/naptan.csv.part \

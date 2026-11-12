@@ -20,7 +20,8 @@ use trainradar_proto::geo::haversine_m;
 /// Kind of track, from its own OSM tags (never from the trains that use it).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Kind {
-    /// `highspeed=yes`, or standard gauge (1435 mm) in Spain.
+    /// `highspeed=yes`, or standard gauge (1435 mm) in Spain (not elsewhere:
+    /// in France and Great Britain it's the ordinary network).
     Av,
     /// Iberian gauge (1668 mm), and standard gauge outside Spain.
     Conv,
@@ -186,7 +187,8 @@ pub fn classify(props: &serde_json::Value, first: LatLon) -> std::result::Result
         // commuter line; in France it's the ordinary network.
         let fgc =
             tag(props, "operator").contains("Generalitat") || tag(props, "name").starts_with("FGC");
-        if in_france(first) || fgc {
+        // Outside Iberia (France, Great Britain) standard gauge is ordinary track.
+        if first.lat > 44.0 || in_france(first) || fgc {
             Kind::Conv
         } else {
             Kind::Av
@@ -767,6 +769,26 @@ mod tests {
             MADRID,
         );
         assert_eq!(hs_iberian.unwrap().kind, Kind::Av, "highspeed=yes wins");
+        // Great Britain: standard gauge is ordinary track; HS1 is tagged highspeed.
+        let london = LatLon::new(51.53, -0.12);
+        let york = LatLon::new(53.96, -1.09);
+        for p in [london, york] {
+            assert_eq!(
+                c(json!({"railway": "rail", "gauge": "1435"}), p)
+                    .unwrap()
+                    .kind,
+                Kind::Conv
+            );
+        }
+        assert_eq!(
+            c(
+                json!({"railway": "rail", "gauge": "1435", "highspeed": "yes"}),
+                london
+            )
+            .unwrap()
+            .kind,
+            Kind::Av
+        );
         let third_rail = c(json!({"railway": "rail", "gauge": "1435;1668"}), MADRID).unwrap();
         assert_eq!((third_rail.kind, third_rail.mixed), (Kind::Conv, true));
         assert_eq!(

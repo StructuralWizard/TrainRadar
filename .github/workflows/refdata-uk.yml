@@ -47,7 +47,7 @@ jobs:
       - name: Build .bin files
         run: |
           target/release/refdata-build build --out build/uk --gzip \
-            --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv \
+            --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
             --rail gtfs/uk/rail.geojsonseq --report refdata-uk.md 2> build.log || { tail -50 build.log; exit 1; }
           tail -20 build.log
           target/release/refdata-build verify build/uk
