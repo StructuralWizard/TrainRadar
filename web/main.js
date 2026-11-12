@@ -52,6 +52,7 @@ import {
   el,
   incidentsPanel,
   ukIncidentsPanel,
+  upcomingSection,
   noticesHistoryPanel,
   legend,
   serviceLegend,
@@ -531,6 +532,7 @@ function openSheet(id) {
 /** Refresh the notices button, map markers and (if open) the panel. */
 /** The UK's notices (uk/rt/incidents.json, plan 3): refreshed every 5 minutes. */
 let ukIncidents = null;
+let upcomingView = { operator: "", all: false }; // "Próximas obras" filter (UK)
 async function loadUkIncidents() {
   try {
     const r = await fetch(`${CONFIG.liveBase}incidents.json?t=${Math.floor(Date.now() / 120_000)}`);
@@ -550,7 +552,21 @@ function renderUkIncidents() {
     badge.textContent = n > 99 ? "99+" : String(n);
     $("tab-incidents").setAttribute("aria-label", n ? `${t(lang, "tabNotices")}: ${t(lang, "noticesCount", { n })}` : t(lang, "tabNotices"));
   }
-  if (!$("incidents").hidden) $("inc-body").replaceChildren(...ukIncidentsPanel(lang, ukIncidents));
+  if (!$("incidents").hidden) {
+    $("inc-body").replaceChildren(
+      ...ukIncidentsPanel(lang, ukIncidents, {
+        ...upcomingView,
+        onOperator: (code) => {
+          upcomingView = { operator: code, all: false };
+          renderIncidents();
+        },
+        onAll: () => {
+          upcomingView.all = true;
+          renderIncidents();
+        },
+      }),
+    );
+  }
 }
 
 function renderIncidents() {
@@ -602,6 +618,9 @@ function renderIncidents() {
   if (!incidents.length && !feeds?.modified("alerts")) {
     $("inc-body").prepend(el("p", { class: "muted" }, t(lang, "incidentsLoading")));
   }
+  // "Próximas obras" (free): Renfe's notices that haven't started yet.
+  const upcoming = engine ? JSON.parse(engine.upcomingIncidentsJson(Date.now())) : [];
+  $("inc-body").append(...upcomingSection(lang, upcoming, regionName, (st) => flyToVisible(st.lon, st.lat, 13)));
   const chips = noticeChips();
   if (chips) $("inc-body").prepend(chips);
   // Notices history (Android): past days' notices; without Pro, the offer.

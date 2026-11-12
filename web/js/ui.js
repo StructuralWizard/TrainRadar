@@ -1035,7 +1035,7 @@ export function noticesHistoryPanel(lang, { day, min, max, state, doc, regionNam
  * loading. The credit to the Rail Delivery Group and the accuracy notice
  * come with the data, as its licence asks.
  */
-export function ukIncidentsPanel(lang, doc) {
+export function ukIncidentsPanel(lang, doc, up = {}) {
   const out = [];
   if (!doc) return [el("p", { class: "muted" }, t(lang, "ukIncidentsLoading"))];
   const list = doc.incidents || [];
@@ -1071,8 +1071,71 @@ export function ukIncidentsPanel(lang, doc) {
       ),
     ),
   );
+  out.push(...ukUpcoming(lang, doc.upcoming || [], up));
   out.push(el("p", { class: "small muted", id: "uk-incidents-source" }, `${doc.notice || ""} ${t(lang, "ukSource", { source: doc.source || "" })}`));
   return out;
+}
+
+/** How many upcoming works show before "Ver todas". */
+export const UPCOMING_SHOWN = 20;
+
+/**
+ * "Próximas obras" (UK, free): National Rail's planned works starting after
+ * the next three days, soonest first; filter by operator. `up`: { operator,
+ * onOperator(code), all, onAll }.
+ */
+function ukUpcoming(lang, list, up) {
+  if (!list.length) return [];
+  const ops = new Map();
+  for (const i of list) for (const o of i.operators || []) if (o.code) ops.set(o.code, o.name || o.code);
+  const shown = up.operator ? list.filter((i) => (i.operators || []).some((o) => o.code === up.operator)) : list;
+  const visible = up.all ? shown : shown.slice(0, UPCOMING_SHOWN);
+  const pick = el(
+    "select",
+    { id: "upcoming-operator", class: "upcoming-filter", "aria-label": t(lang, "upcomingOperator"), onchange: (e) => up.onOperator?.(e.target.value) },
+    el("option", { value: "" }, t(lang, "upcomingAllOperators")),
+    [...ops].sort((a, b) => a[1].localeCompare(b[1])).map(([code, name]) => el("option", { value: code, selected: code === up.operator }, name)),
+  );
+  return [
+    el("h3", { id: "upcoming-h" }, t(lang, "upcomingTitle"), " ", el("span", { class: "muted small" }, `(${shown.length})`)),
+    el("p", { class: "small muted" }, t(lang, "upcomingNoteUk")),
+    pick,
+    el(
+      "ul",
+      { class: "incidents upcoming", id: "uk-upcoming" },
+      visible.map((i) =>
+        el(
+          "li",
+          {},
+          el(
+            "div",
+            { class: "incident-meta" },
+            el("span", { class: "chip chip-kind kind-works" }, i.from ? formatDay(lang, i.from) : ""),
+            (i.operators || []).map((o) => el("span", { class: "chip" }, o.name || o.code)),
+            i.until ? el("span", { class: "muted" }, t(lang, "untilDate", { date: formatDay(lang, i.until) })) : null,
+          ),
+          el("p", { class: "incident-text" }, i.summary || ""),
+          i.routes ? el("p", { class: "small muted" }, i.routes) : null,
+          /^https:\/\/www\.nationalrail\.co\.uk\//.test(i.url || "")
+            ? el("a", { class: "small", href: i.url, target: "_blank", rel: "noopener" }, t(lang, "ukMore"))
+            : null,
+        ),
+      ),
+    ),
+    shown.length > visible.length
+      ? el("button", { class: "pill small", type: "button", id: "upcoming-all", onclick: up.onAll }, t(lang, "upcomingAll", { n: shown.length }))
+      : null,
+  ];
+}
+
+/** "Próximas obras" (Spain, free): Renfe's notices that haven't started yet. */
+export function upcomingSection(lang, list, regionName, onStop) {
+  if (!list.length) return [];
+  return [
+    el("h3", { id: "upcoming-h" }, t(lang, "upcomingTitle"), " ", el("span", { class: "muted small" }, `(${list.length})`)),
+    el("p", { class: "small muted" }, t(lang, "upcomingNoteEs")),
+    incidentList(lang, list, regionName, onStop),
+  ];
 }
 
 /** Trains stopped between stations, grouped by section to flag likely problems. */

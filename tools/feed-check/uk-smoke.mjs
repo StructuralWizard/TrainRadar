@@ -5,7 +5,8 @@
 //   cancelled in its trip update is not on the map;
 // - the train sheet says the position is estimated;
 // - the network picker offers España / Reino Unido; Avisos shows National
-//   Rail's notices with the Rail Delivery Group credit; the map credits
+//   Rail's notices with the Rail Delivery Group credit, and "Próximas obras"
+//   (planned works further ahead, free); the map credits
 //   Network Rail (OGL);
 // - the choice is remembered, and España goes back to Spain.
 //
@@ -69,6 +70,11 @@ if ((await page.$$("#uk-incidents li")).length !== 2) await fail(`notices: ${not
 if (!/Rail Delivery Group/.test(notices) || !/out of date|desactualizada|out of date/i.test(notices)) await fail(`credit/notice missing: ${notices.slice(-300)}`);
 if ((await page.textContent("#inc-title")).trim() !== "Avisos de National Rail") await fail("sheet title");
 if ((await page.textContent("#tab-incidents-n")).trim() !== "2") await fail("notice count badge");
+// "Próximas obras" (free): planned works further ahead, with an operator filter.
+const upcoming = await page.$$eval("#uk-upcoming li", (l) => l.map((x) => x.textContent));
+if (upcoming.length !== 1 || !/Works next March/.test(upcoming[0])) await fail(`upcoming: ${JSON.stringify(upcoming)}`);
+if (!(await page.$("#upcoming-operator"))) await fail("no operator filter");
+if (!/Próximas obras/.test(await page.textContent("#upcoming-h"))) await fail("upcoming title");
 await page.screenshot({ path: `${out}/uk-incidents.png` });
 await page.click("#tab-incidents");
 

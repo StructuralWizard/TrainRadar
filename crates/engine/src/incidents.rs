@@ -196,6 +196,19 @@ pub fn active<'a>(net: &Network, all: &'a [Incident], now: i64) -> Vec<Resolved<
     v
 }
 
+/// Incidents that haven't started yet, soonest first.
+pub fn upcoming<'a>(net: &Network, all: &'a [Incident], now: i64) -> Vec<Resolved<'a>> {
+    let mut v: Vec<_> = all
+        .iter()
+        .filter(|i| {
+            i.active_from.is_some_and(|f| f > now) && i.active_until.is_none_or(|u| u >= now)
+        })
+        .map(|i| resolve(net, i))
+        .collect();
+    v.sort_by_key(|r| r.incident.active_from.unwrap_or(0));
+    v
+}
+
 /// Incidents naming a route (for a train's popup).
 pub fn for_route<'a>(all: &'a [Incident], route_id: &str, now: i64) -> Vec<&'a Incident> {
     all.iter()
@@ -224,6 +237,22 @@ mod tests {
             route_ids: routes.iter().map(|s| (*s).into()).collect(),
             stop_ids: stops.iter().map(|s| (*s).into()).collect(),
         }
+    }
+
+    #[test]
+    fn upcoming_are_those_not_started_yet_soonest_first() {
+        let net = Network::default();
+        let all = [
+            inc("now", Some(100), Some(500), &[], &[], "Obras"),
+            inc("later", Some(900), None, &[], &[], "Obras en Pinto"),
+            inc("soon", Some(300), Some(400), &[], &[], "Huelga"),
+            inc("over", Some(10), Some(50), &[], &[], "Pasado"),
+            inc("always", None, None, &[], &[], "Sin fechas"),
+        ];
+        let ids = |v: Vec<Resolved>| v.iter().map(|r| r.incident.id.clone()).collect::<Vec<_>>();
+        assert_eq!(ids(upcoming(&net, &all, 200)), ["soon", "later"]);
+        let active = ids(active(&net, &all, 200));
+        assert!(active.contains(&"now".to_string()) && !active.contains(&"soon".to_string()));
     }
 
     #[test]
