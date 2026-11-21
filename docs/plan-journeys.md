@@ -1,6 +1,6 @@
 # Plan: journeys with changes, saved commutes with their trains, commute alerts
 
-Status: **agreed 2026-11-21**. Spain first, then the UK (the engine is shared).
+Status: **agreed and built 2026-11-21** (J1–J4, Spain). The UK comes next; the engine is shared.
 
 The maintainer's decisions:
 - **Route search with changes** for everyone: "Cómo llegar" finds journeys of up to two changes, not
@@ -16,7 +16,7 @@ The maintainer's decisions:
   4. track or platform changes, where the feed has them (Renfe's rarely does);
   5. station notices on the way: lifts and escalators, works, replacement buses, other disruptions.
 
-## J1. Engine: journeys with changes (this PR)
+## J1. Engine: journeys with changes
 
 `crates/engine/src/journeys.rs`, `Engine.journeysJson(from, to, nowMs, maxChanges, limit, windowSecs)`.
 
@@ -54,20 +54,27 @@ The maintainer's decisions:
 
 ## J4. Commute notifications (Pro, Android)
 
-- The background check, every 15 min (`AlertsWorker`), already reads `rt/summary.json` (all live
-  trains). For each saved journey on its days, between an hour before departure and its arrival, it
-  notifies once per event:
-  - delay ≥ 5 / ≥ 15 min, or cancellation, of one of its trains;
-  - a connection at risk: the first train's expected arrival plus the change time is later than the
-    next train's expected departure;
-  - platform changes, when the summary has a platform.
-- **Reminder**: a one-off WorkManager job per day at the chosen time before departure (default 30 min),
-  which reads the summary and says "a su hora" or "+10 min".
-- **Station notices**: Renfe's notices (`/v1/live/notices`, already typed as accessibility, works,
-  disruption or other, and tied to stations and lines) for the journey's stations and lines. Each is
-  notified once.
-- Settings per journey: the reminder time, and which alerts.
-- In the web app (no background), the same checks run while the page is open.
+How it was built:
+- `AlertsWorker` runs every 15 minutes with the alerts switch on. Saving the first journey turns the
+  switch on. It reads Spain's commutes (`commute`).
+- `JourneyRules` (unit-tested) watches each saved journey on its days, from an hour before leaving
+  (or the reminder, if earlier) until half an hour after arriving.
+- **Before a train leaves**, its run comes from `GET /v1/live/run/:station/:number` (the station
+  board: delay and cancelled, including a cancellation before it starts). **After it leaves**, it
+  comes from `rt/summary.json`.
+- Each event is notified once a day:
+  - delay ≥ 5, then ≥ 15 min, or cancelled ("mira otras opciones");
+  - a change with less than 5 min after the walk ("enlace en riesgo"), or missed;
+  - the reminder, `remind` minutes before leaving (within the 15-minute check), with the first train's
+    state;
+  - a platform change: `summary.json` now carries Renfe's platform at the next stop, and a change
+    after the first one seen is notified;
+  - station notices: `GET /v1/live/notices/all` gives every notice with its station ids, and those at
+    the journey's stations are notified (lifts and access, works, strikes, disruptions such as
+    replacement buses).
+- Each alert type is switched per journey on the commute screen.
+- The web app has no Pro (Pro is in the Android app), so there are no web alerts. The commute screen
+  shows the same state live.
 
 ## Later
 

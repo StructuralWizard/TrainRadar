@@ -1276,6 +1276,8 @@ impl Engine {
                     t.delay.map(|d| (f64::from(d) / 60.0).round() as i32),
                 )
                 .os("nextStopId", next.as_deref())
+                // The platform Renfe reports (at its next stop), when it does.
+                .os("platform", t.rt.platform.as_deref())
                 .s("status", status)
                 .n("updatedAt", t.fix_time)
                 .end();

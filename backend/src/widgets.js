@@ -4,6 +4,9 @@
 //   GET /v1/live/board/:stationId   next departures and arrivals
 //   GET /v1/live/train/:number      one train: delay, next stop, ends
 //   GET /v1/live/notices            Renfe's notices in force
+//   GET /v1/live/notices/all        all of them, with their stations
+//   GET /v1/live/run/:station/:number  one train's next run from a station
+//                                   (a saved journey's alerts, plan journeys)
 // cached for a minute at the edge (each widget asks every 15 minutes).
 
 export const WIDGET_CACHE = "public, max-age=60";
@@ -51,13 +54,32 @@ export function trainDoc(engine, number, now) {
   };
 }
 
-/** Renfe's notices in force, newest first, text only. */
-export function noticesDoc(engine, now, limit = 10) {
+/** Renfe's notices in force, newest first, text only; `stops` adds the
+ * station ids each one names (for a saved journey's alerts). */
+export function noticesDoc(engine, now, limit = 10, stops = false) {
   const list = JSON.parse(engine.incidentsJson(now)).slice(0, limit);
   return {
     at: new Date(now).toISOString(),
-    notices: list.map((n) => ({ id: n.id, kind: n.kind, lines: n.lines || [], text: String(n.text || "").slice(0, 300), from: n.from ?? null })),
+    notices: list.map((n) => ({
+      id: n.id,
+      kind: n.kind,
+      lines: n.lines || [],
+      text: String(n.text || "").slice(0, 300),
+      from: n.from ?? null,
+      ...(stops ? { stops: (n.stops || []).map((x) => String(x.id)).filter((x) => ID.test(x)) } : {}),
+    })),
   };
+}
+
+/** A train's next run from a station within 12 hours: its scheduled
+ * departure, delay and whether it's cancelled; `found: false` if none. */
+export function runDoc(engine, stationId, number, now) {
+  if (!ID.test(String(stationId)) || !ID.test(String(number))) return null;
+  const n = String(number).replace(/^0+/, "");
+  const at = new Date(now).toISOString();
+  const r = JSON.parse(engine.stationBoardJson(stationId, now, 12 * 3600, 2000)).find((x) => String(x.number).replace(/^0+/, "") === n && !x.terminates);
+  if (!r) return { station: stationId, number: String(number), found: false, at };
+  return { station: stationId, number: r.number, found: true, sched: r.sched, delay: r.delay ?? null, canceled: !!r.canceled, at };
 }
 
 /** The recorder DO's `/widget/...` routes: a Response. */
@@ -76,5 +98,11 @@ export function widgetResponse(engine, path, now) {
     return doc ? json(doc) : json({ error: "bad train number" }, 400);
   }
   if (path === "/widget/notices") return json(noticesDoc(engine, now));
+  if (path === "/widget/notices/all") return json(noticesDoc(engine, now, 500, true));
+  const rm = path.match(/^\/widget\/run\/([^/]+)\/([^/]+)$/);
+  if (rm) {
+    const doc = runDoc(engine, decodeURIComponent(rm[1]), decodeURIComponent(rm[2]), now);
+    return doc ? json(doc) : json({ error: "bad station or train" }, 400);
+  }
   return json({ error: "not found" }, 404);
 }

@@ -180,4 +180,12 @@ test("widgets: a station's departures and arrivals, and the notices, from the re
   assert.equal(widgetResponse(core.engine, "/widget/board/%3Cx%3E", now).status, 400);
   assert.equal(widgetResponse(null, "/widget/notices", now).status, 503, "engine not loaded yet");
   assert.equal((await widgetResponse(core.engine, "/widget/notices", now).json()).notices.length, n.notices.length);
+  // A saved journey's alerts: all notices with their stations, and one run.
+  const all = await widgetResponse(core.engine, "/widget/notices/all", now).json();
+  assert.ok(all.notices.length >= n.notices.length && all.notices.every((x) => Array.isArray(x.stops)));
+  const dep = b.departures[0];
+  const run = await widgetResponse(core.engine, `/widget/run/60000/${dep.number}`, now).json();
+  assert.deepEqual([run.found, run.sched, run.delay, run.canceled], [true, dep.sched, dep.delay, dep.canceled], JSON.stringify(run));
+  assert.equal((await widgetResponse(core.engine, "/widget/run/60000/99999", now).json()).found, false);
+  assert.equal(widgetResponse(core.engine, "/widget/run/60000/%3Cx%3E", now).status, 400);
 });

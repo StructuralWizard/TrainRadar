@@ -2469,6 +2469,8 @@ function saveRouteJourney(j) {
   commuteNote = r.full ? t(lang, "jFull", { n: MAX_COMMUTES }) : t(lang, "jSavedOk", { from: from.name, to: to.name });
   if (r.added) saveCommutes(r.state, () => {}, true);
   else (openSheet("commute"), renderCommute());
+  // Its alerts come from the background check: on with the first journey.
+  if (r.added && appNative.available() && !alertsOn) setAlerts(true).catch(() => {});
 }
 
 /** Today's live state of each train of a saved journey: from its first

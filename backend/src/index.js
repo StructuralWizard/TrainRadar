@@ -97,7 +97,7 @@ export default {
     }
     const key = new URL(request.url).pathname.replace(/^\/+/, "");
     if (key.startsWith("v1/history/")) return api(request, env, headers);
-    if (/^v1\/live\/((board|train)\/[A-Za-z0-9._-]{1,40}|notices)$/.test(key)) return live(request, env, headers, key);
+    if (/^v1\/live\/((board|train)\/[A-Za-z0-9._-]{1,40}|run\/[A-Za-z0-9._-]{1,40}\/[A-Za-z0-9._-]{1,40}|notices(\/all)?)$/.test(key)) return live(request, env, headers, key);
     if (!SERVED.has(key)) return new Response("not found", { status: 404, headers });
     const obj = await env.LIVE.get(key);
     if (!obj) return new Response("not yet available", { status: 503, headers });
