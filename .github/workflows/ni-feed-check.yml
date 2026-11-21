@@ -131,6 +131,9 @@ jobs:
             echo; echo "## Download addresses (curl, default and named user agent)"
             for u in https://admin.opendatani.gov.uk/api/3/action/package_show?id=nir20160126v2 \
                      https://www.opendatani.gov.uk/api/3/action/package_show?id=nir20160126v2 \
+                     https://download.geofabrik.de/europe/united-kingdom-latest.osm.pbf \
+                     https://download.geofabrik.de/europe/united-kingdom/scotland-latest.osm.pbf \
+                     https://download.geofabrik.de/europe/united-kingdom/wales-latest.osm.pbf \
                      https://download.geofabrik.de/europe/united-kingdom/england-latest.osm.pbf \
                      https://download.geofabrik.de/europe/ireland-and-northern-ireland-latest.osm.pbf; do
               a=$(curl -s -r 0-0 -o /dev/null -w '%{http_code}' "$u")
