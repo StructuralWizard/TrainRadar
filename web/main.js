@@ -2796,7 +2796,7 @@ async function main() {
   await init();
   engine = new Engine();
   engine.setCountry(country);
-  ref = new RefData(engine, CONFIG.dataBase);
+  ref = new RefData(engine, CONFIG.dataBase, CONFIG.remoteDataBase);
   ref.onGeometry = () => {
     refreshLines();
     refreshTrack();
@@ -2818,6 +2818,17 @@ async function main() {
     onError: (k, e) => console.warn("feed", k, e.message),
   });
   feeds.start();
+  // New timetables (the site rebuilds them daily; they cover a week): a page
+  // or app left open picks them up instead of running out of trains.
+  const newData = () =>
+    ref.refreshIfDue().then((changed) => {
+      if (!changed) return;
+      refreshLines();
+      refreshTrack();
+      render(true);
+    });
+  setInterval(newData, 10 * 60_000);
+  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && newData());
   if (UK) {
     loadUkIncidents();
     setInterval(loadUkIncidents, 5 * 60_000);

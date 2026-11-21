@@ -39,7 +39,9 @@ echo "reference data: $(du -sh "$data" | cut -f1) from $SITE"
 rm -rf app/www
 # The bucket also serves each feed on its own: the app's fallback source
 # (the pass-through Worker only answers the website).
-RT_BASE="${LIVE_BASE%/}/rt/" LIVE_BASE="$LIVE_BASE" API_BASE="${API_BASE:-}" \
+# The site's data/ too: the timetables cover a week, so the app downloads
+# newer ones when it starts (the bundled copy is for starting offline).
+RT_BASE="${LIVE_BASE%/}/rt/" LIVE_BASE="$LIVE_BASE" API_BASE="${API_BASE:-}" REMOTE_DATA="${SITE%/}/data/" \
   APP_VERSION="${APP_VERSION:-}" TARGET=android DIST=app/www DATA_DIR="$data" tools/build-web.sh
 (cd app && npm ci --no-audit --no-fund && npx cap sync android)
 echo "app/android ready: cd app/android && ./gradlew assembleDebug (or bundleRelease)"
