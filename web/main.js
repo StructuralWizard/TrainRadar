@@ -10,8 +10,8 @@ import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from 
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
-import { PLACE_ICON, layersSheet, networksSheet, pickField, placeKind, routeResults, stationSheet, trainSheet } from "./js/sheetui.js";
-import { endStations, mergeRoutes } from "./js/route.js";
+import { PLACE_ICON, journeyResults, layersSheet, networksSheet, pickField, placeKind, stationSheet, trainSheet } from "./js/sheetui.js";
+import { endStations } from "./js/route.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
@@ -2360,11 +2360,11 @@ function renderLayers() {
 }
 
 /*
- * Origin → destination: the direct trains of the next hours between two
- * stations or cities (any of a city's main stations), from the timetables
- * with live delays (engine.commuteJson per pair of stations).
+ * Origin → destination: how to get there in the next hours between two
+ * stations or cities (any of a city's main stations), direct or with up to
+ * two changes, from the timetables with live delays (engine.journeysJson).
  */
-const ROUTE_HORIZON = 4 * 3600;
+const ROUTE_HORIZON = 6 * 3600;
 const route = { from: null, to: null }; // {kind: "station" | "city", item}
 
 function openRoute(from = route.from, to = route.to) {
@@ -2394,16 +2394,13 @@ function renderRoute() {
       if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(renderRoute).catch(() => {});
     }
   }
-  const now = Date.now();
-  const pairs = [];
-  for (const f of a) for (const s of b) if (f.id !== s.id) pairs.push({ from: f, to: s, rows: JSON.parse(engine.commuteJson(f.id, s.id, now, ROUTE_HORIZON, 20)) });
-  const rows = mergeRoutes(pairs, now / 1000, 25);
+  // Direct trains and journeys with up to 2 changes (engine journeys.rs).
+  const journeys = JSON.parse(engine.journeysJson(a.map((x) => x.id).join(","), b.map((x) => x.id).join(","), Date.now(), 2, 10, ROUTE_HORIZON));
   body.replaceChildren(
-    ...routeResults(lang, {
+    ...journeyResults(lang, {
       from,
       to,
-      rows,
-      multi: from.kind === "city" || to.kind === "city",
+      journeys,
       onTrain: (r) => {
         const info = liveTrain(r.number);
         if (info) selectTrain(info, { fly: true });

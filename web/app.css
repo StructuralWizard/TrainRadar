@@ -674,12 +674,26 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 .route-delay.tone-text-minor { color: #c2410c; }
 .route-delay.tone-text-major { color: #b91c1c; }
 .search-results .search-place, .search-results .search-route { display: flex; align-items: center; gap: 6px; }
+/* Journeys with changes: a row per journey, its trains inside. */
+.journey > summary { list-style: none; cursor: pointer; }
+.journey > summary::-webkit-details-marker { display: none; }
+.journey-risk { color: #c2410c; font-weight: 600; }
+.journey-legs { list-style: none; margin: 4px 0 8px; padding: 0 0 0 10px; border-left: 3px solid var(--line, #e5e7eb); }
+.journey-leg-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+.journey-leg-times { font-variant-numeric: tabular-nums; }
+.journey-leg-train { font-size: 13px; }
+.journey-change, .journey-walk { display: flex; align-items: center; gap: 6px; padding: 2px 0; color: #4b5563; }
+.journey-change.at-risk { color: #c2410c; font-weight: 600; }
+.journey-save { margin: 0 0 10px 10px; }
 @media (max-width: 719px) and (prefers-color-scheme: dark) {
   .route-field, .route-swap { background: #1f2937; color: #f3f4f6; border-color: #374151; }
   .route-field input { color: #f3f4f6; }
   .route-k, .route-sugg-row .icon, .search-place .icon, .search-route .icon { color: #9ca3af; }
   .route-sugg { background: #1f2937; }
   .route-row { border-color: #1f2937; }
+  .journey-legs { border-color: #374151; }
+  .journey-change, .journey-walk { color: #9ca3af; }
+  .journey-risk, .journey-change.at-risk { color: #fdba74; }
   .route-delay.tone-text-ok { color: #86efac; }
   .route-delay.tone-text-minor { color: #fdba74; }
   .route-delay.tone-text-major { color: #fca5a5; }
