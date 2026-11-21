@@ -30,6 +30,8 @@ pub const LONG_DISTANCE: &str = "ld";
 pub const OUIGO: &str = "ouigo";
 /// Great Britain (Network Rail), the only region of the UK data (plan 3).
 pub const UK: &str = "uk";
+/// Northern Ireland: NI Railways, Translink's timetable (plan 4).
+pub const NI: &str = "ni";
 
 /// OUIGO's GTFS (a UIC MERITS export) uses 9-digit UIC station codes; the
 /// last five digits are the Adif code Renfe uses (`007160000` → `60000`).
