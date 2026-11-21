@@ -151,9 +151,9 @@ jobs:
         id: osm_uk
         with:
           path: gtfs/uk/rail.geojsonseq
-          # v2: with the island of Ireland (NI Railways, plan 4).
-          key: osm-rail-uk-v2-${{ steps.week.outputs.week }}
-          restore-keys: osm-rail-uk-v2-
+          # v3: Geofabrik's United Kingdom extract (with Northern Ireland, plan 4).
+          key: osm-rail-uk-v3-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-uk-v3-
       - name: UK reference data
         if: vars.UK_ENABLED == 'true'
         continue-on-error: true

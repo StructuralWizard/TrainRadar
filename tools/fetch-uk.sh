@@ -7,8 +7,8 @@
 #   naptan.csv        NaPTAN stops (public; rail stations give coordinates)
 #   ni-txc.zip        NI Railways' timetable, TransXChange (Translink on
 #                     OpenDataNI; public; plan 4), found through the CKAN API
-#   rail.geojsonseq   OpenStreetMap track in Great Britain and the island of
-#                     Ireland (needs osmium-tool; skipped with --no-osm)
+#   rail.geojsonseq   OpenStreetMap track in the United Kingdom (Great
+#                     Britain and Northern Ireland) (needs osmium-tool; skipped with --no-osm)
 # Network Rail, NaPTAN and Translink data: Open Government Licence v3.0.
 # OSM: ODbL 1.0.
 set -euo pipefail
@@ -66,22 +66,16 @@ fi
 if [ "$osm" = 1 ] && [ ! -s gtfs/uk/rail.geojsonseq ]; then
   start=$SECONDS
   parts=()
-  # Great Britain's track is needed; Ireland's (for NI Railways) is optional.
-  for region in united-kingdom/england united-kingdom/scotland united-kingdom/wales ireland-and-northern-ireland; do
-    out="gtfs/uk/${region##*/}.osm.pbf"
+  # One extract for Great Britain and Northern Ireland. (Since November 2026
+  # Geofabrik's England, Scotland and Wales links redirect to a 404.)
+  for region in united-kingdom; do
+    out="gtfs/uk/$region.osm.pbf"
     url="https://download.geofabrik.de/europe/$region-latest.osm.pbf"
-    if ! curl -fsSL --retry 4 --retry-delay 10 --speed-limit 100000 --speed-time 60 -o "$out" "$url"; then
-      rm -f "$out"
-      if [ "$region" = ireland-and-northern-ireland ]; then
-        echo "OSM: $url failed; Northern Ireland without track this time"
-        continue
-      fi
-      echo "OSM: $url failed" >&2
-      exit 1
-    fi
-    osmium tags-filter --overwrite -o "gtfs/uk/${region##*/}-rail.osm.pbf" "$out" w/railway=rail,narrow_gauge,disused
+    curl -fsSL --retry 4 --retry-delay 10 --speed-limit 100000 --speed-time 60 -o "$out" "$url" ||
+      { echo "OSM: $url failed" >&2; exit 1; }
+    osmium tags-filter --overwrite -o "gtfs/uk/$region-rail.osm.pbf" "$out" w/railway=rail,narrow_gauge,disused
     rm "$out"
-    parts+=("gtfs/uk/${region##*/}-rail.osm.pbf")
+    parts+=("gtfs/uk/$region-rail.osm.pbf")
   done
   osmium merge --overwrite -o gtfs/uk/rail.osm.pbf "${parts[@]}"
   osmium export --overwrite -f geojsonseq --geometry-types=linestring \
