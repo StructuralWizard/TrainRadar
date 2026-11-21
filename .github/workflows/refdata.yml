@@ -88,6 +88,17 @@ jobs:
         run: target/release/refdata-build verify web/data
       - name: Journeys with changes on the real timetables (timings)
         run: cargo run --release -q -p trainradar-engine --example journeys_bench -- web/data | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Journeys in the United Kingdom (the site's public data/uk/)
+        continue-on-error: true # the site may be mid-deploy: a report, not a gate
+        run: |
+          uk=build/uk-site && mkdir -p "$uk"
+          curl -fsS --retry 3 https://www.mytrainradar.com/data/uk/manifest.json -o "$uk/manifest.json"
+          for f in $(jq -r '.stations.file, (.regions[] | .file)' "$uk/manifest.json"); do
+            curl -fsS --retry 3 "https://www.mytrainradar.com/data/uk/$f" -o "$uk/$f"
+            case "$f" in *.gz) gunzip -f "$uk/$f" ;; esac
+          done
+          jq '(.. | objects | select(has("file")) | .file) |= sub("\\.gz$"; "")' "$uk/manifest.json" > "$uk/m.json" && mv "$uk/m.json" "$uk/manifest.json"
+          cargo run --release -q -p trainradar-engine --example journeys_bench -- "$uk" --uk | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

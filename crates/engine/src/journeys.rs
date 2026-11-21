@@ -21,12 +21,23 @@ pub const CHANGE_SECS: i64 = 5 * 60;
 pub const CHANGE_LD_SECS: i64 = 10 * 60;
 /// Walks between stations no further apart than this (straight line).
 pub const WALK_MAX_M: f64 = 700.0;
+/// In Great Britain: London's terminals are further apart (Euston ↔ King's
+/// Cross and St Pancras, ~800 m). The Underground isn't in the data.
+pub const WALK_MAX_UK_M: f64 = 1_000.0;
 /// Walking: straight-line distance × 1.3 at 1.1 m/s, plus 3 minutes.
 fn walk_secs(m: f64) -> i64 {
     (m * 1.3 / 1.1).round() as i64 + 180
 }
+/// Faster than any train, straight line (m/s): 330 km/h in Spain (AVE at
+/// 310), 250 km/h in the UK (HS1 at 225). For a lower bound on the time
+/// left to the destination, so the search skips stations that can't help.
+const VMAX_MS: f64 = 330.0 / 3.6;
+const VMAX_UK_MS: f64 = 250.0 / 3.6;
 /// A train is caught only if it leaves within this time of being ready.
 const WAIT_MAX_SECS: i64 = 6 * 3_600;
+/// Trains scheduled up to this long before being ready are still checked
+/// (running late, they may yet be caught).
+const LATE_MAX_SECS: i64 = 90 * 60;
 
 /// One train of a journey.
 #[derive(Debug, Clone, PartialEq)]
@@ -155,6 +166,9 @@ struct Stations<'a> {
     ids: Vec<&'a str>,
     index: HashMap<&'a str, u32>,
     coord: Vec<Option<LatLon>>,
+    /// Per region, per timetable stop: its dense index (no string lookups
+    /// in the search's inner loop).
+    of_stop: Vec<Vec<u32>>,
 }
 
 impl<'a> Stations<'a> {
@@ -163,6 +177,7 @@ impl<'a> Stations<'a> {
             ids: Vec::new(),
             index: HashMap::new(),
             coord: Vec::new(),
+            of_stop: Vec::new(),
         };
         let file: HashMap<&str, LatLon> = net
             .stations
@@ -175,16 +190,21 @@ impl<'a> Stations<'a> {
             })
             .unwrap_or_default();
         for r in &net.regions {
+            let mut of = Vec::with_capacity(r.tt.stops.len());
             for st in &r.tt.stops {
                 let id = st.id.as_str();
-                if s.index.contains_key(id) {
+                if let Some(&i) = s.index.get(id) {
+                    of.push(i);
                     continue;
                 }
-                s.index.insert(id, s.ids.len() as u32);
+                let i = s.ids.len() as u32;
+                s.index.insert(id, i);
                 s.ids.push(id);
                 s.coord
                     .push(Some(file.get(id).copied().unwrap_or_else(|| st.coord())));
+                of.push(i);
             }
+            s.of_stop.push(of);
         }
         s
     }
@@ -193,14 +213,15 @@ impl<'a> Stations<'a> {
         self.index.get(id).copied()
     }
 
-    /// Walks from each station to the others within `WALK_MAX_M`.
-    fn walks(&self) -> Vec<Vec<(u32, i64)>> {
-        // Grid of ~0.01° cells (≈ 1.1 km × 0.85 km in Spain), neighbours in
-        // the 3 × 3 cells around.
+    /// Walks from each station to the others within `max_m`.
+    fn walks(&self, max_m: f64) -> Vec<Vec<(u32, i64)>> {
+        // A grid of cells at least `max_m` wide up to 60° north (a degree of
+        // longitude is ≥ 55.5 km there), neighbours in the 3 × 3 cells around.
+        let per_deg = 55_500.0 / max_m;
         let cell = |p: LatLon| {
             (
-                (p.lat * 100.0).floor() as i32,
-                (p.lon * 100.0).floor() as i32,
+                (p.lat * per_deg).floor() as i32,
+                (p.lon * per_deg).floor() as i32,
             )
         };
         let mut grid: HashMap<(i32, i32), Vec<u32>> = HashMap::new();
@@ -221,7 +242,7 @@ impl<'a> Stations<'a> {
                         }
                         let d =
                             trainradar_proto::geo::haversine_m(*p, self.coord[j as usize].unwrap());
-                        if d <= WALK_MAX_M {
+                        if d <= max_m {
                             out[i].push((j, walk_secs(d)));
                         }
                     }
@@ -258,12 +279,32 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
         window_secs,
     } = *q;
     let st = Stations::new(net);
-    let walks = st.walks();
+    // Great Britain's and Northern Ireland's timetables: longer walks.
+    let uk = net
+        .regions
+        .iter()
+        .any(|r| r.tt.region == "uk" || r.tt.region == crate::networkrail::NI_REGION);
+    let walks = st.walks(if uk { WALK_MAX_UK_M } else { WALK_MAX_M });
     let src: Vec<u32> = from.iter().filter_map(|s| st.get(s)).collect();
     let dst: HashSet<u32> = to.iter().filter_map(|s| st.get(s)).collect();
     if src.is_empty() || dst.is_empty() || src.iter().any(|s| dst.contains(s)) {
         return Vec::new();
     }
+    // Lower bound on the time from each station to the destination.
+    let vmax = if uk { VMAX_UK_MS } else { VMAX_MS };
+    let ends: Vec<LatLon> = dst.iter().filter_map(|&d| st.coord[d as usize]).collect();
+    let lb: Vec<i64> = st
+        .coord
+        .iter()
+        .map(|c| match c {
+            Some(p) if !ends.is_empty() => ends
+                .iter()
+                .map(|e| (trainradar_proto::geo::haversine_m(*p, *e) / vmax) as i64)
+                .min()
+                .unwrap_or(0),
+            _ => 0,
+        })
+        .collect();
     let delays = Delays::new(net, live);
     let mut out: Vec<Journey> = Vec::new();
     let mut seen = HashSet::new();
@@ -277,7 +318,19 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
         if arrivals.len() >= limit || t > after + window_secs {
             break;
         }
-        let found = search(net, &st, &walks, &delays, &src, &dst, t, max_changes);
+        let found = search(
+            net,
+            &Ctx {
+                st: &st,
+                walks: &walks,
+                delays: &delays,
+                lb: &lb,
+            },
+            &src,
+            &dst,
+            t,
+            max_changes,
+        );
         let Some(first) = found.iter().map(Journey::dep).min() else {
             break;
         };
@@ -329,16 +382,29 @@ impl<'a> Delays<'a> {
 }
 
 #[allow(clippy::too_many_arguments)]
+/// What every pass of one query shares.
+struct Ctx<'c> {
+    st: &'c Stations<'c>,
+    walks: &'c [Vec<(u32, i64)>],
+    delays: &'c Delays<'c>,
+    /// Lower bound (s) from each station to the destination.
+    lb: &'c [i64],
+}
+
 fn search(
     net: &Network,
-    st: &Stations,
-    walks: &[Vec<(u32, i64)>],
-    delays: &Delays,
+    ctx: &Ctx,
     src: &[u32],
     dst: &HashSet<u32>,
     after: i64,
     max_changes: usize,
 ) -> Vec<Journey> {
+    let Ctx {
+        st,
+        walks,
+        delays,
+        lb,
+    } = *ctx;
     let n = st.ids.len();
     let rounds = max_changes + 1;
     // best[s]: earliest arrival at s in any round so far (pruning).
@@ -398,7 +464,7 @@ fn search(
                 }
             }
         }
-        for ((ri, pi), (pos0, _, _)) in boards.clone() {
+        for ((ri, pi), (pos0, _, _)) in std::mem::take(&mut boards) {
             let r = &net.regions[ri];
             let sched = &r.sched[pi as usize];
             let pattern = &r.tt.patterns[pi as usize];
@@ -411,11 +477,11 @@ fn search(
             // The trip being ridden: (start, delay, live, board stop index, board pos).
             let mut cur: Option<(TripRef, i64, Option<i32>, bool, u32, u16)> = None;
             for pos in pos0 as usize..sched.len() {
-                let stop = st.get(&r.tt.stops[pattern.stops[pos] as usize].id).unwrap();
+                let stop = st.of_stop[ri][pattern.stops[pos] as usize];
                 // Alight here?
                 if let Some((tref, start, delay, is_live, b, bpos)) = cur {
                     let a = start + i64::from(sched[pos].arrival) + i64::from(delay.unwrap_or(0));
-                    if a < best[stop as usize] && a < best_dst(&best) {
+                    if a < best[stop as usize] && a + lb[stop as usize] < best_dst(&best) {
                         arr[k][stop as usize] = a;
                         best[stop as usize] = a;
                         label[k][stop as usize] = Some(Label::Ride {
@@ -435,7 +501,7 @@ fn search(
                 }
                 // Board here (or an earlier run of the pattern)?
                 let ready = arr[k - 1][stop as usize];
-                if ready == i64::MAX {
+                if ready == i64::MAX || ready + lb[stop as usize] >= best_dst(&best) {
                     continue;
                 }
                 // A change: the minimum change time (a walk already
@@ -466,7 +532,7 @@ fn search(
             let a = arr[k][s as usize];
             for &(j, w) in &walks[s as usize] {
                 let t = a + w;
-                if t < best[j as usize] && t < best_dst(&best) {
+                if t < best[j as usize] && t + lb[j as usize] < best_dst(&best) {
                     arr[k][j as usize] = t;
                     best[j as usize] = t;
                     label[k][j as usize] = Some(Label::Walk { from: s, secs: w });
@@ -519,7 +585,9 @@ fn earliest_run(
     let r = &net.regions[ri];
     let st = &r.sched[pi as usize];
     let today = madrid_day(ready - behind);
-    let mut best: Option<(i64, TripRef, i64, Option<i32>, bool)> = None;
+    // Runs by scheduled departure; live state only for the first few
+    // (a late train scheduled before `ready` may still be catchable).
+    let mut cands: Vec<(i64, u32, i64, i64)> = Vec::new();
     for &ti in &r.pattern_trips[pi as usize] {
         let trip = &r.tt.trips[ti as usize];
         for day in [today - 1, today, today + 1] {
@@ -529,28 +597,34 @@ fn earliest_run(
             }
             let start = service_day_base(day) + behind + i64::from(trip.start);
             let sched_dep = start + i64::from(st[pos].departure);
-            // Cheap bounds before the live lookup (delays up to 3 h).
-            if sched_dep < ready - 3 * 3_600 || sched_dep > ready + WAIT_MAX_SECS {
-                continue;
+            if sched_dep >= ready - LATE_MAX_SECS && sched_dep <= ready + WAIT_MAX_SECS {
+                cands.push((sched_dep, ti, start, day));
             }
-            if best.is_some_and(|b| sched_dep - 3 * 3_600 > b.0) {
-                continue;
-            }
-            let tref = TripRef {
-                region: ri as u16,
-                trip: ti,
-            };
-            let (delay, canceled, is_live) = delays.of(&r.tt.trip_id(trip), tref, day);
-            if canceled {
-                continue;
-            }
-            let dep = sched_dep + i64::from(delay.unwrap_or(0));
-            if dep < ready || dep > ready + WAIT_MAX_SECS {
-                continue;
-            }
-            if best.is_none_or(|b| dep < b.0) {
-                best = Some((dep, tref, start, delay, is_live));
-            }
+        }
+    }
+    cands.sort_unstable_by_key(|c| c.0);
+    let mut best: Option<(i64, TripRef, i64, Option<i32>, bool)> = None;
+    for (sched_dep, ti, start, day) in cands {
+        // Later runs leave at or after their timetable (bar a few minutes
+        // early): none can beat the one found.
+        if best.is_some_and(|b| sched_dep - 300 >= b.0) {
+            break;
+        }
+        let tref = TripRef {
+            region: ri as u16,
+            trip: ti,
+        };
+        let (delay, canceled, is_live) =
+            delays.of(&r.tt.trip_id(&r.tt.trips[ti as usize]), tref, day);
+        if canceled {
+            continue;
+        }
+        let dep = sched_dep + i64::from(delay.unwrap_or(0));
+        if dep < ready || dep > ready + WAIT_MAX_SECS {
+            continue;
+        }
+        if best.is_none_or(|b| dep < b.0) {
+            best = Some((dep, tref, start, delay, is_live));
         }
     }
     best.map(|(_, t, s, d, l)| (t, s, d, l))

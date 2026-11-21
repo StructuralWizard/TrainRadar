@@ -1591,6 +1591,8 @@ function renderCommute() {
         status: journeyStatus(j, journeyRuns(j)),
         today: isoToday(),
         native: appNative.available(),
+        // Background alerts follow Spain's commutes (AlertsWorker).
+        alerts: !UK,
         onTrain: (l) => {
           const info = liveTrain(l.number);
           if (info) {
@@ -2403,6 +2405,7 @@ function renderLayers() {
  */
 const ROUTE_HORIZON = 6 * 3600;
 const route = { from: null, to: null }; // {kind: "station" | "city", item}
+const routeCache = { key: "", at: 0, journeys: [] }; // the last search
 
 function openRoute(from = route.from, to = route.to) {
   route.from = from;
@@ -2432,7 +2435,16 @@ function renderRoute() {
     }
   }
   // Direct trains and journeys with up to 2 changes (engine journeys.rs).
-  const journeys = JSON.parse(engine.journeysJson(a.map((x) => x.id).join(","), b.map((x) => x.id).join(","), Date.now(), 2, 10, ROUTE_HORIZON));
+  // A search can take a good part of a second on a phone (Great Britain):
+  // again only when the ends or the loaded timetables change, or each
+  // minute for the live delays, not on every feed refresh.
+  const key = [a.map((x) => x.id).join(","), b.map((x) => x.id).join(","), ref?.loaded.size || 0].join("|");
+  if (routeCache.key !== key || Date.now() - routeCache.at > 60_000) {
+    routeCache.journeys = JSON.parse(engine.journeysJson(a.map((x) => x.id).join(","), b.map((x) => x.id).join(","), Date.now(), 2, 10, ROUTE_HORIZON));
+    routeCache.key = key;
+    routeCache.at = Date.now();
+  }
+  const journeys = routeCache.journeys;
   body.replaceChildren(
     ...journeyResults(lang, {
       from,
@@ -2470,7 +2482,7 @@ function saveRouteJourney(j) {
   if (r.added) saveCommutes(r.state, () => {}, true);
   else (openSheet("commute"), renderCommute());
   // Its alerts come from the background check: on with the first journey.
-  if (r.added && appNative.available() && !alertsOn) setAlerts(true).catch(() => {});
+  if (r.added && !UK && appNative.available() && !alertsOn) setAlerts(true).catch(() => {});
 }
 
 /** Today's live state of each train of a saved journey: from its first

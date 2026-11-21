@@ -110,6 +110,17 @@ if (!/Próximas obras/.test(await page.textContent("#upcoming-h"))) await fail("
 await page.screenshot({ path: `${out}/uk-incidents.png` });
 await page.click("#tab-incidents");
 
+// Cómo llegar (plan journeys): Euston → Milton Keynes, direct trains every
+// 10 minutes, times in London.
+await page.click("#tab-map").catch(() => {});
+await page.fill("#search-q", "euston a milton keynes");
+await page.click("#search-route-go").catch(() => fail("no origin → destination row in the UK"));
+await page.waitForSelector("#route:not([hidden]) #route-count", { timeout: 10000 }).catch(async () => fail(`UK route: ${await page.textContent("#route-body").catch(() => "")}`));
+const ukRoute = (await page.textContent("#route-body")).replace(/\s+/g, " ");
+console.log("UK route:", ukRoute.slice(0, 160));
+if (!/formas de llegar/.test(ukRoute) || !(await page.$('#route .journey-row[data-changes="0"]'))) await fail("UK route: no direct journey");
+await page.click("#route-close");
+
 // The picker: España / Reino Unido; the choice is remembered.
 await page.click("#net-chip");
 await page.waitForSelector("#networks:not([hidden]) .net-countries");
