@@ -71,6 +71,9 @@ jobs:
             --ld demo/gtfs/ld.zip --cercanias demo/gtfs/cercanias.zip --ouigo demo/gtfs/ouigo.zip \
             --rail demo/gtfs/rail.geojsonseq --rail-heights demo/gtfs/heights.txt \
             --rail-attrs demo/gtfs/igr-rail.geojsonseq
+          # Plan ahead (future timetables): the same feeds over 63 days.
+          cargo run --release -q -p trainradar-refdata-build -- build --out demo/data/plan --days 63 \
+            --ld demo/gtfs/ld.zip --cercanias demo/gtfs/cercanias.zip --ouigo demo/gtfs/ouigo.zip
           cargo run --release -q -p trainradar-engine --example fixture -- demo/data demo/rt
       - name: History recorder on the real engine and demo feeds
         run: REQUIRE_ENGINE=1 node --import ./backend/test/hooks.mjs --test backend/test/recorder.test.mjs

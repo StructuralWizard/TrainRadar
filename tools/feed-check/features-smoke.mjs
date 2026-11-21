@@ -199,6 +199,46 @@ await page.press("#route-to", "Enter");
 if ((await page.inputValue("#route-to")) !== "Córdoba") await fail("suggestion not picked");
 await page.click("#route-close");
 
+// Future timetables (plan future): a date two weeks ahead (beyond today's
+// 8-day files), from the plan-ahead files in data/plan/.
+const later = await page.evaluate(() => {
+  const d = new Date(Date.now() + 14 * 86_400_000);
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T10:00`;
+});
+// Cómo llegar on that date: Zaragoza → Pinto (AVE + Cercanías).
+await page.fill("#search-q", "zaragoza a pinto");
+await page.click("#search-route-go").catch(() => fail("no Zaragoza → Pinto row"));
+await page.waitForSelector("#route:not([hidden]) #route-when");
+await page.fill("#route-when", later);
+await page.waitForSelector("#route #route-planned", { timeout: 15000 }).catch(() => fail("route: no timetable mode for a later date"));
+await page.waitForSelector('#route .journey-row[data-changes="1"]', { timeout: 15000 }).catch(async () => fail(`route on a later date: ${await page.textContent("#route-body")}`));
+console.log("route later:", (await page.textContent("#route-body")).replace(/\s+/g, " ").slice(0, 200));
+await page.screenshot({ path: `${out}/route-later.png` });
+await page.click("#route-when-now");
+await page.waitForFunction(() => !document.getElementById("route-planned"), null, { timeout: 5000 }).catch(() => fail("route: 'Ahora' didn't go back to live"));
+await page.click("#route-close");
+// A station's departures that day, then one of its trains that day.
+await page.fill("#search-q", "zaragoza deli");
+await page.waitForSelector("#search-results .search-station", { timeout: 5000 });
+await page.click("#search-results .search-station");
+await page.waitForSelector("#detail:not([hidden]) .sheet-station #station-when", { timeout: 8000 }).catch(() => fail("no date field on the station sheet"));
+await page.fill("#station-when", later);
+await page.waitForFunction(() => /Según horario/.test(document.getElementById("station-planned")?.textContent || "") && document.querySelectorAll("#detail .sheet-station .dep-row").length > 0, null, { timeout: 15000 })
+  .catch(async () => fail(`station on a later date: ${(await page.textContent("#detail")).slice(0, 300)}`));
+console.log("station later:", (await page.textContent("#detail .sheet-station")).replace(/\s+/g, " ").slice(0, 200));
+await page.screenshot({ path: `${out}/station-later.png` });
+await page.click("#detail .sheet-station .dep-row >> nth=0");
+await page.waitForSelector("#trainday .trainday-stops li", { timeout: 15000 }).catch(async () => fail(`train on a date: ${await page.textContent("#detail")}`));
+console.log("train that day:", (await page.textContent("#trainday")).replace(/\s+/g, " ").slice(0, 200));
+await page.screenshot({ path: `${out}/train-later.png` });
+// The search offers any train number's timetable on another day.
+await page.click("#trainday-close");
+await page.fill("#search-q", "99999");
+await page.click("#search-trainday").catch(() => fail("no 'another day' row for a train number"));
+await page.waitForSelector("#trainday #trainday-none", { timeout: 15000 }).catch(() => fail("a train that doesn't exist: not said"));
+await page.click("#trainday-close");
+
 
 // Favourites: "Añadir favorito" by searching a station.
 await page.click("#tab-favs");

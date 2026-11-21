@@ -236,6 +236,31 @@ impl Network {
         }
     }
 
+    /// Runs of train `number` (leading zeros ignored) starting on Madrid
+    /// service day `day` or the day before (night trains still running), as
+    /// (trip, unix start): the timetable's, no live data (plan future).
+    pub fn runs_of_number(&self, number: &str, day: i64) -> Vec<(TripRef, i64)> {
+        let n = number.trim_start_matches('0');
+        let mut out = Vec::new();
+        for &t in self.by_number.get(n).map_or(&[][..], Vec::as_slice) {
+            let r = &self.regions[t.region as usize];
+            let trip = &r.tt.trips[t.trip as usize];
+            let behind = crate::networkrail::behind_madrid_secs(&r.tt.region);
+            for d in [day - 1, day] {
+                if runs_on(&r.tt.header, trip, d) {
+                    out.push((
+                        t,
+                        trainradar_proto::time::service_day_base(d)
+                            + behind
+                            + i64::from(trip.start),
+                    ));
+                }
+            }
+        }
+        out.sort_by_key(|&(_, s)| s);
+        out
+    }
+
     pub fn trip(&self, t: TripRef) -> &TripRec {
         &self.regions[t.region as usize].tt.trips[t.trip as usize]
     }
@@ -653,6 +678,18 @@ pub mod tests {
     /// UTC for a Madrid local time on 1 Nov 2026 (CET, UTC+1).
     pub fn local(h: i64, m: i64) -> i64 {
         days_from_civil(2026, 11, 1) * 86_400 + (h - 1) * 3_600 + m * 60
+    }
+
+    #[test]
+    fn runs_of_a_number_on_a_day() {
+        let n = sample_network();
+        // Train 190 runs on 1 Nov only (bit 1): 09:00 Madrid.
+        let day = days_from_civil(2026, 11, 1);
+        let runs = n.runs_of_number("00190", day);
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].1, local(9, 0));
+        assert!(n.runs_of_number("190", day + 2).is_empty());
+        assert!(n.runs_of_number("999", day).is_empty());
     }
 
     #[test]

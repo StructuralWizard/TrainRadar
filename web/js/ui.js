@@ -1060,17 +1060,18 @@ export function boardList(lang, board) {
 }
 
 /** Popup for a station: next trains, and trains on their way. */
-export function stationPopup(lang, station, board, approaching, onTrain, { fav = null, onShare = null, onHistory = null, commute = null } = {}) {
+export function stationPopup(lang, station, board, approaching, onTrain, { fav = null, onShare = null, onHistory = null, commute = null, onOtherDay = null } = {}) {
   return el(
     "div",
     { class: "popup" },
     el("div", { class: "popup-title" }, station.name),
     popupActions(lang, fav, onShare),
-    onHistory || commute
+    onHistory || commute || onOtherDay
       ? el(
           "div",
           { class: "popup-actions" },
           onHistory ? el("button", { class: "pill small", type: "button", id: "station-history", onclick: onHistory }, `📊 ${t(lang, "histStation")}`) : null,
+          onOtherDay ? el("button", { class: "pill small", type: "button", id: "station-other-day", onclick: onOtherDay }, t(lang, "otherDay")) : null,
           commute ? el("button", { class: "pill small", type: "button", id: "commute-from", onclick: commute.setFrom }, t(lang, commute.isFrom ? "commuteIsFrom" : "commuteFrom")) : null,
           commute ? el("button", { class: "pill small", type: "button", id: "commute-to", onclick: commute.setTo }, t(lang, commute.isTo ? "commuteIsTo" : "commuteTo")) : null,
         )

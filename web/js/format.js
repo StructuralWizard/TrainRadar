@@ -89,3 +89,30 @@ export function trainLabel(route, number, delaySecs, commuter) {
   const m = Math.round(delaySecs / 60);
   return m >= 1 ? `${base} +${m}` : m <= -1 ? `${base} ${m}` : base;
 }
+
+/** "YYYY-MM-DDTHH:MM" (a datetime-local field's value) for `ms` in time zone `tz`. */
+export function zonedInput(ms, tz) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(new Date(ms))
+      .map((x) => [x.type, x.value]),
+  );
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+/** Unix ms for a wall time "YYYY-MM-DDTHH:MM" in time zone `tz`, or null. */
+export function fromZonedInput(s, tz) {
+  const m = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)$/.exec(s || "");
+  if (!m) return null;
+  const wall = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  // The zone's offset at that moment, twice (the first guess may sit on
+  // the other side of a clock change).
+  let t = wall;
+  for (let i = 0; i < 2; i++) {
+    const shown = fromParts(zonedInput(t, tz));
+    t = t - (shown - wall);
+  }
+  return t;
+}
+
+const fromParts = (s) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10), +s.slice(11, 13), +s.slice(14, 16));

@@ -1,6 +1,6 @@
 # Plan: future timetables ("plan ahead")
 
-Status: **agreed 2026-11-21**. The maintainer's decisions:
+Status: **agreed and built 2026-11-21** (F1 data, F2 app). The maintainer's decisions:
 - **How far:** as far as each source publishes, until its timetable changes. The engine and files allow
   up to 9 weeks (63 days).
 - **Where:** a date and time picker on **station departures and arrivals**, **train search** (a

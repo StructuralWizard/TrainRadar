@@ -10,8 +10,9 @@ import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from 
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
-import { PLACE_ICON, journeyResults, layersSheet, networksSheet, pickField, placeKind, stationSheet, trainSheet } from "./js/sheetui.js";
+import { PLACE_ICON, journeyResults, layersSheet, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
 import { endStations } from "./js/route.js";
+import { Planner } from "./js/planner.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { pickLang, t } from "./js/i18n.js";
 import {
@@ -1074,6 +1075,95 @@ function makeDraggable(p, get, set) {
   box.addEventListener("pointercancel", end);
 }
 
+/*
+ * Plan ahead (docs/plan-future.md): a timetable-only engine with the
+ * plan-ahead files, started the first time a date is chosen.
+ */
+let planner = null;
+function getPlanner() {
+  if (!planner) {
+    const base = `${(CONFIG.remoteDataBase || CONFIG.dataBase).replace(/\/?$/, "/")}plan/`;
+    planner = new Planner(() => {
+      const e = new Engine();
+      e.setCountry(country);
+      return e;
+    }, base);
+  }
+  return planner;
+}
+let stationWhen = null; // a station's board from a chosen date and time (ms), or now
+let stationWhenId = null; // …for this station
+let stationPlan = { key: "" }; // its timetable rows for that date
+
+/** The date field for a sheet: now, or a date up to the plan's last day. */
+function whenFor(id, value, onChange) {
+  return whenField(lang, { id, value, tz: CONFIG.timeZone, until: planner?.until || null, onChange });
+}
+
+/*
+ * A train on a date (plan future): its stops and times by the timetable.
+ * Which regions: those without a small area (long distance, OUIGO, the UK)
+ * and the Cercanías on the map now.
+ */
+let trainDay = { number: "", when: 0, runs: null, key: "" };
+function openTrainDay(number, when = Date.now() + 86_400_000) {
+  trainDay = { number: String(number), when, runs: null, key: "" };
+  renderTrainDay(true);
+}
+function renderTrainDay(open = false) {
+  const { number, when } = trainDay;
+  const key = `${number}|${when}`;
+  if (trainDay.key !== key) {
+    trainDay.key = key;
+    trainDay.runs = null;
+    const c = map?.getCenter();
+    getPlanner()
+      .ready(c ? [[c.lng, c.lat]] : [], 0.5)
+      .then((e) => {
+        if (trainDay.key !== key) return;
+        trainDay.runs = JSON.parse(e.trainOnDateJson(number, when));
+        renderTrainDay();
+      })
+      .catch((e) => {
+        console.warn("plan", e);
+        if (trainDay.key === key) (trainDay.runs = []), renderTrainDay();
+      });
+  }
+  const sheet = $("detail");
+  const body = el(
+    "div",
+    { class: "popup sheet-trainday", id: "trainday" },
+    el(
+      "div",
+      { class: "ss-head sheet-grip" },
+      el("div", { class: "ss-main" }, el("h2", { class: "popup-title" }, t(lang, "trainDayTitle", { n: number })), el("p", { class: "ts-meta" }, t(lang, "plannedNote"))),
+      el("button", { type: "button", class: "icon-btn", id: "trainday-close", "aria-label": t(lang, "close"), onclick: () => (sheet.hidden = true) }, icon("close", 20)),
+    ),
+    whenFor("trainday-when", when, (ms) => {
+      trainDay.when = ms || Date.now();
+      renderTrainDay();
+    }),
+    ...trainDayList(lang, {
+      number,
+      runs: trainDay.runs || [],
+      loading: !trainDay.runs,
+      onStation: (st) => {
+        const s = stationList().find((x) => x.id === st.id);
+        if (!s) return;
+        stationWhen = st.dep * 1000 - 5 * 60_000;
+        stationWhenId = s.id;
+        showStation({ properties: { id: s.id, name: s.name }, geometry: { coordinates: [s.lon, s.lat] } });
+      },
+    }),
+  );
+  $("detail-body").replaceChildren(body);
+  if (!open) return;
+  detailKind = "trainday";
+  if (sheet.hidden) openSheet("detail");
+  sheets.setSnap("detail", "half");
+  sheet.scrollTop = 0;
+}
+
 /** Popup with a station's next departures and approaching trains. */
 function showStation(f, { refresh = false } = {}) {
   const { id, name } = f.properties;
@@ -1086,7 +1176,7 @@ function showStation(f, { refresh = false } = {}) {
   for (const r of regions) {
     if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(() => (stationPop?.isOpen() || (detailKind === "station" && stationView === f)) && showStation(f, { refresh: true }));
   }
-  if (isPhone()) return showStationSheet(f, regions, refresh);
+  if (isPhone() || (stationWhen && stationWhenId === id)) return showStationSheet(f, regions, refresh);
   const body = stationPopup(
     lang,
     { id, name },
@@ -1099,6 +1189,12 @@ function showStation(f, { refresh = false } = {}) {
     {
       fav: favButton({ type: "station", id, name, lon, lat }, () => showStation(f)),
       onHistory: CONFIG.apiBase ? () => openHistory({ kind: "station", id, title: t(lang, "histTitleStation", { name }), days: FREE_DAYS }) : null,
+      onOtherDay: () => {
+        stationPop?.remove();
+        stationWhen = Date.now() + 86_400_000;
+        stationWhenId = id;
+        showStation(f);
+      },
       commute:
         CONFIG.platform === "android" && CONFIG.pro
           ? {
@@ -1136,6 +1232,7 @@ function showStationSheet(f, regions, refresh) {
   const [lon, lat] = f.geometry.coordinates;
   const now = Date.now();
   const sheet = $("detail");
+  if (stationWhenId !== id) stationWhen = null; // another station: now again
   if (!refresh) {
     stationTab = "dep";
     selected = null;
@@ -1143,8 +1240,30 @@ function showStationSheet(f, regions, refresh) {
     map.getSource("route")?.setData(emptyGeoJson());
     map.getSource("selected")?.setData(emptyGeoJson());
   }
-  const board = JSON.parse(engine.stationBoardJson(id, now, 90 * 60, 12));
-  const approaching = JSON.parse(engine.approachingJson(id, now, 30 * 60)).slice(0, 10);
+  const redrawPlan = () => showStation(f, { refresh: true });
+  // A chosen date: that day's timetable from the plan-ahead engine.
+  const when = stationWhen;
+  if (when && stationPlan.key !== `${id}|${when}`) {
+    const key = `${id}|${when}`;
+    stationPlan = { key, loading: true, board: [], arrivals: [] };
+    getPlanner()
+      .ready([[lon, lat]])
+      .then((e) => {
+        if (stationPlan.key !== key) return;
+        stationPlan = {
+          key,
+          board: JSON.parse(e.stationBoardJson(id, when, 3 * 3600, 30)).filter((r) => !r.terminates),
+          arrivals: JSON.parse(e.stationArrivalsJson(id, when, 3 * 3600, 30)),
+        };
+        redrawPlan();
+      })
+      .catch((e) => {
+        console.warn("plan", e);
+        if (stationPlan.key === key) (stationPlan = { key, board: [], arrivals: [] }), redrawPlan();
+      });
+  }
+  const board = when ? stationPlan.board : JSON.parse(engine.stationBoardJson(id, now, 90 * 60, 12));
+  const approaching = when ? [] : JSON.parse(engine.approachingJson(id, now, 30 * 60)).slice(0, 10);
   const nucleo = regions.find((r) => r.code !== "ld");
   const routes = [...new Set(board.map((r) => r.route).filter(Boolean))].slice(0, 4);
   const sub = [];
@@ -1157,6 +1276,14 @@ function showStationSheet(f, regions, refresh) {
     sub: sub.join(" · "),
     board,
     approaching,
+    planned: !!when,
+    loading: !!(when && stationPlan.loading),
+    arrivals: when ? stationPlan.arrivals : null,
+    when: whenFor("station-when", when, (ms) => {
+      stationWhen = ms;
+      stationWhenId = id;
+      redrawPlan();
+    }),
     tab: stationTab,
     onTab: (tab) => {
       stationTab = tab;
@@ -1164,6 +1291,7 @@ function showStationSheet(f, regions, refresh) {
     },
     lineColor: (route) => lineColors.get(`${region}|${route}`) || lineColors.get(`|${route}`),
     onDeparture: (r) => {
+      if (when) return openTrainDay(r.number, when);
       const i = engine.findTrain(r.trip_id, r.number);
       if (i >= 0) selectTrain(JSON.parse(engine.trainJson(i, Date.now())), { fly: true });
     },
@@ -1907,8 +2035,30 @@ function renderSearch() {
             t(lang, "searchNotRunningPro", { n }),
           ),
         );
+  // Any train number (or a UK headcode): its timetable on another day.
+  const dayN = /^\d{2,6}$/.test(q) ? q.replace(/^0+/, "") : /^\d[A-Za-z]\d\d$/.test(q) ? q.toUpperCase() : "";
+  const dayRow = dayN
+    ? el(
+        "li",
+        {},
+        el(
+          "button",
+          {
+            class: "link muted search-route",
+            id: "search-trainday",
+            onclick: () => {
+              ul.hidden = true;
+              $("search-q").value = "";
+              openTrainDay(dayN);
+            },
+          },
+          icon("clock", 16),
+          t(lang, "trainDayOpen", { n: dayN }),
+        ),
+      )
+    : null;
   if (!hits.length && !placeRows.length && !routeRows.length)
-    return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]), ...(routeOpen ? [routeOpen] : []));
+    return ul.replaceChildren(...(offRow ? [offRow] : [el("li", { class: "muted" }, t(lang, "searchNone"))]), ...(dayRow ? [dayRow] : []), ...(routeOpen ? [routeOpen] : []));
   ul.replaceChildren(
     ...routeRows,
     ...hits.map((h) =>
@@ -1931,6 +2081,7 @@ function renderSearch() {
       ),
     ),
     ...(offRow ? [offRow] : []),
+    ...(dayRow ? [dayRow] : []),
     ...stationRows,
   );
 }
@@ -2405,7 +2556,8 @@ function renderLayers() {
  */
 const ROUTE_HORIZON = 6 * 3600;
 const route = { from: null, to: null }; // {kind: "station" | "city", item}
-const routeCache = { key: "", at: 0, journeys: [] }; // the last search
+let routeWhen = null; // Cómo llegar from a chosen date and time (ms), or now
+let routeCache = { key: "", at: 0, journeys: [] }; // the last search
 
 function openRoute(from = route.from, to = route.to) {
   route.from = from;
@@ -2438,14 +2590,39 @@ function renderRoute() {
   // A search can take a good part of a second on a phone (Great Britain):
   // again only when the ends or the loaded timetables change, or each
   // minute for the live delays, not on every feed refresh.
-  const key = [a.map((x) => x.id).join(","), b.map((x) => x.id).join(","), ref?.loaded.size || 0].join("|");
-  if (routeCache.key !== key || Date.now() - routeCache.at > 60_000) {
-    routeCache.journeys = JSON.parse(engine.journeysJson(a.map((x) => x.id).join(","), b.map((x) => x.id).join(","), Date.now(), 2, 10, ROUTE_HORIZON));
-    routeCache.key = key;
-    routeCache.at = Date.now();
+  const ids = [a.map((x) => x.id).join(","), b.map((x) => x.id).join(",")];
+  const when = routeWhen;
+  const field = whenFor("route-when", when, (ms) => {
+    routeWhen = ms;
+    renderRoute();
+  });
+  if (when) {
+    // A chosen date: the plan-ahead engine (timetable only).
+    const key = [...ids, when].join("|");
+    if (routeCache.key !== key) {
+      routeCache = { key, at: Date.now(), journeys: null };
+      getPlanner()
+        .ready([...a, ...b].map((x) => [x.lon, x.lat]))
+        .then((e) => {
+          if (routeCache.key !== key) return;
+          routeCache.journeys = JSON.parse(e.journeysJson(ids[0], ids[1], when, 2, 10, ROUTE_HORIZON));
+          renderRoute();
+        })
+        .catch((e) => {
+          console.warn("plan", e);
+          if (routeCache.key === key) (routeCache.journeys = []), renderRoute();
+        });
+    }
+    if (!routeCache.journeys) return body.replaceChildren(field, el("p", { class: "small muted", id: "route-loading" }, t(lang, "planLoading")));
+  } else {
+    const key = [...ids, ref?.loaded.size || 0].join("|");
+    if (routeCache.key !== key || Date.now() - routeCache.at > 60_000) {
+      routeCache = { key, at: Date.now(), journeys: JSON.parse(engine.journeysJson(ids[0], ids[1], Date.now(), 2, 10, ROUTE_HORIZON)) };
+    }
   }
   const journeys = routeCache.journeys;
   body.replaceChildren(
+    ...[field, when ? el("p", { class: "small muted", id: "route-planned" }, t(lang, "plannedNote")) : null].filter(Boolean),
     ...journeyResults(lang, {
       from,
       to,
@@ -2459,9 +2636,9 @@ function renderRoute() {
   );
 }
 
-/** Today's day of the week in the country (1 Monday … 7 Sunday). */
-function isoToday() {
-  const wd = new Intl.DateTimeFormat("en-GB", { timeZone: CONFIG.timeZone, weekday: "short" }).format(new Date());
+/** Today's day of the week in the country (1 Monday … 7 Sunday), or `ms`'s. */
+function isoToday(ms = Date.now()) {
+  const wd = new Intl.DateTimeFormat("en-GB", { timeZone: CONFIG.timeZone, weekday: "short" }).format(new Date(ms));
   return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(wd) + 1;
 }
 
@@ -2475,7 +2652,8 @@ function saveRouteJourney(j) {
   const stationOf = (id) => stationList().find((x) => x.id === id);
   const from = stationOf(rides[0].from);
   const to = stationOf(rides[rides.length - 1].to);
-  const saved = journeyToSave(j, formatClock, isoToday());
+  // A journey found for a later date: its days default from that day.
+  const saved = journeyToSave(j, formatClock, isoToday(j.dep * 1000));
   if (!from || !to || !saved) return;
   const r = saveJourney(commutes, { from: { id: from.id, name: from.name, lon: from.lon, lat: from.lat }, to: { id: to.id, name: to.name, lon: to.lon, lat: to.lat } }, saved);
   commuteNote = r.full ? t(lang, "jFull", { n: MAX_COMMUTES }) : t(lang, "jSavedOk", { from: from.name, to: to.name });
