@@ -46,9 +46,16 @@ echo "naptan.csv: $(du -h gtfs/uk/naptan.csv | cut -f1), $(grep -c ',RLY,' gtfs/
 
 # NI Railways (Translink): the dataset's ZIP resource, wherever it now lives.
 # Optional: without it the UK has no Northern Ireland, nothing else changes.
-ni_url=$(curl -fsSL --retry 3 "https://admin.opendatani.gov.uk/api/3/action/package_show?id=nir20160126v2" |
-  jq -r '[.result.resources[] | select((.format | ascii_upcase) == "ZIP")][0].url // empty' || true)
-if [ -n "$ni_url" ] && curl -fsSL --retry 3 -o gtfs/uk/ni-txc.zip.part "$ni_url"; then
+# OpenDataNI refuses curl's default user agent on some hosts, so name ours.
+ua="TrainRadar refdata (https://www.mytrainradar.com)"
+ni_url=""
+for ckan in https://admin.opendatani.gov.uk https://www.opendatani.gov.uk; do
+  ni_url=$(curl -fsSL --retry 3 -A "$ua" "$ckan/api/3/action/package_show?id=nir20160126v2" |
+    jq -r '[.result.resources[] | select((.format | ascii_upcase) == "ZIP")][0].url // empty' || true)
+  [ -n "$ni_url" ] && break
+  echo "ni-txc.zip: no answer from $ckan"
+done
+if [ -n "$ni_url" ] && curl -fsSL --retry 3 -A "$ua" -o gtfs/uk/ni-txc.zip.part "$ni_url"; then
   mv gtfs/uk/ni-txc.zip.part gtfs/uk/ni-txc.zip
   echo "ni-txc.zip: $(du -h gtfs/uk/ni-txc.zip | cut -f1)"
 else
@@ -59,10 +66,19 @@ fi
 if [ "$osm" = 1 ] && [ ! -s gtfs/uk/rail.geojsonseq ]; then
   start=$SECONDS
   parts=()
+  # Great Britain's track is needed; Ireland's (for NI Railways) is optional.
   for region in united-kingdom/england united-kingdom/scotland united-kingdom/wales ireland-and-northern-ireland; do
     out="gtfs/uk/${region##*/}.osm.pbf"
-    curl -fsSL --retry 4 --retry-delay 10 --speed-limit 100000 --speed-time 60 -o "$out" \
-      "https://download.geofabrik.de/europe/$region-latest.osm.pbf"
+    url="https://download.geofabrik.de/europe/$region-latest.osm.pbf"
+    if ! curl -fsSL --retry 4 --retry-delay 10 --speed-limit 100000 --speed-time 60 -o "$out" "$url"; then
+      rm -f "$out"
+      if [ "$region" = ireland-and-northern-ireland ]; then
+        echo "OSM: $url failed; Northern Ireland without track this time"
+        continue
+      fi
+      echo "OSM: $url failed" >&2
+      exit 1
+    fi
     osmium tags-filter --overwrite -o "gtfs/uk/${region##*/}-rail.osm.pbf" "$out" w/railway=rail,narrow_gauge,disused
     rm "$out"
     parts+=("gtfs/uk/${region##*/}-rail.osm.pbf")

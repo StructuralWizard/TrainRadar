@@ -162,6 +162,7 @@ jobs:
           NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
           OSM_CACHED: ${{ steps.osm_uk.outputs.cache-hit }}
         run: |
+          set -o pipefail # a failed download stops here, with its own message
           [ "$OSM_CACHED" = "true" ] || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
           tools/fetch-uk.sh | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/uk-data --gzip \
