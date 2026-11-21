@@ -1,6 +1,6 @@
 # Plan 4: Northern Ireland (NI Railways) in the UK view
 
-Status: **proposed, 2026-11-21**. Facts from the NI feed check (`tools/ni-feed-check/`,
+Status: **4b agreed and built, 2026-11-21** (NI by timetable); 4c waits on live data access. Facts from the NI feed check (`tools/ni-feed-check/`,
 workflow "NI feed check", run on PR #71). Decisions below are proposals for the
 maintainer.
 

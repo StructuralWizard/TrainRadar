@@ -2175,7 +2175,8 @@ function phoneChrome() {
 let netPinned = null; // the network just picked, until the user moves the map
 function currentNetwork() {
   if (netPinned) return netPinned === "es" ? null : placeByCode(netPinned) || ref?.region(netPinned) || null;
-  if (!map || !ref || map.getZoom() < 7.5) return null;
+  // The UK is one network here: Great Britain's box also covers Northern Ireland.
+  if (UK || !map || !ref || map.getZoom() < 7.5) return null;
   const c = map.getCenter();
   return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
 }
@@ -2666,7 +2667,7 @@ function render(force = false) {
   renderHomeSummary(st, pos);
   renderLiveChip(st, now);
   $("stats").textContent =
-    statsText(lang, st) + (st.scheduled ? ` ${t(lang, "scheduledCount", { n: st.scheduled })}` : "");
+    statsText(lang, st) + (st.scheduled ? ` ${t(lang, UK ? "scheduledCountNi" : "scheduledCount", { n: st.scheduled })}` : "");
   const last = feeds?.lastUpdate() || 0;
   $("status").textContent = feeds?.failing()
     ? t(lang, "feedError")

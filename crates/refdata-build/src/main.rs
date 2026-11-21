@@ -334,6 +334,17 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 st.lines.join(", "),
                 st.last_day.map_or_else(|| "?".into(), calendar::format_date)
             ));
+            // Translink publishes a file per timetable period: warn (GitHub
+            // annotation) two weeks before the last day any service runs.
+            if let Some(last) = st.last_day
+                && last - window.start < 14
+            {
+                println!(
+                    "::warning::NI Railways' timetable ends on {}: Translink's next file isn't out yet",
+                    calendar::format_date(last)
+                );
+                report.push_str("  - ⚠ ends within two weeks: watch for Translink's next file\n");
+            }
             let trips: Vec<&load::Trip> = feed.trips.iter().collect();
             let (mut tt, legs, rs) =
                 build_timetable(&feed, &trips, build::NI, header.clone(), router.as_mut());

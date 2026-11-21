@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Synthetic UK data for the browser tests (plan 3): a London Euston –
+# Synthetic UK data for the browser tests (plans 3 and 4): a London Euston –
 # Watford Junction – Milton Keynes Central line every 10 minutes all day, in
 # Network Rail's SCHEDULE shape, built into demo/data/uk/ with refdata-build;
 # and the UK ingest's files in demo/rt/uk/ (trip updates with delays and a
@@ -31,8 +31,34 @@ with gzip.open(f"{tmp}/schedule.json.gz", "wt") as f:
                 {"location_type": "LI", "tiploc_code": "WATFDJ", "public_arrival": hm(m + 18), "public_departure": hm(m + 19)},
                 {"location_type": "LT", "tiploc_code": "MKNSCEN", "public_arrival": hm(m + 45)}]}}}) + "\n")
 PY
+# Northern Ireland (plan 4): Belfast Lanyon Place – Lisburn every 20 minutes,
+# in Translink's TransXChange shape (two platforms at Lanyon Place).
+python3 -I - "$tmp" <<'PY'
+import sys
+tmp = sys.argv[1]
+vjs = "".join(
+    f"<VehicleJourney><PrivateCode>rai-90-2-_-r13-1-{i + 1}-TA</PrivateCode><ServiceRef>NI1</ServiceRef>"
+    f"<LineRef>NI1</LineRef><JourneyPatternRef>JP1</JourneyPatternRef>"
+    f"<DepartureTime>{i * 20 // 60:02d}:{i * 20 % 60:02d}:00</DepartureTime></VehicleJourney>"
+    for i in range(72))
+stop = lambda atco, name, lon, lat: (f"<StopPoint><AtcoCode>{atco}</AtcoCode><Descriptor><CommonName>{name}</CommonName></Descriptor>"
+    f"<Place><Location><Longitude>{lon}</Longitude><Latitude>{lat}</Latitude></Location></Place></StopPoint>")
+xml = f"""<?xml version="1.0" encoding="windows-1252"?>
+<TransXChange xmlns="http://www.transxchange.org.uk/" SchemaVersion="2.4">
+<StopPoints>{stop("9000LP1", "Lanyon Place Train Station", -5.9171, 54.5947)}{stop("9000LP2", "Lanyon Place Train Station", -5.9169, 54.5949)}
+{stop("9000LB1", "Lisburn Train Station", -6.0436, 54.5141)}</StopPoints>
+<JourneyPatternSections><JourneyPatternSection id="JPS1"><JourneyPatternTimingLink id="L1">
+<From><StopPointRef>9000LP1</StopPointRef></From><To><StopPointRef>9000LB1</StopPointRef></To><RunTime>PT18M</RunTime>
+</JourneyPatternTimingLink></JourneyPatternSection></JourneyPatternSections>
+<Services><Service><ServiceCode>NI1</ServiceCode><Lines><Line id="NI1"><LineName>Portadown Line</LineName></Line></Lines>
+<OperatingPeriod><StartDate>2026-01-01</StartDate><EndDate>2030-12-31</EndDate></OperatingPeriod>
+<OperatingProfile><RegularDayType><DaysOfWeek><MondayToSunday /></DaysOfWeek></RegularDayType></OperatingProfile>
+<StandardService><JourneyPattern id="JP1"><JourneyPatternSectionRefs>JPS1</JourneyPatternSectionRefs></JourneyPattern></StandardService>
+</Service></Services><VehicleJourneys>{vjs}</VehicleJourneys></TransXChange>"""
+open(f"{tmp}/ni-txc.xml", "w", encoding="cp1252").write(xml)
+PY
 cargo run -q --release -p trainradar-refdata-build -- build --out demo/data/uk \
-  --uk-schedule "$tmp/schedule.json.gz" --naptan "$tmp/naptan.csv" > /dev/null
+  --uk-schedule "$tmp/schedule.json.gz" --naptan "$tmp/naptan.csv" --ni-txc "$tmp/ni-txc.xml" > /dev/null
 mkdir -p demo/rt/uk
 node --input-type=module - <<'JS'
 import { encodeTripUpdates } from "./backend-uk/src/gtfsrt.js";

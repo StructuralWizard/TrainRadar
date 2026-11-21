@@ -52,6 +52,11 @@ const trains = await page.evaluate(() => {
   }
   return out;
 });
+// Northern Ireland (plan 4): NI Railways by timetable only, apart from GB.
+const ni = trains.filter((t) => t.operator === "NI Railways");
+trains.splice(0, trains.length, ...trains.filter((t) => t.operator !== "NI Railways"));
+console.log("NI trains:", ni.map((t) => t.number).join(" "));
+if (!ni.length || !ni.every((t) => !t.live && /^P\d+$/.test(t.number))) await fail(`NI trains: ${JSON.stringify(ni)}`);
 console.log("UK trains:", trains.map((t) => `${t.number}(${t.delay ?? "-"})`).join(" "));
 if (!trains.every((t) => t.position === "scheduled" && t.live)) await fail(`not timetable-placed live trains: ${JSON.stringify(trains[0])}`);
 // From demo-uk.sh: every train ending in 3 is cancelled, even ones late.
@@ -62,7 +67,7 @@ if (!late) await fail(`no TRUST delay applied: ${JSON.stringify(trains)}`);
 if (trains.length < 3 || trains.length > 6) await fail(`${trains.length} trains running (London time?)`);
 if ((await page.textContent("#net-chip")).trim() !== "Reino Unido") await fail("chip isn't Reino Unido");
 const credits = await page.evaluate(() => document.querySelector(".maplibregl-ctrl-attrib")?.textContent || "");
-if (!/Network Rail Infrastructure Limited/.test(credits) || !/Open Government Licence/.test(credits)) await fail(`credits: ${credits.slice(0, 200)}`);
+if (!/Network Rail Infrastructure Limited/.test(credits) || !/Open Government Licence/.test(credits) || !/Translink/.test(credits)) await fail(`credits: ${credits.slice(0, 300)}`);
 
 // A train's sheet: estimated position, its delay.
 await page.fill("#search-q", late.number);
@@ -75,6 +80,18 @@ if (!/\+[17]\s*min/.test(sheet)) await fail(`delay not shown: ${sheet.slice(0, 2
 // Where the figures come from: Network Rail, not Renfe.
 if (!/Retraso: Network Rail/.test(sheet) || /Renfe/.test(sheet)) await fail(`sources: ${sheet.slice(Math.max(0, sheet.indexOf("Renfe") - 150), sheet.indexOf("Renfe") + 100)}`);
 await page.screenshot({ path: `${out}/uk-train.png` });
+await page.click("#detail-close").catch(() => page.keyboard.press("Escape"));
+
+// An NI train: placed by timetable, credited to Translink.
+await page.fill("#search-q", ni[0].number);
+await page.waitForSelector("#search-results li button", { timeout: 5000 }).catch(() => fail("search found no NI train"));
+await page.click("#search-results li button");
+await page.waitForFunction(() => /NI Railways/.test(document.querySelector("#detail")?.textContent || ""), null, { timeout: 10000 }).catch(() => fail("NI train sheet"));
+const niSheet = (await page.textContent("#detail")).replace(/\s+/g, " ");
+if (!/los datos en directo de NI Railways no son públicos/.test(niSheet) || !/Horario: Translink \(NI Railways\)/.test(niSheet)) await fail(`NI sheet: ${niSheet.slice(0, 400)}`);
+if (!/de NI Railways según horario/.test(await page.textContent("#stats"))) await fail(`stats: ${await page.textContent("#stats")}`);
+if ((await page.textContent("#net-chip")).trim() !== "Reino Unido") await fail(`chip over NI: ${await page.textContent("#net-chip")}`);
+await page.screenshot({ path: `${out}/uk-ni-train.png` });
 await page.click("#detail-close").catch(() => page.keyboard.press("Escape"));
 
 // Avisos: National Rail's notices, credited.
