@@ -80,6 +80,11 @@ if [ -n "${DIST:-}" ]; then
       "$DIST"/separacion-entre-trenes "$DIST"/registrar-viajes-tren "$DIST"/historico-trenes-renfe "$DIST"/[0-9a-f]*[0-9a-f].txt
     sed -i 's#platform: "web"#platform: "android"#; s#coffeeUrl: "[^"]*"#coffeeUrl: ""#' "$DIST/js/config.js"
     grep -q 'platform: "android"' "$DIST/js/config.js" || { echo "platform not set" >&2; exit 1; }
+    # The UK (plan 3) ships in the app with 3.0: until then UK_APP=true only.
+    if [ "${UK_APP:-}" != "true" ]; then
+      sed -i 's#countries: \["es", "uk"\]#countries: ["es"]#' "$DIST/js/config.js"
+      grep -q 'countries: \["es"\]' "$DIST/js/config.js" || { echo "countries not set" >&2; exit 1; }
+    fi
   fi
   if [ -n "${RT_FIXTURES:-}" ]; then
     # Test builds: feeds from bundled fixtures, polled like the pass-through;
