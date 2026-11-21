@@ -28,6 +28,11 @@ pub const WALK_MAX_UK_M: f64 = 1_000.0;
 fn walk_secs(m: f64) -> i64 {
     (m * 1.3 / 1.1).round() as i64 + 180
 }
+/// Faster than any train, straight line (m/s): 330 km/h in Spain (AVE at
+/// 310), 250 km/h in the UK (HS1 at 225). For a lower bound on the time
+/// left to the destination, so the search skips stations that can't help.
+const VMAX_MS: f64 = 330.0 / 3.6;
+const VMAX_UK_MS: f64 = 250.0 / 3.6;
 /// A train is caught only if it leaves within this time of being ready.
 const WAIT_MAX_SECS: i64 = 6 * 3_600;
 /// Trains scheduled up to this long before being ready are still checked
@@ -285,6 +290,21 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
     if src.is_empty() || dst.is_empty() || src.iter().any(|s| dst.contains(s)) {
         return Vec::new();
     }
+    // Lower bound on the time from each station to the destination.
+    let vmax = if uk { VMAX_UK_MS } else { VMAX_MS };
+    let ends: Vec<LatLon> = dst.iter().filter_map(|&d| st.coord[d as usize]).collect();
+    let lb: Vec<i64> = st
+        .coord
+        .iter()
+        .map(|c| match c {
+            Some(p) if !ends.is_empty() => ends
+                .iter()
+                .map(|e| (trainradar_proto::geo::haversine_m(*p, *e) / vmax) as i64)
+                .min()
+                .unwrap_or(0),
+            _ => 0,
+        })
+        .collect();
     let delays = Delays::new(net, live);
     let mut out: Vec<Journey> = Vec::new();
     let mut seen = HashSet::new();
@@ -298,7 +318,19 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
         if arrivals.len() >= limit || t > after + window_secs {
             break;
         }
-        let found = search(net, &st, &walks, &delays, &src, &dst, t, max_changes);
+        let found = search(
+            net,
+            &Ctx {
+                st: &st,
+                walks: &walks,
+                delays: &delays,
+                lb: &lb,
+            },
+            &src,
+            &dst,
+            t,
+            max_changes,
+        );
         let Some(first) = found.iter().map(Journey::dep).min() else {
             break;
         };
@@ -350,16 +382,29 @@ impl<'a> Delays<'a> {
 }
 
 #[allow(clippy::too_many_arguments)]
+/// What every pass of one query shares.
+struct Ctx<'c> {
+    st: &'c Stations<'c>,
+    walks: &'c [Vec<(u32, i64)>],
+    delays: &'c Delays<'c>,
+    /// Lower bound (s) from each station to the destination.
+    lb: &'c [i64],
+}
+
 fn search(
     net: &Network,
-    st: &Stations,
-    walks: &[Vec<(u32, i64)>],
-    delays: &Delays,
+    ctx: &Ctx,
     src: &[u32],
     dst: &HashSet<u32>,
     after: i64,
     max_changes: usize,
 ) -> Vec<Journey> {
+    let Ctx {
+        st,
+        walks,
+        delays,
+        lb,
+    } = *ctx;
     let n = st.ids.len();
     let rounds = max_changes + 1;
     // best[s]: earliest arrival at s in any round so far (pruning).
@@ -436,7 +481,7 @@ fn search(
                 // Alight here?
                 if let Some((tref, start, delay, is_live, b, bpos)) = cur {
                     let a = start + i64::from(sched[pos].arrival) + i64::from(delay.unwrap_or(0));
-                    if a < best[stop as usize] && a < best_dst(&best) {
+                    if a < best[stop as usize] && a + lb[stop as usize] < best_dst(&best) {
                         arr[k][stop as usize] = a;
                         best[stop as usize] = a;
                         label[k][stop as usize] = Some(Label::Ride {
@@ -456,7 +501,7 @@ fn search(
                 }
                 // Board here (or an earlier run of the pattern)?
                 let ready = arr[k - 1][stop as usize];
-                if ready == i64::MAX {
+                if ready == i64::MAX || ready + lb[stop as usize] >= best_dst(&best) {
                     continue;
                 }
                 // A change: the minimum change time (a walk already
@@ -487,7 +532,7 @@ fn search(
             let a = arr[k][s as usize];
             for &(j, w) in &walks[s as usize] {
                 let t = a + w;
-                if t < best[j as usize] && t < best_dst(&best) {
+                if t < best[j as usize] && t + lb[j as usize] < best_dst(&best) {
                     arr[k][j as usize] = t;
                     best[j as usize] = t;
                     label[k][j as usize] = Some(Label::Walk { from: s, secs: w });
