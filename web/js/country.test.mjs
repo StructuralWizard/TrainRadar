@@ -26,4 +26,7 @@ test("country: the UK points CONFIG at data/uk/ and uk/rt/, London time, no hist
   // Without a live bucket (local dev): the pass-through path, under uk/.
   const dev = applyCountry({ ...base(), liveBase: "" }, "uk");
   assert.equal(dev.rtBase, "/uk/rt/");
+  // The Android app's copy of the site's data: the UK's too.
+  assert.equal(applyCountry({ ...base(), remoteDataBase: "https://site.example/data/" }, "uk").remoteDataBase, "https://site.example/data/uk/");
+  assert.equal(applyCountry({ ...base(), remoteDataBase: "https://site.example/data/" }, "es").remoteDataBase, "https://site.example/data/");
 });

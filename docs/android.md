@@ -5,6 +5,14 @@ shell (`app/`). The engine, the map and the reference data ship inside the APK, 
 map opens without downloading them; live feeds come from the central bucket
 (`live.<domain>`), history from the API (`api.<domain>`).
 
+The timetables cover yesterday + 7 days, so the copy in the APK runs out about a
+week after the build (station boards go empty). The app therefore also reads the
+site's `data/` (`REMOTE_DATA`, set by `tools/build-app.sh` from `SITE`): when the
+app starts it uses whichever manifest is newer, and every 30 minutes, or when it comes
+back to the foreground, it reloads what changed (`RefData.refresh`). Offline, it starts on
+its own copy. The site serves `data/*` with `Access-Control-Allow-Origin: *`
+(`web/_headers`) for this. A browser tab left open does the same refresh.
+
 - **App id:** `com.metranos.trainradar` (permanent once published). Min Android 8.0
   (SDK 26), target SDK 36.
 - **Build flag:** `TARGET=android tools/build-web.sh` sets `CONFIG.platform = "android"`

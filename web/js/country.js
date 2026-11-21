@@ -23,6 +23,7 @@ export function applyCountry(config, code) {
   }
   // data/uk/ next to Spain's data/; the feeds under uk/rt/ next to rt/.
   config.dataBase = `${config.dataBase.replace(/\/?$/, "/")}uk/`;
+  if (config.remoteDataBase) config.remoteDataBase = `${config.remoteDataBase.replace(/\/?$/, "/")}uk/`;
   const uk = (base) => (base ? base.replace(/rt\/?$/, "uk/rt/") : base);
   config.liveBase = uk(config.liveBase);
   config.rtBase = config.liveBase || uk(config.rtBase);

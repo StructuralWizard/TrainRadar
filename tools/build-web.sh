@@ -21,6 +21,8 @@ if [ -n "${RT_BASE:-}" ]; then
   #              keeps the app on the pass-through only.
   #   API_BASE   the public history API (e.g. https://api.example); empty
   #              hides the history teaser.
+  #   REMOTE_DATA the site's data/ (Android app): newer timetables than the
+  #              copy in the app, downloaded when the app starts.
   origins=$(printf '%s' "$RT_BASE" | sed -E 's#^(https://[^/]+).*#\1#')
   live=""
   api=""
@@ -31,6 +33,12 @@ if [ -n "${RT_BASE:-}" ]; then
   if [ -n "${LIVE_BASE:-}" ]; then
     live="${LIVE_BASE%/}/rt/"
     origins="$origins $(printf '%s' "$LIVE_BASE" | sed -E 's#^(https://[^/]+).*#\1#')"
+  fi
+  if [ -n "${REMOTE_DATA:-}" ]; then
+    case "$REMOTE_DATA" in https://*/) ;; *) echo "REMOTE_DATA must be https://…/" >&2; exit 1 ;; esac
+    origins="$origins $(printf '%s' "$REMOTE_DATA" | sed -E 's#^(https://[^/]+).*#\1#')"
+    sed -i "s#remoteDataBase: \"\"#remoteDataBase: \"$REMOTE_DATA\"#" web/js/config.js
+    grep -q "remoteDataBase: \"$REMOTE_DATA\"" web/js/config.js || { echo "remoteDataBase not set" >&2; exit 1; }
   fi
   sed -i "s#rtBase: \"/rt/\"#rtBase: \"$RT_BASE\"#; s#liveBase: \"/rt/\"#liveBase: \"$live\"#; s#apiBase: \"/\"#apiBase: \"$api\"#" web/js/config.js
   origins=$(for o in $origins; do case "$o" in https://*) printf '%s ' "$o";; esac; done)

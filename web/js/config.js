@@ -13,6 +13,9 @@ export const CONFIG = {
   apiBase: "/",
   // Reference data built by refdata-build.
   dataBase: "data/",
+  // Android app: the site's data/ (absolute URL), newer than the copy in the
+  // app once the app is a few days old; "" = only dataBase.
+  remoteDataBase: "",
   // Free vector tiles, no API key (https://openfreemap.org).
   style: "https://tiles.openfreemap.org/styles/positron",
   // Initial view: mainland Spain.
