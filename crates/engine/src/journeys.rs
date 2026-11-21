@@ -30,6 +30,9 @@ fn walk_secs(m: f64) -> i64 {
 }
 /// A train is caught only if it leaves within this time of being ready.
 const WAIT_MAX_SECS: i64 = 6 * 3_600;
+/// Trains scheduled up to this long before being ready are still checked
+/// (running late, they may yet be caught).
+const LATE_MAX_SECS: i64 = 90 * 60;
 
 /// One train of a journey.
 #[derive(Debug, Clone, PartialEq)]
@@ -158,6 +161,9 @@ struct Stations<'a> {
     ids: Vec<&'a str>,
     index: HashMap<&'a str, u32>,
     coord: Vec<Option<LatLon>>,
+    /// Per region, per timetable stop: its dense index (no string lookups
+    /// in the search's inner loop).
+    of_stop: Vec<Vec<u32>>,
 }
 
 impl<'a> Stations<'a> {
@@ -166,6 +172,7 @@ impl<'a> Stations<'a> {
             ids: Vec::new(),
             index: HashMap::new(),
             coord: Vec::new(),
+            of_stop: Vec::new(),
         };
         let file: HashMap<&str, LatLon> = net
             .stations
@@ -178,16 +185,21 @@ impl<'a> Stations<'a> {
             })
             .unwrap_or_default();
         for r in &net.regions {
+            let mut of = Vec::with_capacity(r.tt.stops.len());
             for st in &r.tt.stops {
                 let id = st.id.as_str();
-                if s.index.contains_key(id) {
+                if let Some(&i) = s.index.get(id) {
+                    of.push(i);
                     continue;
                 }
-                s.index.insert(id, s.ids.len() as u32);
+                let i = s.ids.len() as u32;
+                s.index.insert(id, i);
                 s.ids.push(id);
                 s.coord
                     .push(Some(file.get(id).copied().unwrap_or_else(|| st.coord())));
+                of.push(i);
             }
+            s.of_stop.push(of);
         }
         s
     }
@@ -407,7 +419,7 @@ fn search(
                 }
             }
         }
-        for ((ri, pi), (pos0, _, _)) in boards.clone() {
+        for ((ri, pi), (pos0, _, _)) in std::mem::take(&mut boards) {
             let r = &net.regions[ri];
             let sched = &r.sched[pi as usize];
             let pattern = &r.tt.patterns[pi as usize];
@@ -420,7 +432,7 @@ fn search(
             // The trip being ridden: (start, delay, live, board stop index, board pos).
             let mut cur: Option<(TripRef, i64, Option<i32>, bool, u32, u16)> = None;
             for pos in pos0 as usize..sched.len() {
-                let stop = st.get(&r.tt.stops[pattern.stops[pos] as usize].id).unwrap();
+                let stop = st.of_stop[ri][pattern.stops[pos] as usize];
                 // Alight here?
                 if let Some((tref, start, delay, is_live, b, bpos)) = cur {
                     let a = start + i64::from(sched[pos].arrival) + i64::from(delay.unwrap_or(0));
@@ -528,7 +540,9 @@ fn earliest_run(
     let r = &net.regions[ri];
     let st = &r.sched[pi as usize];
     let today = madrid_day(ready - behind);
-    let mut best: Option<(i64, TripRef, i64, Option<i32>, bool)> = None;
+    // Runs by scheduled departure; live state only for the first few
+    // (a late train scheduled before `ready` may still be catchable).
+    let mut cands: Vec<(i64, u32, i64, i64)> = Vec::new();
     for &ti in &r.pattern_trips[pi as usize] {
         let trip = &r.tt.trips[ti as usize];
         for day in [today - 1, today, today + 1] {
@@ -538,28 +552,34 @@ fn earliest_run(
             }
             let start = service_day_base(day) + behind + i64::from(trip.start);
             let sched_dep = start + i64::from(st[pos].departure);
-            // Cheap bounds before the live lookup (delays up to 3 h).
-            if sched_dep < ready - 3 * 3_600 || sched_dep > ready + WAIT_MAX_SECS {
-                continue;
+            if sched_dep >= ready - LATE_MAX_SECS && sched_dep <= ready + WAIT_MAX_SECS {
+                cands.push((sched_dep, ti, start, day));
             }
-            if best.is_some_and(|b| sched_dep - 3 * 3_600 > b.0) {
-                continue;
-            }
-            let tref = TripRef {
-                region: ri as u16,
-                trip: ti,
-            };
-            let (delay, canceled, is_live) = delays.of(&r.tt.trip_id(trip), tref, day);
-            if canceled {
-                continue;
-            }
-            let dep = sched_dep + i64::from(delay.unwrap_or(0));
-            if dep < ready || dep > ready + WAIT_MAX_SECS {
-                continue;
-            }
-            if best.is_none_or(|b| dep < b.0) {
-                best = Some((dep, tref, start, delay, is_live));
-            }
+        }
+    }
+    cands.sort_unstable_by_key(|c| c.0);
+    let mut best: Option<(i64, TripRef, i64, Option<i32>, bool)> = None;
+    for (sched_dep, ti, start, day) in cands {
+        // Later runs leave at or after their timetable (bar a few minutes
+        // early): none can beat the one found.
+        if best.is_some_and(|b| sched_dep - 300 >= b.0) {
+            break;
+        }
+        let tref = TripRef {
+            region: ri as u16,
+            trip: ti,
+        };
+        let (delay, canceled, is_live) =
+            delays.of(&r.tt.trip_id(&r.tt.trips[ti as usize]), tref, day);
+        if canceled {
+            continue;
+        }
+        let dep = sched_dep + i64::from(delay.unwrap_or(0));
+        if dep < ready || dep > ready + WAIT_MAX_SECS {
+            continue;
+        }
+        if best.is_none_or(|b| dep < b.0) {
+            best = Some((dep, tref, start, delay, is_live));
         }
     }
     best.map(|(_, t, s, d, l)| (t, s, d, l))
