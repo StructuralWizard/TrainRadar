@@ -43,6 +43,43 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info" />
         </receiver>
 
+        <!-- TrainRadar Pro list widgets (ListWidget.java): departures, arrivals,
+             one train, notices; as many of each as you like. -->
+        <receiver android:name=".DeparturesWidget" android:exported="false" android:label="@string/widget_departures_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_departures_info" />
+        </receiver>
+        <receiver android:name=".ArrivalsWidget" android:exported="false" android:label="@string/widget_arrivals_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_arrivals_info" />
+        </receiver>
+        <receiver android:name=".TrainWidget" android:exported="false" android:label="@string/widget_train_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_train_info" />
+        </receiver>
+        <receiver android:name=".NoticesWidget" android:exported="false" android:label="@string/widget_notices_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_notices_info" />
+        </receiver>
+        <!-- Chooses a new widget's station or train (from the favourites). -->
+        <activity
+            android:name=".WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.AppCompat.DayNight.Dialog">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

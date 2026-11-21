@@ -795,33 +795,29 @@ impl Engine {
             i64::from(horizon_secs),
             limit,
         );
-        let mut s = String::from("[");
-        for (i, r) in rows.iter().enumerate() {
-            if i > 0 {
-                s.push(',');
-            }
-            json::Obj::new(&mut s)
-                .s("trip_id", &r.trip_id)
-                .s("route", &r.route)
-                .s("number", &r.number)
-                .s("other_end", &r.other_end)
-                .b("terminates", r.terminates)
-                .n(
-                    "sched",
-                    if r.terminates {
-                        r.sched_arr
-                    } else {
-                        r.sched_dep
-                    },
-                )
-                .on("delay", r.delay)
-                .n("expected", r.expected())
-                .b("canceled", r.canceled)
-                .b("live", r.live)
-                .end();
-        }
-        s.push(']');
-        s
+        board_rows_json(&rows)
+    }
+
+    /// Next trains arriving at a station (not those starting there), by
+    /// arrival, same fields as [`Self::station_board_json`]: `sched` is the
+    /// arrival and `other_end` where the train comes from.
+    #[wasm_bindgen(js_name = stationArrivalsJson)]
+    pub fn station_arrivals_json(
+        &self,
+        station_id: &str,
+        now_ms: f64,
+        horizon_secs: i32,
+        limit: usize,
+    ) -> String {
+        let rows = places::arrivals(
+            &self.net,
+            &self.live,
+            station_id,
+            secs(now_ms),
+            i64::from(horizon_secs),
+            limit,
+        );
+        board_rows_json(&rows)
     }
 
     /// Trains on the map heading for a station within `horizon_secs`, by
@@ -1465,6 +1461,37 @@ impl FeedPoller {
             .next_delay_ms(random)
             .map_or(-1, |ms| i32::try_from(ms).unwrap_or(i32::MAX))
     }
+}
+
+/// A station board's rows as JSON (departures or arrivals).
+fn board_rows_json(rows: &[places::BoardRow]) -> String {
+    let mut s = String::from("[");
+    for (i, r) in rows.iter().enumerate() {
+        if i > 0 {
+            s.push(',');
+        }
+        json::Obj::new(&mut s)
+            .s("trip_id", &r.trip_id)
+            .s("route", &r.route)
+            .s("number", &r.number)
+            .s("other_end", &r.other_end)
+            .b("terminates", r.terminates)
+            .n(
+                "sched",
+                if r.terminates || r.by_arrival {
+                    r.sched_arr
+                } else {
+                    r.sched_dep
+                },
+            )
+            .on("delay", r.delay)
+            .n("expected", r.expected())
+            .b("canceled", r.canceled)
+            .b("live", r.live)
+            .end();
+    }
+    s.push(']');
+    s
 }
 
 #[cfg(test)]

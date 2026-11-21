@@ -5,6 +5,15 @@
     <string name="package_name">com.metranos.trainradar</string>
     <string name="custom_url_scheme">com.metranos.trainradar</string>
     <string name="widget_description">Your favourite trains and their delay (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Next departures from a station (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Next arrivals at a station (TrainRadar Pro)</string>
+    <string name="widget_train_description">One train: delay, next stop and destination (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Renfe\'s notices in force (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Departures</string>
+    <string name="widget_arrivals_label">Arrivals</string>
+    <string name="widget_train_label">Train</string>
+    <string name="widget_notices_label">Renfe notices</string>
+    <string name="widget_refresh">Refresh</string>
     <!-- In-app updates (InAppUpdates.java) -->
     <string name="update_ready_title">Update ready</string>
     <string name="update_ready_message">A new version of TrainRadar has been downloaded. Restart to use it.</string>

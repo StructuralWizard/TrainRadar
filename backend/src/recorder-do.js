@@ -7,6 +7,7 @@ import wasmModule from "../../web/pkg/engine_bg.wasm";
 import { Engine, initSync } from "../../web/pkg/engine.js";
 import { dailyJob } from "./history.js";
 import { CYCLE_MS, RecorderCore } from "./recorder.js";
+import { widgetResponse } from "./widgets.js";
 
 let ready = false;
 function makeEngine() {
@@ -40,6 +41,7 @@ export class Recorder {
       await this.state.storage.put("daily", out);
       return Response.json(out);
     }
+    if (path.startsWith("/widget/")) return widgetResponse(this.core.engine, path, Date.now());
     if (path === "/status") {
       return Response.json({
         enabled: this.core.enabled(),

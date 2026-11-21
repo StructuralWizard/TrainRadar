@@ -143,3 +143,41 @@ test("disabled or broken: the error is reported, nothing thrown", { skip }, asyn
   const doc = JSON.parse(await (await live.get("rt/recorder.json")).text());
   assert.equal(doc.ok, false);
 });
+
+test("widgets: a station's departures and arrivals, and the notices, from the recorder's engine", { skip }, async () => {
+  const { boardDoc, noticesDoc, trainDoc, widgetResponse } = await import("../src/widgets.js");
+  const now = statSync(new URL("vehicle_positions.pb", RT)).mtimeMs + 30_000;
+  const live = await liveBucket(now - 5_000);
+  const env = { RECORDER_ENABLED: "true", REFDATA_BASE: "https://site.example/data", LIVE: live, HISTORY: fakeD1(), ARCHIVE: fakeR2() };
+  const core = new RecorderCore({ makeEngine, storage: memoryStorage(), env, fetchFn: fetchData });
+  await core.cycle(now);
+  // Madrid-Puerta de Atocha in the demo data: AVE departures and arrivals.
+  const b = boardDoc(core.engine, "60000", now);
+  assert.equal(b.station, "60000");
+  assert.ok(b.departures.length > 0 && b.arrivals.length > 0, JSON.stringify(b).slice(0, 300));
+  for (const r of [...b.departures, ...b.arrivals]) {
+    assert.equal(typeof r.number, "string");
+    assert.equal(typeof r.place, "string");
+    assert.ok(r.sched > 0);
+    assert.ok(r.delay === null || Number.isInteger(r.delay));
+  }
+  assert.ok(b.departures.every((r, i, a) => i === 0 || a[i - 1].sched <= r.sched), "departures in timetable order");
+  assert.ok(b.arrivals.every((r, i, a) => i === 0 || a[i - 1].sched <= r.sched), "arrivals by arrival");
+  // A running train, and one that isn't.
+  const running = JSON.parse(core.engine.summaryJson(now)).find((x) => x.status === "running");
+  const t = trainDoc(core.engine, running.trainNo, now);
+  assert.equal(t.running, true, JSON.stringify(t));
+  assert.ok(t.destination && (t.nextStop === null || typeof t.nextStop === "string"));
+  assert.equal(trainDoc(core.engine, "99999", now).running, false);
+  assert.equal(widgetResponse(core.engine, "/widget/train/99999", now).status, 200);
+  const n = noticesDoc(core.engine, now);
+  assert.ok(Array.isArray(n.notices) && n.notices.length > 0);
+  assert.ok(n.notices.every((x) => typeof x.text === "string" && x.text.length <= 300));
+  // The DO's routes.
+  const ok = widgetResponse(core.engine, "/widget/board/60000", now);
+  assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get("Cache-Control"), "public, max-age=60");
+  assert.equal(widgetResponse(core.engine, "/widget/board/%3Cx%3E", now).status, 400);
+  assert.equal(widgetResponse(null, "/widget/notices", now).status, 503, "engine not loaded yet");
+  assert.equal((await widgetResponse(core.engine, "/widget/notices", now).json()).notices.length, n.notices.length);
+});

@@ -1,6 +1,15 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="widget_description">Tus trenes favoritos y su retraso (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Próximas salidas de una estación (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Próximas llegadas a una estación (TrainRadar Pro)</string>
+    <string name="widget_train_description">Un tren: retraso, próxima parada y destino (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Avisos de Renfe en vigor (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Salidas</string>
+    <string name="widget_arrivals_label">Llegadas</string>
+    <string name="widget_train_label">Tren</string>
+    <string name="widget_notices_label">Avisos de Renfe</string>
+    <string name="widget_refresh">Actualizar</string>
     <!-- Actualizaciones desde la app (InAppUpdates.java) -->
     <string name="update_ready_title">Actualización lista</string>
     <string name="update_ready_message">Se ha descargado una nueva versión de TrainRadar. Reinicia para usarla.</string>

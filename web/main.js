@@ -1214,6 +1214,16 @@ async function refreshEntitlement() {
   renderMore();
 }
 
+/** What the Android list widgets need (WidgetStore.appConfig): the live
+ * API and the language. Written at start and when the language changes. */
+function writeWidgetConfig() {
+  if (CONFIG.platform !== "android") return Promise.resolve();
+  return prefs
+    .set("widget-config", JSON.stringify({ lang, apiBase: CONFIG.apiBase }))
+    .then(() => appNative.refreshWidget())
+    .catch(() => {});
+}
+
 /** What the background check needs (read natively from Preferences). */
 function writeAlertConfig() {
   const cfg = { enabled: alertsOn, lang, liveBase: CONFIG.liveBase, minor: MINOR, major: MAJOR };
@@ -3095,6 +3105,7 @@ $("fav-btn").addEventListener("click", () => {
 $("favs-close").addEventListener("click", () => ($("favs").hidden = true));
 $("settings-close").addEventListener("click", () => ($("settings").hidden = true));
 startBilling();
+writeWidgetConfig();
 prefs
   .get(STORAGE_KEY)
   .then((v) => {
@@ -3138,6 +3149,7 @@ $("lang").addEventListener("click", () => {
   applyLang();
   sheets.apply();
   if (alertsOn) writeAlertConfig();
+  writeWidgetConfig();
 });
 $("delayed-btn").addEventListener("click", () => {
   const panel = $("delayed");
