@@ -747,3 +747,14 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 .journey-notify { list-style: none; margin: 0; padding: 0; }
 .journey-notify li { padding: 3px 0; }
 .journey-remind select { font: inherit; }
+
+/* "When": now, or a date and time (future timetables). */
+.when-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 8px; }
+.when-pick { display: inline-flex; align-items: center; gap: 6px; color: var(--muted, #6b7280); }
+.when-pick input { font: inherit; padding: 4px 6px; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; background: transparent; color: inherit; }
+.trainday-stops { list-style: none; margin: 0; padding: 0; }
+.trainday-stops li { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--line, #eee); }
+@media (prefers-color-scheme: dark) {
+  .when-pick input { border-color: #374151; color-scheme: dark; }
+  .trainday-stops li { border-color: #1f2937; }
+}

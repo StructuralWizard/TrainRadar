@@ -86,6 +86,13 @@ jobs:
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data
+      - name: Plan-ahead timetables (63 days, sizes)
+        run: |
+          target/release/refdata-build build --out web/data-plan --gzip --days 63 \
+            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
+            --report plan.md
+          target/release/refdata-build verify web/data-plan
+          { echo "## Plan-ahead timetables"; echo; cat plan.md; echo; jq -r '.regions[] | "- \(.code): until \(.until)"' web/data-plan/manifest.json; } >> "$GITHUB_STEP_SUMMARY"
       - name: Journeys with changes on the real timetables (timings)
         run: cargo run --release -q -p trainradar-engine --example journeys_bench -- web/data | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Journeys in the United Kingdom (the site's public data/uk/)

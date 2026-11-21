@@ -157,8 +157,8 @@ fn day_mask(
     period: (i64, Option<i64>),
     off: &[(i64, i64)],
     on: &[(i64, i64)],
-) -> u16 {
-    let mut mask = 0u16;
+) -> u64 {
+    let mut mask = 0u64;
     for n in 0..window.days {
         let day = window.start + i64::from(n);
         let in_period = day >= period.0 && period.1.is_none_or(|e| day <= e);

@@ -7,7 +7,7 @@
 // bundles a copy (offline start) and also knows the site's data/ (`remote`):
 // it uses whichever is newer.
 
-async function fetchBytes(url) {
+export async function fetchBytes(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
   const bytes = new Uint8Array(await r.arrayBuffer());
@@ -20,7 +20,7 @@ async function fetchBytes(url) {
   return bytes;
 }
 
-async function fetchManifest(base, timeoutMs = 10_000) {
+export async function fetchManifest(base, timeoutMs = 10_000) {
   const r = await fetch(`${base}manifest.json`, { cache: "no-cache", signal: AbortSignal.timeout(timeoutMs) });
   if (!r.ok) throw new Error(`manifest: HTTP ${r.status}`);
   return r.json();

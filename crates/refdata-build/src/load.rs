@@ -31,7 +31,7 @@ pub struct Trip {
     pub headsign: String,
     pub short_name: String,
     pub shape_id: String,
-    pub days: u16,
+    pub days: u64,
     /// (stop index, arrival, departure), in stop_sequence order.
     pub stop_times: Vec<(usize, u32, u32)>,
 }

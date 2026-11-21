@@ -563,6 +563,10 @@ pub struct RegionEntry {
     /// OpenStreetMap track for this region, loaded after the timetable.
     pub geometry: Option<FileEntry>,
     pub operator: String,
+    /// The last day (YYYY-MM-DD) any of its trains runs in the window: the
+    /// end of the published timetable when that comes first.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub until: Option<String>,
     /// False for timetable-only operators (no live positions).
     pub live: bool,
     pub stats: RegionStats,

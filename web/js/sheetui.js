@@ -2,7 +2,7 @@
 // desktop keeps the map popups (ui.js trainPopup / stationPopup). Feed text
 // (names, lines, notices) only ever goes into textContent.
 import { t } from "./i18n.js";
-import { formatAgo, formatClock, formatCount, formatDistance } from "./format.js";
+import { formatAgo, formatClock, formatCount, formatDistance, fromZonedInput, zonedInput } from "./format.js";
 import { icon } from "./icons.js";
 import { fold, matchScore } from "./places.js";
 import { el, historyBox, minutesUntil, trainAlerts, trainRows, trainTitle } from "./ui.js";
@@ -229,6 +229,55 @@ export function trainSheet(lang, info, o = {}) {
  * tab "dep" | "arr", onTab, onDeparture(row), onTrain(info), onClose, fav,
  * onHistory, onShare, onRoute, commute, lineColor(route) }.
  */
+/**
+ * "When": now, or a date and time (plan future), in time zone `tz`.
+ * `value` unix ms or null (now); `until` the last day with timetables
+ * (YYYY-MM-DD) or null; `onChange(ms | null)`.
+ */
+export function whenField(lang, { id, value, tz, until, onChange }) {
+  const input = el("input", {
+    type: "datetime-local",
+    id,
+    "aria-label": t(lang, "whenLabel"),
+    value: value ? zonedInput(value, tz) : "",
+    min: zonedInput(Date.now() - 3600_000, tz),
+    max: until ? `${until}T23:59` : null,
+    onchange: (e) => onChange(fromZonedInput(e.target.value, tz)),
+  });
+  return el(
+    "div",
+    { class: "when-row" },
+    el("button", { type: "button", class: value ? "pill small" : "pill small pill-strong", "aria-pressed": String(!value), id: `${id}-now`, onclick: () => onChange(null) }, t(lang, "whenNow")),
+    el("label", { class: "when-pick" }, icon("clock", 16), input),
+  );
+}
+
+/** A train's stops on a date, by timetable (plan future): `runs` from
+ * engine trainOnDateJson. */
+export function trainDayList(lang, { number, runs, loading, onStation }) {
+  if (loading) return [el("p", { class: "muted small", id: "trainday-loading" }, t(lang, "planLoading"))];
+  if (!runs.length) return [el("p", { class: "muted", id: "trainday-none" }, t(lang, "trainNotThatDay", { n: number }))];
+  return runs.map((r) =>
+    el(
+      "section",
+      { class: "trainday" },
+      el("h3", { class: "group-h" }, [r.route, r.number].filter(Boolean).join(" "), el("span", { class: "muted small" }, ` · ${r.stops[0].name} → ${r.stops[r.stops.length - 1].name}`)),
+      el(
+        "ol",
+        { class: "trainday-stops" },
+        r.stops.map((st, i) =>
+          el(
+            "li",
+            {},
+            el("span", { class: "dep-time" }, formatClock(i === 0 ? st.dep : st.arr)),
+            onStation ? el("button", { type: "button", class: "link", onclick: () => onStation(st) }, st.name) : st.name,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 export function stationSheet(lang, station, o = {}) {
   const chip = (ic, label, onclick, attrs = {}) =>
     el("button", { class: "chip-btn", type: "button", onclick, ...attrs }, ic ? icon(ic, 16) : null, label);
@@ -272,7 +321,25 @@ export function stationSheet(lang, station, o = {}) {
       ),
     );
   });
-  const arrRows = (o.approaching || []).map((a) =>
+  // A chosen date: the timetable's arrivals instead of trains on the map.
+  const plannedArr = (o.arrivals || []).map((r) =>
+    el(
+      "li",
+      {},
+      el(
+        "div",
+        { class: "dep-row" },
+        el("span", { class: "dep-time" }, formatClock(r.sched)),
+        el(
+          "span",
+          { class: "dep-main" },
+          el("span", { class: "dep-line" }, lineBadge(r.route, o.lineColor?.(r.route)), el("span", { class: "dep-dest" }, t(lang, "fromOrigin", { origin: r.other_end }))),
+          el("span", { class: "dep-sub" }, t(lang, "trainNo", { n: r.number })),
+        ),
+      ),
+    ),
+  );
+  const arrRows = o.planned ? plannedArr : (o.approaching || []).map((a) =>
     el(
       "li",
       {},
@@ -299,10 +366,10 @@ export function stationSheet(lang, station, o = {}) {
     tab === "dep"
       ? depRows.length
         ? el("ul", { class: "dep-list" }, depRows)
-        : el("p", { class: "muted small" }, t(lang, "noTrainsSoon"))
+        : el("p", { class: "muted small" }, t(lang, o.planned ? (o.loading ? "planLoading" : "noTrainsPlanned") : "noTrainsSoon"))
       : arrRows.length
         ? el("ul", { class: "dep-list" }, arrRows)
-        : el("p", { class: "muted small" }, t(lang, "noneApproaching"));
+        : el("p", { class: "muted small" }, t(lang, o.planned ? (o.loading ? "planLoading" : "noTrainsPlanned") : "noneApproaching"));
 
   return el(
     "div",
@@ -315,7 +382,9 @@ export function stationSheet(lang, station, o = {}) {
     ),
     chips.length ? el("div", { class: "chip-row" }, chips) : null,
     o.fav?.full ? el("p", { class: "small muted fav-full" }, t(lang, "favFull", { n: o.fav.limit })) : null,
-    el("div", { class: "seg", role: "tablist", "aria-label": t(lang, "boardLabel") }, seg("dep", t(lang, "tabDepartures")), seg("arr", t(lang, "tabArriving"))),
+    o.when || null,
+    el("div", { class: "seg", role: "tablist", "aria-label": t(lang, "boardLabel") }, seg("dep", t(lang, "tabDepartures")), seg("arr", t(lang, o.planned ? "tabArrivals" : "tabArriving"))),
+    o.planned ? el("p", { class: "small muted", id: "station-planned" }, o.loading ? t(lang, "planLoading") : t(lang, "plannedNote")) : null,
     list,
   );
 }

@@ -89,6 +89,17 @@ pub struct Network {
     by_number: HashMap<String, Vec<TripRef>>,
 }
 
+/// Whether a trip runs on Madrid service day `day`, by its timetable
+/// file's window (up to 64 days).
+pub fn runs_on(
+    header: &trainradar_proto::refdata::Header,
+    trip: &trainradar_proto::refdata::TripRec,
+    day: i64,
+) -> bool {
+    let bit = day - i64::from(header.window_start_day);
+    (0..i64::from(header.window_days).min(64)).contains(&bit) && trip.days & (1u64 << bit) != 0
+}
+
 /// Commercial train number of a trip: `short_name`, or the leading digits of
 /// the id after its service prefix (Cercanías `1004D` + `19799` + `C1`).
 /// Distance over which gradients are measured: long enough to average out
@@ -223,6 +234,31 @@ impl Network {
                 self.by_number.entry(n).or_default().push(tref);
             }
         }
+    }
+
+    /// Runs of train `number` (leading zeros ignored) starting on Madrid
+    /// service day `day` or the day before (night trains still running), as
+    /// (trip, unix start): the timetable's, no live data (plan future).
+    pub fn runs_of_number(&self, number: &str, day: i64) -> Vec<(TripRef, i64)> {
+        let n = number.trim_start_matches('0');
+        let mut out = Vec::new();
+        for &t in self.by_number.get(n).map_or(&[][..], Vec::as_slice) {
+            let r = &self.regions[t.region as usize];
+            let trip = &r.tt.trips[t.trip as usize];
+            let behind = crate::networkrail::behind_madrid_secs(&r.tt.region);
+            for d in [day - 1, day] {
+                if runs_on(&r.tt.header, trip, d) {
+                    out.push((
+                        t,
+                        trainradar_proto::time::service_day_base(d)
+                            + behind
+                            + i64::from(trip.start),
+                    ));
+                }
+            }
+        }
+        out.sort_by_key(|&(_, s)| s);
+        out
     }
 
     pub fn trip(&self, t: TripRef) -> &TripRec {
@@ -530,8 +566,7 @@ impl Network {
                 .last()
                 .map_or(0, |s| i64::from(s.arrival));
             for day in [today - 1, today, today + 1] {
-                let bit = day - i64::from(r.tt.header.window_start_day);
-                if !(0..16).contains(&bit) || trip.days & (1 << bit) == 0 {
+                if !runs_on(&r.tt.header, trip, day) {
                     continue;
                 }
                 let start = service_day_base(day) + i64::from(trip.start);
@@ -643,6 +678,18 @@ pub mod tests {
     /// UTC for a Madrid local time on 1 Nov 2026 (CET, UTC+1).
     pub fn local(h: i64, m: i64) -> i64 {
         days_from_civil(2026, 11, 1) * 86_400 + (h - 1) * 3_600 + m * 60
+    }
+
+    #[test]
+    fn runs_of_a_number_on_a_day() {
+        let n = sample_network();
+        // Train 190 runs on 1 Nov only (bit 1): 09:00 Madrid.
+        let day = days_from_civil(2026, 11, 1);
+        let runs = n.runs_of_number("00190", day);
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].1, local(9, 0));
+        assert!(n.runs_of_number("190", day + 2).is_empty());
+        assert!(n.runs_of_number("999", day).is_empty());
     }
 
     #[test]

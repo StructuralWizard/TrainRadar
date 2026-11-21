@@ -142,6 +142,18 @@ jobs:
             --sources gtfs/sources.tsv --report refdata.md
           cargo run --release -q -p trainradar-refdata-build -- verify build/data
           cat refdata.md >> "$GITHUB_STEP_SUMMARY"
+      # Plan ahead (docs/plan-future.md): the same feeds over 63 days, as far
+      # as they go, without track, in data/plan/. The app loads them only
+      # for a later date. Without them the site works as before.
+      - name: Plan-ahead timetables
+        continue-on-error: true
+        run: |
+          cargo run --release -q -p trainradar-refdata-build -- build --out build/plan --gzip --days 63 \
+            --ld gtfs/ld.zip --cercanias gtfs/cercanias.zip $([ -f gtfs/ouigo.zip ] && echo --ouigo gtfs/ouigo.zip) \
+            --report plan.md
+          cargo run --release -q -p trainradar-refdata-build -- verify build/plan
+          mv build/plan build/data/plan
+          { echo "## Plan-ahead timetables"; echo; cat plan.md; } >> "$GITHUB_STEP_SUMMARY"
 
       # The UK (plan 3), with UK_ENABLED: Network Rail's timetable, NaPTAN and
       # Great Britain's OSM track → data/uk/. A UK failure never stops
@@ -171,6 +183,16 @@ jobs:
               $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/uk-data; then
             mv build/uk-data build/data/uk
+            # Plan ahead: 63 days as far as published, in data/uk/plan/.
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/uk-plan --gzip --days 63 \
+                --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
+                $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) --report uk-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/uk-plan; then
+              mv build/uk-plan build/data/uk/plan
+              { echo "## UK plan-ahead timetables"; echo; cat uk-plan.md; } >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning::UK plan-ahead timetables failed: the UK has today's week only."
+            fi
             { echo "## UK reference data"; echo; cat refdata-uk.md; } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::warning::UK reference data failed: deploying Spain only."

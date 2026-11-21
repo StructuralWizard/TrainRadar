@@ -495,6 +495,57 @@ impl Engine {
     /// Route of train `index` for highlighting: `{line: [[lon, lat]…],
     /// stops: [{name, lon, lat, time}], same_line: [indexes]}`. `time` is the
     /// expected arrival (schedule + current delay). `null` if unmatched.
+    /// Train `number`'s runs on the day of `at_ms` (Madrid; London times
+    /// for the UK), by the timetable only (plan future): `[{trip_id, route,
+    /// number, operator, stops: [{id, name, arr, dep}]}]` (unix seconds),
+    /// runs that started the day before and are still going included; `[]`
+    /// when it doesn't run that day.
+    #[wasm_bindgen(js_name = trainOnDateJson)]
+    pub fn train_on_date_json(&self, number: &str, at_ms: f64) -> String {
+        let day = trainradar_proto::time::madrid_day(secs(at_ms));
+        let mut s = String::from("[");
+        let mut first = true;
+        for (t, start) in self.net.runs_of_number(number, day) {
+            let r = &self.net.regions[t.region as usize];
+            let trip = self.net.trip(t);
+            let sched = self.net.schedule(t);
+            // Only runs on that day: started then, or still going at its start.
+            let end = start + i64::from(sched.last().map_or(0, |x| x.arrival));
+            let day_start = trainradar_proto::time::service_day_base(day);
+            if start >= day_start + 86_400 || end < day_start {
+                continue;
+            }
+            let p = &r.tt.patterns[trip.pattern as usize];
+            let mut stops = String::from("[");
+            for (i, (&si, st)) in p.stops.iter().zip(sched).enumerate() {
+                if i > 0 {
+                    stops.push(',');
+                }
+                let stop = &r.tt.stops[si as usize];
+                json::Obj::new(&mut stops)
+                    .s("id", &stop.id)
+                    .s("name", &stop.name)
+                    .n("arr", start + i64::from(st.arrival))
+                    .n("dep", start + i64::from(st.departure))
+                    .end();
+            }
+            stops.push(']');
+            if !first {
+                s.push(',');
+            }
+            first = false;
+            json::Obj::new(&mut s)
+                .s("trip_id", &r.tt.trip_id(trip))
+                .s("route", &r.tt.routes[trip.route as usize].short_name)
+                .s("number", &network::train_number(trip))
+                .s("operator", &r.tt.operator)
+                .raw("stops", &stops)
+                .end();
+        }
+        s.push(']');
+        s
+    }
+
     #[wasm_bindgen(js_name = tripJson)]
     pub fn trip_json(&self, index: usize) -> String {
         let Some(t) = self.live.trains.get(index) else {

@@ -43,8 +43,8 @@ impl Window {
         &self,
         calendar: Option<&Table>,
         dates: Option<&Table>,
-    ) -> HashMap<String, u16> {
-        let mut masks: HashMap<String, u16> = HashMap::new();
+    ) -> HashMap<String, u64> {
+        let mut masks: HashMap<String, u64> = HashMap::new();
         if let Some(t) = calendar {
             let id = t.col("service_id");
             let wd: Vec<_> = [
@@ -65,7 +65,7 @@ impl Window {
                 else {
                     continue;
                 };
-                let mut mask = 0u16;
+                let mut mask = 0u64;
                 for n in 0..self.days {
                     let day = self.start + i64::from(n);
                     if day >= s && day <= e && t.get(r, wd[weekday(day)]) == "1" {

@@ -48,8 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let st = net.schedule(tref);
             let dur = i64::from(st.last().map_or(0, |s| s.arrival));
             for day in [today - 1, today] {
-                let bit = day - i64::from(region.tt.header.window_start_day);
-                if !(0..16).contains(&bit) || trip.days & (1 << bit) == 0 {
+                if !trainradar_engine::network::runs_on(&region.tt.header, trip, day) {
                     continue;
                 }
                 let start = service_day_base(day) + i64::from(trip.start);
