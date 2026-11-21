@@ -54,6 +54,8 @@ jobs:
             --rail demo/gtfs/rail.geojsonseq --rail-heights demo/gtfs/heights.txt \
             --rail-attrs demo/gtfs/igr-rail.geojsonseq
           cargo run --release -q -p trainradar-engine --example fixture -- demo/data demo/rt
+          # The UK (plan 3): Great Britain and Northern Ireland, demo data and feeds.
+          tools/demo-uk.sh
       - name: Web bundle for the app (TARGET=android, demo data)
         run: TARGET=android DIST=app/www DATA_DIR=demo/data RT_FIXTURES=demo/rt tools/build-web.sh
       - name: Unit tests (alert rules) and the test APKs

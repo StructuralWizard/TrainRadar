@@ -31,7 +31,8 @@ with gzip.open(f"{tmp}/schedule.json.gz", "wt") as f:
                 {"location_type": "LI", "tiploc_code": "WATFDJ", "public_arrival": hm(m + 18), "public_departure": hm(m + 19)},
                 {"location_type": "LT", "tiploc_code": "MKNSCEN", "public_arrival": hm(m + 45)}]}}}) + "\n")
 PY
-# Northern Ireland (plan 4): Belfast Lanyon Place – Lisburn every 20 minutes,
+# Northern Ireland (plan 4): Belfast Lanyon Place – Lisburn every 10 minutes
+# (always one running: the run takes 18),
 # in Translink's TransXChange shape (two platforms at Lanyon Place).
 python3 -I - "$tmp" <<'PY'
 import sys
@@ -39,8 +40,8 @@ tmp = sys.argv[1]
 vjs = "".join(
     f"<VehicleJourney><PrivateCode>rai-90-2-_-r13-1-{i + 1}-TA</PrivateCode><ServiceRef>NI1</ServiceRef>"
     f"<LineRef>NI1</LineRef><JourneyPatternRef>JP1</JourneyPatternRef>"
-    f"<DepartureTime>{i * 20 // 60:02d}:{i * 20 % 60:02d}:00</DepartureTime></VehicleJourney>"
-    for i in range(72))
+    f"<DepartureTime>{i * 10 // 60:02d}:{i * 10 % 60:02d}:00</DepartureTime></VehicleJourney>"
+    for i in range(144))
 stop = lambda atco, name, lon, lat: (f"<StopPoint><AtcoCode>{atco}</AtcoCode><Descriptor><CommonName>{name}</CommonName></Descriptor>"
     f"<Place><Location><Longitude>{lon}</Longitude><Latitude>{lat}</Latitude></Location></Place></StopPoint>")
 xml = f"""<?xml version="1.0" encoding="windows-1252"?>

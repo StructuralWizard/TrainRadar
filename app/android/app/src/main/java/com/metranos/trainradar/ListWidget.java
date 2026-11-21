@@ -273,7 +273,7 @@ public abstract class ListWidget extends AppWidgetProvider {
         v.setTextColor(ROWS[row], color);
     }
 
-    /** HH:mm in Madrid (the app shows Spain; the UK isn't in the app yet). */
+    /** HH:mm in Madrid (the widgets follow Spain's trains, in either country). */
     static String clock(long unixSecs) {
         SimpleDateFormat f = new SimpleDateFormat("HH:mm", Locale.ROOT);
         f.setTimeZone(TimeZone.getTimeZone("Europe/Madrid"));

@@ -112,6 +112,39 @@ public class AppSmokeTest {
     }
 
     /**
+     * The UK (plan 3) through the network chip's picker: the page reloads
+     * with Great Britain's data and Network Rail's feed (fixtures), and
+     * Northern Ireland's trains by timetable. Spain is chosen again at the
+     * end, so the other tests start where they expect.
+     */
+    @Test
+    public void theUkLoadsFromThePicker() throws Exception {
+        waitFor("window.__trainradar && window.__trainradar.engine && window.__trainradar.engine.positions(Date.now()).length > 0", 90_000);
+        try {
+            eval("document.getElementById('net-chip').click(); return true;");
+            waitFor("document.querySelector('#networks:not([hidden]) .net-countries button[data-country=\"uk\"]')", 10_000);
+            eval("window.__beforeUk = true; document.querySelector('.net-countries button[data-country=\"uk\"]').click(); return true;");
+            // A new page: the mark is gone once the UK has loaded.
+            waitFor("!window.__beforeUk && window.__trainradar && window.__trainradar.engine && window.__trainradar.engine.positions(Date.now()).length > 0", 90_000);
+            // The timetable places trains first; Network Rail's delays follow.
+            waitFor("(function () { var e = window.__trainradar.engine, n = e.positions(Date.now()).length / 6;"
+                    + " for (var i = 0; i < n; i++) if (JSON.parse(e.trainJson(i, Date.now())).delay != null) return true; return false; })()", 30_000);
+            String trains = (String) eval("var e = window.__trainradar.engine, n = e.positions(Date.now()).length / 6, gb = 0, gbLive = 0, ni = 0;"
+                    + "for (var i = 0; i < n; i++) { var t = JSON.parse(e.trainJson(i, Date.now()));"
+                    + "  if (t.operator === 'NI Railways') { if (t.timetable_only) ni++; } else { gb++; if (t.delay != null) gbLive++; } }"
+                    + "return gb + ' GB (' + gbLive + ' with a delay), ' + ni + ' NI; chip ' + document.getElementById('net-chip').textContent.trim()"
+                    + " + '; saved ' + localStorage.getItem('country');");
+            assertTrue("UK trains: " + trains, trains.matches("[1-9]\\d* GB \\([1-9]\\d* with a delay\\), [1-9]\\d* NI; chip Reino Unido; saved uk"));
+        } finally {
+            try {
+                eval("localStorage.setItem('country', 'es'); return true;");
+            } catch (RuntimeException e) {
+                // the next test starts from the saved view anyway
+            }
+        }
+    }
+
+    /**
      * My trips' exports go through Filesystem and Share: a CSV and a trip's
      * image card must reach Android's share sheet (the call stays pending
      * while the sheet is open) and not fail.
