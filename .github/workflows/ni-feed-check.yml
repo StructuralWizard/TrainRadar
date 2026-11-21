@@ -135,7 +135,8 @@ jobs:
                      https://download.geofabrik.de/europe/ireland-and-northern-ireland-latest.osm.pbf; do
               a=$(curl -s -r 0-0 -o /dev/null -w '%{http_code}' "$u")
               b=$(curl -s -r 0-0 -o /dev/null -w '%{http_code}' -A "TrainRadar refdata (https://www.mytrainradar.com)" "$u")
-              echo "- $u: default $a, named $b"
+              c=$(curl -sL -r 0-0 -o /dev/null -w '%{http_code} %{url_effective}' -A "TrainRadar refdata (https://www.mytrainradar.com)" "$u")
+              echo "- $u: default $a, named $b, followed $c"
             done
           } | tee -a out/report.md
       - name: Build Northern Ireland from it (plan 4b)
