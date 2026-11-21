@@ -9,10 +9,24 @@ import { refreshIncidents } from "./kb.js";
 
 export const CYCLE_MS = 60_000;
 export const CACHE = "public, max-age=30";
+/**
+ * After a failed login, wait before the next one: 1, 2, 4… minutes, at most
+ * an hour. Network Rail's broker answers AMQ339009 to accounts it is
+ * blocking, and logging in again every minute (9 days of it in Nov 2026)
+ * may keep the block going (openraildata-talk: "exponential backoff on
+ * your reconnection policy is key").
+ */
+export const BACKOFF_MAX_MS = 60 * 60_000;
+export function backoffMs(failures) {
+  return Math.min(BACKOFF_MAX_MS, CYCLE_MS * 2 ** Math.max(0, failures - 1));
+}
 
 /** One minute's work, with the I/O injected (tests run it in Node). */
-export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.now(), retryMs = 5000 }) {
+export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.now() }) {
   const cycle = { at: new Date(now).toISOString(), ok: true };
+  // Backing off after failed logins: no login this minute (the notices and
+  // the status still update).
+  const waiting = !!state.nextLoginAt && now < state.nextLoginAt;
   const once = () =>
     drain({
       open,
@@ -22,23 +36,26 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
         for (const m of list) applyMessage(state, m, now);
       },
     });
-  try {
-    let r;
-    try {
-      r = await once();
-    } catch (e) {
-      // The broker still holding last minute's session (AMQ339009): once more.
-      if (!/AMQ339009|session|client.?id/i.test(String(e?.message))) throw e;
-      await new Promise((res) => setTimeout(res, retryMs));
-      r = await once();
-      cycle.retried = true;
-    }
-    Object.assign(cycle, r);
-    state.failingSince = null;
-  } catch (e) {
+  if (!waiting) state.lastLoginAt = cycle.at;
+  if (waiting) {
     cycle.ok = false;
-    cycle.error = String(e?.message || e).slice(0, 300);
-    state.failingSince ||= cycle.at;
+    cycle.skipped = true;
+    cycle.error = state.lastError || "backing off";
+  } else {
+    try {
+      Object.assign(cycle, await once());
+      state.failingSince = null;
+      state.failures = 0;
+      state.nextLoginAt = null;
+      state.lastError = null;
+    } catch (e) {
+      cycle.ok = false;
+      cycle.error = String(e?.message || e).slice(0, 300);
+      state.failingSince ||= cycle.at;
+      state.failures = (state.failures || 0) + 1;
+      state.nextLoginAt = now + backoffMs(state.failures);
+      state.lastError = cycle.error;
+    }
   }
   expire(state, now);
   const updates = tripUpdates(state);
@@ -49,10 +66,11 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
     });
   }
   // Old durable subscriptions: removed once the broker lets us (at most every
-  // 10 minutes each), so it stops queueing messages nobody reads.
+  // 10 minutes each, and not while backing off), so it stops queueing
+  // messages nobody reads.
   state.removed ||= [];
   for (const name of OLD_SUBSCRIPTIONS) {
-    if (state.removed.includes(name) || now - (state.removeTriedAt || 0) < 10 * 60_000) continue;
+    if (!cycle.ok || state.removed.includes(name) || now - (state.removeTriedAt || 0) < 10 * 60_000) continue;
     state.removeTriedAt = now;
     try {
       await removeSubscription({ open, login: env.NETWORK_RAIL_USERNAME, passcode: env.NETWORK_RAIL_PASSWORD, name });
@@ -69,7 +87,10 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
     ok: cycle.ok,
     error: cycle.error || null,
     failingSince: state.failingSince || null,
-    retried: !!cycle.retried,
+    // Backing off: how many logins failed in a row, and when the next one is.
+    failures: state.failures || 0,
+    nextLoginAt: state.nextLoginAt ? new Date(state.nextLoginAt).toISOString() : null,
+    skipped: !!cycle.skipped,
     lastDrain: { frames: cycle.frames ?? 0, messages: cycle.messages ?? 0, bytes: cycle.bytes ?? 0, ms: cycle.ms ?? 0 },
     trains: trains.length,
     withDelay: trains.filter((t) => t.delay !== undefined).length,
@@ -82,7 +103,7 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
     // The same shape as Spain's poller status (backend/src/poller.js), so
     // the app's live mode reads the UK feed with the same code.
     feeds: {
-      "trip_updates.pb": { ok: cycle.ok, fetchedAt: cycle.at, renfeLastModified: state.feedLm || null },
+      "trip_updates.pb": { ok: cycle.ok, fetchedAt: cycle.skipped ? state.lastLoginAt || null : cycle.at, renfeLastModified: state.feedLm || null },
     },
   };
   await env.LIVE.put("uk/rt/status.json", JSON.stringify(status), {

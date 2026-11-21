@@ -33,7 +33,11 @@ Every minute a Durable Object alarm:
    the file (`source`, `notice`) for the app to show. A failed fetch keeps the last file.
 
 A failed drain (login refused, network) keeps the last `trip_updates.pb` and says why in
-`status.json`. Measured volumes: about 424 TRUST messages and 300 KB a minute at peak
+`status.json`. After a failed login the Worker backs off before the next one: 1, 2, 4…
+minutes, at most an hour (`failures`, `nextLoginAt` in `status.json`); one success brings
+it back to every minute. Network Rail's broker answers `AMQ339009 Exception getting
+session` to an account it is blocking, and reconnecting every minute may keep the block
+going. The National Rail notices keep updating meanwhile. Measured volumes: about 424 TRUST messages and 300 KB a minute at peak
 (docs/data-sources-uk.md).
 
 ## Settings

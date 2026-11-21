@@ -4,7 +4,7 @@ import { CANCELED, decode, encodeTripUpdates } from "../src/gtfsrt.js";
 import { applyMessage, emptyState, expire, tripUpdates, KEEP_TERMINATED_MS } from "../src/trust.js";
 import { FrameReader, encodeFrame } from "../src/stomp.js";
 import { HEARTBEAT_MS, OLD_SUBSCRIPTIONS, SUBSCRIPTION, TOPIC, drain } from "../src/drain.js";
-import { runCycle } from "../src/cycle.js";
+import { backoffMs, runCycle } from "../src/cycle.js";
 
 const T0 = Date.parse("2026-11-12T17:47:00Z");
 // Messages in TRUST's real shape (docs/data-sources-uk.md).
@@ -164,21 +164,39 @@ test("cycle: writes trip updates and status; a failed login keeps the last feed"
   assert.ok(!JSON.stringify(status).includes("pw"), "never the password");
 });
 
-test("cycle: retries once when the broker still holds last minute's session", async () => {
+test("cycle: after failed logins, backs off 1, 2, 4… minutes up to an hour; one success resets it", async () => {
   const bucket = fakeBucket();
   const env = { LIVE: bucket, NETWORK_RAIL_USERNAME: "me", NETWORK_RAIL_PASSWORD: "pw" };
   const state = emptyState();
-  const b = fakeBroker([[activation("512J06MX12", "C34353", "2026-05-18", "O"), movement("512J06MX12", 4)]], { busy: 1 });
-  const st = await runCycle({ state, env, open: b.open, now: T0, retryMs: 10 });
+  assert.deepEqual([1, 2, 3, 4, 7, 20].map(backoffMs), [60_000, 120_000, 240_000, 480_000, 3_600_000, 3_600_000]);
+  const refused = () => {
+    const b = fakeBroker([], { busy: 99 });
+    return b;
+  };
+  // Fails: no immediate retry, next login in a minute.
+  let b = refused();
+  let st = await runCycle({ state, env, open: b.open, now: T0 });
+  assert.equal(st.ok, false);
+  assert.equal(b.seen.filter((f) => f.command === "CONNECT").length, 1, "one login, no retry");
+  assert.equal(st.failures, 1);
+  assert.equal(st.nextLoginAt, new Date(T0 + 60_000).toISOString());
+  // Fails again: two minutes.
+  st = await runCycle({ state, env, open: refused().open, now: T0 + 60_000 });
+  assert.equal(st.nextLoginAt, new Date(T0 + 180_000).toISOString());
+  // The next minute: no login at all, the error and the status still there.
+  b = refused();
+  st = await runCycle({ state, env, open: b.open, now: T0 + 120_000 });
+  assert.equal(b.seen.filter((f) => f.command === "CONNECT").length, 0, "waits: no login");
+  assert.equal(st.skipped, true);
+  assert.match(st.error, /AMQ339009/);
+  assert.equal(st.failingSince, new Date(T0).toISOString());
+  assert.equal(st.feeds["trip_updates.pb"].fetchedAt, new Date(T0 + 60_000).toISOString(), "last real attempt");
+  // Due again and it works: back to every minute.
+  st = await runCycle({ state, env, open: fakeBroker([[movement("1", 1)]]).open, now: T0 + 180_000 });
   assert.equal(st.ok, true);
-  assert.equal(st.retried, true);
+  assert.equal(st.failures, 0);
+  assert.equal(st.nextLoginAt, null);
   assert.equal(st.failingSince, null);
-  // Failing twice: reported, with since when.
-  const st2 = await runCycle({ state, env, open: fakeBroker([], { busy: 2 }).open, now: T0 + 60_000, retryMs: 10 });
-  assert.equal(st2.ok, false);
-  assert.equal(st2.failingSince, new Date(T0 + 60_000).toISOString());
-  const st3 = await runCycle({ state, env, open: fakeBroker([], { busy: 2 }).open, now: T0 + 120_000, retryMs: 10 });
-  assert.equal(st3.failingSince, new Date(T0 + 60_000).toISOString(), "kept from the first failure");
 });
 
 test("drain: promises heart-beats and sends them, so a lost connection frees the client-id", async () => {
