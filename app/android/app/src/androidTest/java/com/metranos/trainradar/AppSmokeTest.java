@@ -30,6 +30,10 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class AppSmokeTest {
+    /** JS: how the current page was loaded, for a reload's failure message. */
+    private static final String RELOAD_INFO =
+            "JSON.stringify({ navigation: (performance.getEntriesByType('navigation')[0] || {}).type, sinceLoadMs: Math.round(performance.now()) })";
+
     @Rule
     public ActivityScenarioRule<MainActivity> rule = new ActivityScenarioRule<>(MainActivity.class);
 
@@ -74,13 +78,19 @@ public class AppSmokeTest {
     public void mapRendersAndATrainPopupOpens() throws Exception {
         waitFor("window.__trainradar && window.__trainradar.engine && window.__trainradar.engine.positions(Date.now()).length > 0", 90_000);
         waitFor("document.querySelector('.maplibregl-canvas')", 10_000);
+        // Mark this page load: if the WebView reloads the page mid-test (seen
+        // on CI: the app's state vanished between two checks), the mark goes
+        // and the failure says so instead of a bare null.
+        eval("window.__smokeMark = performance.timeOrigin; return true;");
 
         String number = (String) eval(
-                "var e = window.__trainradar.engine, n = e.positions(Date.now()).length / 6;"
+                "if (!window.__trainradar) return 'RELOADED ' + " + RELOAD_INFO + ";"
+                        + "var e = window.__trainradar.engine, n = e.positions(Date.now()).length / 6;"
                         + "for (var i = 0; i < n; i++) { var t = JSON.parse(e.trainJson(i, Date.now()));"
                         + "  if (t.origin && !t.timetable_only && t.next_stop && t.next_stop !== t.destination) return t.number; }"
                         + "return null;");
         assertTrue("a matched train", number != null);
+        assertTrue(number, !number.startsWith("RELOADED"));
         eval("var q = document.getElementById('search-q'); q.value = '" + number + "';"
                 + "q.dispatchEvent(new Event('input', { bubbles: true })); return true;");
         waitFor("document.querySelector('#search-results li button')", 10_000);
@@ -90,7 +100,8 @@ public class AppSmokeTest {
         // took over 10 s), so give it time.
         waitFor("document.querySelector('.popup .popup-title')", 30_000);
 
-        String popup = (String) eval("return document.querySelector('.popup').textContent;");
+        String popup = (String) eval("var p = document.querySelector('.popup');"
+                + "return p ? p.textContent : 'NO POPUP: ' + (window.__smokeMark ? 'same page, sheet closed' : 'the page reloaded, ' + " + RELOAD_INFO + ");");
         assertTrue(popup, popup.contains(number.replaceFirst("^0+", "")));
         // The train details (trains ahead and behind, track) are free, as on the web.
         assertTrue("free edition shows the train details: " + popup, popup.contains("Tren anterior"));
