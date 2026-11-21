@@ -556,7 +556,7 @@ pub struct TripRec {
     /// (may exceed 24 h, as in GTFS). Pattern offsets are relative to this.
     pub start: u32,
     /// Bit `n` set = runs on service day `window_start_day + n`.
-    pub days: u16,
+    pub days: u64,
     /// If set, the GTFS trip id is `services[service] + id_rest`.
     pub service: Option<u32>,
     pub id_rest: String,
@@ -725,5 +725,26 @@ mod tests {
         };
         let back: TimetableFile = decode(&encode(&tt).unwrap()).unwrap();
         assert_eq!(back.trip_id(&back.trips[0]), "1004D19799C1");
+    }
+
+    /// Day masks grew from u16 to u64 (plan "future timetables"): postcard
+    /// writes both as the same varint, so files with a window of 16 days or
+    /// less are byte for byte what apps already installed read.
+    #[test]
+    fn day_masks_wider_but_same_bytes() {
+        #[derive(serde::Serialize)]
+        struct Old {
+            days: u16,
+        }
+        #[derive(serde::Serialize)]
+        struct New {
+            days: u64,
+        }
+        for d in [0u16, 1, 0b10, 0x7f, 0x80, 0xff, 0x3fff, 0xffff] {
+            assert_eq!(
+                crate::encode(&Old { days: d }).unwrap(),
+                crate::encode(&New { days: u64::from(d) }).unwrap()
+            );
+        }
     }
 }

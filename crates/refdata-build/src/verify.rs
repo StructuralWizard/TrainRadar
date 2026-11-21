@@ -143,10 +143,10 @@ pub fn check_stations(st: &StationsFile) -> Result<()> {
 }
 
 pub fn check_timetable(tt: &TimetableFile, n_legs: usize) -> Result<()> {
-    let window_mask = if tt.header.window_days >= 16 {
-        u16::MAX
+    let window_mask = if tt.header.window_days >= 64 {
+        u64::MAX
     } else {
-        (1u16 << tt.header.window_days) - 1
+        (1u64 << tt.header.window_days) - 1
     };
     for (i, p) in tt.patterns.iter().enumerate() {
         let n = p.stops.len();

@@ -235,7 +235,7 @@ struct Cand {
     stp: u8,
     start: String,
     /// Days of the window it applies to, before STP resolution.
-    mask: u16,
+    mask: u64,
     passenger: bool,
     atoc: String,
     headcode: String,
@@ -265,7 +265,7 @@ fn candidate(o: &serde_json::Value, window: &Window) -> Option<Cand> {
         .chars()
         .map(|c| c == '1')
         .collect();
-    let mut mask = 0u16;
+    let mut mask = 0u64;
     for n in 0..window.days {
         let day = window.start + i64::from(n);
         if day >= start && day <= end && runs.get(weekday(day)).copied().unwrap_or(false) {
@@ -415,10 +415,10 @@ pub fn load<R: BufRead>(
     for (i, c) in cands.iter().enumerate() {
         by_uid.entry(c.uid.as_str()).or_default().push(i);
     }
-    let mut final_mask = vec![0u16; cands.len()];
+    let mut final_mask = vec![0u64; cands.len()];
     for idx in by_uid.values() {
         for n in 0..window.days {
-            let bit = 1u16 << n;
+            let bit = 1u64 << n;
             if let Some(&w) = idx
                 .iter()
                 .filter(|&&i| cands[i].mask & bit != 0)

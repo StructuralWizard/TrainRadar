@@ -72,7 +72,8 @@ usage:
 
 build: writes stations.<hash>.bin, <region>.<hash>.bin and manifest.json to DIR.
   --date     service date the window is centred on (default: today, Madrid)
-  --days     window length in days starting the day before --date (default 8)
+  --days     window length in days starting the day before --date (default 8,
+             up to 64: the plan-ahead files, plan future timetables)
   --sources  tab-separated name, url, etag, last-modified (from tools/fetch-gtfs.sh)
   --gzip     write gzip-compressed .bin.gz files (for deployment)
   --rail     OpenStreetMap railway=rail ways (from tools/fetch-osm-rail.sh), used to
@@ -166,8 +167,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
                 a.days = val()?
                     .parse()
                     .ok()
-                    .filter(|d| (1..=16).contains(d))
-                    .ok_or("--days must be 1..=16")?;
+                    .filter(|d| (1..=64).contains(d))
+                    .ok_or("--days must be 1..=64")?;
             }
             "--sources" => a.sources = Some(val()?.into()),
             "--report" => a.report = Some(val()?.into()),
@@ -549,7 +550,16 @@ fn run_build(a: BuildArgs) -> Result<()> {
             })
         };
         let b = rec.bbox_e5;
+        // The last day any of its trains runs in the window.
+        let last = tt
+            .trips
+            .iter()
+            .map(|t| 63 - t.days.leading_zeros() as i64)
+            .max()
+            .filter(|&n| n >= 0);
+        let until = last.map(|n| format_date(window.start + n));
         regions.push(RegionEntry {
+            until,
             operator: tt.operator.clone(),
             live: tt.live,
             code: rec.code,

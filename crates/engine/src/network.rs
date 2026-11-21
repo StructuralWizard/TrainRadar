@@ -89,6 +89,17 @@ pub struct Network {
     by_number: HashMap<String, Vec<TripRef>>,
 }
 
+/// Whether a trip runs on Madrid service day `day`, by its timetable
+/// file's window (up to 64 days).
+pub fn runs_on(
+    header: &trainradar_proto::refdata::Header,
+    trip: &trainradar_proto::refdata::TripRec,
+    day: i64,
+) -> bool {
+    let bit = day - i64::from(header.window_start_day);
+    (0..i64::from(header.window_days).min(64)).contains(&bit) && trip.days & (1u64 << bit) != 0
+}
+
 /// Commercial train number of a trip: `short_name`, or the leading digits of
 /// the id after its service prefix (Cercanías `1004D` + `19799` + `C1`).
 /// Distance over which gradients are measured: long enough to average out
@@ -530,8 +541,7 @@ impl Network {
                 .last()
                 .map_or(0, |s| i64::from(s.arrival));
             for day in [today - 1, today, today + 1] {
-                let bit = day - i64::from(r.tt.header.window_start_day);
-                if !(0..16).contains(&bit) || trip.days & (1 << bit) == 0 {
+                if !runs_on(&r.tt.header, trip, day) {
                     continue;
                 }
                 let start = service_day_base(day) + i64::from(trip.start);
