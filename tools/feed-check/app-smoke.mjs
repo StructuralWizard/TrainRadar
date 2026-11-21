@@ -236,6 +236,9 @@ const native = await pp.evaluate(() => ({ calls: window.__nativeCalls.map((c) =>
 console.log("native:", JSON.stringify(native));
 if (!native.calls.includes("requestNotifications") || !native.calls.includes("setAlerts")) await fail("alerts not scheduled");
 if (!native.calls.includes("refreshWidget")) await fail("saving a favourite didn't refresh the widget");
+// The list widgets' settings (WidgetStore.appConfig): the live API and the language.
+const widgetCfg = await pp.evaluate(() => JSON.parse(localStorage.getItem("widget-config") || "{}"));
+if (widgetCfg.lang !== "es" || typeof widgetCfg.apiBase !== "string") await fail(`widget config: ${JSON.stringify(widgetCfg)}`);
 if (native.cfg.enabled !== true || native.cfg.minor !== 5 || native.cfg.major !== 15) await fail(`alert config ${JSON.stringify(native.cfg)}`);
 await pp.click("#trips-btn");
 await pp.waitForSelector(".trips-list li");

@@ -70,10 +70,12 @@ public class TrainRadarPlugin extends Plugin {
         call.resolve();
     }
 
-    /** Redraw the widget soon (favourites or Pro changed). */
+    /** Redraw the widgets (favourites, Pro or the language changed). */
     @PluginMethod
     public void refreshWidget(PluginCall call) {
         Widget.refreshSoon(getContext());
+        ListWidget.renderAll(getContext());
+        if (!ListWidget.allIds(getContext()).isEmpty()) WidgetsWorker.refreshIfStale(getContext());
         call.resolve();
     }
 }

@@ -87,6 +87,17 @@ its own copy. The site serves `data/*` with `Access-Control-Allow-Origin: *`
   when the favourites change. A plain `AppWidgetProvider` with `RemoteViews` (Java),
   not Jetpack Glance as the plan suggested: no Kotlin and Compose toolchain for one
   small widget.
+- **List widgets (Pro, 2.10):** Departures, Arrivals (a station's next trains), Train
+  (one train: delay, next stop, destination) and Renfe notices. Add as many of each as
+  you like: `WidgetConfigActivity` asks which favourite station or train each one shows
+  (in the order of Favoritos), and keeps the choice per widget (`WidgetStore`, its own
+  preferences file). `ListWidget` draws them from the last data saved; `WidgetsWorker`
+  downloads it, each item once however many widgets share it, from the live API
+  (`/v1/live/board/:id`, `/v1/live/train/:n`, `/v1/live/notices`, served by the
+  recorder's engine: `backend/src/widgets.js`): every 15 minutes while a widget exists,
+  or now with ↻ (at most once a minute). Tapping a widget opens its station or train.
+  Battery: drawing never downloads, and a periodic job is kept while a widget exists,
+  so WorkManager never toggles its components (that loop drained the battery in 2.9.1).
 - **Full history:** "See history →" in a train's punctuality box, or 📊 in a
   station's popup: a chart of the share on time per day (line or station) and, for a
   train, its runs day by day, from the history API. 7 days for everyone (the web too);
