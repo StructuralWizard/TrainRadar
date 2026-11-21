@@ -569,7 +569,119 @@ export function historyPanel(lang, { title, series, runs, days, ranges, onRange,
 }
 
 /** Commute mode (Pro): the next trains from one saved station to another. */
-export function commutePanel(lang, { from, to, rows, list = [], active = -1, draft = null, note = "", onSelect = () => {}, onTrain, onSwap, onClear }) {
+/**
+ * A commute's saved trains (Pro, plan journeys J3): today's state of each
+ * train and change, then the days, the reminder and which alerts.
+ */
+export function savedJourneyBox(lang, { journey, status, today, native, onTrain, onAlternatives, onUpdate, onForget }) {
+  const short = t(lang, "dayShort").split(",");
+  const long = t(lang, "dayLong").split(",");
+  const runs = journey.days.includes(today);
+  const items = [];
+  journey.legs.forEach((l, i) => {
+    const st = status.legs[i];
+    if (i > 0) {
+      const c = status.changes[i - 1];
+      const min = Math.round(c.margin / 60);
+      items.push(el("li", { class: `journey-change small${c.risk ? " at-risk" : ""}` }, t(lang, c.risk ? "jChangeShort" : "jChange", { station: c.at, min: Math.max(0, min) })));
+    }
+    const label = [l.route, l.number].filter(Boolean).join(" ");
+    const state = !runs ? "" : st.canceled ? t(lang, "canceled") : st.delay === null ? "" : formatDelay(lang, st.delay);
+    const tone = st.canceled ? "major" : st.delay >= 900 ? "major" : st.delay >= 300 ? "minor" : "ok";
+    items.push(
+      el(
+        "li",
+        { class: "journey-leg" },
+        el(
+          "div",
+          { class: "journey-leg-btn" },
+          el(
+            "span",
+            { class: "route-main" },
+            el("span", { class: "journey-leg-times" }, el("strong", {}, l.dep), " – ", l.arr),
+            el("span", { class: "journey-leg-train" }, onTrain ? el("button", { type: "button", class: "link", onclick: () => onTrain(l) }, el("strong", {}, label)) : el("strong", {}, label)),
+            el("span", { class: "small muted" }, `${l.from_name} → ${l.to_name}`, st.platform ? ` · ${st.platform}` : ""),
+          ),
+          el("span", { class: `route-delay tone-text-${tone}` }, state),
+        ),
+      ),
+    );
+  });
+  const warn = !runs
+    ? null
+    : status.legs.findIndex((x) => x.canceled) >= 0
+      ? t(lang, "jCanceled", { train: [journey.legs[status.legs.findIndex((x) => x.canceled)].route, journey.legs[status.legs.findIndex((x) => x.canceled)].number].filter(Boolean).join(" ") })
+      : status.broken
+        ? t(lang, "jBroken")
+        : null;
+  const dayChips = el(
+    "p",
+    { class: "journey-days", role: "group", "aria-label": t(lang, "jDays") },
+    short.map((d, i) => {
+      const on = journey.days.includes(i + 1);
+      return el(
+        "button",
+        {
+          type: "button",
+          class: on ? "pill small pill-strong" : "pill small",
+          "aria-pressed": String(on),
+          "aria-label": long[i],
+          "data-day": String(i + 1),
+          onclick: () => onUpdate({ days: on ? journey.days.filter((x) => x !== i + 1) : [...journey.days, i + 1] }),
+        },
+        d,
+      );
+    }),
+  );
+  const remind = el(
+    "select",
+    { id: "journey-remind", "aria-label": t(lang, "jRemind"), onchange: (e) => onUpdate({ remind: Number(e.target.value) }) },
+    [0, 15, 30, 45, 60, 90].map((m) => el("option", { value: String(m), selected: m === journey.remind }, m ? t(lang, "jRemindMin", { min: m }) : t(lang, "jRemindOff"))),
+  );
+  const kinds = [
+    ["delay", "jNotifyDelay"],
+    ["risk", "jNotifyRisk"],
+    ["remind", "jNotifyRemind"],
+    ["platform", "jNotifyPlatform"],
+    ["stations", "jNotifyStations"],
+  ];
+  return el(
+    "section",
+    { class: "journey-saved", id: "journey-saved" },
+    el("h3", { class: "group-h" }, t(lang, "jSaved"), el("span", { class: "muted small" }, ` · ${runs ? t(lang, "jToday") : t(lang, "jNotToday", { days: journey.days.map((d) => short[d - 1]).join(" ") })}`)),
+    el("ol", { class: "journey-legs" }, items),
+    warn ? el("p", { class: "small warn", id: "journey-warn" }, warn) : null,
+    el(
+      "p",
+      { class: "popup-actions" },
+      el("button", { class: "pill small", type: "button", id: "journey-alt", onclick: onAlternatives }, t(lang, "jAlternatives")),
+      el("button", { class: "pill small", type: "button", id: "journey-forget", onclick: onForget }, t(lang, "jForget")),
+    ),
+    el("p", { class: "small" }, el("strong", {}, t(lang, "jDays"))),
+    dayChips,
+    el("p", { class: "small journey-remind" }, el("label", { for: "journey-remind" }, `${t(lang, "jRemind")}: `), remind),
+    el("p", { class: "small" }, el("strong", {}, t(lang, "jNotify"))),
+    el(
+      "ul",
+      { class: "journey-notify" },
+      kinds.map(([k, label]) =>
+        el(
+          "li",
+          {},
+          el(
+            "label",
+            { class: "small" },
+            el("input", { type: "checkbox", "data-kind": k, checked: journey.notify[k], onchange: (e) => onUpdate({ notify: { [k]: e.target.checked } }) }),
+            ` ${t(lang, label)}`,
+          ),
+        ),
+      ),
+    ),
+    native ? null : el("p", { class: "small muted" }, t(lang, "jNotifyNative")),
+  );
+}
+
+export function commutePanel(lang, { from, to, rows, list = [], active = -1, draft = null, note = "", saved = null, onSelect = () => {}, onTrain, onSwap, onClear }) {
   const out = [];
   if (note) out.push(el("p", { class: "small" }, note));
   // Saved commutes as tabs when there's more than one.
@@ -592,6 +704,7 @@ export function commutePanel(lang, { from, to, rows, list = [], active = -1, dra
   if (!from || !to) return [...out, help];
   const clock = (u) => formatClock(u);
   out.push(el("p", {}, el("strong", {}, `${from.name} → ${to.name}`)));
+  if (saved) out.push(saved);
   out.push(
     rows.length
       ? el(

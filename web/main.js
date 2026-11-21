@@ -39,7 +39,23 @@ import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
 import { decide, parseCache } from "./js/entitlement.js";
 import { tripCard } from "./js/card.js";
 import { ALERT_CONFIG_KEY, ALERT_STATE_KEY, MAJOR, MINOR, decideAlerts, liveState } from "./js/alerts.js";
-import { MAX_COMMUTES, activeCommute, emptyCommutes, parseCommutes, removeActive, selectCommute, serializeCommutes, setDestination, setOrigin, swapActive } from "./js/commutes.js";
+import {
+  MAX_COMMUTES,
+  activeCommute,
+  emptyCommutes,
+  journeyStatus,
+  journeyToSave,
+  parseCommutes,
+  removeActive,
+  removeJourney,
+  saveJourney,
+  selectCommute,
+  serializeCommutes,
+  setDestination,
+  setOrigin,
+  swapActive,
+  updateJourney,
+} from "./js/commutes.js";
 import { CLAIMS_URL, TRIPS_KEY, activeTrip, claimText, completeFromRun, monthlyStats, needsArrival, parseTrips, runForTrip, serializeTrips, startTrip, tripsCsv, updateTrip } from "./js/trips.js";
 import {
   delayedItem,
@@ -49,6 +65,7 @@ import {
   tripsPanel,
   historyPanel,
   commutePanel,
+  savedJourneyBox,
   claimBox,
   el,
   incidentsPanel,
@@ -1567,8 +1584,28 @@ function renderCommute() {
     }
   }
   const rows = from && to ? JSON.parse(engine.commuteJson(from.id, to.id, Date.now(), 3 * 3600, 8)) : [];
+  const j = CONFIG.pro ? c?.journey : null;
+  const saved = j
+    ? savedJourneyBox(lang, {
+        journey: j,
+        status: journeyStatus(j, journeyRuns(j)),
+        today: isoToday(),
+        native: appNative.available(),
+        onTrain: (l) => {
+          const info = liveTrain(l.number);
+          if (info) {
+            $("commute").hidden = true;
+            selectTrain(info, { fly: true });
+          }
+        },
+        onAlternatives: () => openRoute({ kind: "station", item: stationList().find((x) => x.id === from.id) || from }, { kind: "station", item: stationList().find((x) => x.id === to.id) || to }),
+        onUpdate: (patch) => saveCommutes(updateJourney(commutes, patch), renderCommute),
+        onForget: () => saveCommutes(removeJourney(commutes), renderCommute),
+      })
+    : null;
   $("commute-body").replaceChildren(
     ...commutePanel(lang, {
+      saved,
       from,
       to,
       rows,
@@ -2405,8 +2442,46 @@ function renderRoute() {
         const info = liveTrain(r.number);
         if (info) selectTrain(info, { fly: true });
       },
+      onSave: (j) => saveRouteJourney(j),
     }),
   );
+}
+
+/** Today's day of the week in the country (1 Monday … 7 Sunday). */
+function isoToday() {
+  const wd = new Intl.DateTimeFormat("en-GB", { timeZone: CONFIG.timeZone, weekday: "short" }).format(new Date());
+  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(wd) + 1;
+}
+
+/** "Guardar" on a journey (Pro): onto the commute between its stations. */
+function saveRouteJourney(j) {
+  if (!CONFIG.pro) {
+    settingsMsg = moreMsg = t(lang, "jSavePro");
+    return openSheet("settings"), renderSettings();
+  }
+  const rides = j.steps.filter((x) => x.kind === "ride");
+  const stationOf = (id) => stationList().find((x) => x.id === id);
+  const from = stationOf(rides[0].from);
+  const to = stationOf(rides[rides.length - 1].to);
+  const saved = journeyToSave(j, formatClock, isoToday());
+  if (!from || !to || !saved) return;
+  const r = saveJourney(commutes, { from: { id: from.id, name: from.name, lon: from.lon, lat: from.lat }, to: { id: to.id, name: to.name, lon: to.lon, lat: to.lat } }, saved);
+  commuteNote = r.full ? t(lang, "jFull", { n: MAX_COMMUTES }) : t(lang, "jSavedOk", { from: from.name, to: to.name });
+  if (r.added) saveCommutes(r.state, () => {}, true);
+  else (openSheet("commute"), renderCommute());
+}
+
+/** Today's live state of each train of a saved journey: from its first
+ * station's board (before it leaves), else the train on the map. */
+function journeyRuns(journey) {
+  const same = (a, b) => String(a).replace(/^0+/, "") === String(b).replace(/^0+/, "");
+  return journey.legs.map((l) => {
+    const board = JSON.parse(engine.stationBoardJson(l.from, Date.now(), 12 * 3600, 200));
+    const row = board.find((r) => same(r.number, l.number) && formatClock(r.sched) === l.dep);
+    if (row) return { delay: row.delay ?? null, canceled: !!row.canceled };
+    const info = liveTrain(l.number);
+    return info ? { delay: info.delay ?? null, canceled: false, platform: info.platform || null } : null;
+  });
 }
 
 /** Suggestions under the field being typed in. */

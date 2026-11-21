@@ -374,6 +374,39 @@ console.log("commute added:", commutesBefore, "→", await pp.$$eval("#commute-b
 await pp.screenshot({ path: `${out}/app-commute-added.png` });
 await pp.click("#commute-close");
 
+// Journeys with changes (plan journeys): Zaragoza → Pinto needs the AVE
+// and a Cercanías at Atocha; "Guardar" (Pro) keeps those trains on the
+// commute, with days and alerts that survive a reload.
+await pp.fill("#search-q", "zaragoza a pinto");
+await pp.click("#search-route-go").catch(() => fail("no origin → destination row for Zaragoza → Pinto"));
+await pp.waitForSelector('#route:not([hidden]) .journey-row[data-changes="1"]', { timeout: 10000 }).catch(async () => fail(`no journey with a change: ${await pp.textContent("#route-body")}`));
+await pp.click('#route .journey-row[data-changes="1"] >> nth=0');
+await pp.waitForSelector("#route .journey[open] .journey-change");
+await pp.screenshot({ path: `${out}/app-journey.png` });
+await pp.click("#route .journey[open] .journey-save");
+await pp.waitForSelector("#commute:not([hidden]) #journey-saved", { timeout: 5000 }).catch(async () => fail(`journey not saved: ${await pp.textContent("#commute-body").catch(() => "")}`));
+const savedLegs = await pp.$$eval("#journey-saved .journey-leg", (l) => l.length);
+if (savedLegs !== 2) await fail(`saved journey legs: ${savedLegs}`);
+if (!/Guardado en tus trayectos/.test(await pp.textContent("#commute-body"))) await fail("no saved note");
+await pp.click('#journey-saved .journey-days button[data-day="7"]');
+await pp.click('#journey-saved input[data-kind="platform"]');
+await pp.selectOption("#journey-remind", "45");
+await pp.reload();
+await pp.waitForFunction(() => window.__trainradar?.engine, null, { timeout: 30000 });
+const keptJourney = await pp.evaluate(() => {
+  const s = JSON.parse(localStorage.getItem("commute"));
+  return s.list[s.active].journey;
+});
+console.log("journey saved:", JSON.stringify({ legs: keptJourney?.legs.map((l) => `${l.route} ${l.number} ${l.dep}`), days: keptJourney?.days, remind: keptJourney?.remind, notify: keptJourney?.notify }));
+if (!keptJourney || keptJourney.legs.length !== 2 || !keptJourney.days.includes(7) || keptJourney.remind !== 45 || keptJourney.notify.platform !== false || keptJourney.notify.delay !== true)
+  await fail("saved journey settings not kept");
+await pp.waitForSelector("#commute:not([hidden]) #journey-saved", { timeout: 30000 }).catch(() => fail("saved journey not shown at start"));
+await pp.$eval("#journey-saved", (e) => e.scrollIntoView());
+await pp.screenshot({ path: `${out}/app-journey-saved.png` });
+await pp.click("#journey-forget");
+await pp.waitForFunction(() => !document.getElementById("journey-saved"), null, { timeout: 5000 }).catch(() => fail("forgetting the trains didn't"));
+await pp.click("#commute-close");
+
 // Notices history (Pro): a past day's notices from the recorder's file.
 await pp.route("**/notices/**", (route) => {
   const url = route.request().url();
@@ -429,9 +462,10 @@ await pp.click("#tab-map"); // phone: back to the map, then expand the home shee
 await pp.waitForSelector("#delayed-filter:not([hidden]) button", { timeout: 5000 }).catch(() => fail("delays filter didn't show"));
 const chips = await pp.$$eval("#delayed-filter button", (b) => b.map((x) => x.textContent));
 console.log("delays filter:", chips.join(" | "));
-// "Todos" + each saved commute (two seeded, one added above).
+// "Todos" + each saved commute (two seeded, one added above, one saved
+// from a journey).
 const savedCommutes = await pp.evaluate(() => (JSON.parse(localStorage.getItem("commute") || "{}").list || []).length);
-if (chips.length !== savedCommutes + 1 || savedCommutes !== 3 || chips[0] !== "Todos") await fail(`delays filter: ${JSON.stringify(chips)} (${savedCommutes} commutes saved)`);
+if (chips.length !== savedCommutes + 1 || savedCommutes !== 4 || chips[0] !== "Todos") await fail(`delays filter: ${JSON.stringify(chips)} (${savedCommutes} commutes saved)`);
 const allLate = await pp.$$eval("#delayed-list li", (l) => l.map((x) => x.textContent));
 await pp.click("#delayed-filter button >> nth=1");
 const onlyLate = await pp.$$eval("#delayed-list li", (l) => l.map((x) => x.textContent));
