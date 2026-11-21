@@ -511,6 +511,103 @@ export function routeResults(lang, { from, to, rows, multi, onTrain }) {
   ];
 }
 
+/** Minimum change time (s): a tighter change is "at risk" (engine journeys.rs). */
+export const CHANGE_RISK_SECS = 5 * 60;
+
+/** "1 h 25 min" / "45 min". */
+export function durationText(lang, secs) {
+  const m = Math.max(0, Math.round(secs / 60));
+  const h = Math.floor(m / 60);
+  return h ? t(lang, "durationHm", { h, m: String(m % 60).padStart(2, "0") }) : t(lang, "durationM", { m });
+}
+
+/**
+ * Journeys with changes (engine journeysJson): one row per journey, its
+ * trains and changes inside. `onTrain(ride)` opens a train on the map;
+ * `onSave(journey)` (when given) saves it (Pro).
+ */
+export function journeyResults(lang, { from, to, journeys, onTrain, onSave, saveLabel }) {
+  if (!journeys.length) return [el("p", { class: "muted", id: "route-none" }, t(lang, "routeNone", { from: from.item.name, to: to.item.name }))];
+  const rides = (j) => j.steps.filter((s) => s.kind === "ride");
+  const direct = journeys.filter((j) => j.changes === 0).length;
+  return [
+    el("p", { class: "small muted", id: "route-count" }, t(lang, "routeCountJ", { n: formatCount(lang, journeys.length), d: formatCount(lang, direct) })),
+    el(
+      "ul",
+      { class: "route-list journey-list" },
+      journeys.map((j, i) => {
+        const rs = rides(j);
+        const risk = j.tightest_change !== null && j.tightest_change !== undefined && j.tightest_change < CHANGE_RISK_SECS;
+        const worst = rs.reduce((m, r) => Math.max(m, r.delay || 0), 0);
+        const anyDelay = rs.some((r) => r.delay !== null && r.delay !== undefined);
+        const summary = el(
+          "summary",
+          { class: "route-row journey-row", "data-changes": String(j.changes) },
+          el(
+            "span",
+            { class: "route-main" },
+            el(
+              "span",
+              { class: "route-times" },
+              el("strong", {}, `${formatClock(j.dep)} → ${formatClock(j.arr)}`),
+              " ",
+              el("span", { class: "muted" }, `${durationText(lang, j.arr - j.dep)} · ${j.changes ? t(lang, j.changes === 1 ? "routeChange1" : "routeChanges", { n: j.changes }) : t(lang, "routeDirect")}`),
+            ),
+            el("span", { class: "route-train" }, rs.map((r) => [r.route, r.number].filter(Boolean).join(" ")).join(" → ")),
+            risk ? el("span", { class: "journey-risk small" }, t(lang, "routeRisk")) : null,
+          ),
+          el("span", { class: `route-delay tone-text-${delayTone(worst)}` }, anyDelay ? delayShortMin(lang, worst) : ""),
+        );
+        const legs = [];
+        let prevArr = null;
+        let walked = 0;
+        for (const s of j.steps) {
+          if (s.kind === "walk") {
+            walked += s.secs;
+            legs.push(el("li", { class: "journey-walk small muted" }, icon("walk", 14), t(lang, "routeWalk", { to: s.to_name, min: Math.round(s.secs / 60) })));
+            continue;
+          }
+          if (prevArr !== null) {
+            const margin = s.expected_dep - prevArr - walked;
+            legs.push(
+              el("li", { class: `journey-change small${margin < CHANGE_RISK_SECS ? " at-risk" : ""}` }, t(lang, "routeChangeAt", { station: s.from_name, min: Math.max(0, Math.round(margin / 60)) })),
+            );
+          }
+          const label = [s.route, s.number].filter(Boolean).join(" ");
+          const body = [
+            el("span", { class: "journey-leg-times" }, el("strong", {}, formatClock(s.expected_dep)), " – ", formatClock(s.expected_arr)),
+            el("span", { class: "journey-leg-train" }, el("strong", {}, label), el("span", { class: "muted" }, ` · ${t(lang, "routeTowards", { to: s.headsign })}`)),
+            el("span", { class: "small muted" }, `${s.from_name} → ${s.to_name}`),
+          ];
+          const delay = el("span", { class: `route-delay tone-text-${delayTone(s.delay)}` }, s.delay === null || s.delay === undefined ? "" : delayShortMin(lang, s.delay));
+          legs.push(
+            el(
+              "li",
+              { class: "journey-leg" },
+              s.live && onTrain
+                ? el("button", { type: "button", class: "journey-leg-btn", "data-number": s.number, onclick: () => onTrain(s) }, el("span", { class: "route-main" }, ...body), delay, icon("chevronRight", 16))
+                : el("div", { class: "journey-leg-btn" }, el("span", { class: "route-main" }, ...body), delay),
+            ),
+          );
+          prevArr = s.expected_arr;
+          walked = 0;
+        }
+        return el(
+          "li",
+          {},
+          el(
+            "details",
+            { class: "journey", open: i === 0 && journeys.length === 1 ? "" : null },
+            summary,
+            el("ol", { class: "journey-legs" }, legs),
+            onSave ? el("button", { type: "button", class: "pill small journey-save", onclick: () => onSave(j) }, icon("star", 16), saveLabel || t(lang, "routeSave")) : null,
+          ),
+        );
+      }),
+    ),
+  ];
+}
+
 /**
  * A search field with suggestions under it, for adding things: `search(q)`
  * gives [{ key, icon, name, sub, value }], `onPick(value)` on a choice. The

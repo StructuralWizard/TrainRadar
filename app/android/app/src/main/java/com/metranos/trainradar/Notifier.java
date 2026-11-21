@@ -45,4 +45,26 @@ final class Notifier {
                 .setAutoCancel(true);
         NotificationManagerCompat.from(ctx).notify(("train:" + trainNo).hashCode(), b.build());
     }
+
+    /** A saved journey's alert (plan journeys J4): one notification per
+     * event (`key`), the whole text shown; a tap opens the train. */
+    static void showJourney(Context ctx, String key, String trainNo, String title, String body) {
+        if (Build.VERSION.SDK_INT >= 33
+                && ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        ensureChannel(ctx, "es");
+        Intent open = new Intent(Intent.ACTION_VIEW, Uri.parse("trainradar://train/" + Uri.encode(trainNo)), ctx, MainActivity.class);
+        PendingIntent pi = PendingIntent.getActivity(ctx, key.hashCode(), open,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL)
+                .setSmallIcon(R.drawable.ic_stat_train)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(pi)
+                .setAutoCancel(true);
+        NotificationManagerCompat.from(ctx).notify(("journey:" + key).hashCode(), b.build());
+    }
 }

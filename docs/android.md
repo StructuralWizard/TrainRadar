@@ -282,3 +282,13 @@ stay with Spain in either country: they read Spain's keys and servers (`widget-c
 `alert-config` always carry Spain's `apiBase` and `liveBase`), and in the UK the More screen
 says so. The emulator test switches to the UK through the picker (`tools/demo-uk.sh` data
 and feeds in the test APK).
+
+## Saved journeys' alerts (plan journeys, J4)
+
+A commute (Trayecto habitual, Pro) can hold a journey's trains (`docs/plan-journeys.md`). The
+background check (`AlertsWorker`, every 15 min, with the alerts switch on) runs `JourneyRules` for
+the journeys of the day. It reads `GET /v1/live/run/:station/:number` for each train until it leaves,
+`rt/summary.json` after that, and `GET /v1/live/notices/all` for the station notices. It notifies
+delays and cancellations, a change at risk or missed, the reminder, platform changes and the
+notices at the journey's stations, each once a day (state in `journey-alert-state`). Only Spain's
+commutes (`commute`), like the other alerts.
