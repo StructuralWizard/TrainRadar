@@ -9,16 +9,30 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.widget.RemoteViews;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.ExistingWorkPolicy;
+import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
+import java.util.concurrent.TimeUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
  * Home-screen widget (TrainRadar Pro): up to four favourite trains with their
- * delay, coloured like the map. Refreshed by AlertsWorker (every 15 min) and
+ * delay, coloured like the map. Refreshed by AlertsWorker every 15 minutes
+ * while a widget is on the home screen, and redrawn from the cached summary
  * when the app changes the favourites.
+ *
+ * Battery: onUpdate used to start a one-off WorkManager job every time. With
+ * no other work scheduled, WorkManager toggles one of its components, the
+ * launcher answers with another APPWIDGET_UPDATE, and so on: a loop that
+ * downloaded the summary and redrew the widget non-stop (it flickered, and
+ * its remove button came and went). Now a download happens only when the
+ * cached summary is older than STALE_MS, and a periodic job is kept while a
+ * widget exists, so WorkManager never has to toggle anything.
  */
 public class Widget extends AppWidgetProvider {
     static final int[] ROWS = {R.id.row0, R.id.row1, R.id.row2, R.id.row3};
@@ -27,22 +41,55 @@ public class Widget extends AppWidgetProvider {
     static final int RED = Color.rgb(220, 38, 38);
     static final int GREY = Color.rgb(107, 114, 128);
 
+    static final String PERIODIC = "widget-refresh";
+    /** A cached summary younger than this is used as it is. */
+    static final long STALE_MS = 10 * 60_000L;
+
+    @Override
+    public void onEnabled(Context ctx) {
+        schedule(ctx);
+    }
+
+    @Override
+    public void onDisabled(Context ctx) {
+        WorkManager.getInstance(ctx).cancelUniqueWork(PERIODIC);
+    }
+
+    /** When the cached summary was downloaded (a string: the file is the
+     * app's Capacitor Preferences, which only hold strings). */
+    static long cachedAt(SharedPreferences p) {
+        try {
+            return Long.parseLong(p.getString("widget-summary-at", "0"));
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /** Every 15 minutes with a network, while a widget is on the home screen. */
+    static void schedule(Context ctx) {
+        Constraints c = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
+        WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.KEEP,
+                new PeriodicWorkRequest.Builder(AlertsWorker.class, 15, TimeUnit.MINUTES).setConstraints(c).build());
+    }
+
     @Override
     public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids) {
-        SharedPreferences p = ctx.getSharedPreferences(AlertsWorker.PREFS, Context.MODE_PRIVATE);
-        boolean pro = AlertRules.isPro(p.getString("pro-entitlement", null), System.currentTimeMillis());
-        JSONArray cached = null;
-        try {
-            cached = new JSONArray(p.getString("widget-summary", "[]"));
-        } catch (Exception ignored) {
-            // nothing cached yet
-        }
-        render(ctx, cached, pro);
+        // Widgets added before the periodic job existed (older versions).
+        schedule(ctx);
         refreshSoon(ctx);
     }
 
+    /** Redraw now from the cache; download only if the cache is stale. */
     static void refreshSoon(Context ctx) {
-        WorkManager.getInstance(ctx).enqueueUniqueWork("widget-now", ExistingWorkPolicy.REPLACE,
+        SharedPreferences p = ctx.getSharedPreferences(AlertsWorker.PREFS, Context.MODE_PRIVATE);
+        boolean pro = AlertRules.isPro(p.getString("pro-entitlement", null), System.currentTimeMillis());
+        try {
+            render(ctx, new JSONArray(p.getString("widget-summary", "[]")), pro);
+        } catch (Exception ignored) {
+            render(ctx, null, pro);
+        }
+        if (!pro || System.currentTimeMillis() - cachedAt(p) < STALE_MS) return;
+        WorkManager.getInstance(ctx).enqueueUniqueWork("widget-now", ExistingWorkPolicy.KEEP,
                 new OneTimeWorkRequest.Builder(AlertsWorker.class).build());
     }
 

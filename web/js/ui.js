@@ -89,8 +89,20 @@ function oncomingText(lang, o, onTrain) {
   return [name, ` · ${[when, formatDistance(lang, o.distance_m)].filter(Boolean).join(" · ")}`];
 }
 
+/** A UK train (plan 3): placed by Network Rail's timetable + TRUST delay. */
+const isUk = (info) => info.feed === "timetable" && !info.timetable_only;
+
 /** Where each figure in the popup comes from, and the official live page. */
 function sourceNote(lang, info) {
+  if (isUk(info)) {
+    const parts = [t(lang, "srcUkPos")];
+    if (info.delay_source) parts.push(t(lang, "srcUkDelay"));
+    parts.push(t(lang, "srcUkTimetable"));
+    return [
+      el("details", { class: "small muted sources" }, el("summary", {}, t(lang, "dataSources")), parts.join(" ")),
+      el("a", { class: "small", href: "https://www.nationalrail.co.uk/", target: "_blank", rel: "noopener" }, `${t(lang, "linkNationalRail")} ↗`),
+    ];
+  }
   const parts = [];
   parts.push(t(lang, info.feed === "vp_cer" ? "srcPosCer" : "srcPosLd"));
   if (info.delay_source === "renfe") parts.push(t(lang, "srcDelayRenfe"));
@@ -331,7 +343,7 @@ export function trainRows(
       t(lang, "delay"),
       el("strong", { style: `color:${COLORS[cls]}` }, formatDelay(lang, info.delay)),
       info.delay_source
-        ? el("span", { class: "muted" }, ` (${t(lang, info.delay_source === "renfe" ? "sourceRenfe" : "sourceEstimated")})`)
+        ? el("span", { class: "muted" }, ` (${t(lang, isUk(info) ? "sourceNetworkRail" : info.delay_source === "renfe" ? "sourceRenfe" : "sourceEstimated")})`)
         : "",
     ),
   );

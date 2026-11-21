@@ -29,6 +29,19 @@ const fail = async (msg) => {
 
 await page.goto(`${url}?country=uk`);
 await page.waitForFunction(() => window.__trainradar?.engine?.positions(Date.now()).length > 0, null, { timeout: 30000 }).catch(() => fail("no UK trains"));
+// The timetable places trains before the trip updates arrive: wait for them.
+await page
+  .waitForFunction(
+    () => {
+      const e = window.__trainradar.engine;
+      const n = e.positions(Date.now()).length / 6;
+      for (let i = 0; i < n; i++) if (JSON.parse(e.trainJson(i, Date.now())).delay !== null) return true;
+      return false;
+    },
+    null,
+    { timeout: 30000 },
+  )
+  .catch(() => {});
 const trains = await page.evaluate(() => {
   const e = window.__trainradar.engine;
   const n = e.positions(Date.now()).length / 6;
@@ -59,6 +72,8 @@ await page.waitForSelector("#detail:not([hidden]) .popup-title, #detail:not([hid
 const sheet = (await page.textContent("#detail")).replace(/\s+/g, " ");
 if (!sheet.includes("posición estimada: horario + retraso en directo")) await fail(`sheet: ${sheet.slice(0, 200)}`);
 if (!/\+[17]\s*min/.test(sheet)) await fail(`delay not shown: ${sheet.slice(0, 200)}`);
+// Where the figures come from: Network Rail, not Renfe.
+if (!/Retraso: Network Rail/.test(sheet) || /Renfe/.test(sheet)) await fail(`sources: ${sheet.slice(Math.max(0, sheet.indexOf("Renfe") - 150), sheet.indexOf("Renfe") + 100)}`);
 await page.screenshot({ path: `${out}/uk-train.png` });
 await page.click("#detail-close").catch(() => page.keyboard.press("Escape"));
 
