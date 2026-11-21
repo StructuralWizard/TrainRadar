@@ -1523,6 +1523,9 @@ async function renderHistory() {
 function saveCommutes(next, redraw = () => {}, open = false) {
   commutes = next;
   prefs.set(COMMUTE_KEY, serializeCommutes(next)).catch(() => {});
+  // The Delays list's filter offers each commute: keep it current (it is
+  // hidden while the commute screen is open, and shown again unchanged).
+  if (engine) renderDelayedList();
   redraw();
   if (open) {
     openSheet("commute");

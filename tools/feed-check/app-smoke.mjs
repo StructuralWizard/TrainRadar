@@ -425,7 +425,10 @@ await pp.click("#tab-map"); // phone: back to the map, then expand the home shee
   await pp.waitForTimeout(400);
 await pp.waitForSelector("#delayed-filter:not([hidden]) button", { timeout: 5000 }).catch(() => fail("delays filter didn't show"));
 const chips = await pp.$$eval("#delayed-filter button", (b) => b.map((x) => x.textContent));
-if (chips.length !== 3 || chips[0] !== "Todos") await fail(`delays filter: ${JSON.stringify(chips)}`);
+console.log("delays filter:", chips.join(" | "));
+// "Todos" + each saved commute (two seeded, one added above).
+const savedCommutes = await pp.evaluate(() => (JSON.parse(localStorage.getItem("commute") || "{}").list || []).length);
+if (chips.length !== savedCommutes + 1 || savedCommutes !== 3 || chips[0] !== "Todos") await fail(`delays filter: ${JSON.stringify(chips)} (${savedCommutes} commutes saved)`);
 const allLate = await pp.$$eval("#delayed-list li", (l) => l.map((x) => x.textContent));
 await pp.click("#delayed-filter button >> nth=1");
 const onlyLate = await pp.$$eval("#delayed-list li", (l) => l.map((x) => x.textContent));
