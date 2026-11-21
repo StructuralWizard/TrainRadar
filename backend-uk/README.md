@@ -28,8 +28,8 @@ Every minute a Durable Object alarm:
    `uk/rt/incidents.json` `{ updatedAt, source, notice, incidents: [{ id, summary, text,
    routes, operators, planned, priority, from, until, updated, url }] }`: incidents not
    cleared and not over, unplanned first. HTML is reduced to plain text; only links to
-   `www.nationalrail.co.uk` are kept. The licence (docs/licenses/) asks for a credit to the
-   Rail Delivery Group, without implying endorsement, and an accuracy notice: both are in
+   `www.nationalrail.co.uk` are kept. The licence (docs/licenses/) asks for a credit, without
+   implying endorsement ("National Rail", per the Rail Data Marketplace), and an accuracy notice: both are in
    the file (`source`, `notice`) for the app to show. A failed fetch keeps the last file.
 
 A failed drain (login refused, network) keeps the last `trip_updates.pb` and says why in

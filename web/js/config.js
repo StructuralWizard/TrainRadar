@@ -13,6 +13,9 @@ export const CONFIG = {
   apiBase: "/",
   // Reference data built by refdata-build.
   dataBase: "data/",
+  // Countries offered (plan 3). Android builds drop the UK until the app
+  // ships it (tools/build-web.sh, UK_APP=true keeps it).
+  countries: ["es", "uk"],
   // Android app: the site's data/ (absolute URL), newer than the copy in the
   // app once the app is a few days old; "" = only dataBase.
   remoteDataBase: "",

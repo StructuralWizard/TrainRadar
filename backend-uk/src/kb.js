@@ -18,12 +18,13 @@
 // regular expressions (namespace prefixes ignored). The texts are untrusted:
 // HTML is reduced to plain text here and the app shows it as text only.
 //
-// Licence (docs/licenses/): free; credit the Rail Delivery Group as the
-// source without implying endorsement, and pass on an accuracy notice.
+// Licence (docs/licenses/): free; credit the source without implying
+// endorsement, and pass on an accuracy notice. The Rail Data Marketplace
+// (email, 21 Nov 2026): the attribution should be "National Rail".
 
 export const KB_URL = "https://api1.raildata.org.uk/1010-knowlegebase-incidents-xml-feed1_0/incidents.xml";
 export const KB_EVERY_MS = 5 * 60_000;
-export const KB_SOURCE = "Rail Delivery Group (National Rail Knowledgebase), via the Rail Data Marketplace";
+export const KB_SOURCE = "National Rail";
 export const KB_NOTICE =
   "Information from National Rail may be incomplete or out of date. Check with National Rail Enquiries or your train operator before you travel.";
 /** Links kept only to National Rail's own pages. */

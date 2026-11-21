@@ -7,6 +7,11 @@ test("country: the address, then the saved choice, then the browser", () => {
   assert.equal(pickCountry({ search: "?country=fr", saved: "uk" }), "uk");
   assert.equal(pickCountry({ saved: null, languages: ["en-GB", "en"] }), "uk");
   assert.equal(pickCountry({ saved: null, languages: ["es-ES"] }), "es");
+  // A build without the UK (the Android app until 3.0): always Spain.
+  const es = ["es"];
+  assert.equal(pickCountry({ search: "?country=uk", allowed: es }), "es");
+  assert.equal(pickCountry({ saved: "uk", allowed: es }), "es");
+  assert.equal(pickCountry({ languages: ["en-GB"], allowed: es }), "es");
   assert.equal(pickCountry({}), "es");
 });
 

@@ -7,11 +7,12 @@ export const COUNTRY_KEY = "country";
 
 /** Which country to show: `?country=uk` in the address, else the one saved,
  * else the UK for a British English browser, else Spain. */
-export function pickCountry({ search = "", saved = null, languages = [] } = {}) {
+export function pickCountry({ search = "", saved = null, languages = [], allowed = COUNTRIES } = {}) {
+  const ok = (c) => COUNTRIES.includes(c) && allowed.includes(c);
   const asked = new URLSearchParams(search).get("country");
-  if (COUNTRIES.includes(asked)) return asked;
-  if (COUNTRIES.includes(saved)) return saved;
-  return languages[0] === "en-GB" ? "uk" : "es";
+  if (ok(asked)) return asked;
+  if (ok(saved)) return saved;
+  return languages[0] === "en-GB" && ok("uk") ? "uk" : "es";
 }
 
 /** Point CONFIG at a country's data and feeds (mutates and returns it). */

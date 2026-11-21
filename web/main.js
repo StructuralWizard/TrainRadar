@@ -85,7 +85,9 @@ const store = {
 
 // Which country (plan 3): Spain or the UK, one at a time; CONFIG then
 // points at that country's data and feeds, times show in its time zone.
-const country = pickCountry({ search: location.search, saved: store.get(COUNTRY_KEY), languages: navigator.languages || [] });
+const country = pickCountry({ search: location.search, saved: store.get(COUNTRY_KEY), languages: navigator.languages || [], allowed: CONFIG.countries });
+/** More than one country to choose from (the Android app: Spain only until 3.0). */
+const MULTI_COUNTRY = CONFIG.countries.length > 1;
 applyCountry(CONFIG, country);
 setTimeZone(CONFIG.timeZone);
 const UK = country === "uk";
@@ -500,7 +502,7 @@ function fillJump() {
     .filter((r) => r.code !== "ld" && r.live !== false)
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
   // The country (plan 3): the other one reloads the page with its data.
-  const countries = el(
+  const countries = !MULTI_COUNTRY ? null : el(
     "optgroup",
     { label: t(lang, "country") },
     el("option", { value: "country:es" }, t(lang, "countryEs")),
@@ -2129,7 +2131,7 @@ function renderNetworks(keepInput = false) {
     query: netQuery,
     near,
     spain: { trains, onPick: () => pick("es"), label: UK ? t(lang, "allUk") : null },
-    countries: [
+    countries: !MULTI_COUNTRY ? null : [
       { code: "es", name: t(lang, "countryEs"), current: !UK, onPick: () => switchCountry("es") },
       { code: "uk", name: t(lang, "countryUk"), current: UK, onPick: () => switchCountry("uk") },
     ],
