@@ -8,6 +8,7 @@
 pub mod gtfs_rt;
 pub mod history;
 pub mod incidents;
+pub mod journeys;
 mod json;
 pub mod live;
 pub mod network;
@@ -965,6 +966,115 @@ impl Engine {
         }
         s.push(']');
         s
+    }
+
+    /// Journeys with changes (plan "journeys"): from any station in `from`
+    /// to any in `to` (comma-separated ids), leaving after `now_ms`, with at
+    /// most `max_changes` changes, up to `limit` journeys within
+    /// `window_secs`: `[{dep, arr, changes, tightest_change, steps: [{kind:
+    /// "ride", trip_id, route, number, headsign, from, from_name, to,
+    /// to_name, dep, arr, delay, expected_dep, expected_arr, live} | {kind:
+    /// "walk", from, from_name, to, to_name, secs}]}]` (unix seconds;
+    /// `dep` and `arr` expected, with live delays).
+    #[wasm_bindgen(js_name = journeysJson)]
+    pub fn journeys_json(
+        &self,
+        from: &str,
+        to: &str,
+        now_ms: f64,
+        max_changes: usize,
+        limit: usize,
+        window_secs: i32,
+    ) -> String {
+        let ids = |s: &str| -> Vec<String> {
+            s.split(',')
+                .map(str::trim)
+                .filter(|x| !x.is_empty())
+                .map(str::to_owned)
+                .collect()
+        };
+        let (from, to) = (ids(from), ids(to));
+        let from: Vec<&str> = from.iter().map(String::as_str).collect();
+        let to: Vec<&str> = to.iter().map(String::as_str).collect();
+        let js = journeys::journeys(
+            &self.net,
+            &self.live,
+            &journeys::Query {
+                from: &from,
+                to: &to,
+                after: secs(now_ms),
+                max_changes: max_changes.min(3),
+                limit: limit.min(20),
+                window_secs: i64::from(window_secs).clamp(0, 24 * 3_600),
+            },
+        );
+        let names = self.station_names();
+        let name = |id: &str| names.get(id).copied().unwrap_or(id).to_owned();
+        let mut s = String::from("[");
+        for (i, j) in js.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            let mut steps = String::from("[");
+            for (n, step) in j.steps.iter().enumerate() {
+                if n > 0 {
+                    steps.push(',');
+                }
+                match step {
+                    journeys::Step::Ride(r) => json::Obj::new(&mut steps)
+                        .s("kind", "ride")
+                        .s("trip_id", &r.trip_id)
+                        .s("route", &r.route)
+                        .s("number", &r.number)
+                        .s("headsign", &r.headsign)
+                        .s("from", &r.from)
+                        .s("from_name", &name(&r.from))
+                        .s("to", &r.to)
+                        .s("to_name", &name(&r.to))
+                        .n("dep", r.sched_dep)
+                        .n("arr", r.sched_arr)
+                        .on("delay", r.delay)
+                        .n("expected_dep", r.expected_dep())
+                        .n("expected_arr", r.expected_arr())
+                        .b("live", r.live)
+                        .end(),
+                    journeys::Step::Walk(w) => json::Obj::new(&mut steps)
+                        .s("kind", "walk")
+                        .s("from", &w.from)
+                        .s("from_name", &name(&w.from))
+                        .s("to", &w.to)
+                        .s("to_name", &name(&w.to))
+                        .n("secs", w.secs)
+                        .end(),
+                }
+            }
+            steps.push(']');
+            json::Obj::new(&mut s)
+                .n("dep", j.dep())
+                .n("arr", j.arr())
+                .n("changes", j.changes())
+                .on("tightest_change", j.tightest_change())
+                .raw("steps", &steps)
+                .end();
+        }
+        s.push(']');
+        s
+    }
+
+    /// Station id → name: the stations file, else the timetables' stops.
+    fn station_names(&self) -> std::collections::HashMap<&str, &str> {
+        let mut m = std::collections::HashMap::new();
+        for r in &self.net.regions {
+            for st in &r.tt.stops {
+                m.insert(st.id.as_str(), st.name.as_str());
+            }
+        }
+        if let Some(f) = &self.net.stations {
+            for st in &f.stations {
+                m.insert(st.id.as_str(), st.name.as_str());
+            }
+        }
+        m
     }
 
     /// Station ids on the way from `from` to `to` (both included), as a JSON

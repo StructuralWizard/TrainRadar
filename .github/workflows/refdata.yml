@@ -86,6 +86,8 @@ jobs:
             --sources gtfs/sources.tsv --report refdata.md
       - name: Verify .bin files decode and are consistent
         run: target/release/refdata-build verify web/data
+      - name: Journeys with changes on the real timetables (timings)
+        run: cargo run --release -q -p trainradar-engine --example journeys_bench -- web/data | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |
