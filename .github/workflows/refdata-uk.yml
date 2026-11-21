@@ -35,15 +35,15 @@ jobs:
         id: osm
         with:
           path: gtfs/uk/rail.geojsonseq
-          key: osm-rail-uk-v1-${{ steps.week.outputs.week }}
-          restore-keys: osm-rail-uk-v1-
+          key: osm-rail-uk-v3-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-uk-v3-
       - if: steps.osm.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y osmium-tool
       - name: Download Network Rail SCHEDULE, NaPTAN and OSM track
         env:
           NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
           NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
-        run: tools/fetch-uk.sh | tee -a "$GITHUB_STEP_SUMMARY"
+        run: set -o pipefail; tools/fetch-uk.sh | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Build .bin files
         run: |
           target/release/refdata-build build --out build/uk --gzip \

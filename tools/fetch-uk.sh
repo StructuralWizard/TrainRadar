@@ -7,8 +7,8 @@
 #   naptan.csv        NaPTAN stops (public; rail stations give coordinates)
 #   ni-txc.zip        NI Railways' timetable, TransXChange (Translink on
 #                     OpenDataNI; public; plan 4), found through the CKAN API
-#   rail.geojsonseq   OpenStreetMap track in Great Britain and the island of
-#                     Ireland (needs osmium-tool; skipped with --no-osm)
+#   rail.geojsonseq   OpenStreetMap track in the United Kingdom (Great
+#                     Britain and Northern Ireland) (needs osmium-tool; skipped with --no-osm)
 # Network Rail, NaPTAN and Translink data: Open Government Licence v3.0.
 # OSM: ODbL 1.0.
 set -euo pipefail
@@ -46,9 +46,16 @@ echo "naptan.csv: $(du -h gtfs/uk/naptan.csv | cut -f1), $(grep -c ',RLY,' gtfs/
 
 # NI Railways (Translink): the dataset's ZIP resource, wherever it now lives.
 # Optional: without it the UK has no Northern Ireland, nothing else changes.
-ni_url=$(curl -fsSL --retry 3 "https://admin.opendatani.gov.uk/api/3/action/package_show?id=nir20160126v2" |
-  jq -r '[.result.resources[] | select((.format | ascii_upcase) == "ZIP")][0].url // empty' || true)
-if [ -n "$ni_url" ] && curl -fsSL --retry 3 -o gtfs/uk/ni-txc.zip.part "$ni_url"; then
+# OpenDataNI refuses curl's default user agent on some hosts, so name ours.
+ua="TrainRadar refdata (https://www.mytrainradar.com)"
+ni_url=""
+for ckan in https://admin.opendatani.gov.uk https://www.opendatani.gov.uk; do
+  ni_url=$(curl -fsSL --retry 3 -A "$ua" "$ckan/api/3/action/package_show?id=nir20160126v2" |
+    jq -r '[.result.resources[] | select((.format | ascii_upcase) == "ZIP")][0].url // empty' || true)
+  [ -n "$ni_url" ] && break
+  echo "ni-txc.zip: no answer from $ckan"
+done
+if [ -n "$ni_url" ] && curl -fsSL --retry 3 -A "$ua" -o gtfs/uk/ni-txc.zip.part "$ni_url"; then
   mv gtfs/uk/ni-txc.zip.part gtfs/uk/ni-txc.zip
   echo "ni-txc.zip: $(du -h gtfs/uk/ni-txc.zip | cut -f1)"
 else
@@ -59,13 +66,16 @@ fi
 if [ "$osm" = 1 ] && [ ! -s gtfs/uk/rail.geojsonseq ]; then
   start=$SECONDS
   parts=()
-  for region in united-kingdom/england united-kingdom/scotland united-kingdom/wales ireland-and-northern-ireland; do
-    out="gtfs/uk/${region##*/}.osm.pbf"
-    curl -fsSL --retry 4 --retry-delay 10 --speed-limit 100000 --speed-time 60 -o "$out" \
-      "https://download.geofabrik.de/europe/$region-latest.osm.pbf"
-    osmium tags-filter --overwrite -o "gtfs/uk/${region##*/}-rail.osm.pbf" "$out" w/railway=rail,narrow_gauge,disused
+  # One extract for Great Britain and Northern Ireland. (Since November 2026
+  # Geofabrik's England, Scotland and Wales links redirect to a 404.)
+  for region in united-kingdom; do
+    out="gtfs/uk/$region.osm.pbf"
+    url="https://download.geofabrik.de/europe/$region-latest.osm.pbf"
+    curl -fsSL --retry 4 --retry-delay 10 --speed-limit 100000 --speed-time 60 -o "$out" "$url" ||
+      { echo "OSM: $url failed" >&2; exit 1; }
+    osmium tags-filter --overwrite -o "gtfs/uk/$region-rail.osm.pbf" "$out" w/railway=rail,narrow_gauge,disused
     rm "$out"
-    parts+=("gtfs/uk/${region##*/}-rail.osm.pbf")
+    parts+=("gtfs/uk/$region-rail.osm.pbf")
   done
   osmium merge --overwrite -o gtfs/uk/rail.osm.pbf "${parts[@]}"
   osmium export --overwrite -f geojsonseq --geometry-types=linestring \
