@@ -9,18 +9,22 @@ download the `store-assets` artifact (built from the live app; see "Graphics" be
 
 ## Store listing
 
-Default language **Spanish (es-ES)**, translation **English (en-GB)**. Category
+Default language **Spanish (es-ES)**, translation **English (en-GB)**. From 3.0 the app
+covers the United Kingdom too: in Play Console → Production → Countries/regions, the
+United Kingdom must be selected (the Pro price is converted from the Spanish one). Category
 **Maps & Navigation**. Tags: Travel, Public transport. "Renfe" is not in the title or the
 icon (we are not Renfe); it appears in the description as the data source.
 
 ### es-ES
 
 - **App name** (≤ 30): `TrainRadar: trenes en directo`
-- **Short description** (≤ 80): `Mapa en directo de los trenes de España, con su retraso, avisos y puntualidad.`
+- **Short description** (≤ 80): `Mapa en directo de los trenes de España y Reino Unido, con su retraso y avisos.`
 - **Full description** (≤ 4000):
 
 ```
 TrainRadar muestra en un mapa, en directo, dónde están los trenes de Renfe en toda España —Cercanías, AVE, Avlo, Alvia, Media Distancia— y los de OUIGO según su horario, coloreados por su retraso: verde a su hora, ámbar con 5 minutos o más, rojo con 15 o más.
+
+Y en el Reino Unido: los trenes de Gran Bretaña con su retraso en directo de Network Rail, los de Irlanda del Norte según su horario, y los avisos de National Rail. Un toque cambia de país.
 
 EN EL MAPA
 • Cada tren con su dirección, velocidad, próxima parada y retraso, según Renfe o estimado por GPS.
@@ -47,17 +51,19 @@ PRIVACIDAD
 Sin cuentas, sin anuncios, sin rastreo. Tus favoritos y viajes se guardan solo en tu teléfono (y en la copia de seguridad de Android). TrainRadar es de código abierto: https://github.com/StructuralWizard/TrainRadar
 
 DATOS
-Datos abiertos de Renfe Operadora (CC BY 4.0) y del Punto de Acceso Nacional de transportes (MITRAMS). Mapa © OpenStreetMap, OpenFreeMap. TrainRadar no está afiliado a Renfe, Adif ni OUIGO; los datos pueden contener errores y retrasos.
+Datos abiertos de Renfe Operadora (CC BY 4.0) y del Punto de Acceso Nacional de transportes (MITRAMS). Reino Unido: información de Network Rail Infrastructure Limited bajo la Open Government Licence v3.0, NaPTAN (DfT), Translink (Irlanda del Norte) y avisos de National Rail vía Rail Data Marketplace. Mapa © OpenStreetMap, OpenFreeMap. TrainRadar no está afiliado a Renfe, Adif, OUIGO, Network Rail, National Rail ni Translink; los datos pueden contener errores y retrasos.
 ```
 
 ### en-GB
 
-- **App name** (≤ 30): `TrainRadar: live trains Spain`
-- **Short description** (≤ 80): `Live map of Spain's trains with their delay, alerts and punctuality.`
+- **App name** (≤ 30): `TrainRadar: live train map` (was `TrainRadar: live trains Spain` until 3.0)
+- **Short description** (≤ 80): `Live map of trains in Spain and the UK, with their delay and notices.`
 - **Full description**:
 
 ```
 TrainRadar shows on a map, live, where Renfe's trains are across Spain —Cercanías, AVE, Avlo, Alvia, Media Distancia— and OUIGO's by their timetable, coloured by delay: green on time, amber 5 minutes or more late, red 15 or more.
+
+And in the United Kingdom: Great Britain's trains with Network Rail's live delays, Northern Ireland's by timetable, and National Rail's notices. One tap switches country.
 
 ON THE MAP
 • Every train with its direction, speed, next stop and delay, as published by Renfe or estimated from GPS.
@@ -84,7 +90,7 @@ PRIVACY
 No accounts, no ads, no tracking. Your favourites and trips stay on your phone (and in Android's backup). TrainRadar is open source: https://github.com/StructuralWizard/TrainRadar
 
 DATA
-Open data from Renfe Operadora (CC BY 4.0) and Spain's National Access Point for transport (MITRAMS). Map © OpenStreetMap, OpenFreeMap. TrainRadar isn't affiliated with Renfe, Adif or OUIGO; the data may contain errors and delays.
+Open data from Renfe Operadora (CC BY 4.0) and Spain's National Access Point for transport (MITRAMS). United Kingdom: contains information of Network Rail Infrastructure Limited licensed under the Open Government Licence v3.0, NaPTAN (DfT), Translink (Northern Ireland) and National Rail's notices via the Rail Data Marketplace. Map © OpenStreetMap, OpenFreeMap. TrainRadar isn't affiliated with Renfe, Adif, OUIGO, Network Rail, National Rail or Translink; the data may contain errors and delays.
 ```
 
 ### Graphics
