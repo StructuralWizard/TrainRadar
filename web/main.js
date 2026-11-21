@@ -87,11 +87,17 @@ const store = {
 // Which country (plan 3): Spain or the UK, one at a time; CONFIG then
 // points at that country's data and feeds, times show in its time zone.
 const country = pickCountry({ search: location.search, saved: store.get(COUNTRY_KEY), languages: navigator.languages || [], allowed: CONFIG.countries });
-/** More than one country to choose from (the Android app: Spain only until 3.0). */
+/** More than one country to choose from (UK_APP=false builds an app with Spain only). */
 const MULTI_COUNTRY = CONFIG.countries.length > 1;
+// The Android app's widgets and background alerts follow Spain (Renfe), in
+// either country: they read Spain's servers, favourites and commutes.
+const NATIVE_BASES = { apiBase: CONFIG.apiBase, liveBase: CONFIG.liveBase };
 applyCountry(CONFIG, country);
 setTimeZone(CONFIG.timeZone);
 const UK = country === "uk";
+// Each country keeps its own favourites and commutes (station ids differ);
+// Spain's keep the original keys, which the Android widgets and alerts read.
+const FAV_KEY = UK ? "favourites-uk" : STORAGE_KEY;
 // Open where the app was left (map and the train or station open), unless
 // a link asks for something else.
 const lastView = parseLink(location.href) ? null : decodeView(store.get(VIEW_KEY), { country });
@@ -162,7 +168,7 @@ const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
 let commuteNote = ""; // e.g. "the list is full", shown once in the commute sheet
-const COMMUTE_KEY = "commute";
+const COMMUTE_KEY = UK ? "commute-uk" : "commute";
 let trips = []; // my trips (Pro), trips.js
 let claimFor = null; // the trip whose claim summary is shown
 let lastTripCheck = 0;
@@ -998,7 +1004,8 @@ function showTrainSheet(info, open, now) {
 /** "Avisarme": delay alerts for this train (Pro, Android), the Pro screen
  * (free app), or the Android app (web, once it has a listing). */
 function notifyAction(info, favItem) {
-  if (info.timetable_only) return null;
+  // Alerts follow Spain's trains (the background check reads Renfe's feed).
+  if (info.timetable_only || UK) return null;
   if (CONFIG.platform === "android") {
     if (!CONFIG.pro) return { on: false, onToggle: () => (openSheet("settings"), renderSettings()) };
     const on = alertsOn && isFavourite(favs, favItem);
@@ -1219,14 +1226,14 @@ async function refreshEntitlement() {
 function writeWidgetConfig() {
   if (CONFIG.platform !== "android") return Promise.resolve();
   return prefs
-    .set("widget-config", JSON.stringify({ lang, apiBase: CONFIG.apiBase }))
+    .set("widget-config", JSON.stringify({ lang, apiBase: NATIVE_BASES.apiBase }))
     .then(() => appNative.refreshWidget())
     .catch(() => {});
 }
 
 /** What the background check needs (read natively from Preferences). */
 function writeAlertConfig() {
-  const cfg = { enabled: alertsOn, lang, liveBase: CONFIG.liveBase, minor: MINOR, major: MAJOR };
+  const cfg = { enabled: alertsOn, lang, liveBase: NATIVE_BASES.liveBase, minor: MINOR, major: MAJOR };
   return prefs.set(ALERT_CONFIG_KEY, JSON.stringify(cfg)).catch(() => {});
 }
 
@@ -1245,7 +1252,7 @@ async function setAlerts(on) {
 
 /** While the app is open: the same alerts, live from the engine (every minute). */
 async function checkAlertsLive(now) {
-  if (!alertsOn || !CONFIG.pro || now - lastAlertCheck < 60_000) return;
+  if (!alertsOn || !CONFIG.pro || UK || now - lastAlertCheck < 60_000) return;
   lastAlertCheck = now;
   const trains = new Map();
   for (const f of favs) {
@@ -1611,7 +1618,7 @@ function favButton(item, redraw = () => showPopup(true)) {
 function saveFavourites(list) {
   favs = list;
   prefs
-    .set(STORAGE_KEY, JSON.stringify(list))
+    .set(FAV_KEY, JSON.stringify(list))
     .then(() => appNative.refreshWidget())
     .catch((e) => console.warn("favourites", e));
   renderFavourites();
@@ -2078,6 +2085,7 @@ function renderMore() {
           moreMsg ? el("p", { class: "small warn", id: "more-msg" }, moreMsg) : null,
           pro && moreWidgetInfo ? el("p", { class: "small muted", id: "widget-help" }, t(lang, "moreWidgetHow")) : null,
           pro && alertsOn ? el("p", { class: "small muted" }, t(lang, "alertsNote")) : null,
+          UK && appNative.available() ? el("p", { class: "small muted", id: "native-spain-only" }, t(lang, "nativeSpainOnly")) : null,
         ];
   const general = el(
       "ul",
@@ -3108,7 +3116,7 @@ $("settings-close").addEventListener("click", () => ($("settings").hidden = true
 startBilling();
 writeWidgetConfig();
 prefs
-  .get(STORAGE_KEY)
+  .get(FAV_KEY)
   .then((v) => {
     favs = parseFavourites(v);
     renderFavourites();

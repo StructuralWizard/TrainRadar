@@ -80,8 +80,8 @@ if [ -n "${DIST:-}" ]; then
       "$DIST"/separacion-entre-trenes "$DIST"/registrar-viajes-tren "$DIST"/historico-trenes-renfe "$DIST"/[0-9a-f]*[0-9a-f].txt
     sed -i 's#platform: "web"#platform: "android"#; s#coffeeUrl: "[^"]*"#coffeeUrl: ""#' "$DIST/js/config.js"
     grep -q 'platform: "android"' "$DIST/js/config.js" || { echo "platform not set" >&2; exit 1; }
-    # The UK (plan 3) ships in the app with 3.0: until then UK_APP=true only.
-    if [ "${UK_APP:-}" != "true" ]; then
+    # The UK (plan 3) is in the app from 3.0; UK_APP=false builds Spain only.
+    if [ "${UK_APP:-true}" = "false" ]; then
       sed -i 's#countries: \["es", "uk"\]#countries: ["es"]#' "$DIST/js/config.js"
       grep -q 'countries: \["es"\]' "$DIST/js/config.js" || { echo "countries not set" >&2; exit 1; }
     fi
@@ -91,6 +91,8 @@ if [ -n "${DIST:-}" ]; then
     # the history API at "/" (absent in the APK: the teaser just stays hidden;
     # the browser test answers it).
     mkdir -p "$DIST/rt" && cp "$RT_FIXTURES"/*.pb "$DIST/rt/"
+    # The UK's feeds (tools/demo-uk.sh), where the app reads them: uk/rt/.
+    if [ -d "$RT_FIXTURES/uk" ]; then mkdir -p "$DIST/uk/rt" && cp "$RT_FIXTURES"/uk/* "$DIST/uk/rt/"; fi
     sed -i 's#liveBase: "[^"]*"#liveBase: ""#; s#rtBase: "[^"]*"#rtBase: "rt/"#; s#apiBase: "[^"]*"#apiBase: "/"#; s#replayBase: "[^"]*"#replayBase: "/"#' "$DIST/js/config.js"
     # The Android smoke test (Espresso-web) reads the page with injected
     # scripts, which need eval. Test builds only: real builds keep the CSP.

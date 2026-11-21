@@ -273,3 +273,12 @@ English device starts in the UK. In the UK, trains are placed by timetable + the
 delay ("posición estimada"), times are London's, and Avisos shows National Rail's notices
 with the National Rail credit. Not in the UK yet: delay history, the replay and the
 notices history (Pro features stay Spain-only for now), Cercanías networks.
+
+In the app (from 3.0; `UK_APP=false tools/build-app.sh` builds one with Spain only) the UK's
+timetables aren't bundled: the first time Reino Unido is chosen they come from the site's
+`data/uk/`, like Spain's newer data. Each country keeps its own favourites and commutes
+(`favourites-uk`, `commute-uk` in Preferences). The widgets and the background delay alerts
+stay with Spain in either country: they read Spain's keys and servers (`widget-config` and
+`alert-config` always carry Spain's `apiBase` and `liveBase`), and in the UK the More screen
+says so. The emulator test switches to the UK through the picker (`tools/demo-uk.sh` data
+and feeds in the test APK).
