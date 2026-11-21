@@ -388,7 +388,9 @@ await pp.waitForSelector("#commute:not([hidden]) #journey-saved", { timeout: 500
 const savedLegs = await pp.$$eval("#journey-saved .journey-leg", (l) => l.length);
 if (savedLegs !== 2) await fail(`saved journey legs: ${savedLegs}`);
 if (!/Guardado en tus trayectos/.test(await pp.textContent("#commute-body"))) await fail("no saved note");
-await pp.click('#journey-saved .journey-days button[data-day="7"]');
+// A day it doesn't run yet (its default depends on the day the test runs).
+const offDay = await pp.$eval("#journey-saved .journey-days", (g) => g.querySelector('button[aria-pressed="false"]')?.dataset.day);
+await pp.click(`#journey-saved .journey-days button[data-day="${offDay}"]`);
 await pp.click('#journey-saved input[data-kind="platform"]');
 await pp.selectOption("#journey-remind", "45");
 await pp.reload();
@@ -398,7 +400,7 @@ const keptJourney = await pp.evaluate(() => {
   return s.list[s.active].journey;
 });
 console.log("journey saved:", JSON.stringify({ legs: keptJourney?.legs.map((l) => `${l.route} ${l.number} ${l.dep}`), days: keptJourney?.days, remind: keptJourney?.remind, notify: keptJourney?.notify }));
-if (!keptJourney || keptJourney.legs.length !== 2 || !keptJourney.days.includes(7) || keptJourney.remind !== 45 || keptJourney.notify.platform !== false || keptJourney.notify.delay !== true)
+if (!keptJourney || keptJourney.legs.length !== 2 || !keptJourney.days.includes(Number(offDay)) || keptJourney.remind !== 45 || keptJourney.notify.platform !== false || keptJourney.notify.delay !== true)
   await fail("saved journey settings not kept");
 await pp.waitForSelector("#commute:not([hidden]) #journey-saved", { timeout: 30000 }).catch(() => fail("saved journey not shown at start"));
 await pp.$eval("#journey-saved", (e) => e.scrollIntoView());
