@@ -108,7 +108,13 @@ jobs:
           "$adb" logcat -c
           if ! (cd app/android && ./gradlew --no-daemon :app:connectedDebugAndroidTest); then
             echo "::error::app smoke test failed; the app's console and WebView messages:"
-            "$adb" logcat -d | grep -iE "Capacitor|chromium|Console|WebView|AndroidRuntime" | tail -n 150
+            # The whole log goes in the artifact; here, without the plugin
+            # chatter, enough to cover both tests (a page reload or a WebView
+            # renderer restart in the first one was cut off at 150 lines).
+            "$adb" logcat -d > logcat.txt || true
+            grep -iE "Capacitor|chromium|Console|WebView|AndroidRuntime|render|ActivityManager" logcat.txt \
+              | grep -vE "Capacitor/Plugin|V Capacitor: callback|Line 333 - Msg|Line 349 - Msg|ViewInteraction|Handling local request" \
+              | tail -n 400
             exit 1
           fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -118,6 +124,7 @@ jobs:
           path: |
             app/android/app/build/reports/androidTests
             emulator.log
+            logcat.txt
           retention-days: 7
 
       # Try-out build: the deployed site's reference data and the live feeds,
