@@ -1032,7 +1032,7 @@ export function noticesHistoryPanel(lang, { day, min, max, state, doc, regionNam
 /**
  * The UK's notices (plan 3): National Rail's Knowledgebase incidents from
  * uk/rt/incidents.json (backend-uk/src/kb.js). Text only. `doc` null =
- * loading. The credit to the Rail Delivery Group and the accuracy notice
+ * loading. The credit to National Rail and the accuracy notice
  * come with the data, as its licence asks.
  */
 export function ukIncidentsPanel(lang, doc, up = {}) {

@@ -94,6 +94,7 @@ test("kb: active list: not over, not cleared; unplanned first", () => {
   assert.ok(!("cleared" in active[0]));
   const doc = incidentsDoc(parseIncidents(XML), NOW);
   assert.equal(doc.source, KB_SOURCE);
+  assert.equal(KB_SOURCE, "National Rail", "the attribution the Rail Data Marketplace asked for");
   // "Próximas obras": next March's works, without the long text.
   assert.deepEqual(doc.upcoming.map((i) => i.id), ["LATER"]);
   assert.equal(doc.upcoming[0].summary, "Works next March");

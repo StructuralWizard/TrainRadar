@@ -5,7 +5,7 @@
 //   cancelled in its trip update is not on the map;
 // - the train sheet says the position is estimated;
 // - the network picker offers España / Reino Unido; Avisos shows National
-//   Rail's notices with the Rail Delivery Group credit, and "Próximas obras"
+//   Rail's notices with the National Rail credit, and "Próximas obras"
 //   (planned works further ahead, free); the map credits
 //   Network Rail (OGL);
 // - the choice is remembered, and España goes back to Spain.
@@ -67,7 +67,7 @@ await page.click("#tab-incidents");
 await page.waitForSelector("#uk-incidents li", { timeout: 10000 }).catch(() => fail("no National Rail notices"));
 const notices = (await page.textContent("#inc-body")).replace(/\s+/g, " ");
 if ((await page.$$("#uk-incidents li")).length !== 2) await fail(`notices: ${notices.slice(0, 200)}`);
-if (!/Rail Delivery Group/.test(notices) || !/out of date|desactualizada|out of date/i.test(notices)) await fail(`credit/notice missing: ${notices.slice(-300)}`);
+if (!/Avisos: National Rail\./.test(notices) || !/out of date|desactualizada|out of date/i.test(notices)) await fail(`credit/notice missing: ${notices.slice(-300)}`);
 if ((await page.textContent("#inc-title")).trim() !== "Avisos de National Rail") await fail("sheet title");
 if ((await page.textContent("#tab-incidents-n")).trim() !== "2") await fail("notice count badge");
 // "Próximas obras" (free): planned works further ahead, with an operator filter.

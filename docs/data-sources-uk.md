@@ -121,9 +121,20 @@ OperatorRef|OperatorName` (ATOC codes, e.g. NT Northern), `Affects/RoutesAffecte
 HTML) and `IncidentPriority`. Long-running engineering works are listed too (planned).
 
 Licence (docs/licenses/): free ("Open"); the raw data may be made freely available or
-distributed to third parties; credit the publisher, the Rail Delivery Group, without
-implying endorsement (3.3.1); pass on an accuracy notice (3.3.2); territory "UK" (asked
-about use by app users outside the UK by email, 2026-11-12).
+distributed to third parties; credit the publisher without implying endorsement (3.3.1);
+pass on an accuracy notice (3.3.2); territory "UK".
+
+Asked the Rail Data Marketplace by email (2026-11-12) about app users outside the UK.
+Their answer (2026-11-21), which they note is not legal advice:
+
+- The territory applies to the consumer's registered address (London): no other licence
+  is needed.
+- The licence is being opened to "Global" within about two weeks, with a special
+  condition: the data may not be resold "as is" or substantially unmodified; commercial
+  use only where it is materially augmented, integrated with other data or otherwise
+  enhanced. TrainRadar shows it reduced to text, filtered and alongside the timetable,
+  live positions and the Network Rail feeds.
+- The attribution should be "National Rail" (`KB_SOURCE` in `backend-uk/src/kb.js`).
 
 ## Licence
 

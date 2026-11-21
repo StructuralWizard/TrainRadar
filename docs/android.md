@@ -260,5 +260,5 @@ The network chip's picker starts with **España / Reino Unido**. Choosing one is
 feeds (`uk/rt/`): one country at a time. `?country=uk` in a link opens the UK; a British
 English device starts in the UK. In the UK, trains are placed by timetable + the live TRUST
 delay ("posición estimada"), times are London's, and Avisos shows National Rail's notices
-with the Rail Delivery Group credit. Not in the UK yet: delay history, the replay and the
+with the National Rail credit. Not in the UK yet: delay history, the replay and the
 notices history (Pro features stay Spain-only for now), Cercanías networks.
