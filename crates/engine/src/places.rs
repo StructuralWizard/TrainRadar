@@ -104,12 +104,14 @@ fn board_of(
         .iter()
         .filter_map(|t| Some(((t.matched?.trip, t.matched?.day), t.delay)))
         .collect();
-    let today = madrid_day(now);
     let mut rows = Vec::new();
     for (ri, r) in net.regions.iter().enumerate() {
         let Some(calls) = r.calls.get(station_id) else {
             continue;
         };
+        // Timetable times are local: an hour behind Madrid in the UK.
+        let behind = crate::networkrail::behind_madrid_secs(&r.tt.region);
+        let today = madrid_day(now - behind);
         for &(pi, pos) in calls {
             let st = &r.sched[pi as usize];
             let pos = pos as usize;
@@ -124,7 +126,7 @@ fn board_of(
                     if !(0..16).contains(&bit) || trip.days & (1 << bit) == 0 {
                         continue;
                     }
-                    let start = service_day_base(day) + i64::from(trip.start);
+                    let start = service_day_base(day) + behind + i64::from(trip.start);
                     let sched_arr = start + i64::from(st[pos].arrival);
                     let sched_dep = start + i64::from(st[pos].departure);
                     let sched = if last || by_arrival {
@@ -408,6 +410,22 @@ mod tests {
         // Departed trains drop off; the horizon limits the far end.
         let later = board(&net, &live, "B", local(8, 30), 15 * 60, 10);
         assert!(later.is_empty(), "{later:?}");
+    }
+
+    #[test]
+    fn uk_boards_are_in_london_time() {
+        // The same timetable as the UK region: its 08:11 is London's, 09:11 Madrid's.
+        let mut tt = sample_timetable();
+        tt.region = crate::networkrail::UK_REGION.into();
+        let mut net = Network::default();
+        net.load_timetable(&encode(&tt).unwrap()).unwrap();
+        let rows = board(&net, &Live::default(), "B", local(9, 5), 2 * 3_600, 10);
+        assert_eq!(rows[0].trip_id, "1004D100C3");
+        assert_eq!(
+            rows[0].sched_dep,
+            local(9, 11),
+            "08:11 London = 09:11 Madrid"
+        );
     }
 
     #[test]

@@ -48,7 +48,8 @@ jobs:
         run: |
           target/release/refdata-build build --out build/uk --gzip \
             --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
-            --rail gtfs/uk/rail.geojsonseq --report refdata-uk.md 2> build.log || { tail -50 build.log; exit 1; }
+            --rail gtfs/uk/rail.geojsonseq --report refdata-uk.md \
+            $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) 2> build.log || { tail -50 build.log; exit 1; }
           tail -20 build.log
           target/release/refdata-build verify build/uk
           { echo "## UK reference data"; echo; cat refdata-uk.md; } >> "$GITHUB_STEP_SUMMARY"

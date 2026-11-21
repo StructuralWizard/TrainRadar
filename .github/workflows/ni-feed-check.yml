@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - tools/ni-feed-check/**
+      - crates/refdata-build/src/txc.rs
       - .github/workflows/ni-feed-check.yml
 
 permissions:
@@ -25,6 +26,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - name: Check the datasets and the live feed
         run: node tools/ni-feed-check/check.mjs --out out
       - name: What's in the timetable files
@@ -73,6 +76,38 @@ jobs:
               echo; echo "Operating periods:"; grep -o -E '<(StartDate|EndDate)>[^<]*' "$x" | sort | uniq -c | head
               echo '```'
             done
+            # Samples for the importer (plan 4b): the parts it reads, verbatim.
+            for x in out/txc/*.xml; do
+              [ -f "$x" ] || continue
+              iconv -f WINDOWS-1252 -t UTF-8 "$x" > out/txc/utf8.xml || cp "$x" out/txc/utf8.xml
+              python3 - out/txc/utf8.xml <<'PY'
+          import re, sys
+          t = open(sys.argv[1], encoding="utf-8").read()
+          def blocks(tag, n):
+              return re.findall(r"<%s[ >].*?</%s>" % (tag, tag), t, re.S)[:n]
+          print("\n## Samples (plan 4b)\n```")
+          root = re.search(r"<TransXChange[^>]*>", t).group(0)
+          print(root[:600])
+          for tag, n in [("StopPoint", 3), ("JourneyPatternSection", 1), ("JourneyPattern", 2), ("Route", 1), ("RouteSection", 1), ("Operator", 1), ("Line", 2)]:
+              for b in blocks(tag, n):
+                  print(b[:2500]); print("-----")
+          vjs = blocks("VehicleJourney", 2000)
+          print("VehicleJourneys:", len(vjs))
+          for b in vjs[:2]: print(b[:2500]); print("-----")
+          special = [b for b in vjs if "SpecialDaysOperation" in b or "BankHoliday" in b]
+          for b in special[:3]: print(b[:3000]); print("-----")
+          withtl = [b for b in vjs if "VehicleJourneyTimingLink" in b]
+          print("VehicleJourneys with their own timing links:", len(withtl))
+          for b in withtl[:1]: print(b[:2500])
+          print("Distinct notes:", sorted(set(re.findall(r"<NoteText>(.*?)</NoteText>", t)))[:40])
+          names = re.findall(r"<StopPoint>.*?<AtcoCode>(.*?)</AtcoCode>.*?<CommonName>(.*?)</CommonName>.*?<Longitude>(.*?)</Longitude>.*?<Latitude>(.*?)</Latitude>", t, re.S)
+          print("All stop points (ATCO, name, lon, lat):")
+          for n in names: print("  ", " | ".join(n))
+          print("Lines:", sorted(set(re.findall(r"<LineName>(.*?)</LineName>", t))))
+          print("Operators:", sorted(set(re.findall(r"<(?:OperatorShortName|TradingName|OperatorCode)>(.*?)<", t))))
+          print("```")
+          PY
+            done
             echo; echo "## The live page's scripts: API addresses"
             curl -fsSL https://tiger.worldline.global/toc/NIR -o out/realtime/tiger.html || true
             for js in $(grep -o 'src="[^"]*\.js"' out/realtime/tiger.html | sed 's/src="//; s/"$//'); do
@@ -89,6 +124,14 @@ jobs:
               echo "- $u: $(curl -s -o /dev/null -w '%{http_code} %{content_type} %{size_download}B' "$u")"
             done
           } | tee -a out/report.md
+      - name: Build Northern Ireland from it (plan 4b)
+        if: always()
+        run: |
+          zip=$(ls out/timetable/*.zip | grep -i -v docx | head -1)
+          cargo run --release -q -p trainradar-refdata-build -- build --out out/ni-data \
+            --ni-txc "$zip" --report out/ni-refdata.md
+          cargo run --release -q -p trainradar-refdata-build -- verify out/ni-data
+          { echo; echo "## Built"; cat out/ni-refdata.md; echo; echo '```'; ls -la out/ni-data; echo '```'; } | tee -a out/report.md
       - if: always()
         run: '[ -f out/report.md ] && cat out/report.md >> "$GITHUB_STEP_SUMMARY" || true'
       - if: always()

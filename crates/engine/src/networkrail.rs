@@ -38,11 +38,17 @@ impl SourceAdapter for NetworkRail {
 
 /// Region code of Great Britain's timetable (refdata-build `build::UK`).
 pub const UK_REGION: &str = "uk";
+/// Northern Ireland (NI Railways, Translink's timetable; plan 4).
+pub const NI_REGION: &str = "ni";
 
 /// Seconds the region's local time is behind Madrid's: the UK keeps the
 /// same summer-time dates as Spain, one hour behind all year.
 pub fn behind_madrid_secs(region: &str) -> i64 {
-    if region == UK_REGION { 3_600 } else { 0 }
+    if region == UK_REGION || region == NI_REGION {
+        3_600
+    } else {
+        0
+    }
 }
 
 /// Regions whose trains are placed by their timetable: operators that

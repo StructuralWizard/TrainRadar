@@ -80,6 +80,8 @@ export const STRINGS = {
     stoppedConfirmed: "⏸ Detenido entre {a} y {b} desde hace {t}",
     stoppedLikely: "⏸ Probablemente detenido entre {a} y {b} (sin GPS nuevo desde hace {t})",
     timetableOnly: "Posición según horario: {op} no publica datos en tiempo real.",
+    timetableOnlyNi: "Posición según horario: los datos en directo de NI Railways no son públicos ahora mismo.",
+    timetableSourceNi: "Horario: Translink (NI Railways), con licencia Open Government Licence v3.0.",
     timetableSource: "Horario: Punto de Acceso Nacional, publicado el {date}.",
     operatorLive: "Estado en vivo en {op} ↗",
     stoppedTitle: "Trenes detenidos entre estaciones",
@@ -308,6 +310,7 @@ export const STRINGS = {
     srcUkTimetable: "Horario y paradas: Network Rail (SCHEDULE). Estaciones: NaPTAN (Departamento de Transporte). Licencia OGL v3.0.",
     linkNationalRail: "National Rail · salidas en directo",
     scheduledCount: "+ {n} OUIGO según horario",
+    scheduledCountNi: "+ {n} de NI Railways según horario",
     sameLine: "Resaltados: {n} trenes de la misma línea",
     incidents: "Avisos",
     incidentsTitle: "Avisos de Renfe",
@@ -483,7 +486,7 @@ export const STRINGS = {
     ukSource: "Avisos: {source}.",
     ukPosition: "posición estimada: horario + retraso en directo",
     attributionUk:
-      'Datos: contiene información de Network Rail Infrastructure Limited con licencia <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Estaciones: NaPTAN (DfT, OGL v3.0) · Avisos: Rail Delivery Group (National Rail Knowledgebase), vía Rail Data Marketplace · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Network Rail, National Rail ni los operadores',
+      'Datos: contiene información de Network Rail Infrastructure Limited con licencia <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Estaciones: NaPTAN (DfT, OGL v3.0) · Irlanda del Norte: horario de Translink (OGL v3.0) · Avisos: National Rail, vía Rail Data Marketplace · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Network Rail, National Rail ni los operadores',
     attribution:
       'Datos: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL), IGN (IGR-RT, CC BY 4.0) · Alturas: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sin relación con Renfe, Adif ni OUIGO',
   },
@@ -564,6 +567,8 @@ export const STRINGS = {
     stoppedConfirmed: "⏸ Stopped between {a} and {b} for {t}",
     stoppedLikely: "⏸ Probably stopped between {a} and {b} (no new GPS for {t})",
     timetableOnly: "Position from the timetable: {op} publishes no live data.",
+    timetableOnlyNi: "Position from the timetable: NI Railways' live data isn't public right now.",
+    timetableSourceNi: "Timetable: Translink (NI Railways), under the Open Government Licence v3.0.",
     timetableSource: "Timetable: National Access Point, published {date}.",
     operatorLive: "Live status at {op} ↗",
     stoppedTitle: "Trains stopped between stations",
@@ -792,6 +797,7 @@ export const STRINGS = {
     srcUkTimetable: "Timetable and stops: Network Rail (SCHEDULE). Stations: NaPTAN (Department for Transport). Open Government Licence v3.0.",
     linkNationalRail: "National Rail · live departures",
     scheduledCount: "+ {n} OUIGO by timetable",
+    scheduledCountNi: "+ {n} NI Railways by timetable",
     sameLine: "Highlighted: {n} trains on the same line",
     incidents: "Notices",
     incidentsTitle: "Renfe notices",
@@ -967,7 +973,7 @@ export const STRINGS = {
     ukSource: "Notices: {source}.",
     ukPosition: "estimated position: timetable + live delay",
     attributionUk:
-      'Data: contains information of Network Rail Infrastructure Limited licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Stations: NaPTAN (DfT, OGL v3.0) · Notices: Rail Delivery Group (National Rail Knowledgebase), via the Rail Data Marketplace · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Network Rail, National Rail or the operators',
+      'Data: contains information of Network Rail Infrastructure Limited licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Stations: NaPTAN (DfT, OGL v3.0) · Northern Ireland: timetable from Translink (OGL v3.0) · Notices: National Rail, via the Rail Data Marketplace · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Network Rail, National Rail or the operators',
     attribution:
       'Data: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL), IGN (IGR-RT, CC BY 4.0) · Heights: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Not affiliated with Renfe, Adif or OUIGO',
   },

@@ -151,8 +151,9 @@ jobs:
         id: osm_uk
         with:
           path: gtfs/uk/rail.geojsonseq
-          key: osm-rail-uk-v1-${{ steps.week.outputs.week }}
-          restore-keys: osm-rail-uk-v1-
+          # v2: with the island of Ireland (NI Railways, plan 4).
+          key: osm-rail-uk-v2-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-uk-v2-
       - name: UK reference data
         if: vars.UK_ENABLED == 'true'
         continue-on-error: true
@@ -166,6 +167,7 @@ jobs:
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/uk-data --gzip \
               --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
               --rail gtfs/uk/rail.geojsonseq --report refdata-uk.md \
+              $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/uk-data; then
             mv build/uk-data build/data/uk
             { echo "## UK reference data"; echo; cat refdata-uk.md; } >> "$GITHUB_STEP_SUMMARY"

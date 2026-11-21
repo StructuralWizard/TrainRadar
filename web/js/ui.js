@@ -129,7 +129,7 @@ export const OFFICIAL_LINKS = [
   ["linkIryo", "https://iryo.eu/es"],
   ["linkAdifMap", "https://www.adif.es/sobre-adif/red-ferroviaria/mapa"],
 ];
-const OPERATOR_SITES = { OUIGO: "https://www.ouigo.com/es/" };
+const OPERATOR_SITES = { OUIGO: "https://www.ouigo.com/es/", "NI Railways": "https://www.translink.co.uk/" };
 
 export function officialLinks(lang) {
   return [
@@ -279,7 +279,7 @@ export function trainAlerts(lang, info, onIncidents) {
   const rows = [];
   if (info.canceled) rows.push(el("div", { class: "badge badge-red" }, t(lang, "canceled")));
   if (info.timetable_only) {
-    rows.push(el("div", { class: "notice-box" }, t(lang, "timetableOnly", { op: info.operator })));
+    rows.push(el("div", { class: "notice-box" }, t(lang, info.operator === "NI Railways" ? "timetableOnlyNi" : "timetableOnly", { op: info.operator })));
   }
   if (info.stopped) {
     const vars = { a: info.stopped.after, b: info.stopped.before, t: formatDuration(lang, Date.now() / 1000 - info.stopped.since) };
@@ -378,7 +378,11 @@ export function trainRows(
   }
   if (info.accessible && !skip.has("accessible")) rows.push(el("div", { class: "small" }, t(lang, info.accessible === "yes" ? "accessibleYes" : "accessibleNo")));
   const age = formatAgo(lang, info.fix_age);
-  if (info.timetable_only) {
+  if (info.timetable_only && info.operator === "NI Railways") {
+    // Northern Ireland (plan 4): Translink's timetable, OGL.
+    rows.push(el("div", { class: "small muted" }, t(lang, "timetableSourceNi")));
+    rows.push(el("a", { class: "small", href: OPERATOR_SITES["NI Railways"], target: "_blank", rel: "noopener" }, t(lang, "operatorLive", { op: "Translink" })));
+  } else if (info.timetable_only) {
     const site = OPERATOR_SITES[info.operator];
     if (napDate) rows.push(el("div", { class: "small muted" }, t(lang, "timetableSource", { date: formatDay(lang, napDate) })));
     if (site) rows.push(el("a", { class: "small", href: site, target: "_blank", rel: "noopener" }, t(lang, "operatorLive", { op: info.operator })));

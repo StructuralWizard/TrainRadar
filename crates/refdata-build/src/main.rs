@@ -14,6 +14,7 @@ mod nrsched;
 mod osm;
 mod profile;
 mod railnet;
+mod txc;
 mod verify;
 
 use build::{
@@ -63,6 +64,8 @@ usage:
                       [--stations FILE.geojson] [--network-geojson FILE]
                       [--sources FILE.tsv] [--report FILE.md]
                       [--gzip]
+                      (the UK: --uk-schedule FILE --naptan FILE [--corpus FILE]
+                       [--ni-txc ZIP])
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -102,6 +105,8 @@ struct BuildArgs {
     naptan: Option<PathBuf>,
     /// Network Rail CORPUS (JSON, .gz or plain): sibling TIPLOCs of a station.
     corpus: Option<PathBuf>,
+    /// Translink's NI Railways timetable (TransXChange, .zip or .xml): plan 4.
+    ni_txc: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -123,6 +128,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         uk_schedule: None,
         naptan: None,
         corpus: None,
+        ni_txc: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -154,6 +160,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--uk-schedule" => a.uk_schedule = Some(val()?.into()),
             "--naptan" => a.naptan = Some(val()?.into()),
             "--corpus" => a.corpus = Some(val()?.into()),
+            "--ni-txc" => a.ni_txc = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -171,8 +178,15 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
     if a.out.as_os_str().is_empty() {
         return Err("--out is required".into());
     }
-    if a.ld.is_none() && a.cercanias.is_none() && a.ouigo.is_none() && a.uk_schedule.is_none() {
-        return Err("give --ld, --cercanias and/or --ouigo, or --uk-schedule".into());
+    if a.ld.is_none()
+        && a.cercanias.is_none()
+        && a.ouigo.is_none()
+        && a.uk_schedule.is_none()
+        && a.ni_txc.is_none()
+    {
+        return Err(
+            "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc".into(),
+        );
     }
     if a.uk_schedule.is_some() != a.naptan.is_some() {
         return Err("--uk-schedule and --naptan go together".into());
@@ -302,8 +316,48 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.cercanias, "cercanias"),
         (&a.ouigo, "ouigo"),
         (&a.uk_schedule, "uk"),
+        (&a.ni_txc, "ni"),
     ] {
         let Some(path) = path else { continue };
+        if kind == "ni" {
+            // NI Railways (Translink): by timetable only, like OUIGO (plan 4b).
+            let xml = read_txc(path)?;
+            let (feed, st) = txc::load(&xml, &window)?;
+            report.push_str(&format!(
+                "- `{}` (Translink, NI Railways): {} stop points → {} stations; {} journeys,                  {} in window, {} unusable; lines: {}; services run until {}\n",
+                path.display(),
+                st.stop_points,
+                st.stations,
+                st.journeys,
+                st.in_window,
+                st.unusable,
+                st.lines.join(", "),
+                st.last_day.map_or_else(|| "?".into(), calendar::format_date)
+            ));
+            // Translink publishes a file per timetable period: warn (GitHub
+            // annotation) two weeks before the last day any service runs.
+            if let Some(last) = st.last_day
+                && last - window.start < 14
+            {
+                println!(
+                    "::warning::NI Railways' timetable ends on {}: Translink's next file isn't out yet",
+                    calendar::format_date(last)
+                );
+                report.push_str("  - ⚠ ends within two weeks: watch for Translink's next file\n");
+            }
+            let trips: Vec<&load::Trip> = feed.trips.iter().collect();
+            let (mut tt, legs, rs) =
+                build_timetable(&feed, &trips, build::NI, header.clone(), router.as_mut());
+            tt.operator = "NI Railways".into();
+            tt.live = false;
+            let rec = RegionRec {
+                code: build::NI.into(),
+                name: "Northern Ireland".into(),
+                bbox_e5: bbox_e5(&tt),
+            };
+            built.push((rec, tt, legs, rs));
+            continue;
+        }
         let commuter = kind == "cercanias";
         if kind == "uk" {
             // Network Rail: one region for Great Britain (plan 3, phase 3b).
@@ -796,4 +850,28 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// Translink's TransXChange: the .xml inside the .zip (or a bare .xml),
+/// decoded from windows-1252.
+fn read_txc(path: &std::path::Path) -> std::result::Result<String, String> {
+    let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    if !bytes.starts_with(b"PK") {
+        return Ok(txc::decode_cp1252(&bytes));
+    }
+    let mut z = zip::ZipArchive::new(std::io::Cursor::new(bytes))
+        .map_err(|e| format!("{}: {e}", path.display()))?;
+    for i in 0..z.len() {
+        let mut f = z.by_index(i).map_err(|e| e.to_string())?;
+        if f.name()
+            .map_err(|e| e.to_string())?
+            .to_ascii_lowercase()
+            .ends_with(".xml")
+        {
+            let mut buf = Vec::new();
+            std::io::Read::read_to_end(&mut f, &mut buf).map_err(|e| e.to_string())?;
+            return Ok(txc::decode_cp1252(&buf));
+        }
+    }
+    Err(format!("{}: no .xml inside", path.display()))
 }
