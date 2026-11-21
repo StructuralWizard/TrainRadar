@@ -699,12 +699,14 @@ export function claimBox(lang, text, url, onCopy) {
 }
 
 /** The favourites sheet: each train with its live state, each station. */
-export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onRemove, limit }) {
+export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onRemove, onMove, limit }) {
   if (!list.length) return [el("p", { class: "muted" }, t(lang, "favEmpty"))];
-  const items = list.map((f) => {
+  const item = (f, i) => {
     const remove = el("button", { class: "pill small", type: "button", "aria-label": t(lang, "favRemove"), onclick: () => onRemove(f) }, "✕");
+    const label = f.type === "station" ? f.name : f.label;
+    const handle = onMove ? dragHandle(t(lang, "favMove", { name: label }), i, (to) => onMove(f, to)) : null;
     if (f.type === "station") {
-      return el("li", {}, el("button", { class: "link", onclick: () => onStation(f) }, el("strong", {}, `■ ${f.name}`)), " ", remove);
+      return el("li", { class: "fav-row" }, handle, el("button", { class: "link", onclick: () => onStation(f) }, el("strong", {}, `■ ${f.name}`)), " ", remove);
     }
     const info = trainInfo(f);
     const state = info
@@ -713,7 +715,8 @@ export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onR
     const name = el("strong", {}, info ? trainTitle(info) : f.label);
     return el(
       "li",
-      {},
+      { class: "fav-row" },
+      handle,
       info ? el("button", { class: "link", onclick: () => onTrain(info) }, name) : name,
       info?.destination ? el("span", { class: "board-main muted" }, ` → ${info.destination}`) : null,
       " ",
@@ -721,8 +724,66 @@ export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onR
       " ",
       remove,
     );
+  };
+  const group = (type, title) => {
+    const items = list.filter((f) => f.type === type);
+    if (!items.length) return [];
+    return [el("h3", { class: "group-h", id: `favs-${type}s-h` }, title), el("ul", { class: "board fav-list", id: `favs-${type}s` }, items.map(item))];
+  };
+  return [
+    ...group("train", t(lang, "favTrains")),
+    ...group("station", t(lang, "favStations")),
+    el("p", { class: "small muted" }, Number.isFinite(limit) ? t(lang, "favNote", { n: limit }) : t(lang, "favNotePro")),
+  ];
+}
+
+/**
+ * A row's drag handle (⠿): drag it up or down its list, or press ↑ / ↓ on
+ * it. `onMove(to)` gets the row's new position in its list.
+ */
+function dragHandle(label, index, onMove) {
+  const h = el("button", { class: "fav-handle", type: "button", "aria-label": label, title: label }, "⠿");
+  h.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      onMove(index + (e.key === "ArrowUp" ? -1 : 1));
+    }
   });
-  return [el("ul", { class: "board" }, items), el("p", { class: "small muted" }, Number.isFinite(limit) ? t(lang, "favNote", { n: limit }) : t(lang, "favNotePro"))];
+  h.addEventListener("pointerdown", (e) => {
+    const row = h.closest("li");
+    const ul = row?.parentElement;
+    if (!ul) return;
+    e.preventDefault();
+    e.stopPropagation(); // not the sheet's drag
+    // Listen on the document: moving the row in the list would drop a
+    // pointer capture on the handle.
+    const id = e.pointerId;
+    row.classList.add("dragging");
+    const move = (ev) => {
+      if (ev.pointerId !== id) return;
+      // Put the row before the first sibling whose middle is below the pointer.
+      const others = [...ul.children].filter((x) => x !== row);
+      const next = others.find((x) => {
+        const r = x.getBoundingClientRect();
+        return ev.clientY < r.top + r.height / 2;
+      });
+      if (next) ul.insertBefore(row, next);
+      else ul.appendChild(row);
+    };
+    const up = (ev) => {
+      if (ev.pointerId !== id) return;
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", up);
+      row.classList.remove("dragging");
+      const to = [...ul.children].indexOf(row);
+      if (to !== index) onMove(to);
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", up);
+  });
+  return h;
 }
 
 /**

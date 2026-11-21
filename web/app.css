@@ -104,6 +104,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .board { list-style: none; margin: 0; padding: 0; }
 .board li { display: flex; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); }
 .board li.canceled .board-main { text-decoration: line-through; }
+/* Favoritos: drag handle (⠿) to sort each list; the row being dragged. */
+.fav-handle { border: 0; background: none; padding: 4px 6px; margin-left: -6px; font-size: 18px; line-height: 1; color: var(--muted, #6b7280); cursor: grab; touch-action: none; min-width: 32px; min-height: 32px; }
+.fav-handle:focus-visible { outline: 2px solid #2563eb; border-radius: 6px; }
+.fav-row.dragging { background: rgba(37, 99, 235, 0.08); }
+/* The detail sheet's favourites pager: ‹ 2 de 5 ›. */
+.fav-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0 0 6px; }
+.fav-pager button { border: 1px solid var(--line); background: none; border-radius: 999px; min-width: 36px; min-height: 32px; font-size: 18px; line-height: 1; color: inherit; }
+.fav-pager button:disabled { opacity: 0.35; }
 .board-time { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; }
 .board-main { flex: 1; min-width: 0; }
 .board-delay { font-weight: 600; white-space: nowrap; }

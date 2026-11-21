@@ -31,7 +31,8 @@ import { formatClock, setTimeZone } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from "./js/replay.js";
 import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
-import { FREE_LIMIT, STORAGE_KEY, isFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
+import { FREE_LIMIT, STORAGE_KEY, favKey, isFavourite, moveFavourite, neighbourFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
+import { VIEW_KEY, decodeView, encodeView } from "./js/lastview.js";
 import { appNative, canShare, copyText, exportBlob, exportFile, haptic as nativeHaptic, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
 import { backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./js/backup.js";
 import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
@@ -91,6 +92,37 @@ const MULTI_COUNTRY = CONFIG.countries.length > 1;
 applyCountry(CONFIG, country);
 setTimeZone(CONFIG.timeZone);
 const UK = country === "uk";
+// Open where the app was left (map and the train or station open), unless
+// a link asks for something else.
+const lastView = parseLink(location.href) ? null : decodeView(store.get(VIEW_KEY), { country });
+let lastStation = null; // the station last shown (popup or sheet), for the saved view
+
+/** The train or station open now, for the saved view. */
+function openDetail() {
+  if (selected && (detailKind === "train" || popup)) return { type: "train", number: selected.number };
+  if ((detailKind === "station" && stationView) || (stationPop?.isOpen() && lastStation)) {
+    return { type: "station", id: (stationView || lastStation).properties.id };
+  }
+  return null;
+}
+
+function saveView() {
+  if (!map || replay) return;
+  const c = map.getCenter();
+  store.set(VIEW_KEY, encodeView({ country, center: [c.lng, c.lat], zoom: map.getZoom(), detail: openDetail() }));
+}
+
+/** Reopen the train or station left open (if the train still runs). */
+function restoreDetail(d) {
+  if (d.type === "train") {
+    const info = liveTrain(d.number);
+    if (info) selectTrain(info);
+    return !!info;
+  }
+  const st = stationList().find((s) => s.id === d.id);
+  if (st) showStation({ properties: { id: st.id, name: st.name }, geometry: { coordinates: [st.lon, st.lat] } });
+  return !!st;
+}
 const attribution = () => t(lang, UK ? "attributionUk" : "attribution");
 
 /** Show the other country: remembered, then the page reloads with its data. */
@@ -946,11 +978,13 @@ function showTrainSheet(info, open, now) {
       proLink: CONFIG.platform === "android" && !CONFIG.pro ? () => (openSheet("settings"), renderSettings()) : null,
     },
   });
-  $("detail-body").replaceChildren(body);
+  const was = detailKind;
   if (open) {
-    const was = detailKind;
-    detailKind = "train";
+    detailKind = "train"; // before the pager, which asks what is shown
     stationView = null;
+  }
+  $("detail-body").replaceChildren(...[favPager(), body].filter(Boolean));
+  if (open) {
     if (sheet.hidden) {
       openSheet("detail");
       sheets.setSnap("detail", "half");
@@ -1019,6 +1053,7 @@ function makeDraggable(p, get, set) {
 /** Popup with a station's next departures and approaching trains. */
 function showStation(f, { refresh = false } = {}) {
   const { id, name } = f.properties;
+  lastStation = f;
   const [lon, lat] = f.geometry.coordinates;
   const now = Date.now();
   // Its núcleo's timetable may not be loaded yet: load, then refresh.
@@ -1131,7 +1166,11 @@ function showStationSheet(f, regions, refresh) {
     onRoute: () => openRoute({ kind: "station", item: { id, name, lon, lat } }, null),
   });
   const scroll = sheet.scrollTop;
-  $("detail-body").replaceChildren(body);
+  if (!refresh) {
+    detailKind = "station";
+    stationView = f;
+  }
+  $("detail-body").replaceChildren(...[favPager(), body].filter(Boolean));
   if (refresh) {
     sheet.scrollTop = scroll;
     return;
@@ -1574,8 +1613,64 @@ function liveTrain(number) {
 }
 
 function openStation(st) {
+  const f = { properties: { id: st.id, name: st.name }, geometry: { coordinates: [st.lon, st.lat] } };
+  // Phone: the station's sheet at once, the map moving behind it (as for a
+  // train). The desktop popup is anchored on the map: show it on arrival.
+  if (isPhone()) {
+    showStation(f);
+    flyToVisible(st.lon, st.lat, 13, { forPopup: true });
+    return;
+  }
   flyToVisible(st.lon, st.lat, 13, { forPopup: true });
-  map.once("moveend", () => showStation({ properties: { id: st.id, name: st.name }, geometry: { coordinates: [st.lon, st.lat] } }));
+  map.once("moveend", () => showStation(f));
+}
+
+/** The favourite shown in the detail sheet (train or station), or null. */
+function currentFavourite() {
+  if (detailKind === "train" && selected) {
+    const f = { type: "train", number: selected.number };
+    return isFavourite(favs, f) ? favs.find((x) => favKey(x) === favKey(f)) : null;
+  }
+  if (detailKind === "station" && stationView) {
+    const f = { type: "station", id: stationView.properties.id };
+    return isFavourite(favs, f) ? favs.find((x) => favKey(x) === favKey(f)) : null;
+  }
+  return null;
+}
+
+/** Open a favourite (from Favoritos, or swiping between them). A train that
+ * isn't running now is skipped when swiping (`skipFrom` + `dir`). */
+function openFavourite(f, { dir = 0 } = {}) {
+  if (f.type === "station") return openStation(f), true;
+  const info = liveTrain(f.number);
+  if (info) return selectTrain(info, { fly: true }), true;
+  if (!dir) return false;
+  const next = neighbourFavourite(favs, f, dir);
+  return next ? openFavourite(next, { dir }) : false;
+}
+
+/** Swipe or ‹ ›: the next or previous favourite. */
+function stepFavourite(dir) {
+  const cur = currentFavourite();
+  const next = cur && neighbourFavourite(favs, cur, dir);
+  if (!next) return false;
+  popupToTop = true;
+  return openFavourite(next, { dir });
+}
+
+/** "‹ Favorito 2 de 5 ›" at the top of the detail sheet, for a favourite. */
+function favPager() {
+  const cur = currentFavourite();
+  if (!cur || favs.length < 2) return null;
+  const ordered = [...favs.filter((f) => f.type === "train"), ...favs.filter((f) => f.type === "station")];
+  const i = ordered.findIndex((x) => favKey(x) === favKey(cur));
+  return el(
+    "div",
+    { class: "fav-pager", id: "fav-pager" },
+    el("button", { type: "button", id: "fav-prev", "aria-label": t(lang, "favPrev"), disabled: i <= 0 ? "" : null, onclick: () => stepFavourite(-1) }, "‹"),
+    el("span", { class: "small muted" }, t(lang, "favPager", { i: i + 1, n: ordered.length })),
+    el("button", { type: "button", id: "fav-next", "aria-label": t(lang, "favNext"), disabled: i >= ordered.length - 1 ? "" : null, onclick: () => stepFavourite(1) }, "›"),
+  );
 }
 
 function renderFavourites() {
@@ -1593,6 +1688,7 @@ function renderFavourites() {
         openStation(st);
       },
       onRemove: (f) => saveFavourites(toggleFavourite(favs, f).list),
+      onMove: (f, to) => saveFavourites(moveFavourite(favs, f, to)),
       limit: favLimit(),
     }),
   );
@@ -1799,6 +1895,33 @@ const sheets = new Sheets({
 for (const id of SHEETS) {
   const tall = id === "networks" || id === "layers-panel" || id === "route";
   sheets.add($(id), id === "delayed" ? { initial: "peek", closable: false } : tall ? { initial: "full", snaps: ["half", "full"] } : { initial: "half" });
+}
+// Phone: swipe the detail sheet sideways for the next or previous favourite.
+// Touch events: a pointer would be cancelled as soon as the sheet scrolls.
+{
+  let sw = null;
+  const d = $("detail");
+  d.addEventListener(
+    "touchstart",
+    (e) => {
+      const p = e.touches[0];
+      sw = e.touches.length === 1 && !e.target.closest("input, select, textarea, canvas, .fav-handle") ? { x: p.clientX, y: p.clientY, t: Date.now() } : null;
+    },
+    { passive: true },
+  );
+  d.addEventListener(
+    "touchend",
+    (e) => {
+      const p = e.changedTouches[0];
+      if (!sw || !p) return;
+      const dx = p.clientX - sw.x;
+      const dy = p.clientY - sw.y;
+      const quick = Date.now() - sw.t < 800;
+      sw = null;
+      if (quick && Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy) && stepFavourite(dx < 0 ? 1 : -1)) haptic();
+    },
+    { passive: true },
+  );
 }
 // Closing the detail sheet (swipe, Back, ✕, another tab) drops the selection.
 new MutationObserver(() => {
@@ -2786,7 +2909,11 @@ function loadVisibleRegions() {
 async function main() {
   applyLang();
   sheets.apply(); // phone: the home sheet peeks from the start
-  ({ map, attr } = createMap("map", CONFIG, attribution()));
+  // Where the app was left, else the country's default view.
+  ({ map, attr } = createMap("map", lastView ? { ...CONFIG, center: lastView.center, zoom: lastView.zoom } : CONFIG, attribution()));
+  map.on("moveend", saveView);
+  document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveView());
+  window.addEventListener("pagehide", saveView);
   // Open credits close with a tap on the map or on their text (not a link).
   map.on("click", foldCredits);
   map.getContainer().addEventListener("click", (e) => {
@@ -2940,6 +3067,7 @@ async function main() {
   // Commute mode (Pro): open on the next trains of the saved commute.
   else
     whenTrains().then(() => {
+      if (lastView?.detail && restoreDetail(lastView.detail)) return;
       if (CONFIG.pro && activeCommute(commutes) && (isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden))) {
         openSheet("commute");
         renderCommute();

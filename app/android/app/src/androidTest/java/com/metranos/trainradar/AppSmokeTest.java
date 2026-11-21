@@ -105,7 +105,10 @@ public class AppSmokeTest {
         assertTrue(popup, popup.contains(number.replaceFirst("^0+", "")));
         // The train details (trains ahead and behind, track) are free, as on the web.
         assertTrue("free edition shows the train details: " + popup, popup.contains("Tren anterior"));
-        assertTrue("favourite button", (Boolean) eval("return !!document.querySelector('.popup .fav-btn');"));
+        String fav = (String) eval("var p = document.querySelector('.popup');"
+                + "return !p ? 'NO POPUP: ' + (window.__smokeMark ? 'same page, sheet closed' : 'the page reloaded, ' + " + RELOAD_INFO + ")"
+                + " : p.querySelector('.fav-btn') ? 'ok' : 'popup without it: ' + p.className;");
+        assertTrue("favourite button: " + fav, "ok".equals(fav));
     }
 
     /**
