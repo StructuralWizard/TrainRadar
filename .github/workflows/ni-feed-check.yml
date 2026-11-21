@@ -1,0 +1,99 @@
+# Plan 4a (Northern Ireland): what Translink publishes for NI Railways
+# (OpenDataNI: timetable files, the live arrivals and departures feed).
+# Public data, no secrets: it also runs on pull requests that change it.
+# The report and the downloaded files are uploaded as an artifact.
+name: NI feed check
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - tools/ni-feed-check/**
+      - .github/workflows/ni-feed-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Check the datasets and the live feed
+        run: node tools/ni-feed-check/check.mjs --out out
+      - name: What's in the timetable files
+        if: always()
+        run: |
+          {
+            echo; echo "## Timetable files"
+            for f in out/timetable/*; do
+              [ -f "$f" ] || continue
+              echo; echo "### $(basename "$f") ($(stat -c %s "$f") bytes, $(file -b "$f" | cut -c1-80))"
+              if unzip -l "$f" > /dev/null 2>&1; then
+                echo '```'; unzip -l "$f" | head -40
+                for e in $(unzip -Z1 "$f" | head -8); do
+                  echo "--- $e (first lines)"; unzip -p "$f" "$e" | head -c 1200 | head -15
+                done
+                echo '```'
+              else
+                echo '```'; head -c 1500 "$f"; echo; echo '```'
+              fi
+            done
+            echo; echo "## Real-time files"
+            for f in out/realtime/*; do
+              [ -f "$f" ] || continue
+              echo; echo "### $(basename "$f") ($(stat -c %s "$f") bytes)"
+              echo '```'; head -c 2000 "$f"; echo; echo '```'
+            done
+          } | tee -a out/report.md
+      - name: Inside the TransXChange timetable, and where the live page gets its data
+        if: always()
+        run: |
+          {
+            for f in out/timetable/*.zip; do
+              unzip -Z1 "$f" | grep -qi '\.xml$' || continue
+              mkdir -p out/txc && unzip -oq "$f" -d out/txc
+            done
+            for x in out/txc/*.xml; do
+              [ -f "$x" ] || continue
+              echo; echo "## TransXChange: $(basename "$x")"
+              echo '```'; echo "Elements (most frequent):"
+              grep -o '<[A-Za-z]*' "$x" | sort | uniq -c | sort -rn | head -60
+              echo; echo "Coordinates:"; grep -c -E '<(Latitude|Easting)>' "$x" || true
+              grep -m3 -A6 '<StopPoint>' "$x" || true
+              echo; echo "First AnnotatedStopPointRef / StopPoint:"; grep -m1 -A8 -E '<AnnotatedStopPointRef>' "$x" || true
+              echo; echo "First Service:"; grep -m1 -A30 '<Service>' "$x" | head -40
+              echo; echo "First VehicleJourney:"; grep -m1 -A25 '<VehicleJourney>' "$x" | head -30
+              echo; echo "Operating periods:"; grep -o -E '<(StartDate|EndDate)>[^<]*' "$x" | sort | uniq -c | head
+              echo '```'
+            done
+            echo; echo "## The live page's scripts: API addresses"
+            curl -fsSL https://tiger.worldline.global/toc/NIR -o out/realtime/tiger.html || true
+            for js in $(grep -o 'src="[^"]*\.js"' out/realtime/tiger.html | sed 's/src="//; s/"$//'); do
+              u="https://tiger.worldline.global/$js"
+              curl -fsSL "$u" -o "out/realtime/$(basename "$js")" || continue
+              echo "### $js ($(stat -c %s "out/realtime/$(basename "$js")") bytes)"
+              echo '```'
+              grep -o -E '"(https?:)?//[^"]{4,120}"|"/(api|toc|station|board|departures|arrivals)[^"]{0,100}"' "out/realtime/$(basename "$js")" | sort -u | head -40
+              grep -o -E '.{60}(apiUrl|baseUrl|api/|/toc/).{100}' "out/realtime/$(basename "$js")" | head -15
+              echo '```'
+            done
+            echo; echo "## OpenDataNI's own API, again"
+            for u in https://apis.opendatani.gov.uk/translink/ https://apis.opendatani.gov.uk/translink/3042A7.xml; do
+              echo "- $u: $(curl -s -o /dev/null -w '%{http_code} %{content_type} %{size_download}B' "$u")"
+            done
+          } | tee -a out/report.md
+      - if: always()
+        run: '[ -f out/report.md ] && cat out/report.md >> "$GITHUB_STEP_SUMMARY" || true'
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ni-feed-check
+          path: out/
+          if-no-files-found: ignore

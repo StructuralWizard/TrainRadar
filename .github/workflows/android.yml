@@ -112,7 +112,7 @@ jobs:
             # chatter, enough to cover both tests (a page reload or a WebView
             # renderer restart in the first one was cut off at 150 lines).
             "$adb" logcat -d > logcat.txt || true
-            grep -iE "Capacitor|chromium|Console|WebView|AndroidRuntime|render|ActivityManager" logcat.txt \
+            grep -iE "Capacitor|chromium|Console|WebView|AndroidRuntime|render|ActivityManager|ActivityTaskManager|config|relaunch" logcat.txt \
               | grep -vE "Capacitor/Plugin|V Capacitor: callback|Line 333 - Msg|Line 349 - Msg|ViewInteraction|Handling local request" \
               | tail -n 400
             exit 1
