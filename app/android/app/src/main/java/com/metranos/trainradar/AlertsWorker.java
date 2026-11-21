@@ -47,7 +47,8 @@ public class AlertsWorker extends Worker {
                 return Result.success();
             }
             JSONArray summary = new JSONArray(get(base + "summary.json"));
-            p.edit().putString("widget-summary", summary.toString()).apply();
+            p.edit().putString("widget-summary", summary.toString())
+                    .putString("widget-summary-at", String.valueOf(System.currentTimeMillis())).apply();
             Widget.render(ctx, summary, true);
             if (!cfg.optBoolean("enabled")) return Result.success();
             JSONArray favs = new JSONArray(p.getString("favourites", "[]"));

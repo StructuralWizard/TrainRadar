@@ -48,3 +48,33 @@ export function toggleFavourite(list, f, limit = FREE_LIMIT) {
   if (list.length >= limit) return { list, added: false, full: true };
   return { list: [...list, f], added: true, full: false };
 }
+
+/** Favoritos' order: trains first, then stations, each as the user sorted them. */
+export function favouritesInOrder(list) {
+  return [...list.filter((f) => f.type === "train"), ...list.filter((f) => f.type === "station")];
+}
+
+/**
+ * Move `f` to position `to` among the favourites of its own type (trains and
+ * stations are sorted separately). Returns a new list, trains first.
+ */
+export function moveFavourite(list, f, to) {
+  const ordered = favouritesInOrder(list);
+  const same = ordered.filter((x) => x.type === f.type);
+  const i = same.findIndex((x) => favKey(x) === favKey(f));
+  if (i < 0) return ordered;
+  const j = Math.max(0, Math.min(same.length - 1, Math.trunc(Number(to) || 0)));
+  if (i === j) return ordered;
+  const moved = [...same];
+  moved.splice(j, 0, ...moved.splice(i, 1));
+  const other = ordered.filter((x) => x.type !== f.type);
+  return f.type === "train" ? [...moved, ...other] : [...other, ...moved];
+}
+
+/** The favourite `dir` (+1 / −1) places from `f` in Favoritos' order, or null. */
+export function neighbourFavourite(list, f, dir) {
+  const ordered = favouritesInOrder(list);
+  const i = ordered.findIndex((x) => favKey(x) === favKey(f));
+  if (i < 0) return null;
+  return ordered[i + dir] ?? null;
+}
