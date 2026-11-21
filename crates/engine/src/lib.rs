@@ -1183,6 +1183,27 @@ impl Engine {
     /// show it as text only.
     #[wasm_bindgen(js_name = incidentsJson)]
     pub fn incidents_json(&self, now_ms: f64) -> String {
+        Self::incidents_list_json(&incidents::active(
+            &self.net,
+            &self.live.incidents,
+            secs(now_ms),
+        ))
+    }
+
+    /// Notices that haven't started yet ("Próximas obras"), soonest first,
+    /// in the same shape as [`Engine::incidents_json`].
+    #[wasm_bindgen(js_name = upcomingIncidentsJson)]
+    pub fn upcoming_incidents_json(&self, now_ms: f64) -> String {
+        Self::incidents_list_json(&incidents::upcoming(
+            &self.net,
+            &self.live.incidents,
+            secs(now_ms),
+        ))
+    }
+}
+
+impl Engine {
+    fn incidents_list_json(list: &[incidents::Resolved<'_>]) -> String {
         let strs = |v: &[String]| {
             let mut x = String::from("[");
             for (i, t) in v.iter().enumerate() {
@@ -1195,10 +1216,7 @@ impl Engine {
             x
         };
         let mut s = String::from("[");
-        for (i, r) in incidents::active(&self.net, &self.live.incidents, secs(now_ms))
-            .iter()
-            .enumerate()
-        {
+        for (i, r) in list.iter().enumerate() {
             if i > 0 {
                 s.push(',');
             }

@@ -712,3 +712,8 @@ body.replaying .bottom, body.replaying #app-banner { display: none; }
 .net-countries { display: flex; gap: 8px; margin: 2px 0 10px; }
 .net-countries .chip-btn { flex: 1; }
 .uk-text { white-space: pre-line; }
+.upcoming-filter { font: inherit; font-size: 14px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); margin: 4px 0 8px; max-width: 100%; }
+#upcoming-all { margin: 4px 0 12px; }
+@media (max-width: 719px) and (prefers-color-scheme: dark) {
+  .upcoming-filter { background: #1f2937; color: #f3f4f6; border-color: #374151; }
+}

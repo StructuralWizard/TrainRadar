@@ -116,13 +116,27 @@ export function activeIncidents(list, nowS) {
     .sort((a, b) => Number(a.planned) - Number(b.planned) || (a.priority ?? 9) - (b.priority ?? 9) || (b.from ?? 0) - (a.from ?? 0));
 }
 
+/**
+ * "Próximas obras": what starts after the next three days, soonest first,
+ * without the long description (the National Rail page has it): hundreds of
+ * planned works months ahead, kept small.
+ */
+export function upcomingIncidents(list, nowS) {
+  return list
+    .filter((i) => i.id && !i.cleared && Number.isFinite(i.from) && i.from > nowS + AHEAD_SECS && (i.until === null || i.until >= nowS))
+    .map(({ cleared: _c, text: _t, ...i }) => i)
+    .sort((a, b) => a.from - b.from || String(a.id).localeCompare(String(b.id)));
+}
+
 /** The document published at uk/rt/incidents.json. */
 export function incidentsDoc(list, now) {
+  const nowS = Math.round(now / 1000);
   return {
     updatedAt: new Date(now).toISOString(),
     source: KB_SOURCE,
     notice: KB_NOTICE,
-    incidents: activeIncidents(list, Math.round(now / 1000)),
+    incidents: activeIncidents(list, nowS),
+    upcoming: upcomingIncidents(list, nowS),
   };
 }
 
@@ -139,7 +153,7 @@ export async function refreshIncidents({ state, env, fetchFn = fetch, now = Date
     await env.LIVE.put("uk/rt/incidents.json", JSON.stringify(doc), {
       httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=120" },
     });
-    state.kb = { ok: true, at: doc.updatedAt, incidents: doc.incidents.length };
+    state.kb = { ok: true, at: doc.updatedAt, incidents: doc.incidents.length, upcoming: doc.upcoming.length };
   } catch (e) {
     state.kb = { ok: false, at: new Date(now).toISOString(), error: String(e?.message || e).slice(0, 200) };
   }
