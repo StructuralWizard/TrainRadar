@@ -1591,6 +1591,8 @@ function renderCommute() {
         status: journeyStatus(j, journeyRuns(j)),
         today: isoToday(),
         native: appNative.available(),
+        // Background alerts follow Spain's commutes (AlertsWorker).
+        alerts: !UK,
         onTrain: (l) => {
           const info = liveTrain(l.number);
           if (info) {
@@ -2470,7 +2472,7 @@ function saveRouteJourney(j) {
   if (r.added) saveCommutes(r.state, () => {}, true);
   else (openSheet("commute"), renderCommute());
   // Its alerts come from the background check: on with the first journey.
-  if (r.added && appNative.available() && !alertsOn) setAlerts(true).catch(() => {});
+  if (r.added && !UK && appNative.available() && !alertsOn) setAlerts(true).catch(() => {});
 }
 
 /** Today's live state of each train of a saved journey: from its first

@@ -76,8 +76,17 @@ How it was built:
 - The web app has no Pro (Pro is in the Android app), so there are no web alerts. The commute screen
   shows the same state live.
 
+## UK
+
+- The same search runs on Great Britain's and Northern Ireland's timetables, in London time, with
+  Network Rail's delays. Walks between stations can be up to 1 km, so London's terminals connect on
+  foot (Euston ↔ King's Cross / St Pancras). The Underground isn't in the data, so changes across
+  London need a walk between nearby stations.
+- Saving a UK journey (Pro) works the same, in its own list (`commute-uk`). Background alerts follow
+  Spain's commutes, so the UK commute screen shows a note instead of the alert switches.
+- The Refdata workflow also times real British journeys, using the site's public `data/uk/`.
+
 ## Later
 
-- The UK: the same search on Great Britain's timetables (and Northern Ireland's). The change time for
-  each station could come from the timetable's minimum connection times.
+- The UK: minimum connection times per station (from the timetable); alerts for UK journeys.
 - Walking between stations by real paths instead of straight lines.

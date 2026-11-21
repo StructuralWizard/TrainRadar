@@ -573,7 +573,7 @@ export function historyPanel(lang, { title, series, runs, days, ranges, onRange,
  * A commute's saved trains (Pro, plan journeys J3): today's state of each
  * train and change, then the days, the reminder and which alerts.
  */
-export function savedJourneyBox(lang, { journey, status, today, native, onTrain, onAlternatives, onUpdate, onForget }) {
+export function savedJourneyBox(lang, { journey, status, today, native, alerts = true, onTrain, onAlternatives, onUpdate, onForget }) {
   const short = t(lang, "dayShort").split(",");
   const long = t(lang, "dayLong").split(",");
   const runs = journey.days.includes(today);
@@ -660,24 +660,26 @@ export function savedJourneyBox(lang, { journey, status, today, native, onTrain,
     el("p", { class: "small" }, el("strong", {}, t(lang, "jDays"))),
     dayChips,
     el("p", { class: "small journey-remind" }, el("label", { for: "journey-remind" }, `${t(lang, "jRemind")}: `), remind),
-    el("p", { class: "small" }, el("strong", {}, t(lang, "jNotify"))),
-    el(
-      "ul",
-      { class: "journey-notify" },
-      kinds.map(([k, label]) =>
-        el(
-          "li",
-          {},
-          el(
-            "label",
-            { class: "small" },
-            el("input", { type: "checkbox", "data-kind": k, checked: journey.notify[k], onchange: (e) => onUpdate({ notify: { [k]: e.target.checked } }) }),
-            ` ${t(lang, label)}`,
+    alerts ? el("p", { class: "small" }, el("strong", {}, t(lang, "jNotify"))) : null,
+    alerts
+      ? el(
+          "ul",
+          { class: "journey-notify" },
+          kinds.map(([k, label]) =>
+            el(
+              "li",
+              {},
+              el(
+                "label",
+                { class: "small" },
+                el("input", { type: "checkbox", "data-kind": k, checked: journey.notify[k], onchange: (e) => onUpdate({ notify: { [k]: e.target.checked } }) }),
+                ` ${t(lang, label)}`,
+              ),
+            ),
           ),
-        ),
-      ),
-    ),
-    native ? null : el("p", { class: "small muted" }, t(lang, "jNotifyNative")),
+        )
+      : el("p", { class: "small muted", id: "journey-no-alerts" }, t(lang, "nativeSpainOnly")),
+    native || !alerts ? null : el("p", { class: "small muted" }, t(lang, "jNotifyNative")),
   );
 }
 

@@ -22,8 +22,21 @@ const TRIPS: &[(&str, &str)] = &[
     ("Abando", "Madrid-Chamartín"),
 ];
 
+/// With `--uk`: Great Britain and Northern Ireland (London time).
+const TRIPS_UK: &[(&str, &str)] = &[
+    ("London Euston", "Manchester Piccadilly"),
+    ("Brighton", "Cambridge"),
+    ("Penzance", "Edinburgh"),
+    ("Cardiff Central", "Norwich"),
+    ("Oxford", "Canterbury West"),
+    ("Lanyon Place", "Londonderry"),
+];
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data = std::env::args().nth(1).unwrap_or_else(|| "web/data".into());
+    let uk = std::env::args().any(|a| a == "--uk");
+    // Timetables are local: London is an hour behind Madrid.
+    let behind = if uk { 3_600 } else { 0 };
     let data = Path::new(&data);
     let manifest: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(data.join("manifest.json"))?)?;
@@ -60,18 +73,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     // 07:30 Madrid time on the window's second day.
     let day = i64::from(net.regions[0].tt.header.window_start_day) + 1;
-    let after = service_day_base(day) + 7 * 3_600 + 1_800;
+    let after = service_day_base(day) + behind + 7 * 3_600 + 1_800;
     let hm = |t: i64| {
-        let local = t - service_day_base(day);
+        let local = t - service_day_base(day) - behind;
         format!(
             "{:02}:{:02}",
             local.div_euclid(3_600) % 24,
             local.div_euclid(60) % 60
         )
     };
-    println!("## Journeys with changes (all regions loaded, 07:30, no live data)\n");
+    println!(
+        "## Journeys with changes{} (all regions loaded, 07:30, no live data)\n",
+        if uk { ", United Kingdom" } else { "" }
+    );
     let mut total = 0.0;
-    for (a, b) in TRIPS {
+    for (a, b) in if uk { TRIPS_UK } else { TRIPS } {
         let (from, to) = (find(a), find(b));
         let t0 = Instant::now();
         let js = journeys(

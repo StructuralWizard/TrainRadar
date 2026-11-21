@@ -21,6 +21,9 @@ pub const CHANGE_SECS: i64 = 5 * 60;
 pub const CHANGE_LD_SECS: i64 = 10 * 60;
 /// Walks between stations no further apart than this (straight line).
 pub const WALK_MAX_M: f64 = 700.0;
+/// In Great Britain: London's terminals are further apart (Euston ↔ King's
+/// Cross and St Pancras, ~800 m). The Underground isn't in the data.
+pub const WALK_MAX_UK_M: f64 = 1_000.0;
 /// Walking: straight-line distance × 1.3 at 1.1 m/s, plus 3 minutes.
 fn walk_secs(m: f64) -> i64 {
     (m * 1.3 / 1.1).round() as i64 + 180
@@ -193,14 +196,15 @@ impl<'a> Stations<'a> {
         self.index.get(id).copied()
     }
 
-    /// Walks from each station to the others within `WALK_MAX_M`.
-    fn walks(&self) -> Vec<Vec<(u32, i64)>> {
-        // Grid of ~0.01° cells (≈ 1.1 km × 0.85 km in Spain), neighbours in
-        // the 3 × 3 cells around.
+    /// Walks from each station to the others within `max_m`.
+    fn walks(&self, max_m: f64) -> Vec<Vec<(u32, i64)>> {
+        // A grid of cells at least `max_m` wide up to 60° north (a degree of
+        // longitude is ≥ 55.5 km there), neighbours in the 3 × 3 cells around.
+        let per_deg = 55_500.0 / max_m;
         let cell = |p: LatLon| {
             (
-                (p.lat * 100.0).floor() as i32,
-                (p.lon * 100.0).floor() as i32,
+                (p.lat * per_deg).floor() as i32,
+                (p.lon * per_deg).floor() as i32,
             )
         };
         let mut grid: HashMap<(i32, i32), Vec<u32>> = HashMap::new();
@@ -221,7 +225,7 @@ impl<'a> Stations<'a> {
                         }
                         let d =
                             trainradar_proto::geo::haversine_m(*p, self.coord[j as usize].unwrap());
-                        if d <= WALK_MAX_M {
+                        if d <= max_m {
                             out[i].push((j, walk_secs(d)));
                         }
                     }
@@ -258,7 +262,12 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
         window_secs,
     } = *q;
     let st = Stations::new(net);
-    let walks = st.walks();
+    // Great Britain's and Northern Ireland's timetables: longer walks.
+    let uk = net
+        .regions
+        .iter()
+        .any(|r| r.tt.region == "uk" || r.tt.region == crate::networkrail::NI_REGION);
+    let walks = st.walks(if uk { WALK_MAX_UK_M } else { WALK_MAX_M });
     let src: Vec<u32> = from.iter().filter_map(|s| st.get(s)).collect();
     let dst: HashSet<u32> = to.iter().filter_map(|s| st.get(s)).collect();
     if src.is_empty() || dst.is_empty() || src.iter().any(|s| dst.contains(s)) {
