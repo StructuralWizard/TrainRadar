@@ -18,8 +18,8 @@ const TRIPS: &[(&str, &str)] = &[
     ("Alcalá de Henares", "Toledo"),
     ("Aeropuerto T4", "Segovia"),
     ("Barcelona-Sants", "Girona"),
-    ("Sevilla-Santa Justa", "Málaga-María Zambrano"),
-    ("Bilbao-Abando", "Madrid-Chamartín"),
+    ("Sevilla-Santa Justa", "Málaga"),
+    ("Abando", "Madrid-Chamartín"),
 ];
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

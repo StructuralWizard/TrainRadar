@@ -270,8 +270,11 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
     let mut t = after;
     // Each pass finds the best journeys leaving at or after `t`; the next
     // pass starts a minute after the earliest of them.
-    for _ in 0..limit.max(1) * 2 {
-        if out.len() >= limit || t > after + window_secs {
+    // Several passes can give the same last train (leaving earlier only to
+    // wait longer): those are dropped below, so allow more passes.
+    for _ in 0..limit.max(1) * 6 {
+        let arrivals: HashSet<i64> = out.iter().map(Journey::arr).collect();
+        if arrivals.len() >= limit || t > after + window_secs {
             break;
         }
         let found = search(net, &st, &walks, &delays, &src, &dst, t, max_changes);
@@ -285,9 +288,20 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
         }
         t = t.max(first + 60);
     }
-    out.sort_by_key(|j| (j.dep(), j.arr()));
-    out.truncate(limit);
-    out
+    // Keep a journey only if no other leaves later (or as late), arrives
+    // sooner (or as soon) with no more changes, and is better in one.
+    let dominated = |j: &Journey| {
+        out.iter().any(|k| {
+            k.dep() >= j.dep()
+                && k.arr() <= j.arr()
+                && k.changes() <= j.changes()
+                && (k.dep() > j.dep() || k.arr() < j.arr() || k.changes() < j.changes())
+        })
+    };
+    let mut kept: Vec<Journey> = out.iter().filter(|j| !dominated(j)).cloned().collect();
+    kept.sort_by_key(|j| (j.dep(), j.arr()));
+    kept.truncate(limit);
+    kept
 }
 
 /// Live delays and cancellations, looked up once per trip run.
@@ -726,6 +740,32 @@ mod tests {
         assert_eq!(numbers(j), vec!["100", "18003"], "{j:?}");
         assert_eq!(j.dep(), local(8, 10));
         assert_eq!(j.arr(), local(10, 5));
+    }
+
+    #[test]
+    fn leaving_earlier_only_to_wait_is_dropped() {
+        let net = two_regions();
+        let live = Live::default();
+        // From 07:50 to D: the 08:00 A train + 08:35 MD (D 09:05) and the
+        // 08:10 + walk + 08:50 (D 09:15). From B (on the A line, 08:11 and
+        // 08:21) the 08:11 isn't worth it if the 08:21 still makes the same
+        // MD... here it doesn't (C 08:31 + 10 > 08:35), so both stay; and
+        // nothing leaving earlier for the same arrival is listed.
+        let js = journeys(&net, &live, &q(&["A"], &["D"], local(7, 50), 5));
+        for (i, j) in js.iter().enumerate() {
+            for (k, o) in js.iter().enumerate() {
+                if i != k {
+                    assert!(
+                        !(o.dep() >= j.dep()
+                            && o.arr() <= j.arr()
+                            && o.changes() <= j.changes()
+                            && (o.dep() > j.dep() || o.arr() < j.arr())),
+                        "{j:?} dominated by {o:?}"
+                    );
+                }
+            }
+        }
+        assert!(js.len() >= 2);
     }
 
     #[test]
