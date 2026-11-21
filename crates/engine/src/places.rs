@@ -46,12 +46,14 @@ pub struct BoardRow {
     pub canceled: bool,
     /// The train is on the map right now.
     pub live: bool,
+    /// An arrivals board's row: its time is the arrival here.
+    pub by_arrival: bool,
 }
 
 impl BoardRow {
     /// Expected time it leaves (or arrives, if it terminates here).
     pub fn expected(&self) -> i64 {
-        let t = if self.terminates {
+        let t = if self.terminates || self.by_arrival {
             self.sched_arr
         } else {
             self.sched_dep
@@ -71,6 +73,31 @@ pub fn board(
     horizon_secs: i64,
     limit: usize,
 ) -> Vec<BoardRow> {
+    board_of(net, live, station_id, now, horizon_secs, limit, false)
+}
+
+/// Trains arriving at a station (not those starting there), by scheduled
+/// arrival: `other_end` is where each comes from. The widget's arrivals.
+pub fn arrivals(
+    net: &Network,
+    live: &Live,
+    station_id: &str,
+    now: i64,
+    horizon_secs: i64,
+    limit: usize,
+) -> Vec<BoardRow> {
+    board_of(net, live, station_id, now, horizon_secs, limit, true)
+}
+
+fn board_of(
+    net: &Network,
+    live: &Live,
+    station_id: &str,
+    now: i64,
+    horizon_secs: i64,
+    limit: usize,
+    by_arrival: bool,
+) -> Vec<BoardRow> {
     // Delays of trains currently on the map, by (trip, service day).
     let on_map: HashMap<(TripRef, i64), Option<i32>> = live
         .trains
@@ -87,6 +114,9 @@ pub fn board(
             let st = &r.sched[pi as usize];
             let pos = pos as usize;
             let last = pos + 1 == st.len();
+            if by_arrival && pos == 0 {
+                continue; // starts here: not an arrival
+            }
             for &ti in &r.pattern_trips[pi as usize] {
                 let trip = &r.tt.trips[ti as usize];
                 for day in [today - 1, today] {
@@ -97,7 +127,11 @@ pub fn board(
                     let start = service_day_base(day) + i64::from(trip.start);
                     let sched_arr = start + i64::from(st[pos].arrival);
                     let sched_dep = start + i64::from(st[pos].departure);
-                    let sched = if last { sched_arr } else { sched_dep };
+                    let sched = if last || by_arrival {
+                        sched_arr
+                    } else {
+                        sched_dep
+                    };
                     // Cheap pre-filter before looking up delays.
                     if sched > now + horizon_secs || sched < now - 6 * 3_600 {
                         continue;
@@ -114,7 +148,7 @@ pub fn board(
                         trip: tref,
                         route: r.tt.routes[trip.route as usize].short_name.clone(),
                         number: crate::network::train_number(trip),
-                        other_end: if last {
+                        other_end: if last || by_arrival {
                             net.stop_name(tref, 0).to_owned()
                         } else {
                             net.stop_name(tref, st.len() - 1).to_owned()
@@ -125,6 +159,7 @@ pub fn board(
                         delay,
                         canceled: tu.is_some_and(|u| u.canceled),
                         live: live_delay.is_some(),
+                        by_arrival,
                         trip_id,
                     };
                     // Keep trains that haven't left yet (with their delay).
@@ -137,7 +172,7 @@ pub fn board(
     }
     // Like a station board: in timetable order (delays shown alongside).
     rows.sort_by_key(|r| {
-        if r.terminates {
+        if r.terminates || r.by_arrival {
             r.sched_arr
         } else {
             r.sched_dep
@@ -373,6 +408,26 @@ mod tests {
         // Departed trains drop off; the horizon limits the far end.
         let later = board(&net, &live, "B", local(8, 30), 15 * 60, 10);
         assert!(later.is_empty(), "{later:?}");
+    }
+
+    #[test]
+    fn arrivals_are_by_arrival_and_say_where_from() {
+        let net = with_stations();
+        let live = Live::default();
+        let now = local(8, 5);
+        // At B, the same trains as the departures, timed by their arrival,
+        // each coming from A.
+        let dep = board(&net, &live, "B", now, 2 * 3_600, 10);
+        let arr = arrivals(&net, &live, "B", now, 2 * 3_600, 10);
+        assert_eq!(arr.len(), dep.len());
+        assert!(arr.iter().all(|r| r.by_arrival && r.other_end == "Stop A"));
+        assert!(
+            arr.iter()
+                .zip(&dep)
+                .all(|(a, d)| a.expected() == a.sched_arr && a.sched_arr <= d.sched_dep)
+        );
+        // At the origin A: no arrivals.
+        assert!(arrivals(&net, &live, "A", now, 2 * 3_600, 10).is_empty());
     }
 
     #[test]

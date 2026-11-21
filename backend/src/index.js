@@ -4,7 +4,8 @@
 //   history is enabled, the Recorder's) is armed; the alarms do the work
 //   (poller.js, recorder.js). Daily (DAILY_CRON): the history's aggregates,
 //   backups, archive and retention (history.js).
-// - fetch: `/v1/history/*`, the public history API (api.js), and `rt/*`
+// - fetch: `/v1/live/*`, what the Android widgets read (widgets.js, from
+//   the recorder's engine), `/v1/history/*`, the public history API (api.js), and `rt/*`
 //   from the R2 bucket with CORS for TrainRadar's own origins. `rt/*` here
 //   is the staging path; in production clients read the bucket through its
 //   custom domain (CDN-cached, no Worker invocation).
@@ -71,6 +72,21 @@ async function api(request, env, headers) {
   return new Response(request.method === "HEAD" ? null : res.body, { status: res.status, headers });
 }
 
+/** Widgets' data from the recorder, cached at the edge for a minute. */
+async function live(request, env, headers, key) {
+  if (!env.RECORDER || env.RECORDER_ENABLED !== "true") return new Response("not available", { status: 503, headers });
+  const url = new URL(request.url);
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  const ck = new Request(url.origin + url.pathname, { method: "GET" });
+  let res = cache ? await cache.match(ck) : undefined;
+  if (!res) {
+    res = await recorder(env).fetch(`https://recorder/widget/${key.slice("v1/live/".length)}`);
+    if (cache && res.status === 200) await cache.put(ck, res.clone());
+  }
+  for (const [k, v] of res.headers) headers.set(k, v);
+  return new Response(request.method === "HEAD" ? null : res.body, { status: res.status, headers });
+}
+
 export default {
   async fetch(request, env) {
     const headers = baseHeaders(request, env);
@@ -81,6 +97,7 @@ export default {
     }
     const key = new URL(request.url).pathname.replace(/^\/+/, "");
     if (key.startsWith("v1/history/")) return api(request, env, headers);
+    if (/^v1\/live\/((board|train)\/[A-Za-z0-9._-]{1,40}|notices)$/.test(key)) return live(request, env, headers, key);
     if (!SERVED.has(key)) return new Response("not found", { status: 404, headers });
     const obj = await env.LIVE.get(key);
     if (!obj) return new Response("not yet available", { status: 503, headers });
