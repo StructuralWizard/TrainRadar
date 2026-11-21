@@ -31,6 +31,8 @@ EN EL MAPA
 • Estaciones con próximas salidas y trenes que se acercan.
 • Avisos de Renfe (obras, huelgas, incidencias) en el mapa y por línea.
 • Busca por número de tren o línea; mapa normal o satélite.
+• Cómo llegar: directo o con transbordos, con el tiempo de cada cambio y los retrasos en directo.
+• Horarios de hasta 9 semanas: elige fecha y hora en una estación, en Cómo llegar o para un tren.
 • ¿Voy en este tren?: con tu ubicación, la app adivina en qué tren vas (tu ubicación no sale del teléfono).
 
 GRATIS
@@ -43,7 +45,7 @@ TRAINRADAR PRO (suscripción anual, 1,99 €)
 • Avisos de retraso de tus trenes favoritos, también con la app cerrada, y widget para la pantalla de inicio.
 • Mis viajes: registro de tus trayectos con el retraso en cada parada, resumen para reclamar a Renfe, CSV e imagen para compartir.
 • Historial completo de puntualidad de líneas, trenes y estaciones (hasta 12 meses).
-• Trayectos habituales: guarda varios y la app abre con tus próximos trenes.
+• Trayectos habituales: guarda varios, con sus trenes, y la app abre con tus próximos trenes. Avisos de retrasos, cancelaciones, enlaces en riesgo, recordatorio antes de salir y avisos en tus estaciones (ascensores, obras, autobuses).
 • Moviola: mira dónde estaba cada tren, y con cuánto retraso, en cualquier momento pasado.
 • Histórico de avisos: los avisos de Renfe (obras, huelgas, incidencias) de cualquier día pasado.
 
@@ -70,6 +72,8 @@ ON THE MAP
 • Stations with the next departures and approaching trains.
 • Renfe's notices (works, strikes, disruptions) on the map and per line.
 • Search by train number or line; standard or satellite map.
+• Journeys: direct or with changes, with the time for each change and live delays.
+• Timetables up to 9 weeks ahead: pick a date and time for a station, a journey or a train.
 • Am I on this train?: with your location, the app works out which train you're on (your location never leaves the phone).
 
 FREE
@@ -82,7 +86,7 @@ TRAINRADAR PRO (yearly subscription, €1.99)
 • Delay alerts for your favourite trains, also with the app closed, and a home-screen widget.
 • My trips: a log of your journeys with the delay at each stop, a summary for a claim to Renfe, CSV and a shareable image.
 • Full punctuality history of lines, trains and stations (up to 12 months).
-• Commutes: save several and the app opens on your next trains.
+• Commutes: save several, with their trains, and the app opens on your next trains. Alerts for delays, cancellations, connections at risk, a reminder before leaving, and notices at your stations (lifts, works, buses).
 • Replay: see where every train was, and how late, at any past moment.
 • Notices history: Renfe's notices (works, strikes, disruptions) of any past day.
 
