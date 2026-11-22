@@ -126,6 +126,11 @@ company's contact address, which I'll ask you for when building M2.
 1. **opendata-oepnv.de, DELFI** (needed: the national timetable).
    - Where: `www.opendata-oepnv.de` → register as a company, with a short project description
      ("TrainRadar, a live train map and journey planner") → request the "Deutschland GTFS" dataset.
+   - The form is `www.opendata-oepnv.de/ht/de/standards/registrierung`: tick **DELFI** under
+     "Datensätze". Questions go to the portal's OpenData team, `opendata-oepnv@vrr.de` (from its
+     Impressum).
+   - Ignore the portal's "API" page: those are regional journey planners (VRR, HVV, MVV…), not
+     DELFI's national timetable.
    - GitHub: secrets `DE_DELFI_USERNAME`, `DE_DELFI_PASSWORD`.
 2. **DB API Marketplace** (needed: live departures).
    - Where: `developers.deutschebahn.com` → sign in with a DB account → create an application →
@@ -133,10 +138,13 @@ company's contact address, which I'll ask you for when building M2.
    - DB activates subscriptions by hand, and nobody is entitled to one.
    - Read OpenBoards' terms, the bahnhof.de "Web Bahnhofstafel" terms, before accepting, and send me
      anything about commercial use.
+   - Questions: `api-marketplace@deutschebahn.com` (from the portal's contact page).
    - GitHub: secrets `DE_DB_CLIENT_ID`, `DE_DB_API_KEY`.
 3. **PKP PLK "Otwarte Dane Kolejowe"** (needed for Poland).
-   - Where: the registration form linked from `pdp-api.plk-sa.pl`. The key is issued to the
-     organisation (Metranos Ltd); approval takes 3–5 working days.
+   - Where: the "Wniosek o Klucz API" form on `pdp-api.plk-sa.pl`. The key is shown once, at once;
+     confirm the email link within 7 days, then an administrator approves it in 3–5 working days.
+   - The key goes in the `X-API-Key` header. A forgotten key can be replaced without a new
+     application ("Zmień klucz bez nowego wniosku").
    - **Read "Regulamin v1.0" before accepting.** PLK may charge for real-time access.
    - GitHub: secret `PL_PLK_API_KEY`.
 4. **Variables when I say:** `DE_ENABLED`, `PL_ENABLED`.
