@@ -98,4 +98,33 @@ try {
 } catch (e) {
   await fail(e.message);
 }
+
+// The other countries deployed (COUNTRIES="uk ie fr …", from the site's
+// data/ folders): each must open from its link with its own data. Reported,
+// not failed: countries still being built never stop Spain's deploy.
+for (const c of (process.env.COUNTRIES || "").split(/\s+/).filter(Boolean)) {
+  const p = await browser.newPage({ viewport: { width: 390, height: 780 } });
+  const errs = [];
+  p.on("pageerror", (e) => errs.push(e.message));
+  try {
+    await p.goto(`${url}?country=${c}`);
+    await p.waitForFunction(() => window.__trainradar?.ref?.manifest, null, { timeout: 60_000 });
+    await p.waitForTimeout(4000);
+    const r = await p.evaluate(() => {
+      const { ref, engine, map } = window.__trainradar;
+      const at = map.getCenter();
+      return {
+        regions: ref.manifest.regions.map((x) => x.code).join(","),
+        trains: engine.positions(Date.now()).length / 6,
+        center: `${at.lng.toFixed(1)},${at.lat.toFixed(1)}`,
+      };
+    });
+    await p.screenshot({ path: `${out}/country-${c}.png` });
+    console.log(`country ${c}: OK, ${r.trains} trains, regions ${r.regions}, map at ${r.center}${errs.length ? `, errors: ${errs.join("; ")}` : ""}`);
+  } catch (e) {
+    await p.screenshot({ path: `${out}/country-${c}.png` }).catch(() => {});
+    console.log(`country ${c}: FAIL ${e.message.split("\n")[0]} | ${await p.textContent("#status").catch(() => "")}`);
+  }
+  await p.close();
+}
 await browser.close();

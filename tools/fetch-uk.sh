@@ -71,7 +71,7 @@ if [ "$osm" = 1 ] && [ ! -s gtfs/uk/rail.geojsonseq ]; then
   for region in united-kingdom; do
     out="gtfs/uk/$region.osm.pbf"
     url="https://download.geofabrik.de/europe/$region-latest.osm.pbf"
-    curl -fsSL --retry 4 --retry-delay 10 --speed-limit 100000 --speed-time 60 -o "$out" "$url" ||
+    curl -fsSL --retry 6 --retry-delay 20 --retry-all-errors --speed-limit 100000 --speed-time 60 -o "$out" "$url" ||
       { echo "OSM: $url failed" >&2; exit 1; }
     osmium tags-filter --overwrite -o "gtfs/uk/$region-rail.osm.pbf" "$out" w/railway=rail,narrow_gauge,disused
     rm "$out"

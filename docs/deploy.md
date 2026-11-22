@@ -247,6 +247,12 @@ app, and update the "last updated" dates when they change.
 - **Live data (France):** with `FR_ENABLED`, the `eu` job deploys `backend-eu/`, which writes
   `fr/rt/` every minute. Check `fr/rt/status.json` on the live domain.
 - **Where they show:** hidden countries, opened only with `?country=fr` or `?country=lu`.
+- **Testers:** once a device has opened any hidden country from its link, "Ir a…" and the network
+  picker list every hidden country, marked *en pruebas* / *testing*.
+- **Each deploy checks them:** the live smoke test opens every deployed country's `?country=` link
+  and reports `country xx: OK, N trains` (or `FAIL`) in the run summary, without failing the deploy.
+- **OpenStreetMap down:** if Geofabrik can't be reached after retries, a country is built without
+  its track (trains drawn on straight lines between stations) instead of being left out.
 
 ## Slovakia and Estonia (M4)
 

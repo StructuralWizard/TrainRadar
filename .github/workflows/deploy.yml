@@ -233,7 +233,7 @@ jobs:
           tools/fetch-ie.sh | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/ie-data --gzip \
               --ie-gtfs gtfs/ie/GTFS_Irish_Rail.zip --sources gtfs/ie/sources.tsv \
-              --rail gtfs/ie/rail.geojsonseq --report refdata-ie.md \
+              $([ -s gtfs/ie/rail.geojsonseq ] && echo --rail gtfs/ie/rail.geojsonseq) --report refdata-ie.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/ie-data; then
             mv build/ie-data build/data/ie
             # Plan ahead: as far as the NTA publishes (about 3 weeks), in data/ie/plan/.
@@ -270,7 +270,7 @@ jobs:
           tools/fetch-fr.sh | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/fr-data --gzip \
               --fr-gtfs gtfs/fr/sncf.zip --sources gtfs/fr/sources.tsv \
-              --rail gtfs/fr/rail.geojsonseq --report refdata-fr.md \
+              $([ -s gtfs/fr/rail.geojsonseq ] && echo --rail gtfs/fr/rail.geojsonseq) --report refdata-fr.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/fr-data; then
             mv build/fr-data build/data/fr
             # Plan ahead: 9 weeks (SNCF publishes about 5 months), in data/fr/plan/.
@@ -298,7 +298,7 @@ jobs:
           tools/fetch-lu.sh | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/lu-data --gzip \
               --lu-gtfs gtfs/lu/gtfs.zip --sources gtfs/lu/sources.tsv \
-              --rail gtfs/lu/rail.geojsonseq --report refdata-lu.md \
+              $([ -s gtfs/lu/rail.geojsonseq ] && echo --rail gtfs/lu/rail.geojsonseq) --report refdata-lu.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/lu-data; then
             mv build/lu-data build/data/lu
             { echo "## Luxembourg reference data"; echo; cat refdata-lu.md; } >> "$GITHUB_STEP_SUMMARY"
@@ -327,7 +327,7 @@ jobs:
           tools/fetch-eu.sh fi | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/fi-data --gzip \
               --fi-gtfs gtfs/fi/gtfs.zip --sources gtfs/fi/sources.tsv \
-              --rail gtfs/fi/rail.geojsonseq --report refdata-fi.md \
+              $([ -s gtfs/fi/rail.geojsonseq ] && echo --rail gtfs/fi/rail.geojsonseq) --report refdata-fi.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/fi-data; then
             mv build/fi-data build/data/fi
             if cargo run --release -q -p trainradar-refdata-build -- build --out build/fi-plan --gzip --days 63 \
@@ -363,7 +363,7 @@ jobs:
           tools/fetch-eu.sh no | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/no-data --gzip \
               --no-gtfs gtfs/no/gtfs.zip --sources gtfs/no/sources.tsv \
-              --rail gtfs/no/rail.geojsonseq --report refdata-no.md \
+              $([ -s gtfs/no/rail.geojsonseq ] && echo --rail gtfs/no/rail.geojsonseq) --report refdata-no.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/no-data; then
             mv build/no-data build/data/no
             if cargo run --release -q -p trainradar-refdata-build -- build --out build/no-plan --gzip --days 63 \
@@ -399,7 +399,7 @@ jobs:
           tools/fetch-eu.sh nl | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/nl-data --gzip \
               --nl-gtfs gtfs/nl/gtfs.zip --sources gtfs/nl/sources.tsv \
-              --rail gtfs/nl/rail.geojsonseq --report refdata-nl.md \
+              $([ -s gtfs/nl/rail.geojsonseq ] && echo --rail gtfs/nl/rail.geojsonseq) --report refdata-nl.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/nl-data; then
             mv build/nl-data build/data/nl
             if cargo run --release -q -p trainradar-refdata-build -- build --out build/nl-plan --gzip --days 63 \
@@ -425,7 +425,7 @@ jobs:
           tools/fetch-eu.sh sk | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/sk-data --gzip \
               --sk-gtfs gtfs/sk/gtfs.zip --sources gtfs/sk/sources.tsv \
-              --rail gtfs/sk/rail.geojsonseq --report refdata-sk.md \
+              $([ -s gtfs/sk/rail.geojsonseq ] && echo --rail gtfs/sk/rail.geojsonseq) --report refdata-sk.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/sk-data; then
             mv build/sk-data build/data/sk
             { echo "## Slovakia reference data"; echo; cat refdata-sk.md; } >> "$GITHUB_STEP_SUMMARY"
@@ -444,7 +444,7 @@ jobs:
           tools/fetch-eu.sh ee | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/ee-data --gzip \
               --ee-gtfs gtfs/ee/gtfs.zip --sources gtfs/ee/sources.tsv \
-              --rail gtfs/ee/rail.geojsonseq --report refdata-ee.md \
+              $([ -s gtfs/ee/rail.geojsonseq ] && echo --rail gtfs/ee/rail.geojsonseq) --report refdata-ee.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/ee-data; then
             mv build/ee-data build/data/ee
             { echo "## Estonia reference data"; echo; cat refdata-ee.md; } >> "$GITHUB_STEP_SUMMARY"
@@ -518,9 +518,13 @@ jobs:
         run: |
           (cd tools/feed-check && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium)
           sleep 20 # let the deployment propagate
+          # Every other country deployed opens from its ?country= link too.
+          COUNTRIES=$(for m in dist/data/*/manifest.json; do [ -f "$m" ] && basename "$(dirname "$m")"; done | grep -vx plan | tr '\n' ' ' || true)
+          export COUNTRIES
           mkdir -p shots && node tools/feed-check/web-smoke.mjs "$SITE/" shots | tee smoke.txt
           echo "Live: $SITE" >> "$GITHUB_STEP_SUMMARY"
-          grep -E "^(stats|OK)" smoke.txt >> "$GITHUB_STEP_SUMMARY" || true
+          grep -E "^(stats|OK|country)" smoke.txt | sed 's/$/  /' >> "$GITHUB_STEP_SUMMARY" || true
+          if grep -q "^country .*: FAIL" smoke.txt; then echo "::warning::A country did not open from its link: see the summary."; fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
