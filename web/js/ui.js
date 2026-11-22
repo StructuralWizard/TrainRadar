@@ -104,6 +104,7 @@ const PLACED_SOURCES = {
   VR: { by: "Fintraffic", delay: "srcFiDelay", timetable: "srcFiTimetable", link: null },
   Entur: { by: "Entur", delay: "srcNoDelay", timetable: "srcNoTimetable", link: null },
   SBB: { by: "opentransportdata.swiss", delay: "srcChDelay", timetable: "srcChTimetable", link: null },
+  Trafiklab: { by: "Trafiklab", delay: "srcSeDelay", timetable: "srcSeTimetable", link: null },
   "PKP PLK": { by: "PKP PLK", delay: "srcPlDelay", timetable: "srcPlTimetable", link: null },
 };
 const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];

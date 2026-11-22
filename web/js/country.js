@@ -22,7 +22,7 @@ export const COUNTRY_INFO = {
   sk: { zone: "Europe/Bratislava", center: [19.5, 48.7], zoom: 6.4, live: false },
   ee: { zone: "Europe/Tallinn", center: [25.5, 58.7], zoom: 6.3, live: false },
   ch: { zone: "Europe/Zurich", center: [8.2, 46.8], zoom: 6.9, live: true },
-  se: { zone: "Europe/Stockholm", center: [15.5, 61.0], zoom: 4.5, live: false },
+  se: { zone: "Europe/Stockholm", center: [15.5, 61.0], zoom: 4.5, live: true },
   pl: { zone: "Europe/Warsaw", center: [19.4, 52.0], zoom: 5.6, live: true },
 };
 
