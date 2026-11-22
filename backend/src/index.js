@@ -25,10 +25,13 @@ export const SERVED = new Set([
   "uk/rt/status.json",
   "uk/rt/trip_updates.pb",
   "uk/rt/incidents.json",
-  // Written by the Europe ingest Worker (backend-eu/): Ireland.
+  // Written by the Europe ingest Worker (backend-eu/): Ireland and France.
   "ie/rt/status.json",
   "ie/rt/trip_updates.pb",
   "ie/rt/alerts.pb",
+  "fr/rt/status.json",
+  "fr/rt/trip_updates.pb",
+  "fr/rt/alerts.pb",
 ]);
 /** Must match the daily entry in wrangler.toml's crons (UTC). */
 export const DAILY_CRON = "40 2 * * *";

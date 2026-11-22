@@ -5,6 +5,7 @@
 mod build;
 mod calendar;
 mod dem;
+mod france;
 mod gtfs_io;
 mod igr;
 mod inspect;
@@ -66,7 +67,8 @@ usage:
                       [--gzip]
                       (the UK: --uk-schedule FILE --naptan FILE [--corpus FILE]
                        [--ni-txc ZIP])
-                      (Ireland: --ie-gtfs ZIP)
+                      (Ireland: --ie-gtfs ZIP; France: --fr-gtfs ZIP;
+                       Luxembourg: --lu-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -111,6 +113,10 @@ struct BuildArgs {
     ni_txc: Option<PathBuf>,
     /// Iarnród Éireann's GTFS (the NTA's GTFS_Irish_Rail.zip): Ireland.
     ie_gtfs: Option<PathBuf>,
+    /// SNCF's combined GTFS (Export_OpenData_SNCF_GTFS_NewTripId.zip): France.
+    fr_gtfs: Option<PathBuf>,
+    /// The Administration des transports publics' GTFS: Luxembourg (CFL).
+    lu_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -134,6 +140,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         corpus: None,
         ni_txc: None,
         ie_gtfs: None,
+        fr_gtfs: None,
+        lu_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -167,6 +175,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--corpus" => a.corpus = Some(val()?.into()),
             "--ni-txc" => a.ni_txc = Some(val()?.into()),
             "--ie-gtfs" => a.ie_gtfs = Some(val()?.into()),
+            "--fr-gtfs" => a.fr_gtfs = Some(val()?.into()),
+            "--lu-gtfs" => a.lu_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -190,9 +200,12 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.uk_schedule.is_none()
         && a.ni_txc.is_none()
         && a.ie_gtfs.is_none()
+        && a.fr_gtfs.is_none()
+        && a.lu_gtfs.is_none()
     {
         return Err(
-            "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs"
+            "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
+             --fr-gtfs or --lu-gtfs"
                 .into(),
         );
     }
@@ -326,8 +339,82 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.uk_schedule, "uk"),
         (&a.ni_txc, "ni"),
         (&a.ie_gtfs, "ie"),
+        (&a.fr_gtfs, "fr"),
+        (&a.lu_gtfs, "lu"),
     ] {
         let Some(path) = path else { continue };
+        if kind == "fr" {
+            // SNCF (docs/europe/fr.md): TGV, OUIGO, Intercités, Lyria and
+            // ICE in one national region, TER by area; Paris time (the same
+            // as Madrid's); live delays from SNCF's GTFS-RT (backend-eu).
+            let mut g = Gtfs::open(path)?;
+            let mut feed = load::load(&mut g, &window)?;
+            let st = france::normalise(&mut feed);
+            report.push_str(&format!(
+                "- `{}` (SNCF): {} trips in feed, {} in window ({}), {} coach trips dropped, {} buses \
+                 skipped, {} outside window, {} too short; {} stations; {} stop_times rows\n",
+                path.display(),
+                feed.stats.trips_total,
+                feed.trips.len(),
+                st.by_product
+                    .iter()
+                    .map(|(p, n)| format!("{p} {n}"))
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                st.coaches_dropped,
+                feed.stats.trips_skipped_bus,
+                feed.stats.trips_outside_window,
+                feed.stats.trips_too_short,
+                st.stations,
+                feed.stats.stop_time_rows
+            ));
+            for (code, trips) in france::split(&feed) {
+                let (mut tt, legs, rs) =
+                    build_timetable(&feed, &trips, &code, header.clone(), router.as_mut());
+                tt.operator = "SNCF".into();
+                tt.live = true;
+                let rec = RegionRec {
+                    name: france::region_name(&code),
+                    bbox_e5: bbox_e5(&tt),
+                    code,
+                };
+                built.push((rec, tt, legs, rs));
+            }
+            continue;
+        }
+        if kind == "lu" {
+            // CFL (docs/europe/west-central.md): Luxembourg's national
+            // GTFS, every mode; its trains only, by timetable (no open live
+            // data yet).
+            let mut g = Gtfs::open(path)?;
+            let mut feed = load::load(&mut g, &window)?;
+            let kept = build::keep_rail(&mut feed);
+            report.push_str(&format!(
+                "- `{}` (Luxembourg): {} trips in feed, {} rail trips in window ({} other modes \
+                 dropped), {} outside window; {} stop_times rows\n",
+                path.display(),
+                feed.stats.trips_total,
+                feed.trips.len(),
+                kept,
+                feed.stats.trips_outside_window,
+                feed.stats.stop_time_rows
+            ));
+            if feed.trips.is_empty() {
+                return Err("Luxembourg's GTFS has no rail trips in the window".into());
+            }
+            let trips: Vec<&load::Trip> = feed.trips.iter().collect();
+            let (mut tt, legs, rs) =
+                build_timetable(&feed, &trips, build::LU, header.clone(), router.as_mut());
+            tt.operator = "CFL".into();
+            tt.live = false;
+            let rec = RegionRec {
+                code: build::LU.into(),
+                name: "Luxembourg".into(),
+                bbox_e5: bbox_e5(&tt),
+            };
+            built.push((rec, tt, legs, rs));
+            continue;
+        }
         if kind == "ie" {
             // Iarnród Éireann (docs/europe/ie.md): one region, Dublin time,
             // live delays from the NTA (backend-eu), placed by timetable.
@@ -686,6 +773,10 @@ fn run_build(a: BuildArgs) -> Result<()> {
         network,
         attribution: if a.ie_gtfs.is_some() {
             build::ATTRIBUTION_IE
+        } else if a.fr_gtfs.is_some() {
+            france::ATTRIBUTION_FR
+        } else if a.lu_gtfs.is_some() {
+            build::ATTRIBUTION_LU
         } else {
             ATTRIBUTION
         },

@@ -3,7 +3,8 @@
 //! and the Cercanías of both ends).
 //!
 //!   cargo run --release -p trainradar-engine --example journeys_bench -- web/data
-//!   (… -- data/uk --uk for Great Britain, … -- data/ie --ie for Ireland)
+//!   (… -- data/uk --uk for Great Britain, … -- data/ie --ie for Ireland,
+//!   … -- data/fr --fr for France)
 //!
 //! Prints Markdown (for the workflow summary). Stations are found by name.
 
@@ -33,6 +34,16 @@ const TRIPS_IE: &[(&str, &str)] = &[
     ("Dublin Heuston", "Tralee Casement Station"),
 ];
 
+/// With `--fr`: France (Paris time, the same as Madrid).
+const TRIPS_FR: &[(&str, &str)] = &[
+    ("Paris Gare de Lyon", "Lyon Part Dieu"),
+    ("Lille Europe", "Marseille Saint-Charles"),
+    ("Bordeaux Saint-Jean", "Toulouse Matabiau"),
+    ("Paris Montparnasse", "Brest"),
+    ("Strasbourg", "Mulhouse"),
+    ("Nantes", "Rennes"),
+];
+
 /// With `--uk`: Great Britain and Northern Ireland (London time).
 const TRIPS_UK: &[(&str, &str)] = &[
     ("London Euston", "Manchester Piccadilly"),
@@ -47,6 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data = std::env::args().nth(1).unwrap_or_else(|| "web/data".into());
     let uk = std::env::args().any(|a| a == "--uk");
     let ie = std::env::args().any(|a| a == "--ie");
+    let fr = std::env::args().any(|a| a == "--fr");
     let data = Path::new(&data);
     let manifest: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(data.join("manifest.json"))?)?;
@@ -105,6 +117,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ", United Kingdom"
         } else if ie {
             ", Ireland"
+        } else if fr {
+            ", France"
         } else {
             ""
         }
@@ -114,6 +128,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         TRIPS_UK
     } else if ie {
         TRIPS_IE
+    } else if fr {
+        TRIPS_FR
     } else {
         TRIPS
     };

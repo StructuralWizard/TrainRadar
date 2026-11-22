@@ -116,3 +116,33 @@ test("without a key: says so, calls nobody", async () => {
   assert.match(s.error, /no API key/);
   assert.equal(n, 0);
 });
+
+test("France: SNCF's feeds, no key, everything kept; alternating every 30 s", async () => {
+  const { FR } = await import("../src/france.js");
+  assert.deepEqual([0, 1, 2, 3].map((n) => feedFor(n, FR).name), ["alerts.pb", "trip_updates.pb", "alerts.pb", "trip_updates.pb"]);
+  const calls = [];
+  const raw = feed(tripUpdate("a", "OCESN6601F", null), tripUpdate("b", "OCESN860261F", null));
+  const fetchFn = async (url, init) => (calls.push({ url, init }), new Response(raw, { status: 200 }));
+  const LIVE = fakeBucket();
+  const state = { ...emptyState(), minute: 1 };
+  const s = await runCycle({ state, env: { LIVE }, fetchFn, now: Date.parse("2026-11-23T09:00:00Z"), country: FR });
+  assert.equal(s.ok, true, s.error);
+  assert.equal(calls[0].url, "https://proxy.transport.data.gouv.fr/resource/sncf-gtfs-rt-trip-updates");
+  assert.equal(s.feeds["trip_updates.pb"].kept, 2);
+  assert.deepEqual([...LIVE.store.get("fr/rt/trip_updates.pb").v], [...raw]);
+  assert.match(JSON.parse(LIVE.store.get("fr/rt/status.json").v).source, /SNCF/);
+  assert.ok(!FR.enabled({}) && FR.enabled({ FR_ENABLED: "true" }));
+});
+
+test("the Worker re-arms only the countries switched on", async () => {
+  const { default: worker, COUNTRIES } = await import("../src/index.js");
+  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr"]);
+  const asked = [];
+  const env = {
+    FR_ENABLED: "true",
+    IE_ENABLED: "true", // but no key: Ireland stays off
+    FEED_INGEST: { idFromName: (n) => n, get: (id) => ({ fetch: async (u) => asked.push([id, u]) }) },
+  };
+  await worker.scheduled({}, env);
+  assert.deepEqual(asked, [["fr", "https://ingest/ensure?c=fr"]]);
+});

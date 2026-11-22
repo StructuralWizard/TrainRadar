@@ -42,6 +42,8 @@ jobs:
           EVENT: ${{ github.event_name }}
           UK_ENABLED: ${{ vars.UK_ENABLED }}
           IE_ENABLED: ${{ vars.IE_ENABLED }}
+          FR_ENABLED: ${{ vars.FR_ENABLED }}
+          LU_ENABLED: ${{ vars.LU_ENABLED }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -67,6 +69,9 @@ jobs:
           # Ireland's live feed matches only the same day's timetable (the
           # NTA's ids change with every file): with Ireland on, rebuild daily.
           if [ "$IE_ENABLED" = "true" ]; then changed=true; fi
+          # France's timetable changes daily too (strikes and works known the
+          # evening before), and Luxembourg's comes weekly.
+          if [ "$FR_ENABLED" = "true" ] || [ "$LU_ENABLED" = "true" ]; then changed=true; fi
           echo "run=$changed" >> "$GITHUB_OUTPUT"
 
   deploy:
@@ -241,6 +246,63 @@ jobs:
             exit 1
           fi
 
+      # France (docs/europe/fr.md), with FR_ENABLED: SNCF's timetable (no key)
+      # and France's OSM track → data/fr/. Never stops the rest of the deploy.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.FR_ENABLED == 'true'
+        id: osm_fr
+        with:
+          path: gtfs/fr/rail.geojsonseq
+          key: osm-rail-fr-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-fr-v1-
+      - name: France reference data
+        if: vars.FR_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_fr.outputs.cache-hit }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-fr.sh | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/fr-data --gzip \
+              --fr-gtfs gtfs/fr/sncf.zip --sources gtfs/fr/sources.tsv \
+              --rail gtfs/fr/rail.geojsonseq --report refdata-fr.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/fr-data; then
+            mv build/fr-data build/data/fr
+            # Plan ahead: 9 weeks (SNCF publishes about 5 months), in data/fr/plan/.
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/fr-plan --gzip --days 63 \
+                --fr-gtfs gtfs/fr/sncf.zip --report fr-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/fr-plan; then
+              mv build/fr-plan build/data/fr/plan
+            else
+              echo "::warning::France's plan-ahead timetables failed: France has today's week only."
+            fi
+            { echo "## France reference data"; echo; cat refdata-fr.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::France's reference data failed: deploying without France."
+            exit 1
+          fi
+
+      # Luxembourg (docs/europe/west-central.md), with LU_ENABLED: CFL's trains
+      # from the national GTFS (no key), by timetable → data/lu/.
+      - name: Luxembourg reference data
+        if: vars.LU_ENABLED == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-lu.sh | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/lu-data --gzip \
+              --lu-gtfs gtfs/lu/gtfs.zip --sources gtfs/lu/sources.tsv \
+              --rail gtfs/lu/rail.geojsonseq --report refdata-lu.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/lu-data; then
+            mv build/lu-data build/data/lu
+            { echo "## Luxembourg reference data"; echo; cat refdata-lu.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Luxembourg's reference data failed: deploying without Luxembourg."
+            exit 1
+          fi
+
       - name: Cloudflare names
         id: urls
         run: |
@@ -376,7 +438,8 @@ jobs:
 
   eu:
     # Europe ingest (backend-eu/, docs/plan-europe.md A5): Ireland's live
-    # feed from the NTA, with IE_ENABLED=true and the IE_NTA_API_KEY secret.
+    # feed from the NTA, with IE_ENABLED=true and the IE_NTA_API_KEY secret;
+    # France's SNCF feeds with FR_ENABLED=true (no key).
     name: deploy the Europe ingest
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
@@ -394,12 +457,19 @@ jobs:
         id: gate
         env:
           IE_ENABLED: ${{ vars.IE_ENABLED }}
+          FR_ENABLED: ${{ vars.FR_ENABLED }}
           HAS_KEY: ${{ secrets.IE_NTA_API_KEY != '' }}
           EVENT: ${{ github.event_name }}
         run: |
           norm() { printf %s "$1" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]'; }
-          if [ "$(norm "$IE_ENABLED")" != "true" ] || [ "$HAS_KEY" != "true" ]; then
-            echo "IE_ENABLED isn't true or IE_NTA_API_KEY isn't set: skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
+          # Ireland needs its key too; France needs no key.
+          ie=false; fr=false
+          if [ "$(norm "$IE_ENABLED")" = "true" ] && [ "$HAS_KEY" = "true" ]; then ie=true; fi
+          if [ "$(norm "$FR_ENABLED")" = "true" ]; then fr=true; fi
+          echo "ie=$ie" >> "$GITHUB_OUTPUT"
+          echo "fr=$fr" >> "$GITHUB_OUTPUT"
+          if [ "$ie" != "true" ] && [ "$fr" != "true" ]; then
+            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, or FR_ENABLED): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "push" ] && git diff --quiet HEAD^ HEAD -- backend-eu/; then
             echo "backend-eu/ unchanged: the Europe ingest keeps running as it is." | tee -a "$GITHUB_STEP_SUMMARY"
           else
@@ -415,11 +485,15 @@ jobs:
         if: steps.gate.outputs.on == 'true'
         env:
           IE_NTA_API_KEY: ${{ secrets.IE_NTA_API_KEY }}
+          IE_ON: ${{ steps.gate.outputs.ie }}
+          FR_ON: ${{ steps.gate.outputs.fr }}
         run: |
-          npx --yes "$WRANGLER" deploy --config backend-eu/wrangler.toml --var "IE_ENABLED:true"
-          # The key on stdin, never on the command line.
-          printf '%s' "$IE_NTA_API_KEY" | npx --yes "$WRANGLER" secret put IE_NTA_API_KEY --config backend-eu/wrangler.toml
-          echo "Europe ingest deployed: Ireland's status is ie/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
+          npx --yes "$WRANGLER" deploy --config backend-eu/wrangler.toml --var "IE_ENABLED:$IE_ON" --var "FR_ENABLED:$FR_ON"
+          if [ "$IE_ON" = "true" ]; then
+            # The key on stdin, never on the command line.
+            printf '%s' "$IE_NTA_API_KEY" | npx --yes "$WRANGLER" secret put IE_NTA_API_KEY --config backend-eu/wrangler.toml
+          fi
+          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 
   live:
     # Central poller and history recorder (backend/): Renfe fetched once for

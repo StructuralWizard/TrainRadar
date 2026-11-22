@@ -116,6 +116,25 @@ jobs:
           target/release/refdata-build verify build/ie
           { echo "## Ireland reference data"; echo; cat refdata-ie.md; } >> "$GITHUB_STEP_SUMMARY"
           cargo run --release -q -p trainradar-engine --example journeys_bench -- build/ie --ie | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: France (SNCF's timetable; no key)
+        continue-on-error: true # an outside download: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-fr.sh --no-osm
+          target/release/refdata-build build --out build/fr --fr-gtfs gtfs/fr/sncf.zip \
+            --sources gtfs/fr/sources.tsv --report refdata-fr.md
+          target/release/refdata-build verify build/fr
+          { echo "## France reference data"; echo; cat refdata-fr.md; } >> "$GITHUB_STEP_SUMMARY"
+          cargo run --release -q -p trainradar-engine --example journeys_bench -- build/fr --fr | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Luxembourg (CFL's trains from the national GTFS; no key)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          tools/fetch-lu.sh --no-osm
+          target/release/refdata-build build --out build/lu --lu-gtfs gtfs/lu/gtfs.zip \
+            --sources gtfs/lu/sources.tsv --report refdata-lu.md
+          target/release/refdata-build verify build/lu
+          { echo "## Luxembourg reference data"; echo; cat refdata-lu.md; } >> "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

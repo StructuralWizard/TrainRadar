@@ -964,6 +964,8 @@ pub mod tests {
     fn ireland_and_the_uk_are_placed_by_timetable_plus_delay() {
         use crate::networkrail::placed_by_timetable;
         assert!(placed_by_timetable("ie", true));
+        assert!(placed_by_timetable("fr", true));
+        assert!(placed_by_timetable("fr-ara", true));
         assert!(placed_by_timetable("uk", true));
         assert!(placed_by_timetable("ouigo", false));
         assert!(!placed_by_timetable("ld", true));

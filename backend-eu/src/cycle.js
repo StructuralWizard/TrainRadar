@@ -1,14 +1,16 @@
-// One minute's work for a country's feed, with the I/O injected so the tests
-// run it in Node: fetch one of its feeds (the provider's call budget allows
-// one a minute), keep its operator's entities, write them to the live
-// bucket next to Spain's and the UK's, and publish status.json in the same
-// shape as theirs, so the app's live mode reads it with the same code.
+// One cycle's work for a country's feeds, with the I/O injected so the
+// tests run it in Node: fetch one of its feeds (within the provider's call
+// budget), keep its operator's entities, write them to the live bucket next
+// to Spain's and the UK's, and publish status.json in the same shape as
+// theirs, so the app's live mode reads it with the same code. Each country
+// (ireland.js, france.js) says where its feeds are, how often, with which
+// headers, and what to keep.
 
 import { filterFeed } from "./gtfsrt.js";
-import { IE, feedFor, irishRailTrips, isIrishRailAlert } from "./ireland.js";
+import { IE, feedFor } from "./ireland.js";
 
-/** A little over a minute: the NTA allows one call per 60 s per key. */
-export const CYCLE_MS = 61_000;
+/** Ireland's cycle (kept for the tests; each country has its `cycleMs`). */
+export const CYCLE_MS = IE.cycleMs;
 export const CACHE = "public, max-age=30";
 /** After a failure, wait 1, 2, 4… minutes before the next call, at most 30. */
 export const BACKOFF_MAX_MS = 30 * 60_000;
@@ -19,26 +21,25 @@ export const emptyState = () => ({ minute: 0, failures: 0, nextAt: null, failing
 export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), country = IE }) {
   const at = new Date(now).toISOString();
   const cycle = { at, ok: true, feed: null, skipped: false, error: null };
-  if (!env.IE_NTA_API_KEY) {
+  const missing = country.missing(env);
+  if (missing) {
     cycle.ok = false;
-    cycle.error = "no API key (IE_NTA_API_KEY)";
+    cycle.error = missing;
   } else if (state.nextAt && now < state.nextAt) {
     cycle.ok = false;
     cycle.skipped = true;
     cycle.error = state.lastError || "backing off";
   } else {
-    const feed = feedFor(state.minute);
+    const feed = feedFor(state.minute, country);
     state.minute = (state.minute + 1) % 1_000_000;
     cycle.feed = feed.name;
     try {
-      const r = await fetchFn(country.base + feed.path, {
-        // The key in a header, never in the URL (AGENTS.md).
-        headers: { "x-api-key": env.IE_NTA_API_KEY, accept: "application/x-protobuf", "cache-control": "no-cache" },
-      });
+      const r = await fetchFn(country.base + feed.path, { headers: country.headers(env) });
       if (!r.ok) throw new Error(`${feed.path}: HTTP ${r.status}`);
       const bytes = new Uint8Array(await r.arrayBuffer());
-      const keep = feed.name === "alerts.pb" ? isIrishRailAlert : irishRailTrips(bytes);
-      const out = filterFeed(bytes, keep);
+      if (bytes.length === 0) throw new Error(`${feed.path}: empty response`);
+      const keep = country.keep(feed.name, bytes);
+      const out = filterFeed(bytes, keep || (() => true));
       await env.LIVE.put(country.prefix + feed.name, out.bytes, {
         httpMetadata: { contentType: "application/x-protobuf", cacheControl: CACHE },
       });
@@ -66,7 +67,7 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
     failingSince: state.failingSince,
     failures: state.failures || 0,
     nextCallAt: state.nextAt ? new Date(state.nextAt).toISOString() : null,
-    source: "National Transport Authority (Transport for Ireland), GTFS-Realtime v2, CC BY 4.0, provided as is",
+    source: country.source,
     // The same shape as Spain's and the UK's (renfeLastModified is the
     // field the app reads for "this file changed").
     feeds: Object.fromEntries(

@@ -8,13 +8,22 @@ import { alertTargets, entityTrip } from "./gtfsrt.js";
 import { fields } from "./protobuf.js";
 
 export const IE = {
+  code: "ie",
   prefix: "ie/rt/",
   base: "https://api.nationaltransport.ie/gtfsr/v2/",
+  /** A little over a minute: the NTA allows one call per 60 s per key. */
+  cycleMs: 61_000,
   // Trip updates every minute; alerts take the place of every fifth one.
   feeds: [
     { name: "trip_updates.pb", path: "TripUpdates", every: 1 },
     { name: "alerts.pb", path: "alerts", every: 5 },
   ],
+  source: "National Transport Authority (Transport for Ireland), GTFS-Realtime v2, CC BY 4.0, provided as is",
+  enabled: (env) => env.IE_ENABLED === "true" && !!env.IE_NTA_API_KEY,
+  missing: (env) => (env.IE_NTA_API_KEY ? null : "no API key (IE_NTA_API_KEY)"),
+  // The key in a header, never in the URL (AGENTS.md).
+  headers: (env) => ({ "x-api-key": env.IE_NTA_API_KEY, accept: "application/x-protobuf", "cache-control": "no-cache" }),
+  keep: (name, bytes) => (name === "alerts.pb" ? isIrishRailAlert : irishRailTrips(bytes)),
 };
 
 /** Irish Rail's route ids are names like "DUB-CORK-O" or "DUB-DRO/DUN-I";
@@ -23,9 +32,10 @@ export const IE = {
 const IR_ROUTE = /^[A-Z][A-Z/]*(-[A-Z/]+)+-[IO]$/;
 export const isIrishRailRoute = (id) => IR_ROUTE.test(id || "");
 
-/** Which feed to fetch on minute `n` (the NTA's one call a minute). */
-export function feedFor(n) {
-  return IE.feeds.find((f) => f.every > 1 && n % f.every === 0) || IE.feeds[0];
+/** Which of a country's feeds to fetch on cycle `n`: the first one whose
+ * `every` divides n, among those fetched less often; else the main one. */
+export function feedFor(n, country = IE) {
+  return country.feeds.find((f) => f.every > 1 && n % f.every === 0) || country.feeds[0];
 }
 
 /**

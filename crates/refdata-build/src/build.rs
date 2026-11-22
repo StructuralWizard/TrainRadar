@@ -34,6 +34,8 @@ pub const UK: &str = "uk";
 pub const NI: &str = "ni";
 /// Ireland: Iarnród Éireann, the NTA's GTFS (docs/europe/ie.md).
 pub const IE: &str = "ie";
+/// Luxembourg: CFL, the national GTFS (docs/europe/west-central.md).
+pub const LU: &str = "lu";
 
 /// The time zone a region's timetable is written in (IANA name), for the
 /// manifest: the app converts each region's times with it.
@@ -41,6 +43,8 @@ pub fn region_tz(code: &str) -> &'static str {
     match code {
         UK | NI => "Europe/London",
         IE => "Europe/Dublin",
+        LU => "Europe/Luxembourg",
+        c if c == crate::france::FR || c.starts_with("fr-") => "Europe/Paris",
         _ => "Europe/Madrid",
     }
 }
@@ -62,6 +66,16 @@ pub fn irish_product(route_id: &str, short_name: &str) -> &'static str {
         "DUB-DRO/DUN" | "DUB-MAYNOOTH" | "DUB-PORTLAOIS" | "MAL-COBH" => "Commuter",
         _ => "InterCity",
     }
+}
+
+/// Keep only trains (GTFS `route_type` 2, or 100–117 in the extended
+/// types) in a feed that covers every mode. Returns how many trips went.
+pub fn keep_rail(feed: &mut crate::load::Feed) -> usize {
+    let rail = |t: &str| t == "2" || t.parse::<u16>().is_ok_and(|n| (100..=117).contains(&n));
+    let before = feed.trips.len();
+    let routes = &feed.routes;
+    feed.trips.retain(|t| rail(&routes[t.route].route_type));
+    before - feed.trips.len()
 }
 
 /// Iarnród Éireann's GTFS lists the replacement buses of planned works as
@@ -615,6 +629,11 @@ pub struct RegionEntry {
     pub stats: RegionStats,
 }
 
+/// Luxembourg's credit: the Administration des transports publics' GTFS,
+/// CC BY 4.0 on data.public.lu.
+pub const ATTRIBUTION_LU: &str = "Data: Administration des transports publics (Luxembourg), \
+data.public.lu, CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
+
 /// Ireland's credit: the NTA asks for a CC BY 4.0 attribution and an "as is"
 /// statement (developer.nationaltransport.ie/usagepolicy).
 pub const ATTRIBUTION_IE: &str = "Data: National Transport Authority (Transport for Ireland), \
@@ -854,6 +873,9 @@ mod tests {
         assert_eq!(region_tz(UK), "Europe/London");
         assert_eq!(region_tz(NI), "Europe/London");
         assert_eq!(region_tz(IE), "Europe/Dublin");
+        assert_eq!(region_tz("fr"), "Europe/Paris");
+        assert_eq!(region_tz("fr-ara"), "Europe/Paris");
+        assert_eq!(region_tz(LU), "Europe/Luxembourg");
     }
 
     #[test]
