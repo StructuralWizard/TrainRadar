@@ -31,7 +31,7 @@ echo "gtfs.zip: $(du -h gtfs/lu/gtfs.zip | cut -f1), $(basename "$url")"
 if [ "$osm" = 1 ] && [ ! -s gtfs/lu/rail.geojsonseq ]; then
   out="gtfs/lu/luxembourg.osm.pbf"
   url="https://download.geofabrik.de/europe/luxembourg-latest.osm.pbf"
-  curl -fsSL --retry 4 --retry-delay 10 -o "$out" "$url" || { echo "OSM: $url failed" >&2; exit 1; }
+  curl -fsSL --retry 6 --retry-delay 20 --retry-all-errors -o "$out" "$url" || { echo "::warning::OSM: $url failed: built without the track this time (straight lines)." >&2; rm -f "$out"; exit 0; }
   osmium tags-filter --overwrite -o gtfs/lu/rail.osm.pbf "$out" w/railway=rail,narrow_gauge,disused
   rm "$out"
   osmium export --overwrite -f geojsonseq --geometry-types=linestring \

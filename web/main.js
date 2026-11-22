@@ -111,10 +111,23 @@ const country = pickCountry({
   allowed: CONFIG.countries,
   hidden: CONFIG.hiddenCountries || [],
 });
-/** The countries to choose from: those offered, and the one shown (a hidden
- * one, still being built, opened from its link). UK_APP=false builds an app
+const TESTER_KEY = "testCountries";
+/** Countries still being built (CONFIG.hiddenCountries): a device that has
+ * opened one from its ?country= link is a tester's, and gets all of them in
+ * "Ir a…" and the network picker, marked as in testing. */
+const HIDDEN = CONFIG.hiddenCountries || [];
+if (HIDDEN.includes(country)) store.set(TESTER_KEY, "1");
+const TESTER = store.get(TESTER_KEY) === "1" && HIDDEN.length > 0;
+/** The countries to choose from: those offered, the one shown, and for a
+ * tester the hidden ones (A–Z after the others). UK_APP=false builds an app
  * with Spain only. */
-const COUNTRY_LIST = [...new Set([...CONFIG.countries, country])];
+const COUNTRY_LIST = [
+  ...new Set([
+    ...CONFIG.countries,
+    country,
+    ...(TESTER ? HIDDEN : []),
+  ]),
+];
 const MULTI_COUNTRY = COUNTRY_LIST.length > 1;
 // The Android app's widgets and background alerts follow Spain (Renfe), in
 // either country: they read Spain's servers, favourites and commutes.
@@ -141,9 +154,19 @@ const COUNTRY_TEXT = {
   sk: { name: "countrySk", all: "allSk", credit: "attributionSk", scheduled: "scheduledCountOther" },
   ee: { name: "countryEe", all: "allEe", credit: "attributionEe", scheduled: "scheduledCountOther" },
 };
+/** A country's name; one still being built says so. */
+const countryName = (c) => {
+  const name = t(lang, COUNTRY_TEXT[c]?.name || "countryEs");
+  return HIDDEN.includes(c) ? `${name} (${t(lang, "countryTesting")})` : name;
+};
+/** COUNTRY_LIST in the order shown: the offered ones, then the rest A–Z. */
+const countryChoices = () => {
+  const rank = (c) => (CONFIG.countries.includes(c) ? CONFIG.countries.indexOf(c) : 99);
+  return [...COUNTRY_LIST].sort((a, b) => rank(a) - rank(b) || countryName(a).localeCompare(countryName(b), lang));
+};
 /** Whose notices each country shows (the UK has its own panel). */
 const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi: "Fintraffic", nl: "NS" };
-const countryName = (c) => t(lang, COUNTRY_TEXT[c]?.name || "countryEs");
+
 // Each country keeps its own favourites and commutes (station ids differ);
 // Spain's keep the original keys, which the Android widgets and alerts read.
 const FAV_KEY = ES ? STORAGE_KEY : `favourites-${country}`;
@@ -594,7 +617,7 @@ function fillJump() {
     : el(
         "optgroup",
         { label: t(lang, "country") },
-        COUNTRY_LIST.map((c) => el("option", { value: `country:${c}` }, countryName(c))),
+        countryChoices().map((c) => el("option", { value: `country:${c}` }, countryName(c))),
       );
   if (!ES) {
     sel.replaceChildren(el("option", { value: "" }, t(lang, "goTo")), el("option", { value: "es" }, t(lang, COUNTRY_TEXT[country].all)), countries);
@@ -2513,7 +2536,7 @@ function renderNetworks(keepInput = false) {
     query: netQuery,
     near,
     spain: { trains, onPick: () => pick("es"), label: ES ? null : t(lang, COUNTRY_TEXT[country].all) },
-    countries: !MULTI_COUNTRY ? null : COUNTRY_LIST.map((c) => ({ code: c, name: countryName(c), current: c === country, onPick: () => switchCountry(c) })),
+    countries: !MULTI_COUNTRY ? null : countryChoices().map((c) => ({ code: c, name: countryName(c), current: c === country, onPick: () => switchCountry(c) })),
     // Spain's núcleos, communities and provinces; the UK and Ireland are one network each (for now).
     networks: !ES ? [] : [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
     communities: !ES ? [] : byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name, alt: c.alt })),
