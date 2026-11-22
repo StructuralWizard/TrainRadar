@@ -53,6 +53,10 @@ export const STRINGS = {
     srcNoTimetable: "Horario y paradas: Entur (NLOD).",
     srcNlDelay: "Retraso: datos nacionales NDOV, vía OVapi (en directo).",
     srcNlTimetable: "Horario y paradas: NDOV, vía OVapi (CC0).",
+    srcChDelay: "Retraso: opentransportdata.swiss (en directo).",
+    srcChTimetable: "Horario y paradas: opentransportdata.swiss.",
+    srcPlDelay: "Retraso: PKP PLK, Otwarte Dane Kolejowe (en directo).",
+    srcPlTimetable: "Horario y paradas: PKP PLK, Otwarte Dane Kolejowe.",
     sourceEstimated: "estimado",
     position: "Posición",
     gpsAgo: "GPS {age}",
@@ -550,9 +554,15 @@ export const STRINGS = {
     allNl: "Todos los Países Bajos",
     countrySk: "Eslovaquia",
     countryEe: "Estonia",
+    countryCh: "Suiza",
+    countrySe: "Suecia",
+    countryPl: "Polonia",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
+    allCh: "Toda Suiza",
+    allSe: "Toda Suecia",
+    allPl: "Toda Polonia",
     noticesTitle: "Avisos",
     noticesNotYet: "Aún no hay avisos para {country}: llegarán con los datos en directo.",
     timetableOnly: "Según horario: aún no hay datos en directo de este país",
@@ -587,6 +597,12 @@ export const STRINGS = {
       'Datos: <a href="https://gtfs.ovapi.nl/" target="_blank" rel="noopener">OVapi</a>, de los datos nacionales NDOV (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con NS ni los operadores',
     attributionSk:
       'Datos: horario de Železnice Slovenskej republiky en <a href="https://data.slovensko.sk/datasety/ebeeedf1-aca2-451a-bdc0-35d536714888" target="_blank" rel="noopener">data.slovensko.sk</a> (CC BY) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con ŽSR ni ZSSK',
+    attributionCh:
+      'Datos: <a href="https://opentransportdata.swiss/" target="_blank" rel="noopener">opentransportdata.swiss</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SBB ni los operadores',
+    attributionSe:
+      'Datos: horario de Samtrafiken en <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SJ ni los operadores',
+    attributionPl:
+      'Datos: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con PKP PLK ni los operadores',
     attributionEe:
       'Datos: horario de Elron del registro de transporte público (Ministerio de Asuntos Regionales y Agricultura de Estonia) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Elron',
     attributionIe:
@@ -644,6 +660,10 @@ export const STRINGS = {
     srcNoTimetable: "Timetable and stops: Entur (NLOD).",
     srcNlDelay: "Delay: the national NDOV data, via OVapi (live).",
     srcNlTimetable: "Timetable and stops: NDOV, via OVapi (CC0).",
+    srcChDelay: "Delay: opentransportdata.swiss (live).",
+    srcChTimetable: "Timetable and stops: opentransportdata.swiss.",
+    srcPlDelay: "Delay: PKP PLK, Otwarte Dane Kolejowe (live).",
+    srcPlTimetable: "Timetable and stops: PKP PLK, Otwarte Dane Kolejowe.",
     sourceEstimated: "estimated",
     position: "Position",
     gpsAgo: "GPS {age}",
@@ -1141,9 +1161,15 @@ export const STRINGS = {
     allNl: "All of the Netherlands",
     countrySk: "Slovakia",
     countryEe: "Estonia",
+    countryCh: "Switzerland",
+    countrySe: "Sweden",
+    countryPl: "Poland",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
+    allCh: "All of Switzerland",
+    allSe: "All of Sweden",
+    allPl: "All of Poland",
     noticesTitle: "Notices",
     noticesNotYet: "No notices for {country} yet: they'll come with the live data.",
     timetableOnly: "By timetable: no live data for this country yet",
@@ -1178,6 +1204,12 @@ export const STRINGS = {
       'Data: <a href="https://gtfs.ovapi.nl/" target="_blank" rel="noopener">OVapi</a>, from the national NDOV data (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with NS or the operators',
     attributionSk:
       'Data: Železnice Slovenskej republiky\'s timetable on <a href="https://data.slovensko.sk/datasety/ebeeedf1-aca2-451a-bdc0-35d536714888" target="_blank" rel="noopener">data.slovensko.sk</a> (CC BY) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with ŽSR or ZSSK',
+    attributionCh:
+      'Data: <a href="https://opentransportdata.swiss/" target="_blank" rel="noopener">opentransportdata.swiss</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SBB or the operators',
+    attributionSe:
+      'Data: Samtrafiken\'s timetable on <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SJ or the operators',
+    attributionPl:
+      'Data: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with PKP PLK or the operators',
     attributionEe:
       'Data: Elron\'s timetable from the public transport register (Estonia\'s Ministry of Regional Affairs and Agriculture) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Elron',
     attributionIe:

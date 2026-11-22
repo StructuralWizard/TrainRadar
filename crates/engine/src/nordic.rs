@@ -38,6 +38,14 @@ static NO: [FeedSpec; 3] = [
     feed("alerts", FeedKind::Alerts, "alerts.pb", 120),
 ];
 static NL: [FeedSpec; 1] = [feed("tu_nl", FeedKind::TripUpdates, "trip_updates.pb", 30)];
+/// Switzerland (M3): opentransportdata.swiss's trip updates, filtered to
+/// trains by our backend, and its service alerts (unplanned and planned).
+static CH: [FeedSpec; 2] = [
+    feed("tu_ch", FeedKind::TripUpdates, "trip_updates.pb", 30),
+    feed("alerts", FeedKind::Alerts, "alerts.pb", 120),
+];
+/// Poland (M5): PKP PLK's live running, as trip updates (backend-eu).
+static PL: [FeedSpec; 1] = [feed("tu_pl", FeedKind::TripUpdates, "trip_updates.pb", 60)];
 
 #[derive(Debug)]
 pub struct Finland;
@@ -45,6 +53,10 @@ pub struct Finland;
 pub struct Norway;
 #[derive(Debug)]
 pub struct Netherlands;
+#[derive(Debug)]
+pub struct Switzerland;
+#[derive(Debug)]
+pub struct Poland;
 
 macro_rules! adapter {
     ($t:ty, $id:literal, $feeds:ident) => {
@@ -63,6 +75,8 @@ macro_rules! adapter {
 }
 adapter!(Finland, "finland", FI);
 adapter!(Netherlands, "netherlands", NL);
+adapter!(Switzerland, "switzerland", CH);
+adapter!(Poland, "poland", PL);
 
 impl SourceAdapter for Norway {
     fn id(&self) -> &'static str {
@@ -108,7 +122,7 @@ pub fn mixed(region: &str) -> bool {
 
 /// Regions placed by timetable plus delay only.
 pub fn placed(region: &str) -> bool {
-    region == "nl"
+    matches!(region, "nl" | "ch" | "ch-r" | "pl" | "pl-r")
 }
 
 #[cfg(test)]
@@ -119,6 +133,8 @@ mod tests {
     fn which_regions_have_gps() {
         assert!(mixed("fi") && mixed("fi-l") && mixed("no"));
         assert!(!mixed("nl") && placed("nl"));
+        assert!(placed("ch-r") && placed("pl") && !placed("se"));
+        assert_eq!(Switzerland.feeds()[1].key, "alerts");
         assert_eq!(Norway.feeds().len(), 3);
         assert_eq!(Finland.feeds()[0].key, "vp_fi");
         assert_eq!(norwegian_number("VYG:ServiceJourney:1013_791877-R"), "1013");

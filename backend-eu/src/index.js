@@ -6,14 +6,19 @@
 // - France: SNCF's GTFS-Realtime → fr/rt/ (FR_ENABLED; no key);
 // - Finland (FI_ENABLED), Norway (NO_ENABLED) and the Netherlands
 //   (NL_ENABLED): open GTFS-Realtime, no key → fi/rt/, no/rt/, nl/rt/.
+// - Switzerland (CH_ENABLED, Worker secrets CH_OTD_GTFSRT_KEY,
+//   CH_OTD_GTFSSA_KEY, CH_OTD_GTFSSA_PLANNED_KEY) → ch/rt/;
+// - Poland (PL_ENABLED, Worker secret PL_PLK_API_KEY): PLK's live running,
+//   turned into GTFS-Realtime → pl/rt/.
 // Each *_ENABLED variable is that country's kill switch.
 
 import { emptyState, runCycle } from "./cycle.js";
+import { CH, PL } from "./central.js";
 import { FR } from "./france.js";
 import { IE } from "./ireland.js";
 import { FI, NL, NO } from "./nordic.js";
 
-export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL };
+export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL };
 
 export class FeedIngest {
   constructor(ctx, env) {
@@ -65,6 +70,6 @@ export default {
     }
   },
   async fetch() {
-    return new Response("TrainRadar Europe ingest: see <country>/rt/status.json on the live domain (ie, fr, fi, no, nl).\n");
+    return new Response("TrainRadar Europe ingest: see <country>/rt/status.json on the live domain (ie, fr, fi, no, nl, ch, pl).\n");
   },
 };

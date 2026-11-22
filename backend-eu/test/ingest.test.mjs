@@ -63,7 +63,11 @@ test("one call a minute: trip updates, and alerts every fifth minute", () => {
 
 function fakeBucket() {
   const put = new Map();
-  return { put: async (k, v, o) => put.set(k, { v, o }), store: put };
+  return {
+    put: async (k, v, o) => put.set(k, { v, o }),
+    get: async (k) => (put.has(k) ? { arrayBuffer: async () => put.get(k).v } : null),
+    store: put,
+  };
 }
 
 test("a cycle writes the filtered feed and status.json; the key only in a header", async () => {
@@ -136,7 +140,7 @@ test("France: SNCF's feeds, no key, everything kept; alternating every 30 s", as
 
 test("the Worker re-arms only the countries switched on", async () => {
   const { default: worker, COUNTRIES } = await import("../src/index.js");
-  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl"]);
+  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl"]);
   const asked = [];
   const env = {
     FR_ENABLED: "true",
@@ -169,4 +173,79 @@ test("Finland and the Netherlands: no key, a header naming the app, everything k
   assert.equal(feedFor(7, NL).path, "trainUpdates.pb");
   assert.match(NL.headers()["user-agent"], /TrainRadar/);
   for (const c of [FI, NL]) assert.equal(c.keep("trip_updates.pb"), null);
+});
+
+test("Switzerland: only trains; each API's own key in the Authorization header", async () => {
+  const { CH, isSwissRailId } = await import("../src/central.js");
+  assert.ok(isSwissRailId("91-10-A-j26-1") && isSwissRailId(".ojp-91-10-A.1.TA.1.j26") && !isSwissRailId("92-31-j26-1"));
+  const calls = [];
+  const raw = feed(tripUpdate("a", ".ojp-91-10-A.1.TA.1.j26", null), tripUpdate("b", ".ojp-92-31-B.1.TA.4.j26", "92-31-j26-1"));
+  const fetchFn = async (url, init) => (calls.push({ url, init }), new Response(raw, { status: 200 }));
+  const LIVE = fakeBucket();
+  const env = { LIVE, CH_OTD_GTFSRT_KEY: "rt-key", CH_OTD_GTFSSA_KEY: "sa-key" };
+  const s = await runCycle({ state: { ...emptyState(), minute: 1 }, env, fetchFn, now: Date.parse("2026-11-23T09:00:00Z"), country: CH });
+  assert.equal(s.ok, true, s.error);
+  assert.equal(calls[0].url, "https://api.opentransportdata.swiss/la/gtfs-rt");
+  assert.equal(calls[0].init.headers.authorization, "Bearer rt-key");
+  assert.ok(!calls[0].url.includes("key"));
+  assert.equal(s.feeds["trip_updates.pb"].kept, 1);
+  // Minute 3: unplanned alerts, with their own key; they make up alerts.pb.
+  const a = feed(alert("x", string(2, "91-10-A-j26-1")), alert("y", string(2, "92-31-j26-1")), alert("z", string(1, "11")));
+  const fetchA = async (url, init) => (calls.push({ url, init }), new Response(a, { status: 200 }));
+  const s3 = await runCycle({ state: { ...emptyState(), minute: 3 }, env, fetchFn: fetchA, now: Date.parse("2026-11-23T09:01:00Z"), country: CH });
+  assert.equal(s3.ok, true, s3.error);
+  assert.equal(calls[1].url, "https://api.opentransportdata.swiss/la/gtfs-sa");
+  assert.equal(calls[1].init.headers.authorization, "Bearer sa-key");
+  assert.equal(s3.feeds["alerts_unplanned.pb"].kept, 2); // the train line's, and the one about no line
+  assert.deepEqual([...LIVE.store.get("ch/rt/alerts.pb").v], [...LIVE.store.get("ch/rt/alerts_unplanned.pb").v]);
+  // Minute 90: planned alerts, but without their key the main feed instead.
+  const s90 = await runCycle({ state: { ...emptyState(), minute: 90 }, env, fetchFn, now: Date.parse("2026-11-23T09:30:00Z"), country: CH });
+  assert.equal(s90.fetched, "trip_updates.pb");
+  assert.ok(!CH.enabled({ CH_ENABLED: "true" }) && CH.enabled({ CH_ENABLED: "true", CH_OTD_GTFSRT_KEY: "k" }));
+});
+
+test("Poland: PLK's JSON becomes GTFS-Realtime trip updates with the timetable's ids", async () => {
+  const { PL, polishUpdates } = await import("../src/central.js");
+  const json = {
+    trains: [
+      {
+        scheduleId: 26,
+        orderId: 1234,
+        operatingDate: "2026-11-23",
+        trainStatus: "P",
+        stations: [
+          { stationId: 1, plannedSequenceNumber: 1, actualDeparture: "2026-11-23T08:02:00", departureDelayMinutes: 2 },
+          { stationId: 2, plannedSequenceNumber: 2, actualArrival: "2026-11-23T08:40:00", arrivalDelayMinutes: -1 },
+          { stationId: 3, plannedSequenceNumber: 3 },
+        ],
+      },
+      { scheduleId: 26, orderId: 99, operatingDate: "2026-11-23", trainStatus: "X", stations: [] },
+      { scheduleId: 26, orderId: 7, operatingDate: "2026-11-23", trainStatus: "S", stations: [{ stationId: 1 }] },
+    ],
+  };
+  const u = polishUpdates(json);
+  assert.equal(u.length, 2);
+  assert.equal(u[0].tripId, "26_1234");
+  assert.deepEqual(u[0].stops.map((s) => [s.stopId, s.arrivalDelay, s.departureDelay]), [["1", null, 120], ["2", -60, null]]);
+  assert.ok(u[1].canceled);
+  const calls = [];
+  const fetchFn = async (url, init) => (calls.push({ url, init }), new Response(JSON.stringify(json), { status: 200 }));
+  const LIVE = fakeBucket();
+  const s = await runCycle({ state: emptyState(), env: { LIVE, PL_PLK_API_KEY: "pl-key" }, fetchFn, now: Date.parse("2026-11-23T09:00:00Z"), country: PL });
+  assert.equal(s.ok, true, s.error);
+  assert.equal(calls[0].init.headers["x-api-key"], "pl-key");
+  assert.ok(!calls[0].url.includes("pl-key"));
+  const pb = LIVE.store.get("pl/rt/trip_updates.pb").v;
+  const ents = fields(pb).filter((f) => f.field === 2);
+  assert.equal(ents.length, 2);
+  const trip = sub(sub(ents[0].value, 3), 1);
+  assert.equal(str(trip, 1), "26_1234");
+  assert.equal(str(trip, 3), "20261123");
+  // The negative delay is a ten-byte int32, as protobuf writes it.
+  const stus = fields(sub(ents[0].value, 3)).filter((f) => f.field === 2);
+  const arr = sub(stus[1].value, 2);
+  const raw = [...fields(arr)[0].raw];
+  assert.equal(raw.length, 11); // key + ten bytes
+  assert.equal(raw[1], 0xc4); // -60's low seven bits, continued
+  assert.equal(raw[10], 0x01);
 });

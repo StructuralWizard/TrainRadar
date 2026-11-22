@@ -73,7 +73,9 @@ usage:
                        Luxembourg: --lu-gtfs ZIP; Finland: --fi-gtfs ZIP;
                        Norway: --no-gtfs ZIP; Netherlands: --nl-gtfs ZIP,
                        the last two cut to trains by tools/gtfs-rail.py;
-                       Slovakia: --sk-gtfs ZIP; Estonia: --ee-gtfs ZIP)
+                       Slovakia: --sk-gtfs ZIP; Estonia: --ee-gtfs ZIP;
+                       Switzerland: --ch-gtfs ZIP; Sweden: --se-gtfs ZIP;
+                       Poland: --pl-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -132,6 +134,12 @@ struct BuildArgs {
     sk_gtfs: Option<PathBuf>,
     /// Elron's GTFS (the public transport register): Estonia, by timetable.
     ee_gtfs: Option<PathBuf>,
+    /// opentransportdata.swiss's GTFS, cut to trains: Switzerland.
+    ch_gtfs: Option<PathBuf>,
+    /// Trafiklab's GTFS Sweden 3, cut to trains: Sweden.
+    se_gtfs: Option<PathBuf>,
+    /// PKP PLK's schedules as GTFS (tools/plk-gtfs.py): Poland.
+    pl_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -162,6 +170,9 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         nl_gtfs: None,
         sk_gtfs: None,
         ee_gtfs: None,
+        ch_gtfs: None,
+        se_gtfs: None,
+        pl_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -202,6 +213,9 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--nl-gtfs" => a.nl_gtfs = Some(val()?.into()),
             "--sk-gtfs" => a.sk_gtfs = Some(val()?.into()),
             "--ee-gtfs" => a.ee_gtfs = Some(val()?.into()),
+            "--ch-gtfs" => a.ch_gtfs = Some(val()?.into()),
+            "--se-gtfs" => a.se_gtfs = Some(val()?.into()),
+            "--pl-gtfs" => a.pl_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -232,10 +246,13 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.nl_gtfs.is_none()
         && a.sk_gtfs.is_none()
         && a.ee_gtfs.is_none()
+        && a.ch_gtfs.is_none()
+        && a.se_gtfs.is_none()
+        && a.pl_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs or --ee-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs or --pl-gtfs"
                 .into(),
         );
     }
@@ -376,9 +393,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.nl_gtfs, "nl"),
         (&a.sk_gtfs, "sk"),
         (&a.ee_gtfs, "ee"),
+        (&a.ch_gtfs, "ch"),
+        (&a.se_gtfs, "se"),
+        (&a.pl_gtfs, "pl"),
     ] {
         let Some(path) = path else { continue };
-        if matches!(kind, "fi" | "no" | "nl" | "sk" | "ee") {
+        if matches!(kind, "fi" | "no" | "nl" | "sk" | "ee" | "ch" | "se" | "pl") {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
             let mut g = Gtfs::open(path)?;
@@ -391,10 +411,13 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 "no" => (nordic::normalise_norway(&mut feed), "Entur"),
                 "sk" => (nordic::normalise_simple(&mut feed), "ZSSK"),
                 "ee" => (nordic::normalise_simple(&mut feed), "Elron"),
+                "ch" => (nordic::normalise_swiss(&mut feed), "SBB"),
+                "se" => (nordic::normalise_sweden(&mut feed), "Trafiklab"),
+                "pl" => (nordic::normalise_simple(&mut feed), "PKP PLK"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
-            // M4 countries have no open live data yet: by timetable.
-            let live = !matches!(kind, "sk" | "ee");
+            // M4 countries and Sweden (for now) have no live data: by timetable.
+            let live = !matches!(kind, "sk" | "ee" | "se");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",
@@ -416,6 +439,10 @@ fn run_build(a: BuildArgs) -> Result<()> {
             }
             let regions: BTreeMap<String, Vec<&load::Trip>> = if kind == "fi" {
                 nordic::split_finland(&feed)
+            } else if kind == "ch" {
+                nordic::split_swiss(&feed)
+            } else if kind == "pl" {
+                nordic::split_poland(&feed)
             } else {
                 std::iter::once((kind.to_owned(), feed.trips.iter().collect())).collect()
             };
@@ -877,6 +904,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_SK
         } else if a.ee_gtfs.is_some() {
             nordic::ATTRIBUTION_EE
+        } else if a.ch_gtfs.is_some() {
+            nordic::ATTRIBUTION_CH
+        } else if a.se_gtfs.is_some() {
+            nordic::ATTRIBUTION_SE
+        } else if a.pl_gtfs.is_some() {
+            nordic::ATTRIBUTION_PL
         } else {
             ATTRIBUTION
         },

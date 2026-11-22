@@ -45,6 +45,7 @@ jobs:
           FR_ENABLED: ${{ vars.FR_ENABLED }}
           LU_ENABLED: ${{ vars.LU_ENABLED }}
           M2_ENABLED: ${{ vars.FI_ENABLED == 'true' || vars.NO_ENABLED == 'true' || vars.NL_ENABLED == 'true' }}
+          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -76,6 +77,9 @@ jobs:
           # Finland's, Norway's and the Netherlands' live ids match only the
           # same day's timetable too.
           if [ "$M2_ENABLED" = "true" ]; then changed=true; fi
+          # Switzerland's, Sweden's and Poland's too (Poland's comes from an
+          # API, nine days at a time).
+          if [ "$M3_ENABLED" = "true" ]; then changed=true; fi
           echo "run=$changed" >> "$GITHUB_OUTPUT"
 
   deploy:
@@ -415,6 +419,102 @@ jobs:
             exit 1
           fi
 
+      # Switzerland (M3), with CH_ENABLED: opentransportdata.swiss's timetable (no key)
+      # and OSM track → data/ch/; live delays from the eu job. Never stops the deploy.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.CH_ENABLED == 'true'
+        id: osm_ch
+        with:
+          path: gtfs/ch/rail.geojsonseq
+          key: osm-rail-ch-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-ch-v1-
+      - name: Switzerland reference data
+        if: vars.CH_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_ch.outputs.cache-hit }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh ch | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/ch-data --gzip \
+              --ch-gtfs gtfs/ch/gtfs.zip --sources gtfs/ch/sources.tsv \
+              $([ -s gtfs/ch/rail.geojsonseq ] && echo --rail gtfs/ch/rail.geojsonseq) --report refdata-ch.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/ch-data; then
+            mv build/ch-data build/data/ch
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/ch-plan --gzip --days 63 \
+                --ch-gtfs gtfs/ch/gtfs.zip --report ch-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/ch-plan; then
+              mv build/ch-plan build/data/ch/plan
+            else
+              echo "::warning::Switzerland's plan-ahead timetables failed: Switzerland has today's week only."
+            fi
+            { echo "## Switzerland reference data"; echo; cat refdata-ch.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Switzerland's reference data failed: deploying without Switzerland."
+            exit 1
+          fi
+
+      # Sweden (M3), with SE_ENABLED: Trafiklab's GTFS Sweden 3 (key in its URL, as
+      # Trafiklab requires: AGENTS.md) and OSM track → data/se/, by timetable for now.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.SE_ENABLED == 'true'
+        id: osm_se
+        with:
+          path: gtfs/se/rail.geojsonseq
+          key: osm-rail-se-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-se-v1-
+      - name: Sweden reference data
+        if: vars.SE_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_se.outputs.cache-hit }}
+          SE_TRAFIKLAB_STATIC_KEY: ${{ secrets.SE_TRAFIKLAB_STATIC_KEY }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh se | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/se-data --gzip \
+              --se-gtfs gtfs/se/gtfs.zip --sources gtfs/se/sources.tsv \
+              $([ -s gtfs/se/rail.geojsonseq ] && echo --rail gtfs/se/rail.geojsonseq) --report refdata-se.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/se-data; then
+            mv build/se-data build/data/se
+            { echo "## Sweden reference data"; echo; cat refdata-se.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Sweden's reference data failed: deploying without Sweden."
+            exit 1
+          fi
+
+      # Poland (M5), with PL_ENABLED: PKP PLK's schedules as GTFS (tools/plk-gtfs.py,
+      # key in a header) and OSM track → data/pl/; live delays from the eu job.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.PL_ENABLED == 'true'
+        id: osm_pl
+        with:
+          path: gtfs/pl/rail.geojsonseq
+          key: osm-rail-pl-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-pl-v1-
+      - name: Poland reference data
+        if: vars.PL_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_pl.outputs.cache-hit }}
+          PL_PLK_API_KEY: ${{ secrets.PL_PLK_API_KEY }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh pl | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/pl-data --gzip \
+              --pl-gtfs gtfs/pl/gtfs.zip --sources gtfs/pl/sources.tsv \
+              $([ -s gtfs/pl/rail.geojsonseq ] && echo --rail gtfs/pl/rail.geojsonseq) --report refdata-pl.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/pl-data; then
+            mv build/pl-data build/data/pl
+            { echo "## Poland reference data"; echo; cat refdata-pl.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Poland's reference data failed: deploying without Poland."
+            exit 1
+          fi
+
       # Slovakia (M4), with SK_ENABLED: timetable only (no key) → data/sk/.
       - name: Slovakia reference data
         if: vars.SK_ENABLED == 'true'
@@ -616,7 +716,11 @@ jobs:
           FI_ENABLED: ${{ vars.FI_ENABLED }}
           NO_ENABLED: ${{ vars.NO_ENABLED }}
           NL_ENABLED: ${{ vars.NL_ENABLED }}
+          CH_ENABLED: ${{ vars.CH_ENABLED }}
+          PL_ENABLED: ${{ vars.PL_ENABLED }}
           HAS_KEY: ${{ secrets.IE_NTA_API_KEY != '' }}
+          HAS_CH_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY != '' }}
+          HAS_PL_KEY: ${{ secrets.PL_PLK_API_KEY != '' }}
           EVENT: ${{ github.event_name }}
         run: |
           norm() { printf %s "$1" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]'; }
@@ -625,9 +729,13 @@ jobs:
           ie=false
           if [ "$(norm "$IE_ENABLED")" = "true" ] && [ "$HAS_KEY" = "true" ]; then ie=true; fi
           fr=$(on "$FR_ENABLED"); fi_=$(on "$FI_ENABLED"); no=$(on "$NO_ENABLED"); nl=$(on "$NL_ENABLED")
-          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; } >> "$GITHUB_OUTPUT"
-          if [ "$ie$fr$fi_$no$nl" = "falsefalsefalsefalsefalse" ]; then
-            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_ or NL_ENABLED): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
+          # Switzerland and Poland need their keys too.
+          ch=false; pl=false
+          if [ "$(on "$CH_ENABLED")" = "true" ] && [ "$HAS_CH_KEY" = "true" ]; then ch=true; fi
+          if [ "$(on "$PL_ENABLED")" = "true" ] && [ "$HAS_PL_KEY" = "true" ]; then pl=true; fi
+          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; } >> "$GITHUB_OUTPUT"
+          if [ "$ie$fr$fi_$no$nl$ch$pl" = "falsefalsefalsefalsefalsefalsefalse" ]; then
+            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_ or PL_ENABLED with their keys): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "push" ] && git diff --quiet HEAD^ HEAD -- backend-eu/; then
             echo "backend-eu/ unchanged: the Europe ingest keeps running as it is." | tee -a "$GITHUB_STEP_SUMMARY"
           else
@@ -648,14 +756,26 @@ jobs:
           FI_ON: ${{ steps.gate.outputs.fi }}
           NO_ON: ${{ steps.gate.outputs.no }}
           NL_ON: ${{ steps.gate.outputs.nl }}
+          CH_ON: ${{ steps.gate.outputs.ch }}
+          PL_ON: ${{ steps.gate.outputs.pl }}
+          CH_OTD_GTFSRT_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY }}
+          CH_OTD_GTFSSA_KEY: ${{ secrets.CH_OTD_GTFSSA_KEY }}
+          CH_OTD_GTFSSA_PLANNED_KEY: ${{ secrets.CH_OTD_GTFSSA_PLANNED_KEY }}
+          PL_PLK_API_KEY: ${{ secrets.PL_PLK_API_KEY }}
         run: |
           npx --yes "$WRANGLER" deploy --config backend-eu/wrangler.toml --var "IE_ENABLED:$IE_ON" --var "FR_ENABLED:$FR_ON" \
-            --var "FI_ENABLED:$FI_ON" --var "NO_ENABLED:$NO_ON" --var "NL_ENABLED:$NL_ON"
-          if [ "$IE_ON" = "true" ]; then
-            # The key on stdin, never on the command line.
-            printf '%s' "$IE_NTA_API_KEY" | npx --yes "$WRANGLER" secret put IE_NTA_API_KEY --config backend-eu/wrangler.toml
+            --var "FI_ENABLED:$FI_ON" --var "NO_ENABLED:$NO_ON" --var "NL_ENABLED:$NL_ON" \
+            --var "CH_ENABLED:$CH_ON" --var "PL_ENABLED:$PL_ON"
+          # Keys on stdin, never on the command line.
+          put() { [ -n "$2" ] && printf '%s' "$2" | npx --yes "$WRANGLER" secret put "$1" --config backend-eu/wrangler.toml; }
+          if [ "$IE_ON" = "true" ]; then put IE_NTA_API_KEY "$IE_NTA_API_KEY"; fi
+          if [ "$CH_ON" = "true" ]; then
+            put CH_OTD_GTFSRT_KEY "$CH_OTD_GTFSRT_KEY"
+            put CH_OTD_GTFSSA_KEY "$CH_OTD_GTFSSA_KEY" || true
+            put CH_OTD_GTFSSA_PLANNED_KEY "$CH_OTD_GTFSSA_PLANNED_KEY" || true
           fi
-          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$PL_ON" = "true" ]; then put PL_PLK_API_KEY "$PL_PLK_API_KEY"; fi
+          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 
   live:
     # Central poller and history recorder (backend/): Renfe fetched once for
