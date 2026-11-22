@@ -69,7 +69,7 @@ Renfe's feeds are fetched once, centrally; a backend recorder builds delay histo
 | E0 | Architecture for Europe: country registry, local time per region, station ids across borders, R2 data per country, one ingest Worker, one notices format, choosing countries in the app | [plan-europe.md](plan-europe.md) |
 | E1… | Countries, one at a time: Ireland, France, Portugal (once CP allows it), then waves 2–4 | [europe/](europe/README.md) |
 | O1 | Each train's operator, with a link to where it sells tickets | [plan-operators.md](plan-operators.md) |
-| V1 | YouTube cab rides, opened at each station's moment (waiting for the video list) | [plan-cab-rides.md](plan-cab-rides.md) |
+| V1 | YouTube cab rides, opened at each station's moment (4,597 videos on branch `data/cab-ride-videos`) | [plan-cab-rides.md](plan-cab-rides.md) |
 | R0–R4 | Travellers' reports, checked against their location (needs a lawyer's review first) | [plan-crowd-reports.md](plan-crowd-reports.md) |
 | I1–I4 | Incidents from servers, apps and users; feed failures shown to users | [plan-incidents.md](plan-incidents.md) |
 | L1 | Pro for life, €9.99 (C8's lifetime) | [plan-lifetime.md](plan-lifetime.md) |
