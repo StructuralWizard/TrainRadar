@@ -163,8 +163,10 @@ Checked 2026-11-22:
 - **I0:**
   - the NTA account and key (`IE_NTA_API_KEY`, for the maintainer to approve);
   - a feed check that proves the live feed's rail coverage and the alerts.
-- **I2:** the live adapter in `backend-eu/` (trip updates and alerts → `ie/rt/`); `live: true` in
-  the app.
+- **I2, built 2026-11-22:**
+  - the Europe ingest Worker (`backend-eu/`): trip updates and alerts → `ie/rt/`;
+  - `live: true` in the app;
+  - deployed with `IE_ENABLED` and the `IE_NTA_API_KEY` secret.
 - **I3:**
   - the Enterprise merged with Northern Ireland's;
   - operator links;

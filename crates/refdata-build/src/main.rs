@@ -330,7 +330,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
         let Some(path) = path else { continue };
         if kind == "ie" {
             // Iarnród Éireann (docs/europe/ie.md): one region, Dublin time,
-            // timetable only until the NTA's live feed is wired in.
+            // live delays from the NTA (backend-eu), placed by timetable.
             let mut g = Gtfs::open(path)?;
             let mut feed = load::load(&mut g, &window)?;
             let buses = build::drop_replacement_buses(&mut feed);
@@ -352,7 +352,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
             let (mut tt, legs, rs) =
                 build_timetable(&feed, &trips, build::IE, header.clone(), router.as_mut());
             tt.operator = "Iarnród Éireann".into();
-            tt.live = false;
+            tt.live = true;
             let rec = RegionRec {
                 code: build::IE.into(),
                 name: "Ireland".into(),

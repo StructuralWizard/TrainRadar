@@ -54,8 +54,8 @@ pub fn behind_madrid_secs(region: &str) -> i64 {
 }
 
 /// Regions whose trains are placed by their timetable: operators that
-/// publish no live data (OUIGO), and the UK, which publishes delays but no
-/// positions.
+/// publish no live data (OUIGO), and the UK and Ireland, which publish delays
+/// but no positions.
 pub fn placed_by_timetable(region: &str, live: bool) -> bool {
-    !live || region == UK_REGION
+    !live || region == UK_REGION || region == IE_REGION
 }

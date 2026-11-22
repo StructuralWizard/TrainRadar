@@ -10,7 +10,7 @@
 export const COUNTRY_INFO = {
   es: { zone: "Europe/Madrid", center: [-3.7, 40.2], zoom: 5.2, live: true },
   uk: { zone: "Europe/London", center: [-2.6, 54.2], zoom: 5.0, live: true },
-  ie: { zone: "Europe/Dublin", center: [-7.9, 53.4], zoom: 6.4, live: false },
+  ie: { zone: "Europe/Dublin", center: [-7.9, 53.4], zoom: 6.4, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

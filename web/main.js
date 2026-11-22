@@ -2439,7 +2439,7 @@ function renderLiveChip(st, now) {
       : t(lang, "liveChip", { trains: t(lang, "trains", { n: formatCount(lang, st.trains) }), delay: formatDelay(lang, st.median_delay) });
   $("live-text").textContent = text;
   $("live-chip").dataset.state = state;
-  $("live-chip").title = state === "bad" ? t(lang, "feedError") : last ? t(lang, "updated", { age: formatAgo(lang, age) }) : t(lang, "loading");
+  $("live-chip").title = state === "bad" ? t(lang, ES ? "feedError" : "feedErrorOther") : last ? t(lang, "updated", { age: formatAgo(lang, age) }) : t(lang, "loading");
 }
 
 /** Phone: the network picker ("Ir a…" on the desktop). */
@@ -2979,7 +2979,7 @@ function render(force = false) {
   $("status").textContent = TIMETABLE_ONLY
     ? t(lang, "timetableOnly")
     : feeds?.failing()
-    ? t(lang, "feedError")
+    ? t(lang, ES ? "feedError" : "feedErrorOther")
     : last
       ? t(lang, "updated", { age: formatAgo(lang, (now - last) / 1000) })
       : t(lang, "loading");
