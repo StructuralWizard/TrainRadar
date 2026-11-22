@@ -130,6 +130,22 @@ The changes:
 
 - **Prefixed ids:** the new countries' stations get ids prefixed with the country, such as
   `fr:87686006`. Spain's and the UK's keep theirs, so favourites and saved journeys keep working.
+- **The ids never change.** A crosswalk table records, for each of our stations, the codes other
+  systems use:
+  - UIC and the EU's primary location code;
+  - ERA's operational-point id;
+  - national codes (CRS, TIPLOC, IBNR, Adif…);
+  - each feed's stop id;
+  - OpenStreetMap and Wikidata.
+
+  When a feed renumbers its stops, the crosswalk maps the new codes to the old ids.
+- **Seeding the crosswalk:**
+  - Trainline's open station list (`trainline-eu/stations`, ODbL, still maintained): 72,000 rows
+    with UIC codes for most of France, Great Britain, Belgium, the Netherlands, Luxembourg and
+    Finland, and part of Germany, Italy and Spain;
+  - OSM's `uic_ref`.
+
+  Both are ODbL, so the crosswalk is published under ODbL too.
 - **UIC codes:** where feeds give UIC codes (France, Switzerland, Germany, Portugal…), the build
   keeps them.
 - **`links.json`:** per border, it lists the same physical station in two countries' data, matched
@@ -164,10 +180,27 @@ The changes:
 
 **Input formats:**
 - **GTFS** covers most countries, and `refdata-build` reads it already.
-- **NeTEx** is the format every EU national access point must offer, and a few countries publish
-  their full timetable only in it. A NeTEx reader (the European passenger information profile) in
-  `refdata-build` opens those countries ([europe/README.md](europe/README.md) says which). Wave 1
-  doesn't need it.
+- **NeTEx** is the format every EU national access point must offer. Czechia and Denmark publish
+  their full timetables only in it, and Norway's GTFS is a subset of its NeTEx. A NeTEx reader (the
+  European passenger information profile) in `refdata-build` opens those countries. Wave 1 doesn't
+  need it.
+- **Others:** Romania's yearly XML, and Poland's JSON API.
+
+**Line classification:**
+- **Track** comes from OpenStreetMap everywhere: Geofabrik's extracts (Germany 4.6 GB, France
+  4.8 GB, Italy 2.1 GB, Poland 2.0 GB) and the tags `usage`, `highspeed`, `maxspeed`, `electrified`,
+  `voltage`, `frequency`, `gauge` and `tracks`.
+- **ERA's register of infrastructure (RINF)** fills the attributes in, for the EU, Norway and
+  maybe Switzerland:
+  - What: maximum speed, contact line and voltage, gauge, ETCS and track count for every line on the
+    interoperable network, from each infrastructure manager.
+  - How: a public SPARQL endpoint (`graph.data.era.europa.eu`), plus CC BY 4.0 dumps.
+  - Matching: by operational point and section onto the OSM track.
+  - What's missing: there is no high-speed flag (taken as 250 km/h or more), and the UK and
+    Northern Ireland aren't in it.
+- **National data** where it's open and better (France's SNCF Réseau, Spain's Adif/IGN).
+- **OpenRailwayMap's tiles** aren't allowed in apps with a paid tier, so we keep building our own
+  layers from OSM.
 
 ### A5. Live data: one ingest Worker, one Durable Object per feed
 
@@ -200,6 +233,23 @@ something changed:
   STOMP; ZeroMQ isn't possible.
 - Workers have no fixed outgoing IP address. A source that only admits listed addresses needs
   another route.
+- Quotas set the polling rate, for example:
+  - Ireland's NTA: one call per 60 s per key;
+  - Île-de-France's whole-network feed: 1,000 calls a day;
+  - Poland's PLK and Sweden's Trafiklab: tiers on request.
+
+  The registry holds each quota, and the feed check warns before we reach it.
+
+**What's coming:**
+- The EU's MMTIS rules (Delegated Regulation 2017/1926 as amended by 2024/490) require national
+  access points to carry real-time rail data in SIRI:
+  - delays, cancellations, disruptions, and platform and lift status;
+  - on the main (comprehensive TEN-T) network by December 2025;
+  - on the rest by December 2028.
+- So more countries will appear as SIRI feeds over the next two years, and the `siri` adapter
+  matters more than any one-off.
+- There is no pan-European real-time source: RailNetEurope's train information system is closed
+  to the public.
 
 **History:** delay history for other countries comes later. The recorder needs CPU per country, so
 measure it first.
@@ -215,6 +265,12 @@ measure it first.
 - **Language:** the text stays in the source's language, as plain text (shown with `textContent`).
   Automatic translation is decision 3.
 - **Alerts:** saved journeys' station alerts (J4) use it in every country.
+- **Lift and escalator status:**
+  - open in France (Gares & Connexions, hourly);
+  - offered in Germany (DB InfraGO), the Netherlands (SIRI-FM through NDOV) and Great Britain
+    (Network Rail's Stations Experience API).
+
+  The EU rules (A5) bring it to more access points.
 
 ### A7. The app
 
@@ -261,6 +317,12 @@ measure it first.
   registry and shown in About. The build fails for a source that has none.
 - **ODbL data:** OpenStreetMap track, and any other source under the ODbL, is a derived database we
   serve publicly. It stays available under the ODbL, with the credit, as today.
+  - France adds a condition. Timetables corrected or merged from SNCF's ODbL data would have to be
+    republished on France's access point, in their original format.
+  - Île-de-France's Licence Mobilités isn't compatible with the ODbL, so that data stays in its
+    own files ([europe/fr.md](europe/fr.md)).
+- **No licence at all:** some official files carry none (Portugal's CP, Croatia's HŽPP). Ask for
+  written permission before using them.
 
 ### A10. Registrations, passwords and secrets
 
@@ -281,6 +343,16 @@ measure it first.
   - never printed, never in an address, an artifact or a file the site serves.
 - **Feed checks:** each country gets one, like `ni-feed-check.yml`. It proves the downloads and the
   login work before anything is built on them.
+- **Letters as well as accounts.** Where data has no licence, or live data exists but isn't open,
+  the first step is a written request from Metranos Ltd:
+  - Portugal (CP, IP);
+  - Irish Rail;
+  - Czechia (SŽ), Slovakia (ŽSR), Hungary (MÁV), Romania (ARF/Infofer), Croatia (HŽPP);
+  - Greece;
+  - Italy (Trenitalia, RFI);
+  - Estonia (Elron).
+
+  The EU's real-time rules (A5) give those requests weight.
 - [europe/README.md](europe/README.md) lists every account and secret by country.
 
 ### A11. Costs (estimate; measured per country)
@@ -338,12 +410,19 @@ countries with the best open data and the closest links.
 | E0e | App: choose countries at first run, Settings → Países, strings split per language |
 | E0f | Cross-border: station links, merged trains, neighbours' long-distance regions |
 
-E0a–E0e come before Portugal; E0f with France, which has the most cross-border trains.
+E0a–E0e come before the first country (Ireland, if decision 1 goes that way). E0f comes with
+France, which has the most cross-border trains.
+
+Not everything has to wait for E0:
+- Ireland could start on today's code with `backend-uk`'s pattern.
+- But every country built before the registry has to be moved into it afterwards, so E0 first is
+  cheaper overall.
 
 ## 7. Risks
 
 - **No official live data in a country:** timetable positions only, labelled as such, as for
-  OUIGO. Portugal looks like this ([europe/pt.md](europe/pt.md)).
+  OUIGO. That's most of central and south-eastern Europe, and Portugal, whose timetable also has
+  no licence yet ([europe/pt.md](europe/pt.md)).
 - **Terms that forbid commercial use, or limit requests per day:** the registry records them, and
   the feed check alerts when we're near a quota.
 - **Phones:** the biggest networks (Germany, France) are larger than the UK in memory. The regional
@@ -353,8 +432,13 @@ E0a–E0e come before Portugal; E0f with France, which has the most cross-border
 
 ## 8. Decisions for the maintainer
 
-1. **Order within wave 1.** Ireland and France have official live data; Portugal, so far, only a
-   timetable. Keep Portugal first anyway (timetable positions at first), or start with Ireland?
+1. **Order within wave 1.**
+   - **Portugal:** CP's timetable has no licence, and there's no official live data, so it can't
+     start until CP gives written permission.
+   - **Ireland:** official live delays (a free key), in English, and joined to Northern Ireland.
+   - **France:** the best open data, with no key, but the biggest job.
+
+   Proposed: write to CP now; build Ireland first, then France; Portugal as soon as CP answers.
 2. **Data domain.** A new `data.` subdomain for the R2 data bucket (A4), or a folder on the existing
    live domain?
 3. **Notices in other languages.** Show them as published, or add automatic translation on the
