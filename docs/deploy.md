@@ -223,6 +223,11 @@ app, and update the "last updated" dates when they change.
 - **Daily rebuild:** with Ireland on, the deploy rebuilds daily, because the live feed only matches
   the same day's file.
 - **If Ireland's build fails,** the rest of the site still deploys.
+- **Live data:** once the GitHub secret `IE_NTA_API_KEY` exists, the `eu` job deploys
+  `backend-eu/`, which writes `ie/rt/` on the live domain ([backend-eu/README.md](../backend-eu/README.md)).
+  Check `ie/rt/status.json` there.
+- **The UK ingest** redeploys only when `backend-uk/` changed, or from Run workflow. Each restart
+  risked Network Rail refusing its login for a while (AMQ339009).
 - **Where it shows:**
   - while it's being built, Ireland is a hidden country (`hiddenCountries` in `web/js/config.js`);
   - the site opens it only from `?country=ie`, and the Android app not at all;

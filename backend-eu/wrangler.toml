@@ -1,0 +1,27 @@
+# TrainRadar Europe ingest (docs/plan-europe.md A5): one Durable Object per
+# country feed, writing GTFS-Realtime to the shared live bucket under
+# <country>/rt/. Ireland first (docs/europe/ie.md). Separate from backend/
+# (Spain) and backend-uk/. No secrets here: IE_NTA_API_KEY is a Worker
+# secret, set by the deploy job from the GitHub Actions secret.
+name = "trainradar-eu"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[triggers]
+crons = ["* * * * *"]
+
+[[durable_objects.bindings]]
+name = "FEED_INGEST"
+class_name = "FeedIngest"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FeedIngest"]
+
+[[r2_buckets]]
+binding = "LIVE"
+bucket_name = "trainradar-live"
+
+[vars]
+# Kill switch: anything but "true" stops all calls to the NTA.
+IE_ENABLED = "false"

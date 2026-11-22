@@ -46,13 +46,13 @@ test("country: Ireland opens only from the address while it's hidden, then stays
   assert.equal(pickCountry({ languages: ["en-IE"], allowed, hidden: ["ie"] }), "es");
 });
 
-test("country: Ireland points CONFIG at data/ie/, Dublin time, no live feeds yet", () => {
+test("country: Ireland points CONFIG at data/ie/ and ie/rt/, Dublin time", () => {
   const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
   const ie = applyCountry(base(), "ie");
   assert.equal(ie.country, "ie");
   assert.equal(ie.dataBase, "data/ie/");
-  assert.equal(ie.liveBase, "");
-  assert.equal(ie.rtBase, "");
+  assert.equal(ie.liveBase, "https://live.example/ie/rt/");
+  assert.equal(ie.rtBase, "https://live.example/ie/rt/");
   assert.equal(ie.apiBase, "");
   assert.equal(ie.replay, false);
   assert.equal(ie.timeZone, "Europe/Dublin");

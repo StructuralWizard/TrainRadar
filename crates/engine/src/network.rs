@@ -959,4 +959,14 @@ pub mod tests {
         n.load_timetable(&encode(&tt).unwrap()).unwrap();
         assert_eq!(n.regions[0].behind, 3_600);
     }
+
+    #[test]
+    fn ireland_and_the_uk_are_placed_by_timetable_plus_delay() {
+        use crate::networkrail::placed_by_timetable;
+        assert!(placed_by_timetable("ie", true));
+        assert!(placed_by_timetable("uk", true));
+        assert!(placed_by_timetable("ouigo", false));
+        assert!(!placed_by_timetable("ld", true));
+        assert!(!placed_by_timetable("10", true));
+    }
 }

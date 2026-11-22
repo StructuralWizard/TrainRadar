@@ -44,6 +44,7 @@ jobs:
       # Without the engine built, the recorder tests skip here; the web job runs them.
       - run: node --import ./backend/test/hooks.mjs --test backend/test/*.test.mjs
       - run: node --test backend-uk/test/*.test.mjs
+      - run: node --test backend-eu/test/*.test.mjs
 
   web:
     name: web tests (unit + browser, demo data)

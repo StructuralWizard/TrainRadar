@@ -1,0 +1,9 @@
+{
+  "name": "trainradar-eu",
+  "private": true,
+  "type": "module",
+  "description": "Europe ingest: each country's live feed, fetched once for everyone, filtered to its trains, into R2",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

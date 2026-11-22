@@ -49,9 +49,15 @@ Status: **checked 2026-11-22**. The files were downloaded and read. The plan is 
   including Dublin Heuston → Cork, Connolly → Sligo, Bray → Howth (DART) and Connolly → Belfast
   (Enterprise).
 
-## Live data (the next step)
+## Live data
 
-- **Source:** the NTA's GTFS-Realtime v2 (`https://api.nationaltransport.ie/gtfsr/v2/TripUpdates`).
-- **Access:** a key in the `x-api-key` header, at most one call per 60 s per key.
-- **Secret:** it needs `IE_NTA_API_KEY`, once the maintainer approves it.
-- **Until then:** the app shows Ireland by timetable and says so.
+- **Source:** the NTA's GTFS-Realtime v2 (`https://api.nationaltransport.ie/gtfsr/v2/TripUpdates`
+  and `/alerts`).
+- **Access:** a key in the `x-api-key` header (`IE_NTA_API_KEY`, approved 2026-11-22), at most one
+  call per 60 s per key, for all its feeds together.
+- **Our Worker:** `backend-eu/` fetches trip updates every minute, with alerts every fifth minute
+  instead, keeps Irish Rail's, and writes `ie/rt/` ([backend-eu/README.md](../backend-eu/README.md)).
+- **In the app:** trains are placed by timetable plus their live delay, like the UK's (no GPS in the
+  feed).
+- **The secondary key** the portal shows is a spare, for rotating the key without downtime. Don't
+  use it to call twice a minute.

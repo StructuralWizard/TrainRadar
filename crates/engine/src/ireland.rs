@@ -11,13 +11,23 @@ pub struct Ireland;
 /// The NTA allows one call a minute per key; our backend republishes it.
 const POLL_SECS: u32 = 30;
 
-static FEEDS: [FeedSpec; 1] = [FeedSpec {
-    key: "tu_ie",
-    kind: FeedKind::TripUpdates,
-    path: "trip_updates.pb",
-    min_interval_secs: POLL_SECS,
-    commuter: None,
-}];
+static FEEDS: [FeedSpec; 2] = [
+    FeedSpec {
+        key: "tu_ie",
+        kind: FeedKind::TripUpdates,
+        path: "trip_updates.pb",
+        min_interval_secs: POLL_SECS,
+        commuter: None,
+    },
+    // Irish Rail's alerts, refreshed by the backend every five minutes.
+    FeedSpec {
+        key: "alerts",
+        kind: FeedKind::Alerts,
+        path: "alerts.pb",
+        min_interval_secs: 120,
+        commuter: None,
+    },
+];
 
 impl SourceAdapter for Ireland {
     fn id(&self) -> &'static str {
