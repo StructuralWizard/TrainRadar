@@ -8,6 +8,7 @@
 pub mod gtfs_rt;
 pub mod history;
 pub mod incidents;
+pub mod ireland;
 pub mod journeys;
 mod json;
 pub mod live;
@@ -115,6 +116,7 @@ pub enum Country {
     #[default]
     Spain,
     UnitedKingdom,
+    Ireland,
 }
 
 impl Country {
@@ -122,6 +124,7 @@ impl Country {
         match self {
             Country::Spain => &renfe::Renfe,
             Country::UnitedKingdom => &networkrail::NetworkRail,
+            Country::Ireland => &ireland::Ireland,
         }
     }
 }
@@ -147,6 +150,17 @@ impl Engine {
         Ok(code)
     }
 
+    /// Region `code`'s timetable is in time zone `tz` (the manifest's IANA
+    /// name, e.g. "Europe/Dublin"). Call before or after loading it.
+    #[wasm_bindgen(js_name = setRegionZone)]
+    pub fn set_region_zone(&mut self, code: &str, tz: &str, now_ms: f64) -> Result<(), JsError> {
+        self.net
+            .set_region_zone(code, tz)
+            .map_err(|e| JsError::new(&e))?;
+        self.live.rebuild(&self.net, secs(now_ms));
+        Ok(())
+    }
+
     /// Load a `geo-<region>.<hash>.bin` (track geometry). Returns the region
     /// code. Call after that region's timetable; trains redraw on track.
     #[wasm_bindgen(js_name = loadGeometry)]
@@ -162,12 +176,14 @@ impl Engine {
     }
 
     /// Which country's live feeds this engine reads: `"es"` (Renfe, the
-    /// default) or `"uk"` (Network Rail). Set before ingesting anything.
+    /// default), `"uk"` (Network Rail) or `"ie"` (the NTA, through our
+    /// backend). Set before ingesting anything.
     #[wasm_bindgen(js_name = setCountry)]
     pub fn set_country(&mut self, code: &str) -> Result<(), JsError> {
         self.country = match code {
             "es" => Country::Spain,
             "uk" => Country::UnitedKingdom,
+            "ie" => Country::Ireland,
             _ => return Err(JsError::new(&format!("unknown country {code}"))),
         };
         Ok(())

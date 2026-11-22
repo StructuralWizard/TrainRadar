@@ -1,6 +1,11 @@
 # Ireland (ie)
 
-Part of [the Europe plan](README.md), wave 1. Proposed 2026-11-22; nothing built.
+Part of [the Europe plan](README.md), wave 1. Proposed 2026-11-22.
+
+**Built: I1, the timetable (2026-11-22).**
+- `data/ie/` behind `IE_ENABLED`; opened on the site with `?country=ie`.
+- Trains go by timetable, and the app says so.
+- Details in [data-sources-ie.md](../data-sources-ie.md).
 
 Checked 2026-11-22:
 - the Irish Rail GTFS was downloaded and inspected;
@@ -151,8 +156,16 @@ Checked 2026-11-22:
 
 ## Steps
 
-- **I0:** the NTA account and key; a feed check that proves the GTFS, the live feed's rail coverage
-  and the alerts.
-- **I1:** reference data, rebuilt daily; Enterprise merged with Northern Ireland.
-- **I2:** the `gtfsrt` adapter and notices.
-- **I3:** app: registry entry, credits, operator links; release as beta.
+- **I1, done 2026-11-22:**
+  - reference data from the NTA's GTFS, rebuilt daily (`IE_ENABLED`);
+  - each region's time zone in the manifest and the engine;
+  - Ireland in the app as a hidden country (`?country=ie`), by timetable, with the NTA's credit.
+- **I0:**
+  - the NTA account and key (`IE_NTA_API_KEY`, for the maintainer to approve);
+  - a feed check that proves the live feed's rail coverage and the alerts.
+- **I2:** the live adapter in `backend-eu/` (trip updates and alerts → `ie/rt/`); `live: true` in
+  the app.
+- **I3:**
+  - the Enterprise merged with Northern Ireland's;
+  - operator links;
+  - Ireland offered to everyone (`countries`), then in the Android app.

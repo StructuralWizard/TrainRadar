@@ -104,18 +104,40 @@ const store = {
 
 // Which country (plan 3): Spain or the UK, one at a time; CONFIG then
 // points at that country's data and feeds, times show in its time zone.
-const country = pickCountry({ search: location.search, saved: store.get(COUNTRY_KEY), languages: navigator.languages || [], allowed: CONFIG.countries });
-/** More than one country to choose from (UK_APP=false builds an app with Spain only). */
-const MULTI_COUNTRY = CONFIG.countries.length > 1;
+const country = pickCountry({
+  search: location.search,
+  saved: store.get(COUNTRY_KEY),
+  languages: navigator.languages || [],
+  allowed: CONFIG.countries,
+  hidden: CONFIG.hiddenCountries || [],
+});
+/** The countries to choose from: those offered, and the one shown (a hidden
+ * one, still being built, opened from its link). UK_APP=false builds an app
+ * with Spain only. */
+const COUNTRY_LIST = [...new Set([...CONFIG.countries, country])];
+const MULTI_COUNTRY = COUNTRY_LIST.length > 1;
 // The Android app's widgets and background alerts follow Spain (Renfe), in
 // either country: they read Spain's servers, favourites and commutes.
 const NATIVE_BASES = { apiBase: CONFIG.apiBase, liveBase: CONFIG.liveBase };
 applyCountry(CONFIG, country);
 setTimeZone(CONFIG.timeZone);
 const UK = country === "uk";
+// Spain is where the delay history, the replay, Renfe's links, the núcleos
+// and the Android widgets and alerts are (docs/plan-europe.md A7).
+const ES = country === "es";
+/** No live feeds for this country yet (applyCountry): trains go by timetable. */
+const TIMETABLE_ONLY = !CONFIG.liveBase && !CONFIG.rtBase;
+/** Each country's name, its "all of it" label, its credits and how its
+ * timetable-only trains are counted. */
+const COUNTRY_TEXT = {
+  es: { name: "countryEs", all: "allSpain", credit: "attribution", scheduled: "scheduledCount" },
+  uk: { name: "countryUk", all: "allUk", credit: "attributionUk", scheduled: "scheduledCountNi" },
+  ie: { name: "countryIe", all: "allIe", credit: "attributionIe", scheduled: "scheduledCountOther" },
+};
+const countryName = (c) => t(lang, COUNTRY_TEXT[c]?.name || "countryEs");
 // Each country keeps its own favourites and commutes (station ids differ);
 // Spain's keep the original keys, which the Android widgets and alerts read.
-const FAV_KEY = UK ? "favourites-uk" : STORAGE_KEY;
+const FAV_KEY = ES ? STORAGE_KEY : `favourites-${country}`;
 // Open where the app was left (map and the train or station open), unless
 // a link asks for something else.
 const lastView = parseLink(location.href) ? null : decodeView(store.get(VIEW_KEY), { country });
@@ -147,7 +169,7 @@ function restoreDetail(d) {
   if (st) showStation({ properties: { id: st.id, name: st.name }, geometry: { coordinates: [st.lon, st.lat] } });
   return !!st;
 }
-const attribution = () => t(lang, UK ? "attributionUk" : "attribution");
+const attribution = () => t(lang, COUNTRY_TEXT[country].credit);
 
 /** Show the other country: remembered, then the page reloads with its data. */
 function switchCountry(code) {
@@ -186,7 +208,7 @@ const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
 let commuteNote = ""; // e.g. "the list is full", shown once in the commute sheet
-const COMMUTE_KEY = UK ? "commute-uk" : "commute";
+const COMMUTE_KEY = ES ? "commute" : `commute-${country}`;
 let trips = []; // my trips (Pro), trips.js
 let claimFor = null; // the trip whose claim summary is shown
 let lastTripCheck = 0;
@@ -240,7 +262,7 @@ function applyLang() {
   $("delayed-close").setAttribute("aria-label", t(lang, "close"));
   $("near-close").setAttribute("aria-label", t(lang, "close"));
   $("near-title").textContent = t(lang, "nearYou");
-  $("inc-title").textContent = t(lang, UK ? "ukIncidentsTitle" : "incidentsTitle");
+  $("inc-title").textContent = t(lang, UK ? "ukIncidentsTitle" : ES ? "incidentsTitle" : "noticesTitle");
   $("inc-close").setAttribute("aria-label", t(lang, "close"));
   $("layers-title").textContent = t(lang, "layers");
   for (const [id, k] of [
@@ -558,14 +580,15 @@ function fillJump() {
     .filter((r) => r.code !== "ld" && r.live !== false)
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
   // The country (plan 3): the other one reloads the page with its data.
-  const countries = !MULTI_COUNTRY ? null : el(
-    "optgroup",
-    { label: t(lang, "country") },
-    el("option", { value: "country:es" }, t(lang, "countryEs")),
-    el("option", { value: "country:uk" }, t(lang, "countryUk")),
-  );
-  if (UK) {
-    sel.replaceChildren(el("option", { value: "" }, t(lang, "goTo")), el("option", { value: "es" }, t(lang, "allUk")), countries);
+  const countries = !MULTI_COUNTRY
+    ? null
+    : el(
+        "optgroup",
+        { label: t(lang, "country") },
+        COUNTRY_LIST.map((c) => el("option", { value: `country:${c}` }, countryName(c))),
+      );
+  if (!ES) {
+    sel.replaceChildren(el("option", { value: "" }, t(lang, "goTo")), el("option", { value: "es" }, t(lang, COUNTRY_TEXT[country].all)), countries);
     return;
   }
   sel.replaceChildren(
@@ -629,6 +652,12 @@ function renderUkIncidents() {
 
 function renderIncidents() {
   if (UK) return renderUkIncidents();
+  if (TIMETABLE_ONLY && !ES) {
+    // No live feeds yet, so no notices either: say so instead of "loading".
+    $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}`;
+    if (!$("incidents").hidden) $("inc-body").replaceChildren(el("p", { class: "muted" }, t(lang, "noticesNotYet", { country: countryName(country) })));
+    return;
+  }
   if (engine) incidents = JSON.parse(engine.incidentsJson(Date.now()));
   refreshLines();
   $("inc-btn").textContent = `⚠ ${t(lang, "incidents")}${incidents.length ? ` (${incidents.length})` : ""}`;
@@ -1023,7 +1052,7 @@ function showTrainSheet(info, open, now) {
  * (free app), or the Android app (web, once it has a listing). */
 function notifyAction(info, favItem) {
   // Alerts follow Spain's trains (the background check reads Renfe's feed).
-  if (info.timetable_only || UK) return null;
+  if (info.timetable_only || !ES) return null;
   if (CONFIG.platform === "android") {
     if (!CONFIG.pro) return { on: false, onToggle: () => (openSheet("settings"), renderSettings()) };
     const on = alertsOn && isFavourite(favs, favItem);
@@ -1397,7 +1426,7 @@ async function setAlerts(on) {
 
 /** While the app is open: the same alerts, live from the engine (every minute). */
 async function checkAlertsLive(now) {
-  if (!alertsOn || !CONFIG.pro || UK || now - lastAlertCheck < 60_000) return;
+  if (!alertsOn || !CONFIG.pro || !ES || now - lastAlertCheck < 60_000) return;
   lastAlertCheck = now;
   const trains = new Map();
   for (const f of favs) {
@@ -1720,7 +1749,7 @@ function renderCommute() {
         today: isoToday(),
         native: appNative.available(),
         // Background alerts follow Spain's commutes (AlertsWorker).
-        alerts: !UK,
+        alerts: ES,
         onTrain: (l) => {
           const info = liveTrain(l.number);
           if (info) {
@@ -2275,7 +2304,7 @@ function renderMore() {
           moreMsg ? el("p", { class: "small warn", id: "more-msg" }, moreMsg) : null,
           pro && moreWidgetInfo ? el("p", { class: "small muted", id: "widget-help" }, t(lang, "moreWidgetHow")) : null,
           pro && alertsOn ? el("p", { class: "small muted" }, t(lang, "alertsNote")) : null,
-          UK && appNative.available() ? el("p", { class: "small muted", id: "native-spain-only" }, t(lang, "nativeSpainOnly")) : null,
+          !ES && appNative.available() ? el("p", { class: "small muted", id: "native-spain-only" }, t(lang, "nativeSpainOnly")) : null,
         ];
   const general = el(
       "ul",
@@ -2373,12 +2402,13 @@ function phoneChrome() {
 let netPinned = null; // the network just picked, until the user moves the map
 function currentNetwork() {
   if (netPinned) return netPinned === "es" ? null : placeByCode(netPinned) || ref?.region(netPinned) || null;
-  // The UK is one network here: Great Britain's box also covers Northern Ireland.
-  if (UK || !map || !ref || map.getZoom() < 7.5) return null;
+  // The UK and Ireland are one network each here (Great Britain's box also
+  // covers Northern Ireland).
+  if (!ES || !map || !ref || map.getZoom() < 7.5) return null;
   const c = map.getCenter();
   return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
 }
-const netName = () => currentNetwork()?.name || t(lang, UK ? "countryUk" : "netSpain");
+const netName = () => currentNetwork()?.name || (ES ? t(lang, "netSpain") : countryName(country));
 
 function updateNetChip() {
   const l = $("net-chip-l");
@@ -2393,6 +2423,13 @@ function updateNetChip() {
 /** "498 trenes · mediana +2 min" with a dot: green live, orange stale, red failing. */
 function renderLiveChip(st, now) {
   if (!isPhone()) return;
+  if (TIMETABLE_ONLY) {
+    // A grey dot: by timetable, no live data to be stale or failing.
+    $("live-text").textContent = t(lang, "trains", { n: formatCount(lang, st.trains + st.scheduled) });
+    $("live-chip").dataset.state = "timetable";
+    $("live-chip").title = t(lang, "timetableOnly");
+    return;
+  }
   const last = feeds?.lastUpdate() || 0;
   const age = last ? (now - last) / 1000 : Infinity;
   const state = feeds?.failing() ? "bad" : age > 120 ? "stale" : "ok";
@@ -2465,15 +2502,12 @@ function renderNetworks(keepInput = false) {
   const parts = networksSheet(lang, {
     query: netQuery,
     near,
-    spain: { trains, onPick: () => pick("es"), label: UK ? t(lang, "allUk") : null },
-    countries: !MULTI_COUNTRY ? null : [
-      { code: "es", name: t(lang, "countryEs"), current: !UK, onPick: () => switchCountry("es") },
-      { code: "uk", name: t(lang, "countryUk"), current: UK, onPick: () => switchCountry("uk") },
-    ],
-    // Spain's núcleos, communities and provinces; the UK is one network (for now).
-    networks: UK ? [] : [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
-    communities: UK ? [] : byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name, alt: c.alt })),
-    provinces: UK ? [] : byName(PROVINCES).map((p) => ({ code: `prov:${p.code}`, name: p.name, alt: p.alt })),
+    spain: { trains, onPick: () => pick("es"), label: ES ? null : t(lang, COUNTRY_TEXT[country].all) },
+    countries: !MULTI_COUNTRY ? null : COUNTRY_LIST.map((c) => ({ code: c, name: countryName(c), current: c === country, onPick: () => switchCountry(c) })),
+    // Spain's núcleos, communities and provinces; the UK and Ireland are one network each (for now).
+    networks: !ES ? [] : [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
+    communities: !ES ? [] : byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name, alt: c.alt })),
+    provinces: !ES ? [] : byName(PROVINCES).map((p) => ({ code: `prov:${p.code}`, name: p.name, alt: p.alt })),
     onPick: pick,
     onQuery: (q) => {
       netQuery = q;
@@ -2660,7 +2694,7 @@ function saveRouteJourney(j) {
   if (r.added) saveCommutes(r.state, () => {}, true);
   else (openSheet("commute"), renderCommute());
   // Its alerts come from the background check: on with the first journey.
-  if (r.added && !UK && appNative.available() && !alertsOn) setAlerts(true).catch(() => {});
+  if (r.added && ES && appNative.available() && !alertsOn) setAlerts(true).catch(() => {});
 }
 
 /** Today's live state of each train of a saved journey: from its first
@@ -2938,10 +2972,13 @@ function render(force = false) {
   const st = JSON.parse(engine.statsJson(now));
   renderHomeSummary(st, pos);
   renderLiveChip(st, now);
-  $("stats").textContent =
-    statsText(lang, st) + (st.scheduled ? ` ${t(lang, UK ? "scheduledCountNi" : "scheduledCount", { n: st.scheduled })}` : "");
+  const scheduled = st.scheduled ? t(lang, COUNTRY_TEXT[country].scheduled, { n: st.scheduled }) : "";
+  // Every train by timetable (no live data yet): just say how many.
+  $("stats").textContent = !st.trains && st.scheduled ? t(lang, "scheduledAll", { n: formatCount(lang, st.scheduled) }) : statsText(lang, st) + (scheduled ? ` ${scheduled}` : "");
   const last = feeds?.lastUpdate() || 0;
-  $("status").textContent = feeds?.failing()
+  $("status").textContent = TIMETABLE_ONLY
+    ? t(lang, "timetableOnly")
+    : feeds?.failing()
     ? t(lang, "feedError")
     : last
       ? t(lang, "updated", { age: formatAgo(lang, (now - last) / 1000) })
@@ -3224,15 +3261,20 @@ async function main() {
     setTimeout(() => location.reload(), 30_000);
     return;
   }
-  feeds = new Feeds(engine, CONFIG.rtBase, {
-    live: CONFIG.liveBase,
-    onUpdate: (key) => {
-      if (key === "alerts") renderIncidents();
-      render(true);
-    },
-    onError: (k, e) => console.warn("feed", k, e.message),
-  });
-  feeds.start();
+  // A country without live feeds yet has nothing to poll.
+  if (!TIMETABLE_ONLY) {
+    feeds = new Feeds(engine, CONFIG.rtBase, {
+      live: CONFIG.liveBase,
+      onUpdate: (key) => {
+        if (key === "alerts") renderIncidents();
+        render(true);
+      },
+      onError: (k, e) => console.warn("feed", k, e.message),
+    });
+    feeds.start();
+  } else {
+    renderIncidents();
+  }
   // New timetables (the site rebuilds them daily; they cover a week): a page
   // or app left open picks them up instead of running out of trains.
   const newData = () =>

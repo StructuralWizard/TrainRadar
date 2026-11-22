@@ -41,6 +41,7 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           UK_ENABLED: ${{ vars.UK_ENABLED }}
+          IE_ENABLED: ${{ vars.IE_ENABLED }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -63,6 +64,9 @@ jobs:
           # The UK's timetable changes every day (short-term changes,
           # cancellations): with the UK on, rebuild daily.
           if [ "$UK_ENABLED" = "true" ]; then changed=true; fi
+          # Ireland's live feed matches only the same day's timetable (the
+          # NTA's ids change with every file): with Ireland on, rebuild daily.
+          if [ "$IE_ENABLED" = "true" ]; then changed=true; fi
           echo "run=$changed" >> "$GITHUB_OUTPUT"
 
   deploy:
@@ -196,6 +200,44 @@ jobs:
             { echo "## UK reference data"; echo; cat refdata-uk.md; } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::warning::UK reference data failed: deploying Spain only."
+            exit 1
+          fi
+
+      # Ireland (docs/europe/ie.md), with IE_ENABLED: Irish Rail's timetable
+      # from the NTA (no key) and Ireland's OSM track → data/ie/. Like the
+      # UK, an Irish failure never stops the rest of the deploy.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.IE_ENABLED == 'true'
+        id: osm_ie
+        with:
+          path: gtfs/ie/rail.geojsonseq
+          key: osm-rail-ie-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-ie-v1-
+      - name: Ireland reference data
+        if: vars.IE_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_ie.outputs.cache-hit }}
+        run: |
+          set -o pipefail # a failed download stops here, with its own message
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-ie.sh | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/ie-data --gzip \
+              --ie-gtfs gtfs/ie/GTFS_Irish_Rail.zip --sources gtfs/ie/sources.tsv \
+              --rail gtfs/ie/rail.geojsonseq --report refdata-ie.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/ie-data; then
+            mv build/ie-data build/data/ie
+            # Plan ahead: as far as the NTA publishes (about 3 weeks), in data/ie/plan/.
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/ie-plan --gzip --days 63 \
+                --ie-gtfs gtfs/ie/GTFS_Irish_Rail.zip --report ie-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/ie-plan; then
+              mv build/ie-plan build/data/ie/plan
+            else
+              echo "::warning::Ireland's plan-ahead timetables failed: Ireland has today's week only."
+            fi
+            { echo "## Ireland reference data"; echo; cat refdata-ie.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Ireland's reference data failed: deploying without Ireland."
             exit 1
           fi
 

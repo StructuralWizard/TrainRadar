@@ -211,3 +211,19 @@ exists.
 16886706, 128 City Road, London EC1V 2NX; support@metranos.com; English law). They are
 drafts written without legal advice: have them reviewed before publishing the Android
 app, and update the "last updated" dates when they change.
+
+## Ireland (docs/europe/ie.md)
+
+- **Turning it on:** set the repository (or production environment) variable **`IE_ENABLED`** =
+  `true`.
+- **What the deploy then builds:**
+  - `data/ie/` from Irish Rail's timetable (the NTA's GTFS, no key) and Ireland's OpenStreetMap
+    track;
+  - `data/ie/plan/`, as far as the NTA publishes (about 3 weeks).
+- **Daily rebuild:** with Ireland on, the deploy rebuilds daily, because the live feed only matches
+  the same day's file.
+- **If Ireland's build fails,** the rest of the site still deploys.
+- **Where it shows:**
+  - while it's being built, Ireland is a hidden country (`hiddenCountries` in `web/js/config.js`);
+  - the site opens it only from `?country=ie`, and the Android app not at all;
+  - to offer it to everyone, move `"ie"` into `countries`.

@@ -106,6 +106,16 @@ jobs:
           done
           jq '(.. | objects | select(has("file")) | .file) |= sub("\\.gz$"; "")' "$uk/manifest.json" > "$uk/m.json" && mv "$uk/m.json" "$uk/manifest.json"
           cargo run --release -q -p trainradar-engine --example journeys_bench -- "$uk" --uk | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Ireland (Irish Rail's timetable from the NTA; no key)
+        continue-on-error: true # an outside download: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-ie.sh --no-osm
+          target/release/refdata-build build --out build/ie --ie-gtfs gtfs/ie/GTFS_Irish_Rail.zip \
+            --sources gtfs/ie/sources.tsv --report refdata-ie.md
+          target/release/refdata-build verify build/ie
+          { echo "## Ireland reference data"; echo; cat refdata-ie.md; } >> "$GITHUB_STEP_SUMMARY"
+          cargo run --release -q -p trainradar-engine --example journeys_bench -- build/ie --ie | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

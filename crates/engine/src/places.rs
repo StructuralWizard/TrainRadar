@@ -110,7 +110,7 @@ fn board_of(
             continue;
         };
         // Timetable times are local: an hour behind Madrid in the UK.
-        let behind = crate::networkrail::behind_madrid_secs(&r.tt.region);
+        let behind = r.behind;
         let today = madrid_day(now - behind);
         for &(pi, pos) in calls {
             let st = &r.sched[pi as usize];

@@ -3,6 +3,7 @@
 //! and the Cercanías of both ends).
 //!
 //!   cargo run --release -p trainradar-engine --example journeys_bench -- web/data
+//!   (… -- data/uk --uk for Great Britain, … -- data/ie --ie for Ireland)
 //!
 //! Prints Markdown (for the workflow summary). Stations are found by name.
 
@@ -22,6 +23,16 @@ const TRIPS: &[(&str, &str)] = &[
     ("Abando", "Madrid-Chamartín"),
 ];
 
+/// With `--ie`: Ireland (Dublin time).
+const TRIPS_IE: &[(&str, &str)] = &[
+    ("Dublin Heuston", "Cork (Kent)"),
+    ("Connolly", "Sligo (MacDiarmada)"),
+    ("Bray (Daly)", "Howth"),
+    ("Connolly", "Belfast"),
+    ("Galway (Ceannt)", "Limerick (Colbert)"),
+    ("Dublin Heuston", "Tralee Casement Station"),
+];
+
 /// With `--uk`: Great Britain and Northern Ireland (London time).
 const TRIPS_UK: &[(&str, &str)] = &[
     ("London Euston", "Manchester Piccadilly"),
@@ -35,8 +46,7 @@ const TRIPS_UK: &[(&str, &str)] = &[
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data = std::env::args().nth(1).unwrap_or_else(|| "web/data".into());
     let uk = std::env::args().any(|a| a == "--uk");
-    // Timetables are local: London is an hour behind Madrid.
-    let behind = if uk { 3_600 } else { 0 };
+    let ie = std::env::args().any(|a| a == "--ie");
     let data = Path::new(&data);
     let manifest: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(data.join("manifest.json"))?)?;
@@ -44,8 +54,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut net = Network::default();
     net.load_stations(&file(&manifest["stations"])?)?;
     for r in manifest["regions"].as_array().unwrap() {
+        // Each region's times are in its own zone (the manifest's `tz`).
+        if let (Some(code), Some(tz)) = (r["code"].as_str(), r["tz"].as_str()) {
+            net.set_region_zone(code, tz)?;
+        }
         net.load_timetable(&file(r)?)?;
     }
+    // Times print in the first region's local time (London and Dublin are an
+    // hour behind Madrid).
+    let behind = net.regions.first().map_or(0, |r| r.behind);
     let live = Live::default();
     let stations = &net.stations.as_ref().unwrap().stations;
     let find = |name: &str| -> Vec<&str> {
@@ -84,10 +101,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     println!(
         "## Journeys with changes{} (all regions loaded, 07:30, no live data)\n",
-        if uk { ", United Kingdom" } else { "" }
+        if uk {
+            ", United Kingdom"
+        } else if ie {
+            ", Ireland"
+        } else {
+            ""
+        }
     );
     let mut total = 0.0;
-    for (a, b) in if uk { TRIPS_UK } else { TRIPS } {
+    let trips = if uk {
+        TRIPS_UK
+    } else if ie {
+        TRIPS_IE
+    } else {
+        TRIPS
+    };
+    for (a, b) in trips {
         let (from, to) = (find(a), find(b));
         let t0 = Instant::now();
         let js = journeys(

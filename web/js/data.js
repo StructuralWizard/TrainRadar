@@ -33,6 +33,22 @@ export function newerData(a, b) {
   return a.window_start > b.window_start || (a.window_start === b.window_start && (a.generated_at || 0) > (b.generated_at || 0));
 }
 
+/** Regions that cover a whole country, loaded up front: Spain's AV/LD/MD,
+ * Great Britain (with Northern Ireland as its own small region) and Ireland. */
+export const NATIONAL = ["ld", "uk", "ie"];
+
+/** Tell the engine which time zone a region's timetable is in (the
+ * manifest's `tz`; docs/plan-europe.md A2). Older data has none: the engine
+ * then goes by the region's code. */
+export function setZone(engine, region) {
+  if (!region?.tz || !engine.setRegionZone) return;
+  try {
+    engine.setRegionZone(region.code, region.tz, Date.now());
+  } catch (e) {
+    console.warn("time zone", region.code, region.tz, e.message);
+  }
+}
+
 export class RefData {
   constructor(engine, base, remote = "") {
     this.engine = engine;
@@ -55,8 +71,9 @@ export class RefData {
     this.manifest = newerData(far, own) ? far : own;
     this.checkedAt = Date.now();
     this.engine.loadStations(await fetchBytes(this.base + this.manifest.stations.file));
-    // Spain's AV/LD/MD up front; the UK is one region (uk), also up front.
-    for (const code of ["ld", "uk"]) if (this.region(code)) await this.loadRegion(code);
+    // Spain's AV/LD/MD up front; the UK and Ireland are one region each,
+    // also up front.
+    for (const code of NATIONAL) if (this.region(code)) await this.loadRegion(code);
     // Timetable-only operators (OUIGO) are small; load them up front.
     for (const r of this.manifest.regions.filter((r) => r.live === false)) {
       await this.loadRegion(r.code).catch((e) => console.warn("region", r.code, e));
@@ -137,6 +154,7 @@ export class RefData {
     const r = this.region(code);
     if (!r) return Promise.resolve();
     const p = (async () => {
+      setZone(this.engine, r);
       this.engine.loadTimetable(await fetchBytes(this.base + r.file), Date.now());
       this.loaded.add(code);
       if (r.geometry) {
@@ -162,7 +180,7 @@ export class RefData {
   async loadAllInBackground(onEach) {
     if (navigator.connection?.saveData) return;
     const idle = () => new Promise((r) => (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(r));
-    const rest = (this.manifest?.regions || []).filter((r) => r.code !== "ld" && r.code !== "uk" && r.live !== false);
+    const rest = (this.manifest?.regions || []).filter((r) => !NATIONAL.includes(r.code) && r.live !== false);
     rest.sort((a, b) => a.bytes - b.bytes); // small ones first: more colour sooner
     for (const r of rest) {
       if (this.loaded.has(r.code)) continue;
