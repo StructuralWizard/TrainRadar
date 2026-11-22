@@ -70,14 +70,17 @@ async function viaWorker(country, minutes) {
 if (cc === "ch") {
   // Trip updates; unplanned alerts (minute 3); planned alerts (minute 90).
   await viaWorker(CH, [1, 3, 90]);
-  // The planned alerts' address isn't documented: which one answers.
-  const key = process.env.CH_OTD_GTFSSA_PLANNED_KEY;
-  if (key) {
-    for (const path of ["gtfs-sa-planned", "gtfs-sa/planned", "gtfs-sa-plan", "gtfs-sa-geplant", "gtfs-sa?type=planned"]) {
-      const r = await fetch(CH.base + path, { headers: { authorization: `Bearer ${key}`, "user-agent": "Metranos-TrainRadar" } });
+  // Which key each alerts address takes (all 403 on the first run): every
+  // key set, on each candidate address; status codes only.
+  const keys = ["CH_OTD_GTFSRT_KEY", "CH_OTD_GTFSSA_KEY", "CH_OTD_GTFSSA_PLANNED_KEY"].filter((k) => process.env[k]);
+  for (const path of ["gtfs-sa", "gtfs-sa-planned", "gtfs-sa-unplanned", "gtfs-sa/planned"]) {
+    const codes = [];
+    for (const k of keys) {
+      const r = await fetch(CH.base + path, { headers: { authorization: `Bearer ${process.env[k]}`, "user-agent": "Metranos-TrainRadar" } });
       const n = r.ok ? (await r.arrayBuffer()).byteLength : 0;
-      console.log(`ch planned alerts at ${path}: HTTP ${r.status}${r.ok ? `, ${n} bytes` : ""}`);
+      codes.push(`${k}: ${r.status}${r.ok ? ` (${n} bytes)` : ""}`);
     }
+    console.log(`ch ${path}: ${codes.join(", ")}`);
   }
 } else if (cc === "pl") {
   await viaWorker(PL, [0]);
@@ -87,23 +90,26 @@ if (cc === "ch") {
     console.log("se: SE_TRAFIKLAB_RT_KEY is not set");
     process.exit(0);
   }
-  const ops = ["sl", "ul", "otraf", "skane", "jlt", "krono", "klt", "blekinge", "halland", "varm", "orebro", "vastmanland", "dt", "xt", "dintur", "vt"];
+  // Bronze allows 50 calls a minute: a few regions, both of Trafiklab's
+  // realtime APIs (GTFS Sweden 3 Realtime; GTFS Regional Realtime).
+  const ops = ["skane", "otraf", "ul", "sl"];
   for (const op of ops) {
-    for (const kind of ["TripUpdates", "VehiclePositions"]) {
+    for (const [api, path] of [["Sweden 3", `gtfs-rt-sweden/${op}/TripUpdatesSweden.pb`], ["Regional", `gtfs-rt/${op}/TripUpdates.pb`]]) {
       try {
         // Trafiklab takes the key only in the URL (AGENTS.md); never printed.
-        const r = await fetch(`https://opendata.samtrafiken.se/gtfs-rt-sweden/${op}/${kind}Sweden.pb?key=${encodeURIComponent(key)}`, {
+        const r = await fetch(`https://opendata.samtrafiken.se/${path}?key=${encodeURIComponent(key)}`, {
           headers: { "user-agent": "Metranos-TrainRadar", "accept-encoding": "gzip" },
         });
         if (!r.ok) {
-          console.log(`se ${op} ${kind}: HTTP ${r.status}`);
+          const msg = (await r.text()).slice(0, 200).replaceAll(key, "***");
+          console.log(`se ${op} (${api}): HTTP ${r.status} ${msg}`);
           continue;
         }
-        const bytes = new Uint8Array(await r.arrayBuffer());
-        report(`${op} ${kind}`, bytes);
+        report(`${op} (${api})`, new Uint8Array(await r.arrayBuffer()));
       } catch (e) {
-        console.log(`se ${op} ${kind}: ${String(e.message).replaceAll(key, "***")}`);
+        console.log(`se ${op} (${api}): ${String(e.message).replaceAll(key, "***")}`);
       }
+      await new Promise((r) => setTimeout(r, 1500));
     }
   }
 }

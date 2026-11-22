@@ -29,6 +29,7 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 import zipfile
 
@@ -44,8 +45,27 @@ def get(path, key):
         BASE + path,
         headers={"X-API-Key": key, "Accept": "application/json", "User-Agent": CLIENT, "Accept-Encoding": "identity"},
     )
-    with urllib.request.urlopen(req, timeout=300) as r:
-        return json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        # PLK says why (key not active yet, terms not accepted, quota):
+        # its message, never the key.
+        body = e.read(600).decode("utf-8", "replace").replace(key, "***")
+        raise SystemExit(f"{path.split('?')[0]}: HTTP {e.code}: {body}") from None
+
+
+def key_status(key):
+    """What PLK says about the key: active, its package, the terms it
+    accepted (no secrets in these fields)."""
+    try:
+        info = get("apikey/info", key)
+    except SystemExit as e:
+        return str(e)
+    keep = ("status", "isActive", "active", "package", "limitPackage", "tier", "termsAccepted", "termsVersion",
+            "acceptedTermsVersion", "emailVerified", "approved", "approvalStatus", "dailyLimit", "hourlyLimit")
+    return json.dumps({k: v for k, v in info.items() if k in keep or "term" in k.lower() or "status" in k.lower()},
+                      ensure_ascii=False)
 
 
 def seconds(day, t):
@@ -166,6 +186,7 @@ def main(argv):
         if not key:
             print("PL_PLK_API_KEY is not set", file=sys.stderr)
             return 2
+        print(f"key: {key_status(key)}")
         start, end = today - dt.timedelta(days=1), today + dt.timedelta(days=days - 2)
         st = get("dictionaries/stations?pageSize=10000", key)
         stations = {str(s["id"]): s for s in st.get("stations") or []}
