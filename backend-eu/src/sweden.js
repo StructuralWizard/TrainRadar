@@ -65,6 +65,7 @@ export const SE = {
   feeds,
   parts: { "trip_updates.pb": feeds.map((f) => f.name) },
   source: "Samtrafiken / Trafiklab.se, GTFS Sweden 3 Realtime, CC0 1.0",
+  // The Worker's SE_ENABLED is set from the GitHub variable SE_LIVE_ENABLED.
   enabled: (env) => env.SE_ENABLED === "true" && !!env.SE_TRAFIKLAB_RT_KEY,
   missing: (env) => (env.SE_TRAFIKLAB_RT_KEY ? null : "no API key (SE_TRAFIKLAB_RT_KEY)"),
   url: (env, feed) => `${SE.base}${feed.path}?key=${encodeURIComponent(env.SE_TRAFIKLAB_RT_KEY)}`,

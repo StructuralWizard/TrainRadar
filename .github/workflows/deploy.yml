@@ -759,7 +759,9 @@ jobs:
           NL_ENABLED: ${{ vars.NL_ENABLED }}
           CH_ENABLED: ${{ vars.CH_ENABLED }}
           PL_ENABLED: ${{ vars.PL_ENABLED }}
-          SE_ENABLED: ${{ vars.SE_ENABLED }}
+          # Sweden's live data has its own switch: it needs Trafiklab's Silver
+          # level, the timetable (SE_ENABLED) doesn't.
+          SE_LIVE_ENABLED: ${{ vars.SE_LIVE_ENABLED }}
           HAS_KEY: ${{ secrets.IE_NTA_API_KEY != '' }}
           HAS_CH_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY != '' }}
           HAS_PL_KEY: ${{ secrets.PL_PLK_API_KEY != '' }}
@@ -776,10 +778,10 @@ jobs:
           ch=false; pl=false; se=false
           if [ "$(on "$CH_ENABLED")" = "true" ] && [ "$HAS_CH_KEY" = "true" ]; then ch=true; fi
           if [ "$(on "$PL_ENABLED")" = "true" ] && [ "$HAS_PL_KEY" = "true" ]; then pl=true; fi
-          if [ "$(on "$SE_ENABLED")" = "true" ] && [ "$HAS_SE_KEY" = "true" ]; then se=true; fi
+          if [ "$(on "$SE_LIVE_ENABLED")" = "true" ] && [ "$HAS_SE_KEY" = "true" ]; then se=true; fi
           { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; } >> "$GITHUB_OUTPUT"
           if [ "$ie$fr$fi_$no$nl$ch$pl$se" = "falsefalsefalsefalsefalsefalsefalsefalse" ]; then
-            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ or SE_ENABLED with their keys): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "push" ] && git diff --quiet HEAD^ HEAD -- backend-eu/; then
             echo "backend-eu/ unchanged: the Europe ingest keeps running as it is." | tee -a "$GITHUB_STEP_SUMMARY"
           else
