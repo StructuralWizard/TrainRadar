@@ -1,5 +1,6 @@
 // The country shown, one at a time (plan 3; docs/plan-europe.md A1): Spain
-// (Renfe), the United Kingdom (Network Rail) or Ireland (Iarnród Éireann).
+// (Renfe), the United Kingdom (Network Rail), Ireland (Iarnród Éireann),
+// France (SNCF) or Luxembourg (CFL).
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
@@ -11,6 +12,8 @@ export const COUNTRY_INFO = {
   es: { zone: "Europe/Madrid", center: [-3.7, 40.2], zoom: 5.2, live: true },
   uk: { zone: "Europe/London", center: [-2.6, 54.2], zoom: 5.0, live: true },
   ie: { zone: "Europe/Dublin", center: [-7.9, 53.4], zoom: 6.4, live: true },
+  fr: { zone: "Europe/Paris", center: [2.4, 46.6], zoom: 5.3, live: true },
+  lu: { zone: "Europe/Luxembourg", center: [6.13, 49.75], zoom: 8.6, live: false },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

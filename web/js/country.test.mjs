@@ -4,7 +4,7 @@ import { applyCountry, pickCountry } from "./country.js";
 
 test("country: the address, then the saved choice, then the browser", () => {
   assert.equal(pickCountry({ search: "?country=uk", saved: "es" }), "uk");
-  assert.equal(pickCountry({ search: "?country=fr", saved: "uk" }), "uk");
+  assert.equal(pickCountry({ search: "?country=xx", saved: "uk" }), "uk");
   assert.equal(pickCountry({ saved: null, languages: ["en-GB", "en"] }), "uk");
   assert.equal(pickCountry({ saved: null, languages: ["es-ES"] }), "es");
   // A build without the UK (the Android app until 3.0): always Spain.
@@ -58,4 +58,24 @@ test("country: Ireland points CONFIG at data/ie/ and ie/rt/, Dublin time", () =>
   assert.equal(ie.timeZone, "Europe/Dublin");
   assert.deepEqual(ie.center, [-7.9, 53.4]);
   assert.equal(applyCountry({ ...base(), remoteDataBase: "https://site.example/data/" }, "ie").remoteDataBase, "https://site.example/data/ie/");
+});
+
+test("country: France points CONFIG at data/fr/ and fr/rt/; Luxembourg has no feeds yet", () => {
+  const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
+  const fr = applyCountry(base(), "fr");
+  assert.equal(fr.dataBase, "data/fr/");
+  assert.equal(fr.liveBase, "https://live.example/fr/rt/");
+  assert.equal(fr.timeZone, "Europe/Paris");
+  const lu = applyCountry(base(), "lu");
+  assert.equal(lu.dataBase, "data/lu/");
+  assert.equal(lu.liveBase, "");
+  assert.equal(lu.rtBase, "");
+  assert.equal(lu.timeZone, "Europe/Luxembourg");
+  // Hidden while they're built: only from the address.
+  const allowed = ["es", "uk"];
+  const hidden = ["ie", "fr", "lu"];
+  assert.equal(pickCountry({ search: "?country=fr", allowed }), "es");
+  assert.equal(pickCountry({ search: "?country=fr", allowed, hidden }), "fr");
+  assert.equal(pickCountry({ search: "?country=lu", allowed, hidden }), "lu");
+  assert.equal(pickCountry({ languages: ["fr-FR"], allowed, hidden }), "es");
 });

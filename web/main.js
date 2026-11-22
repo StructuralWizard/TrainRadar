@@ -133,7 +133,11 @@ const COUNTRY_TEXT = {
   es: { name: "countryEs", all: "allSpain", credit: "attribution", scheduled: "scheduledCount" },
   uk: { name: "countryUk", all: "allUk", credit: "attributionUk", scheduled: "scheduledCountNi" },
   ie: { name: "countryIe", all: "allIe", credit: "attributionIe", scheduled: "scheduledCountOther" },
+  fr: { name: "countryFr", all: "allFr", credit: "attributionFr", scheduled: "scheduledCountOther" },
+  lu: { name: "countryLu", all: "allLu", credit: "attributionLu", scheduled: "scheduledCountOther" },
 };
+/** Whose notices each country shows (the UK has its own panel). */
+const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF" };
 const countryName = (c) => t(lang, COUNTRY_TEXT[c]?.name || "countryEs");
 // Each country keeps its own favourites and commutes (station ids differ);
 // Spain's keep the original keys, which the Android widgets and alerts read.
@@ -700,6 +704,7 @@ function renderIncidents() {
       onStop: (s) => flyToVisible(s.lon, s.lat, 13),
       stopped: JSON.parse(engine.stoppedJson(Date.now())),
       onTrain: (i) => selectTrain(i, { fly: true }),
+      operator: NOTICES_BY[country] || "Renfe",
     }),
   );
   if (!incidents.length && !feeds?.modified("alerts")) {

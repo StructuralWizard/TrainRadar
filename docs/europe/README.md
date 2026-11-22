@@ -1,6 +1,9 @@
 # Europe, country by country
 
-Part of [plan-europe.md](../plan-europe.md) (the architecture). Proposed 2026-11-22; nothing built.
+Part of [plan-europe.md](../plan-europe.md) (the architecture). Proposed 2026-11-22.
+
+**Built so far:** Ireland (timetable and live delays), France (timetable and live delays) and
+Luxembourg (timetable), each a hidden country behind its `<CC>_ENABLED` variable.
 
 ## The plans
 

@@ -232,3 +232,18 @@ app, and update the "last updated" dates when they change.
   - while it's being built, Ireland is a hidden country (`hiddenCountries` in `web/js/config.js`);
   - the site opens it only from `?country=ie`, and the Android app not at all;
   - to offer it to everyone, move `"ie"` into `countries`.
+
+## France and Luxembourg (docs/europe/fr.md, docs/europe/west-central.md)
+
+- **Turning them on:** set the variables **`FR_ENABLED`** = `true` and **`LU_ENABLED`** = `true`.
+  Neither needs a key.
+- **What the deploy then builds:**
+  - `data/fr/`: SNCF's timetable, one national region (TGV INOUI, OUIGO, Intercités, Lyria, ICE)
+    and one per TER area, on France's OpenStreetMap track; and `data/fr/plan/`, 9 weeks ahead;
+  - `data/lu/`: CFL's trains from Luxembourg's national GTFS, by timetable.
+- **The first France build is slow:** Geofabrik's France extract is about 5 GB. The filtered track
+  is then cached for the week.
+- **Daily rebuild** with either on: SNCF publishes changes (strikes, works) the evening before.
+- **Live data (France):** with `FR_ENABLED`, the `eu` job deploys `backend-eu/`, which writes
+  `fr/rt/` every minute. Check `fr/rt/status.json` on the live domain.
+- **Where they show:** hidden countries, opened only with `?country=fr` or `?country=lu`.

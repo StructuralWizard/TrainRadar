@@ -24,6 +24,7 @@ pub mod schedule;
 pub mod source;
 pub mod spacing;
 pub mod stats;
+mod timetable_only;
 
 use live::{DelaySource, Live, TrainView};
 use network::Network;
@@ -122,6 +123,8 @@ pub enum Country {
     UnitedKingdom,
     Ireland,
     France,
+    /// No live feed yet: Luxembourg.
+    TimetableOnly,
 }
 
 impl Country {
@@ -131,6 +134,7 @@ impl Country {
             Country::UnitedKingdom => &networkrail::NetworkRail,
             Country::Ireland => &ireland::Ireland,
             Country::France => &france::France,
+            Country::TimetableOnly => &timetable_only::TimetableOnly,
         }
     }
 }
@@ -183,8 +187,8 @@ impl Engine {
 
     /// Which country's live feeds this engine reads: `"es"` (Renfe, the
     /// default), `"uk"` (Network Rail), `"ie"` (the NTA, through our
-    /// backend) or `"fr"` (SNCF, through our backend). Set before ingesting
-    /// anything.
+    /// backend), `"fr"` (SNCF, through our backend) or `"lu"` (no live
+    /// feed yet). Set before ingesting anything.
     #[wasm_bindgen(js_name = setCountry)]
     pub fn set_country(&mut self, code: &str) -> Result<(), JsError> {
         self.country = match code {
@@ -192,6 +196,7 @@ impl Engine {
             "uk" => Country::UnitedKingdom,
             "ie" => Country::Ireland,
             "fr" => Country::France,
+            "lu" => Country::TimetableOnly,
             _ => return Err(JsError::new(&format!("unknown country {code}"))),
         };
         Ok(())

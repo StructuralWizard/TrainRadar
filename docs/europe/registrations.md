@@ -34,7 +34,7 @@ off, behind its own variable, so it doesn't hold the others back.
 
 | Merge | Countries | Why together | Needs from you before it can go live |
 |---|---|---|---|
-| **M1** | France (and Monaco, Eurostar), Luxembourg's timetable, Ireland I3 (the Enterprise joined to NI, operator links) | Cross-border trains and shared stations are built once (plan-europe E0f) | Nothing. `FR_IDFM_PRIM_KEY` is optional (Paris suburban trains) |
+| **M1** (built) | France (and Monaco, Eurostar), Luxembourg's timetable, Ireland I3 (the Enterprise joined to NI, operator links) | Cross-border trains and shared stations are built once (plan-europe E0f) | Nothing. `FR_IDFM_PRIM_KEY` is optional (Paris suburban trains) |
 | **M2** | Netherlands, Finland, Norway | Open GTFS and GTFS-Realtime with no key; Finland and Norway add real GPS | Nothing (contact headers only) |
 | **M3** | Switzerland, Sweden | GTFS-Realtime behind a free key, with tight quotas | `CH_OTD_*`, `SE_TRAFIKLAB_KEY`, `SE_TRAFIKVERKET_KEY` |
 | **M4** | Austria, Slovakia, Slovenia, Estonia, Latvia, Lithuania, Hungary | Timetables only: no live server, the same build for all | `AT_MVO_*`; Hungary's form |
@@ -74,7 +74,8 @@ Status: **needed** blocks a merge; **optional** improves it; **later** waits for
    - Their key goes in the URL, which AGENTS.md forbids. **Don't register yet.** First email
      `opendata-api@atp.etat.lu` asking whether the key can be sent in a header instead.
    - GitHub, if they agree: secret `LU_ATP_API_KEY`.
-4. **Variables when I say:** `FR_ENABLED`, `LU_ENABLED`.
+4. **Variables:** `FR_ENABLED` and `LU_ENABLED`, once M1 is merged. Then run the Deploy workflow once
+   (Actions → Deploy → Run workflow), so the live Worker starts France's feed.
 
 ### M2: Netherlands, Finland, Norway
 
