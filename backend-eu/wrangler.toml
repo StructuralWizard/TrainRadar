@@ -1,6 +1,7 @@
 # TrainRadar Europe ingest (docs/plan-europe.md A5): one Durable Object per
 # country feed, writing GTFS-Realtime to the shared live bucket under
-# <country>/rt/: Ireland (docs/europe/ie.md) and France (docs/europe/fr.md). Separate from backend/
+# <country>/rt/: Ireland (docs/europe/ie.md), France (docs/europe/fr.md),
+# Finland, Norway and the Netherlands (docs/europe/registrations.md, M2). Separate from backend/
 # (Spain) and backend-uk/. No secrets here: IE_NTA_API_KEY is a Worker
 # secret, set by the deploy job from the GitHub Actions secret.
 name = "trainradar-eu"
@@ -26,3 +27,6 @@ bucket_name = "trainradar-live"
 # Kill switches: anything but "true" stops all calls to that country's feeds.
 IE_ENABLED = "false"
 FR_ENABLED = "false"
+FI_ENABLED = "false"
+NO_ENABLED = "false"
+NL_ENABLED = "false"

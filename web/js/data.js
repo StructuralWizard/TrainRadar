@@ -35,8 +35,9 @@ export function newerData(a, b) {
 
 /** Regions that cover a whole country, loaded up front: Spain's AV/LD/MD,
  * Great Britain (with Northern Ireland as its own small region), Ireland
- * and France's TGV and Intercités (its TER areas load like núcleos). */
-export const NATIONAL = ["ld", "uk", "ie", "fr"];
+ * France's TGV and Intercités (its TER areas load like núcleos), Finland's
+ * long-distance trains, Norway and the Netherlands. */
+export const NATIONAL = ["ld", "uk", "ie", "fr", "fi", "no", "nl"];
 
 /** Tell the engine which time zone a region's timetable is in (the
  * manifest's `tz`; docs/plan-europe.md A2). Older data has none: the engine

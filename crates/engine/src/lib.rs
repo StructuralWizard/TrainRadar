@@ -15,6 +15,7 @@ mod json;
 pub mod live;
 pub mod network;
 pub mod networkrail;
+mod nordic;
 pub mod onboard;
 pub mod places;
 pub mod poll;
@@ -123,6 +124,9 @@ pub enum Country {
     UnitedKingdom,
     Ireland,
     France,
+    Finland,
+    Norway,
+    Netherlands,
     /// No live feed yet: Luxembourg.
     TimetableOnly,
 }
@@ -134,6 +138,9 @@ impl Country {
             Country::UnitedKingdom => &networkrail::NetworkRail,
             Country::Ireland => &ireland::Ireland,
             Country::France => &france::France,
+            Country::Finland => &nordic::Finland,
+            Country::Norway => &nordic::Norway,
+            Country::Netherlands => &nordic::Netherlands,
             Country::TimetableOnly => &timetable_only::TimetableOnly,
         }
     }
@@ -187,8 +194,9 @@ impl Engine {
 
     /// Which country's live feeds this engine reads: `"es"` (Renfe, the
     /// default), `"uk"` (Network Rail), `"ie"` (the NTA, through our
-    /// backend), `"fr"` (SNCF, through our backend) or `"lu"` (no live
-    /// feed yet). Set before ingesting anything.
+    /// backend), `"fr"` (SNCF), `"fi"` (Digitraffic), `"no"` (Entur), `"nl"`
+    /// (OVapi), all through our backend, or `"lu"` (no live feed yet). Set
+    /// before ingesting anything.
     #[wasm_bindgen(js_name = setCountry)]
     pub fn set_country(&mut self, code: &str) -> Result<(), JsError> {
         self.country = match code {
@@ -197,6 +205,9 @@ impl Engine {
             "ie" => Country::Ireland,
             "fr" => Country::France,
             "lu" => Country::TimetableOnly,
+            "fi" => Country::Finland,
+            "no" => Country::Norway,
+            "nl" => Country::Netherlands,
             _ => return Err(JsError::new(&format!("unknown country {code}"))),
         };
         Ok(())

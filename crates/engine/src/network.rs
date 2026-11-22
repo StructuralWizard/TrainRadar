@@ -967,6 +967,11 @@ pub mod tests {
         assert!(placed_by_timetable("fr", true));
         assert!(placed_by_timetable("fr-ara", true));
         assert!(placed_by_timetable("uk", true));
+        assert!(placed_by_timetable("nl", true));
+        assert!(
+            placed_by_timetable("no", true),
+            "for its trains without GPS"
+        );
         assert!(placed_by_timetable("ouigo", false));
         assert!(!placed_by_timetable("ld", true));
         assert!(!placed_by_timetable("10", true));

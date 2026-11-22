@@ -247,3 +247,15 @@ app, and update the "last updated" dates when they change.
 - **Live data (France):** with `FR_ENABLED`, the `eu` job deploys `backend-eu/`, which writes
   `fr/rt/` every minute. Check `fr/rt/status.json` on the live domain.
 - **Where they show:** hidden countries, opened only with `?country=fr` or `?country=lu`.
+
+## Finland, Norway and the Netherlands (M2)
+
+- **Turning them on:** the variables **`FI_ENABLED`**, **`NO_ENABLED`** and **`NL_ENABLED`** = `true`.
+  No keys.
+- **What the deploy then builds:** `data/fi/`, `data/no/` and `data/nl/`, each with its `plan/`, on
+  the country's OpenStreetMap track. `tools/fetch-eu.sh` downloads each country's timetable and,
+  for Norway and the Netherlands, cuts it to trains with `tools/gtfs-rail.py`.
+- **Live data:** the `eu` job deploys `backend-eu/` with each switch; check `fi/rt/status.json`,
+  `no/rt/status.json` and `nl/rt/status.json` on the live domain.
+- **Set the variables before merging** (or run the Deploy workflow afterwards): the live Worker
+  only reads them when it's deployed.

@@ -136,7 +136,7 @@ test("France: SNCF's feeds, no key, everything kept; alternating every 30 s", as
 
 test("the Worker re-arms only the countries switched on", async () => {
   const { default: worker, COUNTRIES } = await import("../src/index.js");
-  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr"]);
+  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl"]);
   const asked = [];
   const env = {
     FR_ENABLED: "true",
@@ -145,4 +145,28 @@ test("the Worker re-arms only the countries switched on", async () => {
   };
   await worker.scheduled({}, env);
   assert.deepEqual(asked, [["fr", "https://ingest/ensure?c=fr"]]);
+});
+
+test("Norway: only Vy's, Go-Ahead's, SJ's and Flytoget's trains and alerts", async () => {
+  const { NO, isNorwegianRailAlert } = await import("../src/nordic.js");
+  const vy = tripUpdate("a", "VYG:ServiceJourney:1913_819010-R");
+  const flt = tripUpdate("b", "FLT:ServiceJourney:1-2614-3736-20261122");
+  const bus = tripUpdate("c", "RUT:ServiceJourney:31-123");
+  const out = filterFeed(feed(vy, flt, bus), NO.keep("trip_updates.pb"));
+  assert.equal(out.kept, 2);
+  const alerts = filterFeed(feed(alert("x", string(2, "VYG:Line:R14")), alert("y", string(2, "VYX:Line:FB1"))), isNorwegianRailAlert);
+  assert.equal(alerts.kept, 1, "Vy's trains, not Vy's express buses");
+  // Every 20 s: GPS, trip updates each minute, alerts every five.
+  const names = [1, 2, 3, 15].map((n) => feedFor(n, NO).name);
+  assert.deepEqual(names, ["vehicle_positions.pb", "vehicle_positions.pb", "trip_updates.pb", "alerts.pb"]);
+  assert.equal(NO.headers()["ET-Client-Name"], "metranos-trainradar");
+});
+
+test("Finland and the Netherlands: no key, a header naming the app, everything kept", async () => {
+  const { FI, NL } = await import("../src/nordic.js");
+  assert.deepEqual([0, 1].map((n) => feedFor(n, FI).name), ["trip_updates.pb", "vehicle_positions.pb"]);
+  assert.ok(FI.headers()["Digitraffic-User"]);
+  assert.equal(feedFor(7, NL).path, "trainUpdates.pb");
+  assert.match(NL.headers()["user-agent"], /TrainRadar/);
+  for (const c of [FI, NL]) assert.equal(c.keep("trip_updates.pb"), null);
 });

@@ -43,13 +43,27 @@ it every two minutes.
 Nothing is filtered: both feeds hold SNCF's trains only. `fr/rt/status.json` has the same shape as
 Ireland's. The back-off is the same.
 
+## Finland, Norway and the Netherlands (M2)
+
+Open GTFS-Realtime, no key. Each provider asks clients to name themselves; we send a generic name
+(`Metranos-TrainRadar`), never a person's details.
+
+| Country | Source | Every cycle | Kept |
+|---|---|---|---|
+| Finland (`fi/rt/`) | Digitraffic (`Digitraffic-User` header) | 15 s: GPS and trip updates, alternating | everything (VR only) |
+| Norway (`no/rt/`) | Entur (`ET-Client-Name` header) | 20 s: GPS; trip updates each minute; alerts every 5 min | Vy, Go-Ahead Nordic, SJ Norge, Flytoget (codespaces VYG, GOA, SJN, FLT) |
+| Netherlands (`nl/rt/`) | OVapi `trainUpdates.pb` | 60 s | everything (trains only) |
+
+Entur's trip updates are about 5 MB; filtering them takes about 50 ms.
+
 ## Settings
 
 - **Which country an object serves:** its name (`ie`, `fr`), passed by the minute cron's
   `/ensure?c=<code>`. The object created before France existed is Ireland's.
 - **`IE_ENABLED`** (wrangler var): Ireland's kill switch. The deploy job (`eu` in `deploy.yml`)
   sets it to `true` when the repository variable `IE_ENABLED` is `true` and the secret exists.
-- **`FR_ENABLED`** (wrangler var): France's, set from the repository variable `FR_ENABLED`.
+- **`FR_ENABLED`**, **`FI_ENABLED`**, **`NO_ENABLED`**, **`NL_ENABLED`** (wrangler vars): each
+  country's switch, set from the repository variable of the same name.
 - **Redeploys:** a merge redeploys this Worker only when `backend-eu/` changed. Actions → Deploy →
   Run workflow always redeploys it.
 

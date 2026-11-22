@@ -11,6 +11,7 @@ mod igr;
 mod inspect;
 mod load;
 mod netcheck;
+mod nordic;
 mod nrsched;
 mod osm;
 mod profile;
@@ -24,6 +25,7 @@ use build::{
 };
 use calendar::{Window, format_date, parse_date};
 use gtfs_io::{Gtfs, Result};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -68,7 +70,9 @@ usage:
                       (the UK: --uk-schedule FILE --naptan FILE [--corpus FILE]
                        [--ni-txc ZIP])
                       (Ireland: --ie-gtfs ZIP; France: --fr-gtfs ZIP;
-                       Luxembourg: --lu-gtfs ZIP)
+                       Luxembourg: --lu-gtfs ZIP; Finland: --fi-gtfs ZIP;
+                       Norway: --no-gtfs ZIP; Netherlands: --nl-gtfs ZIP,
+                       the last two cut to trains by tools/gtfs-rail.py)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -117,6 +121,12 @@ struct BuildArgs {
     fr_gtfs: Option<PathBuf>,
     /// The Administration des transports publics' GTFS: Luxembourg (CFL).
     lu_gtfs: Option<PathBuf>,
+    /// Digitraffic's GTFS (gtfs-passenger.zip): Finland.
+    fi_gtfs: Option<PathBuf>,
+    /// Entur's rail operators, merged by tools/gtfs-rail.py: Norway.
+    no_gtfs: Option<PathBuf>,
+    /// OVapi's national GTFS, cut to trains by tools/gtfs-rail.py.
+    nl_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -142,6 +152,9 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         ie_gtfs: None,
         fr_gtfs: None,
         lu_gtfs: None,
+        fi_gtfs: None,
+        no_gtfs: None,
+        nl_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -177,6 +190,9 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--ie-gtfs" => a.ie_gtfs = Some(val()?.into()),
             "--fr-gtfs" => a.fr_gtfs = Some(val()?.into()),
             "--lu-gtfs" => a.lu_gtfs = Some(val()?.into()),
+            "--fi-gtfs" => a.fi_gtfs = Some(val()?.into()),
+            "--no-gtfs" => a.no_gtfs = Some(val()?.into()),
+            "--nl-gtfs" => a.nl_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -202,10 +218,13 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.ie_gtfs.is_none()
         && a.fr_gtfs.is_none()
         && a.lu_gtfs.is_none()
+        && a.fi_gtfs.is_none()
+        && a.no_gtfs.is_none()
+        && a.nl_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs or --lu-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs or --nl-gtfs"
                 .into(),
         );
     }
@@ -341,8 +360,62 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.ie_gtfs, "ie"),
         (&a.fr_gtfs, "fr"),
         (&a.lu_gtfs, "lu"),
+        (&a.fi_gtfs, "fi"),
+        (&a.no_gtfs, "no"),
+        (&a.nl_gtfs, "nl"),
     ] {
         let Some(path) = path else { continue };
+        if matches!(kind, "fi" | "no" | "nl") {
+            // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
+            // the Netherlands placed by timetable plus delay.
+            let mut g = Gtfs::open(path)?;
+            let mut feed = load::load(&mut g, &window)?;
+            if kind != "fi" {
+                build::keep_rail(&mut feed);
+            }
+            let (st, operator) = match kind {
+                "fi" => (nordic::normalise_finland(&mut feed), "VR"),
+                "no" => (nordic::normalise_norway(&mut feed), "Entur"),
+                _ => (nordic::normalise_netherlands(&mut feed), "NS"),
+            };
+            report.push_str(&format!(
+                "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
+                 window, {} too short; {} stop_times rows\n",
+                path.display(),
+                feed.stats.trips_total,
+                feed.trips.len(),
+                st.by_product
+                    .iter()
+                    .map(|(p, n)| format!("{p} {n}"))
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                st.dropped,
+                feed.stats.trips_outside_window,
+                feed.stats.trips_too_short,
+                feed.stats.stop_time_rows
+            ));
+            if feed.trips.is_empty() {
+                return Err(format!("{}: no trains in the window", path.display()).into());
+            }
+            let regions: BTreeMap<String, Vec<&load::Trip>> = if kind == "fi" {
+                nordic::split_finland(&feed)
+            } else {
+                std::iter::once((kind.to_owned(), feed.trips.iter().collect())).collect()
+            };
+            for (code, trips) in regions {
+                let (mut tt, legs, rs) =
+                    build_timetable(&feed, &trips, &code, header.clone(), router.as_mut());
+                tt.operator = operator.into();
+                tt.live = true;
+                let rec = RegionRec {
+                    name: nordic::region_name(&code).into(),
+                    bbox_e5: bbox_e5(&tt),
+                    code,
+                };
+                built.push((rec, tt, legs, rs));
+            }
+            continue;
+        }
         if kind == "fr" {
             // SNCF (docs/europe/fr.md): TGV, OUIGO, Intercités, Lyria and
             // ICE in one national region, TER by area; Paris time (the same
@@ -777,6 +850,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
             france::ATTRIBUTION_FR
         } else if a.lu_gtfs.is_some() {
             build::ATTRIBUTION_LU
+        } else if a.fi_gtfs.is_some() {
+            nordic::ATTRIBUTION_FI
+        } else if a.no_gtfs.is_some() {
+            nordic::ATTRIBUTION_NO
+        } else if a.nl_gtfs.is_some() {
+            nordic::ATTRIBUTION_NL
         } else {
             ATTRIBUTION
         },

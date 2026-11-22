@@ -168,6 +168,7 @@ fn scheduled_trains(
     net: &Network,
     now: i64,
     updates: &HashMap<&str, &RtTripUpdate>,
+    gps: &std::collections::HashSet<(u16, u32, i64)>,
 ) -> Vec<LiveTrain> {
     use crate::networkrail::placed_by_timetable;
     use trainradar_proto::time::{madrid_day, service_day_base};
@@ -195,6 +196,10 @@ fn scheduled_trains(
             let late = i64::from(delay.unwrap_or(0).max(0));
             for day in [today - 1, today] {
                 if !crate::network::runs_on(&r.tt.header, trip, day) {
+                    continue;
+                }
+                // Already on the map from its GPS (Finland, Norway).
+                if gps.contains(&(tref.region, tref.trip, day)) {
                     continue;
                 }
                 let start = service_day_base(day) + behind + i64::from(trip.start);
@@ -533,7 +538,12 @@ impl Live {
             }
         }
         let mut trains = dedupe(trains);
-        trains.extend(scheduled_trains(net, now, &updates));
+        let gps: std::collections::HashSet<(u16, u32, i64)> = trains
+            .iter()
+            .filter_map(|t| t.matched)
+            .map(|m| (m.trip.region, m.trip.trip, m.day))
+            .collect();
+        trains.extend(scheduled_trains(net, now, &updates, &gps));
         self.trains = trains;
     }
 
@@ -953,6 +963,33 @@ mod tests {
         assert_eq!(v.delay, None);
         assert!((v.coord.lat - 40.35).abs() < 2e-3, "{:?}", v.coord);
         assert_eq!(live.trains[0].rt.trip_id, "1004D100C3");
+    }
+
+    #[test]
+    fn norway_draws_gps_trains_once_and_the_rest_by_timetable() {
+        use crate::network::tests::sample_timetable;
+        let mut tt = sample_timetable();
+        tt.region = "no".into();
+        tt.operator = "Entur".into();
+        let mut net = crate::network::Network::default();
+        net.load_timetable(&trainradar_proto::encode(&tt).unwrap())
+            .unwrap();
+        let now = local(8, 5);
+        let mut live = Live::default();
+        // No GPS yet: trip 100 by its timetable.
+        live.rebuild(&net, now);
+        assert_eq!(live.trains.len(), 1);
+        assert!(live.trains[0].scheduled);
+        // With its GPS: once, from the GPS.
+        live.ingest(
+            &net,
+            "vp_no",
+            FeedData::Vehicles(vec![vehicle("1004D100C3", 40.35, Some(now))]),
+            now,
+        );
+        assert_eq!(live.trains.len(), 1, "not drawn twice");
+        assert!(!live.trains[0].scheduled);
+        assert_eq!(live.trains[0].feed, "vp_no");
     }
 
     #[test]

@@ -46,6 +46,13 @@ export const STRINGS = {
     srcIeTimetable: "Horario y paradas: Iarnród Éireann, de la National Transport Authority (CC BY 4.0).",
     srcFrDelay: "Retraso: SNCF (GTFS-Realtime, vía transport.data.gouv.fr).",
     srcFrTimetable: "Horario y paradas: SNCF Voyageurs (transport.data.gouv.fr, ODbL).",
+    srcGpsPos: "Posición: GPS publicado por {by}; entre lecturas avanza según el horario.",
+    srcFiDelay: "Retraso: Fintraffic (digitraffic.fi, en directo).",
+    srcFiTimetable: "Horario y paradas: Fintraffic (digitraffic.fi, CC BY 4.0).",
+    srcNoDelay: "Retraso: Entur (en directo).",
+    srcNoTimetable: "Horario y paradas: Entur (NLOD).",
+    srcNlDelay: "Retraso: datos nacionales NDOV, vía OVapi (en directo).",
+    srcNlTimetable: "Horario y paradas: NDOV, vía OVapi (CC0).",
     sourceEstimated: "estimado",
     position: "Posición",
     gpsAgo: "GPS {age}",
@@ -535,6 +542,12 @@ export const STRINGS = {
     countryLu: "Luxemburgo",
     allFr: "Toda Francia",
     allLu: "Todo Luxemburgo",
+    countryFi: "Finlandia",
+    countryNo: "Noruega",
+    countryNl: "Países Bajos",
+    allFi: "Toda Finlandia",
+    allNo: "Toda Noruega",
+    allNl: "Todos los Países Bajos",
     noticesTitle: "Avisos",
     noticesNotYet: "Aún no hay avisos para {country}: llegarán con los datos en directo.",
     timetableOnly: "Según horario: aún no hay datos en directo de este país",
@@ -561,6 +574,12 @@ export const STRINGS = {
       'Datos: horarios y datos en directo de SNCF Voyageurs vía <a href="https://transport.data.gouv.fr/datasets/horaires-sncf" target="_blank" rel="noopener">transport.data.gouv.fr</a> (ODbL) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SNCF',
     attributionLu:
       'Datos: horarios de la <a href="https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/" target="_blank" rel="noopener">Administration des transports publics</a> (CC BY 4.0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con CFL',
+    attributionFi:
+      'Datos: Fintraffic / <a href="https://www.digitraffic.fi/" target="_blank" rel="noopener">digitraffic.fi</a>, CC BY 4.0 · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con VR ni Fintraffic',
+    attributionNo:
+      'Datos: contiene datos bajo la NLOD puestos a disposición por <a href="https://developer.entur.org/" target="_blank" rel="noopener">Entur AS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Entur ni los operadores',
+    attributionNl:
+      'Datos: <a href="https://gtfs.ovapi.nl/" target="_blank" rel="noopener">OVapi</a>, de los datos nacionales NDOV (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con NS ni los operadores',
     attributionIe:
       'Datos: horario de Iarnród Éireann de la <a href="https://www.transportforireland.ie/transitData/PT_Data.html" target="_blank" rel="noopener">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, ofrecido «tal cual» · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Iarnród Éireann ni la NTA',
     attribution:
@@ -609,6 +628,13 @@ export const STRINGS = {
     srcIeTimetable: "Timetable and stops: Iarnród Éireann, from the National Transport Authority (CC BY 4.0).",
     srcFrDelay: "Delay: SNCF (GTFS-Realtime, via transport.data.gouv.fr).",
     srcFrTimetable: "Timetable and stops: SNCF Voyageurs (transport.data.gouv.fr, ODbL).",
+    srcGpsPos: "Position: GPS published by {by}; between fixes it moves on with the timetable.",
+    srcFiDelay: "Delay: Fintraffic (digitraffic.fi, live).",
+    srcFiTimetable: "Timetable and stops: Fintraffic (digitraffic.fi, CC BY 4.0).",
+    srcNoDelay: "Delay: Entur (live).",
+    srcNoTimetable: "Timetable and stops: Entur (NLOD).",
+    srcNlDelay: "Delay: the national NDOV data, via OVapi (live).",
+    srcNlTimetable: "Timetable and stops: NDOV, via OVapi (CC0).",
     sourceEstimated: "estimated",
     position: "Position",
     gpsAgo: "GPS {age}",
@@ -1098,6 +1124,12 @@ export const STRINGS = {
     countryLu: "Luxembourg",
     allFr: "All of France",
     allLu: "All of Luxembourg",
+    countryFi: "Finland",
+    countryNo: "Norway",
+    countryNl: "Netherlands",
+    allFi: "All of Finland",
+    allNo: "All of Norway",
+    allNl: "All of the Netherlands",
     noticesTitle: "Notices",
     noticesNotYet: "No notices for {country} yet: they'll come with the live data.",
     timetableOnly: "By timetable: no live data for this country yet",
@@ -1124,6 +1156,12 @@ export const STRINGS = {
       'Data: SNCF Voyageurs timetables and live data via <a href="https://transport.data.gouv.fr/datasets/horaires-sncf" target="_blank" rel="noopener">transport.data.gouv.fr</a> (ODbL) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SNCF',
     attributionLu:
       'Data: timetables from the <a href="https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/" target="_blank" rel="noopener">Administration des transports publics</a> (CC BY 4.0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with CFL',
+    attributionFi:
+      'Data: Fintraffic / <a href="https://www.digitraffic.fi/" target="_blank" rel="noopener">digitraffic.fi</a>, CC BY 4.0 · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with VR or Fintraffic',
+    attributionNo:
+      'Data: contains data under the NLOD made available by <a href="https://developer.entur.org/" target="_blank" rel="noopener">Entur AS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Entur or the operators',
+    attributionNl:
+      'Data: <a href="https://gtfs.ovapi.nl/" target="_blank" rel="noopener">OVapi</a>, from the national NDOV data (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with NS or the operators',
     attributionIe:
       'Data: Iarnród Éireann\'s timetable from the <a href="https://www.transportforireland.ie/transitData/PT_Data.html" target="_blank" rel="noopener">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, provided "as is" · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Iarnród Éireann or the NTA',
     attribution:
