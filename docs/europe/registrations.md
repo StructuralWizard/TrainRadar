@@ -122,7 +122,7 @@ company's contact address, which I'll ask you for when building M2.
 3. **Nothing to register** for Slovakia or Estonia (built), Latvia or Lithuania. Slovenia's access
    point (nap.si) seems to need an account: open one as Metranos Ltd if it offers one, and tell me
    what it gives.
-   - Latvia: ViVi's file is behind a bot check; ask ViVi (info@vivi.lv, from their site) for a
+   - Latvia: ViVi's file is behind a bot check; ask ViVi, through the contact page on vivi.lv, for a
      direct link.
    - Lithuania: the national GTFS has no trains; ask LTG Link whether it publishes one.
    - Austria: without the MVO account, ÖBB's yearly GTFS on data.oebb.at (CC BY) needs a click on
