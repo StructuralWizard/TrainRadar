@@ -162,6 +162,16 @@ The apps see problems our servers can't:
 | App counts | none (no ids, no location; IP addresses not stored) | hourly totals: 90 days |
 | User reports | whatever someone types, and their location only if they tick it | 90 days, deleted on request |
 
+**What this changes for Play and the privacy policy:**
+- **Play's data safety form** no longer says "no data collected". It declares diagnostics (app
+  counts) and user content (problem reports): collected, optional, not shared. Cloudflare is a
+  service provider, not a third party.
+- **The privacy policy** describes both.
+- **EU representative.** Problem reports can contain personal data. Once they do, a UK company
+  serving people in the EU may need a data protection representative in the EU (GDPR Art. 27).
+  The same question comes up for [travellers' reports](plan-crowd-reports.md#legal-and-store).
+  For a lawyer to confirm.
+
 ## Steps
 
 - **I1:**

@@ -6,10 +6,13 @@ later"): yearly is already live (`pro_yearly`, €1.99 a year), and this adds li
 ## The product
 
 - **Where:** Play Console → Monetise with Play → Products → **One-time products**.
-- **What:** `pro_lifetime`, a single "buy" purchase option. It can't be consumed.
-- **Older billing libraries:** Play Console asks which purchase option older billing libraries
-  see. Mark "buy" as that one ("backwards compatible"), because `cordova-plugin-purchase` uses an
-  older library. Check this when creating it.
+- **What:** `pro_lifetime`, with a single "buy" purchase option.
+- **Non-consumable:** Play Console has no setting for that. A product stays non-consumable because
+  the app acknowledges it instead of consuming it.
+- **Digital content or service:** Play Console asks which it is, and the answer changes the EU
+  right of withdrawal. Choose with the terms below.
+- **Billing library:** the app uses Play Billing Library 9 (through `cordova-plugin-purchase`
+  13.19.1), which supports the new one-time products.
 - **Price:** €9.99 in Spain, VAT included. Play converts it for the other countries, or the
   maintainer sets them.
   - That is five years of the yearly price.
@@ -49,8 +52,12 @@ later"): yearly is already live (`pro_yearly`, €1.99 a year), and this adds li
   - at least 60 days' notice;
   - a final release whose on-device features keep working.
 - **To decide:** whether buyers get a partial refund if Pro closes within, say, two years of their
-  purchase. That's a goodwill gesture, not something we know to be required; a lawyer should
-  confirm.
+  purchase. A lawyer should confirm what's owed:
+  - The EU Digital Content Directive (Art. 16) refunds any price paid in advance for the part of a
+    contract that would have remained. For an open-ended "lifetime", what that means is unclear.
+  - No rule about the word "lifetime" itself was found. Play forbids misleading users about
+    content, and the UK's DMCC Act counts true information "presented in a misleading way" as
+    misleading.
 - **Data safety:** no change.
 - **Store listing:** mention the lifetime option.
 - **The UK's subscription rules (DMCC):** they don't apply to a one-time purchase.

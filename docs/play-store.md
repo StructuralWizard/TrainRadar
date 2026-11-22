@@ -152,6 +152,24 @@ Security practices: **Data is encrypted in transit: Yes** (HTTPS only). **Users 
 request data deletion:** not applicable (no data collected); the app has "Delete all my
 data" for what it stores on the phone.
 
+## Precise location declaration
+
+**Due by 27 January 2027.** Every app that asks for precise location (`ACCESS_FINE_LOCATION`)
+must complete a declaration in Play Console. The form opens in November 2026, and compliance is
+mandatory from 27 January 2027
+([Google's announcement](https://support.google.com/googleplay/android-developer/answer/17033915),
+read 2026-11-22).
+
+TrainRadar asks for precise location for "Usar mi ubicación", nearest stations and "¿Voy en este
+tren?". All of it runs in the foreground and stays on the phone.
+
+**Answer:** the app needs precise location because the on-train check compares the phone's
+position with trains on nearby, sometimes parallel, lines. An approximate position (about 3 km²)
+can't tell them apart.
+
+For apps that target Android 17 (API 37) and higher, Android's location button becomes the
+required way to get precise location for one-off uses. Check this before raising `targetSdk` to 37.
+
 ## Testing tracks
 
 1. **Internal testing** (up to 100 testers, instant): your own account(s), to check the
