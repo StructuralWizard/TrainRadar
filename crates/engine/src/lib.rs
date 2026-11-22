@@ -75,7 +75,10 @@ fn flags(net: &Network, v: &TrainView, t: &live::LiveTrain) -> u32 {
             f |= FLAG_STOPPED_LIKELY;
         }
     }
-    if v.source == PositionSource::Scheduled {
+    // Timetable only: placed by its timetable with no live news at all. A
+    // UK or Irish train placed by timetable but with a live delay is drawn
+    // in its delay colour, like any live train.
+    if v.source == PositionSource::Scheduled && t.delay_source.is_none() {
         f |= FLAG_SCHEDULED_ONLY;
     }
     f
@@ -1866,5 +1869,42 @@ mod tests {
             l["features"][0]["properties"]["notice_kinds"],
             incidents::Kind::Works as u32
         );
+    }
+
+    #[test]
+    fn timetable_placed_trains_with_a_live_delay_get_their_colour() {
+        use crate::network::tests::{local, sample_timetable};
+        use crate::source::{FeedData, RtTripUpdate};
+        let mut tt = sample_timetable();
+        tt.region = "uk".into();
+        for (t, id) in tt.trips.iter_mut().zip([
+            "C15016:2026-05-17:P",
+            "C15017:2026-05-17:P",
+            "C15018:2026-05-17:O",
+        ]) {
+            t.service = None;
+            t.id_rest = id.into();
+        }
+        let mut net = Network::default();
+        net.load_timetable(&encode(&tt).unwrap()).unwrap();
+        let now = local(9, 5);
+        let mut live = live::Live::default();
+        live.rebuild(&net, now);
+        let flag = |live: &live::Live| {
+            let v = &live.views(&net, now, false)[0];
+            flags(&net, v, &live.trains[v.index])
+        };
+        // No live news yet: timetable only (white, hollow).
+        assert_ne!(flag(&live) & FLAG_SCHEDULED_ONLY, 0);
+        // A live delay: drawn in its delay colour like any live train.
+        let tu = RtTripUpdate {
+            trip_id: "C15016:2026-05-17:P".into(),
+            delay: Some(300),
+            canceled: false,
+            accessible: None,
+            stops: vec![],
+        };
+        live.ingest(&net, "tu_uk", FeedData::TripUpdates(vec![tu]), now);
+        assert_eq!(flag(&live) & FLAG_SCHEDULED_ONLY, 0);
     }
 }
