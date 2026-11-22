@@ -1,0 +1,524 @@
+#ENmJvCOZbI8
+0 London Euston
+858 Watford Junction
+1963 Milton Keynes Central
+3216 Rugby
+4006 Nuneaton
+4381 Atherstone
+4866 Tamworth
+5237 Lichfield Trent Valley
+5652 Rugeley Trent Valley
+6118 Stafford
+7183 Crewe
+#GxHxFy3V6h4
+0 KGX-PBO
+2973 PBO-GRA
+3970 GRA-NNG
+#QchQrnq0ueQ
+0 KGX-SVG
+1344 SVG-PBO
+2944 PBO-GRA
+4005 GRA-NNG
+4574 NNG-RET
+5147 RET-DON
+5760 DON-YRK
+7189 YRK-NTR
+8520 NTR-DAR
+9315 DAR-DHM
+10433 DHM-NCL
+#gaqZQxR1Bu0
+0 YRK-NTR
+1246 NTR-DAR
+2035 DAR-DHM
+3094 DHM-NCL
+#vbVs2m0HdhU
+0 LDS-WKF
+790 WKF-DON
+1928 DON-GRA
+3873 GRA-SVG
+6568 SVG-KGX
+#DCPK5LHMmQc
+0 Swansea
+482 Neath
+1001 Port Talbot Parkway
+1741 Bridgend
+2944 Cardiff Central
+4274 Newport
+6973 Gloucester
+9609 Swindon
+11407 Reading
+12788 London Paddington
+#QlKu40VTcIw
+0 NCL-MPT
+742 MPT-ALM
+1421 ALM-BWK
+2504 BWK-RSN
+3114 RSN-DUN
+3872 DUN-EDB
+#ztTpk1MbWKw
+0 Bromsgrove
+302 Barnt Green
+480 Longbridge
+612 Northfield
+752 Kings Norton
+916 Bournville
+1038 Selly Oak
+1167 University
+1357 Five Ways
+1543 Birmingham New Street
+1948 Duddeston
+2022 Aston
+2203 Gravelly Hill
+2324 Erdington
+2434 Chester Road
+2554 Wylde Green
+2714 Sutton Coldfield
+2894 Four Oaks
+3044 Butlers Lane
+3144 Blake Street
+3365 Shenstone
+3625 Lichfield City
+3835 Lichfield Trent Valley
+#-YNFC401LsE
+0 Richmond
+290 Kew Gardens
+430 Gunnersbury
+591 South Acton
+723 Acton Central
+972 Willesden Junction (NLL)
+1147 Kensal Rise
+1246 Brondesbury Park
+1346 Brondesbury
+1440 West Hampstead
+1522 Finchley Road & Frognal
+1643 Hampstead Heath
+1733 Gospel Oak
+1885 Kentish Town West
+2017 Camden Road
+2200 Caledonian Road & Barnsbury
+2313 Highbury & Islington
+2435 Canonbury
+2564 Dalston Kingsland
+2718 Hackney Central
+2858 Homerton
+3049 Hackney Wick
+3239 Stratford
+3372 W:North Woolwich Branch
+3507 W:Woolwich Ferry
+3584 Willesden Junction (WLL)
+3931 Shepherds Bush
+4048 Kensington (Olympia)
+4200 West Brompton
+4360 Imperial Wharf
+4567 Clapham Junction
+#iaBPNPAsYVM
+0 Brixton
+86 Stockwell
+207 Vauxhall
+290 Pimlico
+386 Victoria
+530 Green Park
+631 Oxford Circus
+753 Warren Street
+854 Euston
+929 King's Cross St. Pancras
+1105 Highbury & Islington
+1250 Finsbury Park
+1450 Seven Sisters
+1600 Tottenham Hale
+1706 Blackhorse Road
+1818 Walthamstow Central
+#R93BhXJO-wM
+72 Stanmore
+164 Canons Park
+289 Queensbury
+381 Kingsbury
+595 Wembley Park
+770 Neasden
+870 Dollis Hill
+967 Willesden Green
+1082 Kilburn
+1166 West Hampstead
+1251 Finchley Road
+1339 Swiss Cottage
+1432 St. John's Wood
+1566 Baker Street
+1693 Bond Street
+1787 Green Park
+1921 Westminster
+2040 Waterloo
+2099 Southwark
+2212 London Bridge
+2349 Bermondsey
+2433 Canada Water
+2577 Canary Wharf
+2735 North Greenwich
+2886 Canning Town
+3013 West Ham
+3169 Stratford
+#PFcDvWzR-80
+67 Upminster
+362 Ockendon
+579 Chafford Hundred
+766 Grays
+831 Pitsea
+1194 Stanford-le-Hope
+1408 East Tilbury
+1763 Tilbury Town
+1894 Grays
+2197 Purfleet
+2482 Rainham
+2685 Dagenham Dock
+2944 Barking
+3297 West Ham
+3591 Limehouse
+3853 Fenchurch Street
+#G9GPUJ7hDYo
+0 Edgware Road to Paddington (Praed Street)
+150 Paddington (Praed Street) to Bayswater
+270 Bayswater to Notting Hill Gate
+390 Notting Hill Gate to High Street Kensington
+510 High Street Kensington to Gloucester Road
+735 Gloucester Road to South Kensington
+885 South Kensington to Sloane Square
+1020 Sloane Square to Victoria
+1140 Victoria to St. James's Park
+1245 St. James's Park to Westminster
+1350 Westminster to Embankment
+1455 Embankment to Temple
+1530 Temple to Blackfriars
+1635 Blackfriars to Mansion House
+1785 Mansion House to Cannon Street
+1875 Cannon Street to Monument
+1965 Monument to Tower Hill
+2235 Tower Hill to Aldgate
+2340 Aldgate to Liverpool Street
+2460 Liverpool Street to Moorgate
+2565 Moorgate to Barbican
+2685 Barbican to Farringdon
+2805 Farringdon to King's Cross St. Pancras
+2985 King's Cross St. Pancras to Euston Square
+3105 Euston Square to Great Portland Street
+3225 Great Portland Street to Baker Street
+3330 Baker Street to Edgware Road
+#SYNd-zO9nKY
+0 Edgware Road to Paddington (Praed Street)
+160 Paddington (Praed Street) to Bayswater
+270 Bayswater to Notting Hill Gate
+370 Notting Hill Gate to High Street Kensington
+465 High Street Kensington to Earl's Court
+680 Earl's Court to West Brompton
+960 West Brompton to Fulham Broadway
+1085 Fulham Broadway to Parsons Green
+1185 Parsons Green to Putney Bridge
+1320 Putney Bridge to East Putney
+1440 East Putney to Southfields
+1590 Southfields to Wimbledon Park
+1725 Wimbledon Park to Wimbledon
+#jI3Yo-MA__o
+77 Amersham
+307 Chalfont & Latimer
+524 Chorleywood
+722 Rickmansworth
+980 Moor Park
+1596 Harrow-on-the-Hill
+2259 Finchley Road
+2576 Baker Street
+2759 Great Portland Street
+2835 Euston Square
+2925 King's Cross St. Pancras
+3094 Farringdon
+3183 Barbican
+3265 Moorgate
+3366 Liverpool Street
+3478 Aldgate
+#ELr59VWH7uw
+0 Elephant & Castle
+83 Lambeth North
+186 Waterloo
+280 Embankment
+347 Charing Cross
+443 Piccadilly Circus
+589 Oxford Circus
+706 Regent's Park
+803 Baker Street
+906 Marylebone
+982 Edgware Road
+1078 Paddington
+1192 Warwick Avenue
+1292 Maida Vale
+1407 Kilburn Park
+1532 Queen's Park
+#SiDMz29B7Vg
+0 Upminster Depot to Upminster
+360 Upminster to Upminster Bridge
+540 Upminster Bridge to Hornchurch
+660 Hornchurch to Elm Park
+765 Elm Park to Dagenham East
+930 Dagenham East to Dagenham Heathway
+1070 Dagenham Heathway to Becontree
+1200 Becontree to Upney
+1350 Upney to Barking
+1500 Barking to East Ham
+1740 East Ham to Upton Park
+1880 Upton Park to Plaistow
+2000 Plaistow to West Ham
+2140 West Ham to Bromley-by-Bow
+2290 Bromley-by-Bow to Bow Road
+2430 Bow Road to Mile End
+2540 Mile End to Stepney Green
+2675 Stepney Green to Whitechapel
+2805 Whitechapel to Aldgate East
+2960 Aldgate East to Tower Hill
+3090 Tower Hill to Monument
+3200 Monument to Cannon Street
+3280 Cannon Street to Mansion House
+3360 Mansion House to Blackfriars
+3450 Blackfriars to Temple
+3540 Temple to Embankment
+3630 Embankment to Westminster
+3730 Westminster to St. James's Park
+3840 St. James's Park to Victoria
+3930 Victoria to Sloane Square
+4060 Sloane Square to South Kensington
+4180 South Kensington to Gloucester Road
+4280 Gloucester Road to Earl's Court
+4430 Earl's Court to West Kensington
+4575 West Kensington to Barons Court
+4680 Barons Court to Hammersmith
+4800 Hammersmith to Ravenscourt Park
+4910 Ravenscourt Park to Stamford Brook
+5010 Stamford Brook to Turnham Green
+5120 Turnham Green to Gunnersbury
+5305 Gunnersbury to Kew Gardens
+5470 Kew Gardens to Richmond
+#UIqMoUmawfg
+0 Hammersmith to Goldhawk Road
+160 Goldhawk Road to Shepherd's Bush Market
+240 Shepherd's Bush Market to Wood Lane
+320 Wood Lane to Latimer Road
+420 Latimer Road to Ladbroke Grove
+490 Ladbroke Grove to Westbourne Park
+600 Westbourne Park to Royal Oak
+720 Royal Oak to Paddington (Suburban)
+825 Paddington (Suburban) to Edgware Road
+1020 Edgware Road to Baker Street
+1155 Baker Street to Great Portland Street
+1280 Great Portland Street to Euston Square
+1405 Euston Square to King's Cross St. Pancras
+1515 King's Cross St. Pancras to Farringdon
+1719 Farringdon to Barbican
+1800 Barbican to Moorgate
+1920 Moorgate to Liverpool Street
+2040 Liverpool Street to Aldgate East
+2310 Aldgate East to Whitechapel
+2460 Whitechapel to Stepney Green
+2595 Stepney Green to Mile End
+2700 Mile End to Bow Road
+2790 Bow Road to Bromley-by-Bow
+2910 Bromley-by-Bow to West Ham
+3045 West Ham to Plaistow
+3225 Plaistow to Upton Park
+3345 Upton Park to East Ham
+3480 East Ham to Barking
+3720 Barking to Barking Sidings
+#WCPqeEeAso0
+0 Pembroke Dock
+338 Pembroke
+522 Lamphey
+1032 Manorbier
+1358 Penally
+1503 Tenby
+2035 Saundersfoot
+2180 Kilgetty
+2694 Narberth
+3165 Whitland
+3965 Carmarthen
+#8W06Z7k0Cw4
+41 Glasgow Queen Street
+258 W:Cowlairs North Junction
+850 Dalmuir
+1400 Dumbarton Central
+1964 W:Craigendoran Junction
+2178 Helensburgh Upper
+2818 Garelochead
+3491 Glen Douglas
+3962 Arrochar and Tarbet
+4871 Ardlui
+5861 Crianlarich
+5956 W:Crianlarich Junction (Oban line diverges)
+6440 Upper Tyndrum
+6869 W:Horseshoe Curve
+7170 Bridge of Orchy
+7394 W:Ascent of Rannoch Moor
+8368 Rannoch
+9044 Corrour
+9395 W:Loch Treig
+9735 W:Fersit Tunnel
+9953 Tulloch
+10475 Roy Bridge
+10795 Spean Bridge
+11556 W:Fort William Junction
+11643 Fort William
+12022 Banavie
+12258 Corpach
+12569 Loch Eil Outward Bound
+12883 Locheilside
+13290 W:Glenfinnan Viaduct
+13457 Glenfinnan
+14049 W:Loch Eilt
+14459 Lochailort
+15016 Beasdale
+15311 Arisaig
+15772 Morar
+16134 Mallaig
+#bLTa6lPKQqs
+42 Scarborough
+376 Seamer
+1075 W:Knapton
+1380 Malton
+2022 W:Castle Howard
+2609 W:Strensall
+2913 York
+#I8QRZUTUQY4
+25 Leeds
+390 Kirkstall Forge
+555 Apperley Bridge
+844 Shipley
+1001 Saltaire
+1141 Bingley
+1290 Crossflatts
+1461 Keighley
+1738 Steeton & Silsden
+1881 Cononley
+2065 Skipton
+2438 Gargrave
+2957 Hellifield
+3197 Long Preston
+3564 Settle
+4094 Horton in Ribblesdale
+4613 Ribblehead
+4738 W:Ribblehead Viaduct
+5219 Dent
+5555 Garsdale
+6258 Kirkby Stephen
+7018 Appleby
+7802 Langwathby
+8182 Lazonby & Kirkoswald
+8697 Armathwaite
+9533 Carlisle
+#YCiKqMVY4SQ
+30 Mallaig
+432 Morar
+1102 Arisaig
+1629 Beasdale
+2142 Lochailort
+3199 Glenfinnan
+3914 Locheilside
+4234 Loch Eil Outward Bound
+4627 Corpach
+4942 Banavie
+5308 Fort William
+#GElAe1hAahU
+0 Salisbury
+1030 Tisbury
+1771 Gillingham
+2219 Templecombe
+2688 Sherborne
+3023 Yeovil Junction
+3630 Crewkerne
+4589 Axminster
+5646 Honiton
+5962 Feniton
+6185 Whimple
+6449 Cranbrook
+6660 Pinhoe
+6984 Exeter Central
+7186 Exeter St David's
+#eHjoav_sb88
+0 Abbey Wood to Woolwich
+134 Woolwich to Custom House
+307 Custom House to Canary Wharf
+439 Canary Wharf to Whitechapel
+574 Whitechapel to Liverpool Street
+665 Liverpool Street to Farringdon
+722 Farringdon to Tottenham Court Road
+827 Tottenham Court Road to Bond Street
+877 Bond Street to Paddington
+979 Paddington to Westbourne Park Sidings
+#AkiThKQoAu8
+0 Paddington
+302 Acton Main Line
+500 Ealing Broadway
+648 West Ealing
+783 Hanwell
+957 Southall
+1143 Hayes & Harlington
+1550 Heathrow Terminals 2 & 3
+#gJpgnn7xwAo
+10 Shenfield
+265 Brentwood
+522 Harold Wood
+697 Gidea Park
+827 Romford
+1053 Chadwell Heath
+1173 Goodmayes
+1293 Seven Kings
+1450 Ilford
+1648 Manor Park
+1809 Forest Gate
+1906 Maryland
+2023 Stratford
+2373 Whitechapel
+2539 Liverpool Street
+2658 Farringdon
+2802 Tottenham Court Road
+2930 Bond Street
+3089 Paddington
+3512 Acton Main Line
+3613 Ealing Broadway
+3752 West Ealing
+3867 Hanwell
+3961 Southall
+4096 Hayes & Harlington
+4459 Heathrow Central
+5013 Heathrow Terminal 5
+#tNj1tobDaps
+0 Stratford International
+150 Stratford
+240 Stratford High Street
+345 Abbey Road
+435 West Ham
+545 Star Lane
+640 Canning Town
+865 West Silvertown
+965 Pontoon Dock
+1100 London City Airport
+1250 King George V
+1320 W:Thames river tunnel
+1470 Woolwich Arsenal
+#1hZiirxA8ko
+0 Canary Wharf to West India Quay
+85 West India Quay to Poplar
+187 Poplar to All Saints
+315 All Saints to Langdon Park
+394 Langdon Park to Devons Road
+505 Devons Road to Bow Church
+605 Bow Church to Pudding Mill Lane
+750 Pudding Mill Lane to Stratford
+#lcf1O9ER3aQ
+0 Bank
+180 Shadwell
+300 Limehouse
+420 Westferry
+600 Canary Wharf
+750 Heron Quays
+890 South Quay
+995 Crossharbour
+1084 Mudchute
+1184 Island Gardens
+1290 Cutty Sark for Maritime Greenwich
+1359 Greenwich
+1455 Deptford Bridge
+1590 Elverson Road
+1660 Lewisham

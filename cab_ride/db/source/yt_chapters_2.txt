@@ -1,0 +1,199 @@
+#bFpiJeVraGg
+165 Porta de Mar (departure)
+1275 Pl. La Coruña (arrival)
+1323 Pl. La Coruña (departure, return)
+2435 Porta de Mar (arrival)
+#rVDrVRSKaoU
+34 Madrid – Puerta de Atocha
+610 Puertollano
+810 Córdoba
+#SIcFGz_Wepw
+559 Madrid Puerta de Atocha
+11701 Barcelona-Sants
+#cKp3_Oa2-ZA
+40 Barcelona Sants
+411 Nearing Zaragoza-Delicias
+685 Madrid Puerta de Atocha
+#eHUgC7aXPGg
+738 Madrid Puerta de Atocha
+#IIaGDKNbA6g
+18 Salida de la estación de Ourense
+71 Viaducto del Río Portos
+92 Túnel de A Burata
+129 Viaducto del Río Barbantiño
+149 Viaducto del río Arenteiro
+180 Viaducto de Marnotes
+201 Viaducto y túnel de A Abeleda
+246 Viaducto de Regos das Lamas (AP-53)
+286 Viaducto Martixe
+#f9tN7iV-kMI
+0 Preview
+82 ENTRONCAMENTO
+359 BARQUINHA
+575 TANCOS
+672 ALMOUROL
+830 PRAIA DO RIBATEJO
+1149 SANTA MARGARIDA
+1420 TRAMAGAL
+1723 ABRANTES
+2303 BEMPOSTA
+3172 PONTE DE SÔR
+3406 FAZENDA
+3746 TORRE DAS VARGENS
+4291 CHANÇA
+4634 MATA
+5022 CRATO
+5873 PORTALEGRE
+6425 ASSUMAR
+6787 ARRONCHES
+7317 SANTA EULÁLIA (CARGO)
+7384 SANTA EULÁLIA-A
+8349 ELVAS
+9293 BADAJOZ
+#lyyjxAfjiAA
+0 Preview
+46 PORT-BOU
+318 CERBÈRE
+758 BANYULS-SUR-MER
+1012 PORT-VENDRES-VILLE
+1183 COLLIOURE
+1412 ARGELÈS-SUR-MER
+1739 ELNE
+2270 PERPIGNAN
+#GMQ91wTaP6c
+648 Saint-Jean-de-Luz - Ciboure
+1229 Biarritz
+#EFNdUhAbp6k
+75 Valença
+551 Vila Nova de Cerveira
+1040 Caminha
+1288 Moledo do Minho
+1484 Âncora-Praia
+1722 Afife
+2152 Viana do Castelo
+2498 Areia-Darque
+2916 Barroselas
+3286 Tamel
+3663 Barcelos
+4156 Nine
+4474 Famalicão
+4849 Trofa
+5393 Ermesinde
+5920 Porto-Campanhã
+#ni4n7tJMo6Y
+0 Preview
+92 PORTO CAMPANHÃ
+329 CONTUMIL
+570 RIO TINTO
+684 ÁGUAS SANTAS - PALMILHEIRA
+859 ERMESINDE
+1004 TRAVAGEM
+1054 LEANDRO
+1102 SÃO FRUTUOSO
+1180 SÃO ROMÃO
+1263 PORTELA
+1401 TROFA
+1566 LOUSADO
+1677 ESMERIZ
+1718 BARRIMAU
+1788 FAMALICÃO
+1981 MOUQUIM
+2040 LOURO
+2123 NINE
+2365 CARREIRA
+2466 MIDÕES
+2661 BARCELOS
+2962 SILVA
+3089 CARAPEÇOS
+3260 TAMEL
+3520 DURRÃES
+3641 BARROSELAS
+3780 SENHORA DAS NEVES
+3831 ALVARÃES
+4288 AREIA-DARQUE
+4619 VIANA DO CASTELO
+4897 AREOSA
+5025 CARREÇO A (STOP)
+5130 AFIFE
+5377 ÂNCORA-PRAIA
+5618 MOLEDO DO MINHO
+5796 SENHORA DA AGONIA
+5841 CAMINHA
+6037 SEIXAS
+6195 ESQUEIRO
+6284 GONDARÉM
+6406 VILA NOVA DE CERVEIRA
+6690 CARVALHA A (STOP)
+6783 SÃO PEDRO DA TORRE
+6966 VALENÇA
+#2nby1ZV6RVc
+10 Llegada del tren a Fuencarral
+58 Llegada del tren a El Escorial
+#_ylWNK1NbYk
+0 Estación de Cádiz
+225 Cádiz - San Severiano
+340 San Severiano - Segunda Aguada
+431 Segunda Aguada - Estadio
+529 Estadio - Cortadura
+610 Cortadura - Río Arillo
+965 Río Arillo - Ardila
+1080 Ardila - Santo Entierro
+1175 Santo Entierro - Plaza del Carmen
+1351 Plaza del Carmen - Compañía de María
+1474 Compañía de María - Plaza del Rey
+1608 Plaza del Rey - Plaza de la Iglesia
+1705 Plaza de la Iglesia - Venta de Vargas
+1857 Venta de Vargas - Tres Caminos
+2035 Tres Caminos - Pinar de los Franceses
+2305 Pinar de los Franceses - Marquesado
+2454 Marquesado - Alameda Solano
+2528 Alameda Solano - Nuestra Señora de los Remedios
+2657 Nuestra Señora de los Remedios - Reyes Católicos
+2769 Reyes Católicos - La Hoya
+2845 La Hoya - Pelagatos
+2952 Estación de Pelagatos
+#5x6G5WQOvRc
+0 Cartagena
+535 La Palma-Pozo Estrecho (en desuso)
+783 Torre Pacheco
+1168 Balsicas - Mar Menor
+1869 Riquelme - Sucina (en desuso)
+2710 Nudo del Regueron
+3245 Soterramiento Murcia
+#YZnZQlvz9Lc
+5 Inicio del viaje en la estación de Águilas
+150 Apeadero de El Labradorcico
+308 Apeadero de Jaravía
+539 Túnel de Los Peines (punto más alto)
+690 Apeadero de Pulpí
+780 Almendricos
+861 Barrio de la estación de Puerto Lumbreras
+924 Entrada a Lorca
+1127 Apeadero de Lorca San Diego
+1300 Estación de Totana
+1457 Alhama de Murcia
+1485 Librilla
+1669 Apeadero de Alcantarilla-Los Romanos
+1713 Murcia-Cargas
+1833 Entrada a Murcia del Carmen
+#kQKurlffw2o
+0 Murcia del Carmen
+750 Beniel
+1110 Orihuela
+1530 Callosa de Segura
+1845 San Isidro
+2250 Crevillente
+2690 Elx Carrus
+2780 Elx Parque
+3205 Torrellano
+3645 San Gabriel
+4050 Alacant Terminal
+#PEktG_ew2TM
+102 Campus Guajara (ride to El Cardonal)
+257 El Cardonal
+448 El Cardonal (ride to Puente Zurita)
+626 Puente Zurita
+1144 Fundación (ride to Intercambiador)
+1179 Intercambiador
+1209 Intercambiador (ride to Campus Guajara)
+1312 Campus Guajara

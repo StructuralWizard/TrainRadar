@@ -1,0 +1,303 @@
+#1lbIdHCs6SE
+0 Departure from Barcelona Sants Railway Station
+2100 High-Speed Run to Camp de Tarragona
+3900 Passing Lleida-Pirineus Station
+6600 Passing Zaragoza-Delicias Railway Junction
+8100 Crossing Calatayud & Jalón River Valley
+9900 Passing Guadalajara-Yebes High-Speed Station
+11787 Arrival at Madrid Puerta de Atocha Station
+#gQw8GcCc2Po
+0 Preámbulo: Llegadas a la estación de Burgos Rosa Manzano y maniobras d
+180 Salida de la Estación de Burgos (Inicio del Cab Ride)
+1120 Tramo de vía general hacia Briviesca
+2055 Paso por el emblemático Desfiladero de Pancorbo
+3120 Reducción de marcha y entrada a la histórica Estación de Miranda de Ebro
+#JUO1c1-dE4Y
+0 Preview
+77 ARRIONDAS
+452 FUENTES
+739 TORAÑO
+1126 CUEVAS
+1217 River Sella (130m)
+1316 LLOVIO
+1591 RIBADESELLA
+1908 CAMANGO
+2194 BELMONTE
+2515 NUEVA
+2909 VILLAHORMES
+3134 Part of Bay Of Biscay
+3375 POSADA
+3589 BALMORÍ
+3752 CELORIO
+3918 POO
+4066 LLANES
+4572 SAN ROQUE DEL ACEBAL
+4909 VIDIAGO
+5157 PENDUELES
+5570 COLOMBRES
+5862 River Deva (110m)
+5892 UNQUERA
+6208 PESUES
+6601 SAN VICENTE DE LA BARQUERA
+6983 EL BARCENAL
+7299 ROIZ
+7621 TRECEÑO
+8403 CABEZÓN DE LA SAL
+8601 ONTORIA
+8796 VIRGEN DE LA PEÑA
+8998 CASAR DE PERIEDO
+9230 GOLBARDO
+9391 SAN PEDRO DE RUDAGÜERA
+9614 SANTA ISABEL DE QUIJAS
+9797 PUENTE SAN MIGUEL
+#o8jJmEdPRL8
+0 Presentació
+13 PORTBOU
+117 Colera
+384 Llançà
+604 Vilajuïga
+978 Figueres
+1160 Vilamalla
+1376 Sant Miquel de Fluvià
+1420 Camallera
+1670 Sant Jordi Desvalls
+1822 Flaçà
+2018 Bordils-Juià
+2077 Celrà
+2470 Girona
+2737 Fornells de la Selva
+2930 Riudellots
+3157 Caldes de Malavella
+3417 Sils
+3636 Maçanet-Massanes
+3786 Hostalric
+3972 Riells i Viabrea-Breda
+4120 Gualba
+4354 Sant Celoni
+5171 Granollers-Centre
+6174 Barcelona-Sant Andreu
+6334 Barcelona-Passeig de Gràcia
+6378 BARCELONA-SANTS
+#dENiKh7k2Fc
+0 Departure from Valencia Nord Station
+1500 Passing Sagunto & Industrial Rail Corridor
+2700 Arriving at Castellón de la Plana
+5100 Coastal Section: Benicarló & Vinaròs
+6900 Crossing the Ebro River Delta
+9000 Passing Tarragona & Camp de Tarragona Connection
+11700 Garraf Coast Scenic Section (Costas del Garraf)
+13800 Entering Barcelona Suburbs & Arrival at Barcelona Sants
+#6iFfVpZwLJ4
+35 Madrid-Chamartin
+580 Valladolid
+987 Cambiador
+1065 New line through the Cantabrian mountains
+#pk7bPP38GSs
+0 Departure from Burgos Rosa Manzano Station
+1080 Crossing the Plains of La Bureba & Briviesca
+2280 Entering the Scenic Pancorbo Gorge (Desfiladero de Pancorbo)
+3120 Crossing Bugedo & Ebro Valley Approach
+3780 Arrival at Miranda de Ebro Railway Station
+#JNX4xygge4c
+0 Intro, Route Map & Departing Bilbao-Abando
+285 Ollargan Junction (Freight Line Connection from Santurtzi Port / Bifurcación)
+510 Bidebieta-Basauri (La Trinchera)
+770 Arrigorriaga & Ugao-Miraballes (Nervión Valley)
+1515 Areta & Laudio / Llodio Station
+2046 Luiaondo & Amurrio
+2715 Orduña Station & Start of the Orduña Mountain Pass Climb
+2760 Horseshoe Curves, Tunnels & Panoramic Views Over Orduña Valley
+3120 Artomaña (Valle de Asúa)
+4060 Inoso-Oiardo (Urcabustaiz)
+4336 Gujuli & Reaching the Plateau at Izarra Station
+4802 Zuazo de Kuartango
+4980 Crossing of the Bayas River and the Vasco-Aragonesa Motorway
+5092 Pobes & Crossing into Castile and León
+5680 Arrival at Miranda de Ebro Railway Junction
+#vRlZJcySroM
+107 València Joaquin Sorolla
+1378 Requena-Utiel
+3404 Cuenca Fernando Zóbel
+5431 Dreieck nach und von Sevilla/Málaga (Torrejón de Velasco triangle)
+6206 Einfahrt Túnel de la Risa
+6882 Madrid-Chamartin
+#Svwiq9EO7kU
+0 Salida de la Estación de Granada
+320 Tramo Embalse de Cubillas y Sierra de Huétor
+1510 Llegada y parada en la Estación de Guadix
+2535 Paso por el Desierto de Tabernas
+4200 Tramo final y entrada a la Estación de Almería
+#JAtvsj4f-r8
+0 Salida de la Estación de Miranda de Ebro
+495 Paso por las Conchas de Haro y entrada a La Rioja
+1110 Travesía por los viñedos y estación de Haro
+1930 Llegada y paso por la Estación de Logroño
+2925 Tramo Rioja Baja y paso por Calahorra / Alfaro
+3900 Entrada al nudo de Castejón de Ebro y dirección Zaragoza
+4920 Tramo final por la ribera aragonesa y llegada a Zaragoza-Delicias
+#dvyKBftb5S8
+0 Departure from Cartagena Station
+900 Crossing the Campo de Cartagena
+2700 Passing through Cieza
+4800 Approaching Hellín & Mountain Sections
+7500 Junction at Chinchilla de Montearagón
+8700 Arrival at Albacete-Los Llanos Station
+#oRRQxDjj_aM
+0 Departure from Valencia Nord Railway Station
+720 Traveling through the Valencian Orchard Region
+1320 Passing Xàtiva & Historic Fortress Landscape
+2280 Climbing through La Costera Valley
+3297 Arrival at La Encina Railway Junction
+#R5oIbMSW_W4
+0 Estación de Cádiz
+252 Cádiz - San Severiano
+412 San Severiano - Segunda Aguada
+524 Segunda Aguada - Estadio
+635 Estadio - Cortadura
+750 Cortadura - Río Arillo
+1033 Río Arillo - San Fernando-Bahía Sur
+1215 San Fernando-Bahía Sur - San Fernando-Centro
+1333 San Fernando-Centro - Puerto Real
+1762 Puerto Real - Las Aletas
+1915 Las Aletas - Valdelagrana
+2156 Valdelagrana - El Puerto de Santa María
+2307 El Puerto de Santa María - Jerez de la Frontera
+2927 Estación de Jerez de la Frontera
+#6-TTvn3Dyu0
+0 Preview
+47 Portbou
+103 TUNEL DE LA PINEDA
+249 Colera
+308 COLERA BRIDGE (GUSTAVE EIFFEL, 1878)
+346 Garvet Beach
+522 Llançà
+641 RIERA DE VALLETA BRIDGE
+719 TUNEL DE CANYELLES
+866 Vilajuïga
+1118 LA MUGA BRIDGE
+1350 Figueres
+1557 FROM HIGH-SPEED LINE (PERPIGNAN)
+1573 DUAL GAUGE 1435/1668 TRACK
+1627 Vilamalla
+1872 Sant Miquel de Fluvià
+1938 El Fluvià River
+2164 Camallera
+2484 Sant Jordi Desvalls
+2597 Ter River
+2626 Flaçà
+2871 Bordils-Juià
+3056 Celrà
+3168 RIU TER (TER RIVER)
+3434 Onyar River
+3502 Girona
+3755 Fornells de la Selva
+3973 Riudellots
+4244 Caldes de Malavella
+4533 Sils
+4873 Maçanet-Massanes
+5106 Hostalric
+5368 Riera de Breda
+5383 Riells i Viabrea-Breda
+5582 Gualba
+5826 Sant Celoni
+6006 PALAUTORDERA
+6181 Llinars del Valles
+6346 Cardedeu
+6538 Les Franqueses-Granollers Nord
+6647 CARGO STATION GRANOLLERS
+6671 Granollers Centre
+6920 RIVER CONGOST BRIDGE
+6957 Montmeló
+7147 Mollet-Sant Fost
+7270 La Llagosta
+7351 RIVER RIPOLL
+7366 Montcada i Reixac
+7474 FROM MONTCADA JUNCTION
+7606 RENFE SANT ANDREU WORKSHOPS
+7671 Sant Andreu Comtal
+7788 TUNEL D'ARAGO (UNDER CARRER D'ARAGO)
+7908 El Clot-Aragó
+8271 Paseo de Gracia
+8493 WAITING AT SIGNAL TO ENTER SANTS
+8666 Barcelona Sants Station
+#f3Z7emZTomw
+0 Departure from Almería Station
+1200 Crossing the Tabernas & Gádor Valleys
+3300 Arriving at Guadix Station & Badlands Scenery
+5400 Moreda Junction (Bifurcación Moreda)
+7200 Descent toward the Vega de Granada
+8460 Arrival at Granada Station
+#O5_jGzlk4VY
+0 Estación de Málaga Centro-Alameda
+189 Málaga Centro-Alameda - Málaga-María Zambrano
+308 Málaga-María Zambrano - Victoria Kent
+473 Victoria Kent - Guadalhorce
+645 Guadalhorce - Aeropuerto
+807 Aeropuerto - Plaza Mayor
+1000 Plaza Mayor - Los Álamos
+1112 Los Álamos - La Colina
+1230 La Colina - Torremolinos
+1413 Torremolinos - Montemar Alto
+1544 Montemar Alto - El Pinillo
+1633 El Pinillo - Benalmádena-Arroyo de la Miel
+1825 Benalmádena-Arroyo de la Miel - Torremuelle
+2033 Torremuelle - Carvajal
+2200 Carvajal - Torreblanca
+2322 Torreblanca - Los Boliches
+2450 Los Boliches - Fuengirola
+2595 Estación de Fuengirola
+#5QW05WRGJjs
+0 Ribadeo
+1240 Foz
+2130 Burela
+3050 San Cibrao
+3340 Xove
+4450 Viveiro
+#3pxm1fY8Fbc
+715 Viaducto de Canero
+2915 Viaducto de Soto de Luiña
+#BBrtxlKqhuc
+0 Estación de Trinitat Nova
+189 Trinitat Nova - Casa de l'Aigua
+335 Casa de l'Aigua - Torre Baró | Vallbona
+561 Torre Baró | Vallbona - Ciutat Meridiana
+655 Ciutat Meridiana - Can Cuiàs
+710 Estación de Can Cuiàs
+#9B3bIDykOyo
+0 Estación de València Sud
+101 València Sud - Sant Isidre
+262 Sant Isidre - Safranar
+338 Safranar - Patraix
+419 Patraix - Jesús
+507 Jesús - Plaça Espanya
+617 Plaça Espanya - Àngel Guimerà
+691 Àngel Guimerà - Túria
+787 Túria - Campanar
+868 Campanar - Beniferri
+961 Beniferri - Empalme
+1064 Empalme - Burjassot
+1230 Burjassot - Burjassot-Godella
+1327 Burjassot-Godella - Godella
+1427 Godella - Rocafort
+1534 Rocafort - Massarrojos
+1608 Massarrojos - Moncada-Alfara
+1720 Moncada-Alfara - Seminari-CEU
+1795 Seminari-CEU - Masies
+2024 Masies - Horta Vella
+2247 Horta Vella - Bétera
+2355 Estación de Bétera
+#mfFyORwttwI
+11 Atxuri
+57 Ribera
+95 Arriaga
+189 Abando
+288 Pío Baroja
+347 Uribitarte
+435 Guggenheim
+483 Abandoibarra
+540 Euskalduna
+612 Sabino Arana
+696 San Mamés
+777 Ospitalea / Hospital
+849 Basurto
+924 La Casilla

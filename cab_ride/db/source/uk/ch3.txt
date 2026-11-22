@@ -1,0 +1,341 @@
+#SOKGXlcRII4
+0 Stratford-upon-Avon
+350 Stratford-upon-Avon Parkway
+570 Wilmcote
+1203 Hatton
+1602 Warwick
+1868 Leamington Spa
+2361 Kenilworth
+2774 Coventry
+3248 Coventry Arena
+3531 Bedworth
+3748 Bermuda Park
+3997 Nuneaton
+#YA5q3f_m-tY
+23 Birmingham New Street
+834 Tame Bridge Parkway
+1192 Darlaston
+1405 Willenhall
+2003 Wolverhampton
+2617 Bilbrook
+2747 Codsall
+3122 Albrighton
+3304 Cosford
+3591 Shifnal
+3872 Telford Central
+4105 Oakengates
+4402 Wellington
+5137 Shrewsbury
+#IXb00Poh3Q4
+15 Edinburgh Waverley
+270 Haymarket
+560 Edinburgh Park
+835 W:Newbridge Junction
+1055 Uphall
+1285 Livingston North
+1559 Bathgate
+1806 Armadale
+2030 Blackridge
+2295 W:Hillend Loch
+2390 Caldercruix
+2628 Drumgelloch
+2946 Airdrie
+3136 Coatdyke
+3289 Coatbridge Sunnyside
+3435 Blairhill
+3679 Easterhouse
+3831 Garrowhill
+3988 Shettleston
+4126 Carntyne
+4327 Bellgrove
+4484 High Street
+4624 Glasgow Queen Street (Low Level)
+4819 Charing Cross (Glasgow)
+5048 Partick
+5194 Hyndland
+5407 Anniesland
+5530 Westerton
+5598 Drumchapel
+5656 Drumry
+5707 Singer
+5795 Dalmuir
+6022 Kilpatrick
+6127 Bowling
+6307 Dumbarton East
+6446 Dumbarton Central
+6551 Dalreoch
+6617 W:Dalreoch Junction
+6844 Cardross
+7129 W:Craigendoran Junction
+7160 Craigendoran
+7332 Helensburgh Central
+#dPElPanKtVA
+0 Inverness
+173 W:Ness Viaduct
+309 W:Clachnaharry Swing Bridge
+760 Beauly
+920 Muir of Ord
+1112 Conon Bridge
+1349 Dingwall
+1448 W:Dingwall Junction
+2007 Garve
+2322 Lochluichart
+2611 Achanalt
+2990 Achnasheen
+3559 Achnashellach
+3812 Strathcarron
+4114 Attadale
+4265 W:Strathcarron Avalanche Shelter
+4570 Stromeferry
+4960 Duncraig
+5112 Plockton
+5237 Duirinish
+5655 Kyle of Lochalsh
+#OSaAuSO9hM8
+214 Haymarket
+350 Edinburgh Gateway
+380 W:Forth Bridge
+930 Cupar
+1040 Leuchars
+1248 W:Tay Bridge
+1535 Dundee
+1845 Arbroath
+2112 Montrose
+2385 Stonehaven
+2775 Aberdeen
+#mZ4TbHFXWis
+85 Belfast Lanyon Place
+265 Portadown
+480 Drogheda
+510 Dublin Connolly
+#w-BB5evy4CA
+48 Dublin Connolly
+303 Dublin Connolly
+479 Drogheda
+612 Dundalk
+#0YhOYldIVkA
+10 Piccadilly
+133 Piccadilly Gardens
+324 St Peter's Square
+544 Deansgate-Castlefield
+728 Cornbrook
+878 Pomona
+1012 Exchange Quay
+1127 Salford Quays
+1276 Anchorage
+1356 Harbour City
+1490 MediaCityUK
+1528 Harbour City
+1600 Broadway
+1720 Langworthy
+1855 Weaste
+2058 Ladywell
+2165 Eccles
+#qR2Gr5aVZ4Y
+0 St James to Monument
+120 Monument to Manors
+210 Manors to Byker
+375 Byker to Chillingham Road
+510 Chillingham Road to Walkergate
+600 Walkergate to Wallsend
+745 Wallsend to Hadrian Road
+855 Hadrian Road to Howdon
+1020 Howdon to Percy Main
+1180 Percy Main to Meadow Well
+1260 Meadow Well to North Shields
+1390 North Shields to Tynemouth
+1560 Tynemouth to Cullercoats
+1740 Cullercoats to Whitley Bay
+1830 Whitley Bay to Monkseaton
+1940 Monkseaton to West Monkseaton
+2060 West Monkseaton to Shiremoor
+2205 Shiremoor to Northumberland Park
+2320 Northumberland Park to Palmersville
+2460 Palmersville to Benton
+2550 Benton to Four Lane Ends
+2700 Four Lane Ends to Longbenton
+2790 Longbenton to South Gosforth
+2940 South Gosforth to Ilford Road
+3015 Ilford Road to West Jesmond
+3105 West Jesmond to Jesmond
+3230 Jesmond to Haymarket
+3335 Haymarket to Monument
+3420 Monument to Central Station
+3540 Central Station to Gateshead
+3675 Gateshead to Gateshead Stadium
+3785 Gateshead Stadium to Felling
+3900 Felling to Heworth
+4005 Heworth to Pelaw
+4110 Pelaw to Hebburn
+4345 Hebburn to Jarrow
+4505 Jarrow to Bede
+4655 Bede to Simonside
+4760 Simonside to Tyne Dock
+4885 Tyne Dock to Chichester
+5010 Chichester to South Shields
+#IMjf3YBQ-e0
+0 South Shields
+93 Chichester
+217 Tyne Dock
+348 Simonside
+436 Bede
+589 Jarrow
+755 Hebburn
+1002 Pelaw
+1179 Heworth
+1291 Felling
+1410 Gateshead Stadium
+1520 Gateshead
+1603 W:Crossing the Tyne
+1653 Central Station
+1740 Monument
+#q1HqsZ7FQw0
+0 Picardy Place
+134 McDonald Road
+276 Balfour Street
+441 Foot of the Walk
+572 The Shore
+710 Port of Leith
+942 Ocean Terminal
+1202 Newhaven
+#Ociic-nIr_8
+33 Peterborough
+351 W:Kings Dyke
+472 Whittlesea
+692 W:Three Horse Shoes
+1031 March
+1295 W:Stonea
+1417 Manea
+1531 W:Welney Marshes
+1964 W:Ely West Junction
+2040 W:Ely North Junction
+2326 Ely
+#HbiB6nGb94E
+432 W:Washingborough
+681 Lincoln
+1040 W:Pyewipe
+1089 W:Boultham Junction
+1413 Lincoln
+1801 Saxilby
+2038 W:Stow Park
+2361 Gainsborough Lea Road
+2464 W:Trent Junction
+2614 W:Beckingham
+#hb4myVHNppw
+0 Pickering
+1175 Levisham
+1356 W:The Grange
+1676 Newtondale Halt
+2190 W:Fen Bog
+2596 Goathland
+2911 W:Beck Hole
+3080 W:Esk Valley
+3293 Grosmont
+#x-rX0OgwrXo
+0 Heywood
+235 W:Broadfield (disused)
+500 W:Roach Viaduct
+960 Bury Bolton Street
+1680 Summerseat
+1780 W:Brooksbottom Viaduct & Tunnel
+1865 W:Nuttall Tunnel
+1995 Ramsbottom
+2285 W:Stubbins (disused)
+2480 Irwell Vale
+#aLcZp3FhxP4
+0 EDB-DUN
+1221 DUN-RSN
+2049 RSN-BWK
+2509 BWK-ALM
+3580 ALM-MPT
+4273 MPT-NCL
+5160 NCL-DHM
+5823 DHM-DAR
+6639 DAR-NTR
+7080 NTR-YRK
+8074 YRK-DON
+9164 DON-RET
+9704 RET-NNG
+10269 NNG-GRA
+10729 GRA-PBO
+11621 PBO-SVG
+13140 SVG-KGX
+#qY-vEIhRCnQ
+90 St Enoch
+162 Bridge Street
+253 West Street
+341 Shields Road
+456 Kinning Park
+550 Cessnock
+647 Ibrox
+804 Govan
+1033 Partick
+1122 Kelvinhall
+1209 Hillhead
+1349 Kelvinbridge
+1543 St George's Cross
+1648 Cowcaddens
+1770 Buchanan Street
+1862 St Enoch
+#6wwO_9xKYQk
+202 Partick to Kelvinhall
+346 Kelvinhall to Hillhead
+445 Hillhead to Kelvinbridge
+567 Kelvinbridge to St George's Cross
+#zfaqvwNuKIg
+16 Rosslare Europort
+293 Rosslare Strand
+1176 Wexford O'Hanrahan
+2376 Enniscorthy
+3543 Gorey
+4257 Arklow
+5168 Rathdrum
+5859 Wicklow
+6480 Kilcoole
+6744 Greystones
+7267 Bray Daly
+7525 Shankill
+7607 Killiney
+7797 Dalkey
+7909 Glenageary
+7981 Sandycove and Glasthule
+8106 Dún Laoghaire Mallin
+8222 Salthill and Monkstown
+8265 Seapoint
+8303 Blackrock
+8364 Booterstown
+8428 Sydney Parade
+8514 Sandymount
+8599 Lansdowne Road
+8711 Grand Canal Dock
+8769 Dublin Pearse
+8859 Tara Street
+9020 Dublin Connolly
+#-OYnDPdLgO4
+20 Dublin Heuston
+33 W:Inchicore Works
+85 Kildare
+98 Portarlington
+154 Limerick Junction
+253 Cork Kent
+#fuJhCMFxd7Y
+40 Dublin Heuston
+180 Portlaoise
+305 Limerick Colbert
+#l3pvZ5MPJxM
+223 Ravenglass
+367 Muncaster Mill
+765 Irton Road
+920 The Green
+1080 Fisherground
+1275 Beckfoot
+1395 Dalegarth
+1624 Dalegarth
+#IkGJh1mV2nk
+0 Ravenglass
+330 Muncaster Mill
+442 Murthwaite Halt
+505 Irton Road
+645 Fisherground
+710 Beckfoot
+771 Dalegarth

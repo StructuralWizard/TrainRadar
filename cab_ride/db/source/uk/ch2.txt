@@ -1,0 +1,387 @@
+#hL6AVXNRUFc
+0 Surrey Quays
+291 Queens Road Peckham
+481 Peckham Rye
+645 Denmark Hill
+950 Clapham High Street
+1063 Wandsworth Road
+1397 Clapham Junction
+#M2fO0T_cM6U
+55 London Euston
+426 South Hampstead
+517 Kilburn High Road
+638 Queen's Park
+773 Kensal Green
+936 Willesden Junction
+1065 Harlesden
+1200 Stonebridge Park
+1338 Wembley Central
+1463 North Wembley
+1564 South Kenton
+1683 Kenton
+1815 Harrow & Wealdstone
+2004 Headstone Lane
+2118 Hatch End
+2302 Carpenders Park
+2455 Bushey
+2593 Watford High Street
+2784 Watford Junction
+#IQ10YOIUoUE
+149 Gospel Oak to Upper Holloway
+457 Upper Holloway to Crouch Hill
+637 Crouch Hill to Harringay Green Lanes
+805 Harringay Green Lanes to South Tottenham
+1023 South Tottenham to Blackhorse Road
+1214 Blackhorse Road to Walthamstow Queen's Road
+1386 Walthamstow Queen's Road to Leyton Midland Road
+1556 Leyton Midland Road to Leytonstone High Road
+1699 Leytonstone High Road to Wanstead Park
+1866 Wanstead Park to Woodgrange Park
+2020 Woodgrange Park to Barking
+2307 Barking to Barking Riverside
+#OQQdzJ3Frac
+13 Margate
+328 Broadstairs
+551 Dumpton Park
+696 Ramsgate
+1004 Thanet Parkway
+1213 Minster
+1722 Sturry
+1913 Canterbury West
+2200 Chartham
+2325 Chilham
+2580 Wye
+2867 Ashford International
+4090 Ebbsfleet International
+4775 Stratford International
+5222 London St Pancras International
+#G8bpMij_nkw
+105 Ramsgate
+411 Broadstairs
+680 Margate
+953 Birchington-on-Sea
+1446 Herne Bay
+1727 Whitstable
+2172 Faversham
+2630 Sittingbourne
+3059 Rainham (Kent)
+3329 Gillingham (Kent)
+3542 Chatham
+3693 Rochester
+3838 Strood
+4415 Gravesend
+4661 Ebbsfleet International
+5341 Stratford International
+5798 London St Pancras International
+#K0sFARTElnA
+141 Manchester Piccadilly
+767 Stockport
+1264 Wilmslow
+2252 Crewe
+7916 London Euston
+#HNprLC0r-mI
+13 London Euston
+3785 Coventry
+4418 Birmingham International
+5125 Birmingham New Street
+#gd9uOf_nmis
+50 London Euston
+1850 Milton Keynes Central
+3461 Coventry
+4022 Birmingham International
+5174 Birmingham New Street
+5717 Sandwell and Dudley
+6549 Wolverhampton
+#77ZXgaCmmqY
+112 London St Pancras
+802 Radlett
+1315 Luton Airport Parkway
+1967 Bedford
+2449 Wellingborough
+2723 Kettering
+3159 Market Harborough
+3801 Leicester
+4477 Loughborough
+4686 East Midlands Parkway
+5313 Nottingham
+#_mrMF2xMhuw
+43 Bristol Temple Meads
+618 Bristol Parkway
+1759 Swindon
+2499 Didcot Parkway
+2959 Reading
+3803 Slough
+4577 London Paddington
+#Ugf4aSWNbMw
+143 York
+1488 Leeds
+2366 Dewsbury
+2937 Huddersfield
+4943 Manchester Victoria
+#cZkraBBymaE
+31 York
+1450 Leeds
+2550 Huddersfield
+3871 Manchester Victoria
+5100 Lea Green
+5765 Liverpool Lime Street
+#wS4wgVl9jhA
+0 Ipswich
+758 Woodbridge
+1048 Melton
+1471 Wickham Market
+2020 Saxmundham
+2521 Darsham
+3053 Halesworth
+3472 Brampton
+3953 Beccles
+4545 Oulton Broad South
+5033 Lowestoft
+#gCjmHaAEg1U
+85 Kettering
+450 Corby
+840 W:Welland Viaduct
+1344 W:Manton
+1561 Oakham
+2164 Melton Mowbray
+2568 W:Rearsby
+2890 W:Syston East Junction
+3405 Leicester
+#2g-yVRO17mQ
+0 Norwich
+334 Brundall Gardens
+495 Brundall
+770 Lingwood
+1049 Acle
+1969 Great Yarmouth
+#sW8f0CnRbKg
+0 London Waterloo
+510 Clapham Junction
+1484 Woking
+2506 Basingstoke
+3353 Winchester
+3811 Southampton Airport Parkway
+4212 Southampton Central
+#nkJ6y2Ok2Qg
+0 Hastings
+291 St Leonards Warrior Square
+846 Battle
+1817 Wadhurst
+2201 Tunbridge Wells
+2393 High Brooms
+2666 Tonbridge
+3102 Sevenoaks
+3580 Orpington
+4573 London Bridge
+4846 Waterloo East
+5026 London Charing Cross
+#TFVyv0BEY_M
+0 Dover Priory
+603 Folkestone Central
+827 Folkestone West
+1180 Sandling
+1361 Westenhanger
+1854 Ashford International
+3413 Tonbridge
+5204 London Bridge
+5491 Waterloo East
+5614 London Charing Cross
+#O7hfyN5EvQM
+14 London Waterloo
+355 Clapham Junction
+524 Earlsfield
+607 Wimbledon
+673 Raynes Park
+729 New Malden
+785 Berrylands
+832 Surbiton
+931 Esher
+990 Hersham
+1037 Walton-on-Thames
+1121 Weybridge
+1174 Byfleet & New Haw
+1223 West Byfleet
+1400 Woking
+1669 Brookwood
+1883 Farnborough
+2007 Fleet
+2140 Winchfield
+2238 Hook
+2486 Basingstoke
+3261 Micheldever
+3600 Winchester
+3834 Shawford
+3975 Eastleigh
+4047 Southampton Airport Parkway
+4173 Swaythling
+4290 St Denys
+4630 Southampton Central
+#UQVNumKtTOE
+0 Portsmouth Harbour
+132 Portsmouth & Southsea
+472 Fratton
+1090 Havant
+2027 Petersfield
+2735 Haslemere
+3402 Godalming
+3786 Guildford
+6837 Woking
+8974 London Waterloo
+#Dke0PakSKy8
+14 Southampton Central
+103 Millbrook
+205 Redbridge
+403 Ashurst New Forest
+516 Beaulieu Road
+722 Brockenhurst
+962 Sway
+1114 New Milton
+1315 Hinton Admiral
+1469 Christchurch
+1659 Pokesdown
+1859 Bournemouth
+2203 Branksome
+2309 Parkstone
+2463 Poole
+2703 Hamworthy
+3067 Holton Heath
+3269 Wareham
+3617 Wool
+3947 Moreton
+4380 Dorchester South
+4758 Upwey
+4983 Weymouth
+#FO4_cy6fnsQ
+322 Clapham Junction
+412 Wandsworth Common
+450 Balham
+557 Streatham Common
+603 Norbury
+675 Thornton Heath
+721 Selhurst
+810 East Croydon
+888 South Croydon
+956 Purley Oaks
+1018 Purley
+1235 W:Merstham Tunnel
+1300 W:M25 crossing
+1378 W:Redhill Tunnel (Quarry Line)
+1493 Salfords
+1632 Horley
+2191 Gatwick Airport
+#jqWHQdPjjgo
+0 Brighton
+1469 Haywards Heath
+2368 Gatwick Airport
+4128 London Victoria
+#UE2kQAE6Iq4
+0 Cardiff Central
+680 Newport
+2066 Bristol Parkway
+3722 Swindon
+5712 Reading
+7575 London Paddington
+#WjVKui6_4r8
+0 Cardiff Central
+143 Cardiff Queen Street
+312 Cathays
+609 Llandaf
+779 Radyr
+1066 Taffs Well
+1330 Treforest Estate
+1578 Treforest
+1752 Pontypridd
+2091 Trehafod
+2313 Porth
+2592 Dinas Rhondda
+2728 Tonypandy
+2890 Llwynypia
+3059 Ystrad Rhondda
+3290 Ton Pentre
+3485 Treorchy
+3659 Ynyswen
+3859 Treherbert
+#t2FKkBYoyiM
+71 Wolverhampton
+1125 Telford Central
+1532 Wellington
+2224 Shrewsbury
+3377 Gobowen
+3707 Chirk
+4060 Ruabon
+4452 Wrexham General
+5373 Chester
+#bS9dh1uuP3c
+0 Treherbert
+104 Ynyswen
+262 Treorchy
+446 Ton Pentre
+616 Ystrad Rhondda
+830 Llwynypia
+1016 Tonypandy
+1164 Dinas Rhondda
+1380 Porth
+1604 Trehafod
+1916 Pontypridd
+2140 Treforest
+2414 Treforest Estate
+2699 Taffs Well
+2958 Radyr
+3130 Llandaf
+3409 Cathays
+3628 Cardiff Queen Street
+4064 Cardiff Central
+#y7-OKoo5bgg
+0 Aberdare
+180 Cwmbach
+438 Fernhill
+616 Mountain Ash
+810 Penrhiwceiber
+1098 Abercynon
+1500 Pontypridd
+1720 Treforest
+1994 Treforest Estate
+2274 Taffs Well
+2560 Radyr
+2798 Danescourt
+2962 Fairwater
+3124 Waun-gron Park
+3342 Ninian Park
+3690 Cardiff Central
+#BRri92k1zqo
+0 London Marylebone
+1454 High Wycombe
+2677 Bicester North
+3406 Banbury
+4379 Leamington Spa
+5314 Dorridge
+5596 Solihull
+6091 Birmingham Moor Street
+#gw83t35PiOs
+52 Kidderminster
+431 Blakedown
+638 Hagley
+857 Stourbridge Junction
+1419 Rowley Regis
+2049 Birmingham Snow Hill
+2199 Birmingham Moor Street
+2687 Solihull
+3157 Warwick Parkway
+3433 Leamington Spa
+4179 Banbury
+4856 Bicester North
+5573 Princes Risborough
+6464 Gerrards Cross
+7315 London Marylebone
+#lS-6uM2DrcM
+37 Birmingham New Street
+429 Smethwick Galton Bridge
+1130 Wolverhampton
+1712 Penkridge
+2099 Stafford
+3078 Crewe
+3700 Winsford
+4031 Hartford
+4608 Runcorn
+5072 Liverpool South Parkway
+5715 Liverpool Lime Street

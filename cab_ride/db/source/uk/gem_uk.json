@@ -1,0 +1,4264 @@
+{
+"QchQrnq0ueQ": {
+"kind": "table",
+"seq": [
+[
+0,
+"London King's Cross"
+],
+[
+1344,
+"Stevenage"
+],
+[
+2944,
+"Peterborough"
+],
+[
+4005,
+"Grantham"
+],
+[
+4574,
+"Newark Northgate"
+],
+[
+5147,
+"Retford"
+],
+[
+5760,
+"Doncaster"
+],
+[
+7189,
+"York"
+],
+[
+8520,
+"Northallerton"
+],
+[
+9315,
+"Darlington"
+],
+[
+10433,
+"Durham"
+],
+[
+null,
+"Newcastle"
+]
+]
+},
+"vbVs2m0HdhU": {
+"kind": "table",
+"seq": [
+[
+0,
+"Leeds"
+],
+[
+790,
+"Wakefield Westgate"
+],
+[
+1928,
+"Doncaster"
+],
+[
+3873,
+"Grantham"
+],
+[
+6568,
+"Stevenage"
+],
+[
+null,
+"London King's Cross"
+]
+]
+},
+"QlKu40VTcIw": {
+"kind": "table",
+"seq": [
+[
+0,
+"Newcastle"
+],
+[
+742,
+"Morpeth"
+],
+[
+1421,
+"Alnmouth"
+],
+[
+2504,
+"Berwick-upon-Tweed"
+],
+[
+3114,
+"Reston"
+],
+[
+3872,
+"Dunbar"
+],
+[
+null,
+"Edinburgh Waverley"
+]
+]
+},
+"gaqZQxR1Bu0": {
+"kind": "table",
+"seq": [
+[
+0,
+"York"
+],
+[
+1246,
+"Northallerton"
+],
+[
+2035,
+"Darlington"
+],
+[
+3094,
+"Durham"
+],
+[
+null,
+"Newcastle"
+]
+]
+},
+"GxHxFy3V6h4": {
+"kind": "table",
+"seq": [
+[
+0,
+"London King's Cross"
+],
+[
+2973,
+"Peterborough"
+],
+[
+3970,
+"Grantham"
+],
+[
+null,
+"Newark Northgate"
+]
+]
+},
+"ENmJvCOZbI8": {
+"kind": "times",
+"seq": [
+[
+858,
+"Watford Junction"
+],
+[
+1963,
+"Milton Keynes Central"
+],
+[
+3216,
+"Rugby"
+],
+[
+406,
+"Nuneaton"
+],
+[
+781,
+"Atherstone"
+],
+[
+1266,
+"Tamworth"
+],
+[
+1637,
+"Lichfield Trent Valley"
+]
+]
+},
+"DCPK5LHMmQc": {
+"kind": "times",
+"seq": [
+[
+0,
+"Swansea"
+],
+[
+482,
+"Neath"
+],
+[
+1001,
+"Port Talbot Parkway"
+],
+[
+1741,
+"Bridgend"
+],
+[
+2944,
+"Cardiff Central"
+],
+[
+674,
+"Newport"
+],
+[
+3373,
+"Gloucester"
+],
+[
+2409,
+"Swindon"
+]
+]
+},
+"ztTpk1MbWKw": {
+"kind": "times",
+"seq": [
+[
+302,
+"Barnt Green"
+],
+[
+480,
+"Longbridge"
+],
+[
+612,
+"Northfield"
+],
+[
+752,
+"Kings Norton"
+],
+[
+916,
+"Bournville"
+],
+[
+1038,
+"Selly Oak"
+],
+[
+1167,
+"University"
+],
+[
+1357,
+"Five Ways"
+],
+[
+1543,
+"Birmingham New Street"
+],
+[
+1948,
+"Duddeston"
+],
+[
+2022,
+"Aston"
+],
+[
+2203,
+"Gravelly Hill"
+],
+[
+2324,
+"Erdington"
+],
+[
+2434,
+"Chester Road"
+],
+[
+2554,
+"Wylde Green"
+],
+[
+2714,
+"Sutton Coldfield"
+]
+]
+},
+"PFcDvWzR-80": {
+"kind": "times",
+"seq": [
+[
+67,
+"Upminster"
+],
+[
+362,
+"Ockendon"
+],
+[
+579,
+"Chafford Hundred"
+],
+[
+766,
+"Grays"
+],
+[
+831,
+"Pitsea"
+],
+[
+1194,
+"Stanford-le-Hope"
+],
+[
+1408,
+"East Tilbury"
+],
+[
+1763,
+"Tilbury Town"
+],
+[
+1894,
+"Grays"
+],
+[
+2197,
+"Purfleet"
+],
+[
+2482,
+"Rainham"
+],
+[
+2685,
+"Dagenham Dock"
+]
+]
+},
+"-YNFC401LsE": {
+"kind": "times",
+"seq": [
+[
+290,
+"Kew Gardens"
+],
+[
+430,
+"Gunnersbury"
+],
+[
+591,
+"South Acton"
+],
+[
+723,
+"Acton Central"
+],
+[
+972,
+"Willesden Junction"
+]
+]
+},
+"R93BhXJO-wM": {
+"kind": "times",
+"seq": [
+[
+72,
+"Stanmore"
+],
+[
+164,
+"Canons Park"
+],
+[
+289,
+"Queensbury"
+],
+[
+381,
+"Kingsbury"
+],
+[
+595,
+"Wembley Park"
+],
+[
+770,
+"Neasden"
+]
+]
+},
+"iaBPNPAsYVM": {
+"kind": "times",
+"seq": [
+[
+0,
+"Brixton"
+],
+[
+86,
+"Stockwell"
+],
+[
+207,
+"Vauxhall"
+],
+[
+290,
+"Pimlico"
+],
+[
+386,
+"Victoria"
+]
+]
+},
+"G9GPUJ7hDYo": {
+"kind": "table",
+"seq": [
+[
+0,
+"Edgware Road"
+],
+[
+150,
+"Paddington"
+],
+[
+270,
+"Bayswater"
+],
+[
+390,
+"Notting Hill Gate"
+],
+[
+2985,
+"King's Cross St. Pancras"
+],
+[
+3105,
+"Euston Square"
+],
+[
+3225,
+"Great Portland Street"
+],
+[
+3330,
+"Baker Street"
+],
+[
+null,
+"Edgware Road"
+]
+]
+},
+"SYNd-zO9nKY": {
+"kind": "table",
+"seq": [
+[
+0,
+"Edgware Road"
+],
+[
+160,
+"Paddington"
+],
+[
+270,
+"Bayswater"
+],
+[
+370,
+"Notting Hill Gate"
+],
+[
+465,
+"High Street Kensington"
+],
+[
+680,
+"Earl's Court"
+],
+[
+960,
+"West Brompton"
+],
+[
+null,
+"Fulham Broadway"
+]
+]
+},
+"SiDMz29B7Vg": {
+"kind": "table",
+"seq": [
+[
+0,
+"Upminster Depot"
+],
+[
+3930,
+"Victoria"
+],
+[
+4060,
+"Sloane Square"
+],
+[
+4180,
+"South Kensington"
+],
+[
+4280,
+"Gloucester Road"
+],
+[
+4430,
+"Earl's Court"
+],
+[
+4575,
+"West Kensington"
+],
+[
+4680,
+"Barons Court"
+],
+[
+null,
+"Hammersmith"
+]
+]
+},
+"UIqMoUmawfg": {
+"kind": null,
+"seq": []
+},
+"jI3Yo-MA__o": {
+"kind": "times",
+"seq": [
+[
+3183,
+"Barbican"
+],
+[
+3265,
+"Moorgate"
+],
+[
+3366,
+"Liverpool Street"
+],
+[
+3478,
+"Aldgate"
+]
+]
+},
+"ELr59VWH7uw": {
+"kind": "times",
+"seq": [
+[
+0,
+"Elephant & Castle"
+],
+[
+83,
+"Lambeth North"
+],
+[
+186,
+"Waterloo"
+],
+[
+280,
+"Embankment"
+],
+[
+347,
+"Charing Cross"
+],
+[
+443,
+"Piccadilly Circus"
+],
+[
+589,
+"Oxford Circus"
+],
+[
+706,
+"Regent's Park"
+]
+]
+},
+"jrVd7D_vgPU": {
+"kind": "via",
+"seq": [
+[
+null,
+"Epping"
+],
+[
+null,
+"Leytonstone"
+],
+[
+null,
+"Stratford"
+],
+[
+null,
+"Liverpool Street"
+],
+[
+null,
+"Bank"
+],
+[
+null,
+"Oxford Circus"
+],
+[
+null,
+"White City"
+],
+[
+null,
+"North Acton"
+],
+[
+null,
+"West Ruislip"
+]
+]
+},
+"aO3CUeFuIkc": {
+"kind": null,
+"seq": []
+},
+"BP3FDZ1-5bw": {
+"kind": null,
+"seq": []
+},
+"8W06Z7k0Cw4": {
+"kind": "times",
+"seq": [
+[
+41,
+"Glasgow Queen Street"
+],
+[
+258,
+"Cowlairs North Junction"
+],
+[
+850,
+"Dalmuir"
+],
+[
+1400,
+"Dumbarton Central"
+],
+[
+1964,
+"Craigendoran Junction"
+],
+[
+2178,
+"Helensburgh Upper"
+],
+[
+2818,
+"Garelochhead"
+],
+[
+3491,
+"Glen Douglas"
+],
+[
+362,
+"Arrochar & Tarbet"
+],
+[
+1271,
+"Ardlui"
+],
+[
+2220,
+"Crianlarich"
+]
+]
+},
+"xzOK8dnmXCo": {
+"kind": null,
+"seq": []
+},
+"YxBnErTg9vg": {
+"kind": null,
+"seq": []
+},
+"8Yfdqud-pSg": {
+"kind": null,
+"seq": []
+},
+"WCPqeEeAso0": {
+"kind": "times",
+"seq": [
+[
+338,
+"Pembroke"
+],
+[
+522,
+"Lamphey"
+],
+[
+1032,
+"Manorbier"
+],
+[
+1358,
+"Penally"
+],
+[
+1503,
+"Tenby"
+],
+[
+2035,
+"Saundersfoot"
+],
+[
+2180,
+"Kilgetty"
+],
+[
+2694,
+"Narberth"
+],
+[
+3165,
+"Whitland"
+],
+[
+365,
+"Carmarthen"
+]
+]
+},
+"pg34JpOIC4M": {
+"kind": null,
+"seq": []
+},
+"vSdUJPL1QJI": {
+"kind": null,
+"seq": []
+},
+"I8QRZUTUQY4": {
+"kind": "times",
+"seq": [
+[
+2146,
+"Skipton → Hellifield"
+],
+[
+3046,
+"Hellifield → Settle"
+],
+[
+57,
+"Settle → Ribblehead"
+],
+[
+1065,
+"Ribblehead → Dent"
+],
+[
+1695,
+"Dent → Appleby"
+],
+[
+3499,
+"Appleby → Armathwaite"
+],
+[
+1562,
+"Armathwaite → Carlisle"
+]
+]
+},
+"bLTa6lPKQqs": {
+"kind": "times",
+"seq": [
+[
+42,
+"Scarborough"
+],
+[
+376,
+"Seamer"
+],
+[
+1075,
+"Knapton"
+],
+[
+1380,
+"Malton"
+],
+[
+2022,
+"Castle Howard"
+],
+[
+2609,
+"Strensall"
+],
+[
+2913,
+"York"
+],
+[
+3198,
+"National Railway Museum & Credits"
+]
+]
+},
+"GElAe1hAahU": {
+"kind": "times",
+"seq": [
+[
+0,
+"Salisbury / Tisbury"
+],
+[
+1030,
+"Gillingham"
+],
+[
+1771,
+"Templecombe"
+],
+[
+2219,
+"Sherborne"
+],
+[
+2688,
+"Yeovil Junction"
+]
+]
+},
+"e0olUlkuK58": {
+"kind": null,
+"seq": []
+},
+"eHjoav_sb88": {
+"kind": "table",
+"seq": [
+[
+0,
+"Abbey Wood"
+],
+[
+134,
+"Woolwich"
+],
+[
+307,
+"Custom House"
+],
+[
+439,
+"Canary Wharf"
+],
+[
+574,
+"Whitechapel"
+],
+[
+665,
+"Liverpool Street"
+],
+[
+722,
+"Farringdon"
+],
+[
+827,
+"Tottenham Court Road"
+],
+[
+877,
+"Bond Street"
+],
+[
+null,
+"Paddington / Westbourne Park"
+]
+]
+},
+"gJpgnn7xwAo": {
+"kind": "times",
+"seq": [
+[
+13,
+"Ealing Broadway"
+],
+[
+152,
+"West Ealing"
+],
+[
+496,
+"Hayes & Harlington"
+],
+[
+859,
+"Heathrow Central"
+],
+[
+1280,
+"Heathrow Terminal 5"
+]
+]
+},
+"AkiThKQoAu8": {
+"kind": null,
+"seq": []
+},
+"tNj1tobDaps": {
+"kind": "times",
+"seq": [
+[
+0,
+"Stratford International"
+],
+[
+150,
+"Stratford"
+],
+[
+240,
+"Stratford High Street"
+],
+[
+345,
+"Abbey Road"
+],
+[
+435,
+"West Ham"
+],
+[
+545,
+"Star Lane"
+],
+[
+640,
+"Canning Town"
+],
+[
+865,
+"West Silvertown"
+],
+[
+965,
+"Pontoon Dock"
+],
+[
+1100,
+"London City Airport"
+],
+[
+1250,
+"King George V"
+]
+]
+},
+"1hZiirxA8ko": {
+"kind": "table",
+"seq": [
+[
+0,
+"Canary Wharf"
+],
+[
+85,
+"West India Quay"
+],
+[
+187,
+"Poplar"
+],
+[
+315,
+"All Saints"
+],
+[
+394,
+"Langdon Park"
+],
+[
+505,
+"Devons Road"
+],
+[
+605,
+"Bow Church"
+],
+[
+750,
+"Pudding Mill Lane"
+],
+[
+null,
+"Stratford"
+]
+]
+},
+"lcf1O9ER3aQ": {
+"kind": null,
+"seq": []
+},
+"M2fO0T_cM6U": {
+"kind": "times",
+"seq": [
+[
+55,
+"London Euston"
+],
+[
+426,
+"South Hampstead"
+],
+[
+517,
+"Kilburn High Road"
+],
+[
+638,
+"Queen's Park"
+],
+[
+773,
+"Kensal Green"
+],
+[
+936,
+"Willesden Junction"
+],
+[
+1065,
+"Harlesden"
+],
+[
+1200,
+"Stonebridge Park"
+]
+]
+},
+"hL6AVXNRUFc": {
+"kind": null,
+"seq": []
+},
+"IQ10YOIUoUE": {
+"kind": null,
+"seq": []
+},
+"Qj16HZpVbHw": {
+"kind": null,
+"seq": []
+},
+"UrF8D05tlUE": {
+"kind": null,
+"seq": []
+},
+"bWPvd0wIN-c": {
+"kind": null,
+"seq": []
+},
+"lxOJx0lUxHg": {
+"kind": null,
+"seq": []
+},
+"8jTYZNME-3I": {
+"kind": null,
+"seq": []
+},
+"izxEyA-Fclc": {
+"kind": null,
+"seq": []
+},
+"OQQdzJ3Frac": {
+"kind": "table",
+"seq": [
+[
+0,
+"Margate"
+],
+[
+774,
+"Ramsgate"
+],
+[
+1081,
+"Thanet Parkway"
+],
+[
+1989,
+"Canterbury West"
+],
+[
+3000,
+"Ashford International"
+],
+[
+4171,
+"Ebbsfleet International"
+],
+[
+null,
+"Stratford International"
+]
+]
+},
+"x6ptoAut3l8": {
+"kind": null,
+"seq": []
+},
+"G8bpMij_nkw": {
+"kind": "times",
+"seq": [
+[
+0,
+"Ramsgate"
+],
+[
+363,
+"Broadstairs"
+],
+[
+1681,
+"Stratford International"
+],
+[
+2198,
+"London St Pancras International"
+]
+]
+},
+"6WvE0vjmDTU": {
+"kind": null,
+"seq": []
+},
+"mIEjWY9-23U": {
+"kind": null,
+"seq": []
+},
+"YW9zIZP7yaQ": {
+"kind": null,
+"seq": []
+},
+"jUksu0tb4yI": {
+"kind": null,
+"seq": []
+},
+"2KO0zaIlHgs": {
+"kind": null,
+"seq": []
+},
+"9e29Zz4OQRY": {
+"kind": null,
+"seq": []
+},
+"mxKUhThzLBA": {
+"kind": null,
+"seq": []
+},
+"COeWA68-5bs": {
+"kind": null,
+"seq": []
+},
+"HNprLC0r-mI": {
+"kind": "times",
+"seq": [
+[
+13,
+"London Euston"
+],
+[
+55,
+"Euston to Coventry Non-Stop Section"
+],
+[
+27,
+"Approaching Coventry"
+],
+[
+185,
+"Coventry"
+],
+[
+276,
+"Coventry"
+]
+]
+},
+"K0sFARTElnA": {
+"kind": "times",
+"seq": [
+[
+0,
+"Manchester Piccadilly"
+],
+[
+141,
+"Stockport"
+],
+[
+767,
+"Wilmslow"
+],
+[
+1264,
+"Crewe"
+],
+[
+2252,
+"Crewe"
+],
+[
+716,
+"London Euston"
+]
+]
+},
+"gd9uOf_nmis": {
+"kind": "times",
+"seq": [
+[
+50,
+"London Euston"
+],
+[
+1850,
+"Milton Keynes Central"
+],
+[
+3461,
+"Coventry"
+],
+[
+422,
+"Birmingham International"
+],
+[
+1574,
+"Birmingham New Street"
+],
+[
+2117,
+"Sandwell & Dudley"
+],
+[
+2949,
+"Wolverhampton"
+]
+]
+},
+"B9W3pnVSZZ8": {
+"kind": null,
+"seq": []
+},
+"WA4PS4CGEVg": {
+"kind": null,
+"seq": []
+},
+"5DuRfl3-tqE": {
+"kind": null,
+"seq": []
+},
+"77ZXgaCmmqY": {
+"kind": "times",
+"seq": [
+[
+112,
+"London St. Pancras"
+],
+[
+802,
+"Radlett"
+],
+[
+1315,
+"Luton Airport Parkway"
+],
+[
+1967,
+"Bedford"
+],
+[
+2449,
+"Wellingborough"
+],
+[
+2723,
+"Kettering"
+],
+[
+3159,
+"Market Harborough"
+],
+[
+201,
+"Leicester"
+],
+[
+877,
+"Loughborough"
+],
+[
+1086,
+"East Midlands Parkway"
+],
+[
+1713,
+"Nottingham"
+],
+[
+1904,
+"Credits"
+]
+]
+},
+"NUf7OF90FdY": {
+"kind": null,
+"seq": []
+},
+"At7qqsUa3xU": {
+"kind": "via",
+"seq": [
+[
+null,
+"Nottingham"
+],
+[
+null,
+"Carlton"
+],
+[
+null,
+"Burton Joyce"
+],
+[
+null,
+"Lowdham"
+],
+[
+null,
+"Thurgarton"
+],
+[
+null,
+"Bleasby"
+],
+[
+null,
+"Fiskerton"
+],
+[
+null,
+"Rolleston"
+],
+[
+null,
+"Newark Castle"
+],
+[
+null,
+"Collingham"
+],
+[
+null,
+"Swinderby"
+],
+[
+null,
+"Hykeham"
+],
+[
+null,
+"Lincoln Central"
+]
+]
+},
+"q4VltC6Xj5Y": {
+"kind": null,
+"seq": []
+},
+"MDlkb9sZeM0": {
+"kind": "via",
+"seq": [
+[
+null,
+"Leeds"
+],
+[
+null,
+"Wakefield Westgate"
+],
+[
+null,
+"Moorthorpe"
+],
+[
+null,
+"Sheffield"
+],
+[
+null,
+"Chesterfield"
+],
+[
+null,
+"the Derbyshire Dales"
+],
+[
+null,
+"Derby"
+]
+]
+},
+"SHK7yJ1C5rg": {
+"kind": "via",
+"seq": [
+[
+null,
+"Bristol Temple Meads"
+],
+[
+null,
+"Bristol Parkway"
+],
+[
+null,
+"Cheltenham Spa"
+],
+[
+null,
+"the Lickey Incline"
+],
+[
+null,
+"Birmingham New Street"
+]
+]
+},
+"gb4I6EtGIXs": {
+"kind": null,
+"seq": []
+},
+"_mrMF2xMhuw": {
+"kind": "times",
+"seq": [
+[
+43,
+"Bristol Temple Meads"
+],
+[
+618,
+"Bristol Parkway"
+],
+[
+1759,
+"Swindon"
+],
+[
+2499,
+"Didcot Parkway"
+],
+[
+2959,
+"Reading"
+],
+[
+203,
+"Slough"
+],
+[
+977,
+"London Paddington"
+]
+]
+},
+"RP56nz6_pds": {
+"kind": null,
+"seq": []
+},
+"jgM5c6t71sU": {
+"kind": null,
+"seq": []
+},
+"eGzymMjiMzs": {
+"kind": null,
+"seq": []
+},
+"cZkraBBymaE": {
+"kind": "times",
+"seq": [
+[
+31,
+"York"
+],
+[
+1450,
+"Leeds"
+],
+[
+2550,
+"Huddersfield"
+],
+[
+271,
+"Manchester Victoria"
+],
+[
+1500,
+"Lea Green"
+],
+[
+2165,
+"Liverpool Lime Street"
+]
+]
+},
+"Ugf4aSWNbMw": {
+"kind": "times",
+"seq": [
+[
+143,
+"York"
+],
+[
+1488,
+"Leeds"
+],
+[
+2366,
+"Dewsbury"
+],
+[
+2937,
+"Huddersfield"
+],
+[
+1343,
+"Manchester Victoria"
+]
+]
+},
+"LOuAdl4Ajcg": {
+"kind": null,
+"seq": []
+},
+"W0yzenJ-eU8": {
+"kind": null,
+"seq": []
+},
+"s1I2zOlPFoQ": {
+"kind": null,
+"seq": []
+},
+"Ed-Ylc4CWS4": {
+"kind": null,
+"seq": []
+},
+"MfqYt3mJYFI": {
+"kind": null,
+"seq": []
+},
+"s5bhqsbFV6Q": {
+"kind": null,
+"seq": []
+},
+"hG6F9xqkMCM": {
+"kind": null,
+"seq": []
+},
+"R_fEcLVHsWk": {
+"kind": null,
+"seq": []
+},
+"gvMxfdRnVew": {
+"kind": null,
+"seq": []
+},
+"dFbfs4uYVD0": {
+"kind": "via",
+"seq": [
+[
+null,
+"Bolton"
+],
+[
+null,
+"Lostock Junction"
+],
+[
+null,
+"Hindley"
+],
+[
+null,
+"Wigan North Western"
+]
+]
+},
+"bJ7ADjD8nAU": {
+"kind": "via",
+"seq": [
+[
+null,
+"Blackpool North"
+],
+[
+null,
+"Preston"
+],
+[
+null,
+"Hellifield"
+]
+]
+},
+"Dt6pQXVibeU": {
+"kind": null,
+"seq": []
+},
+"WMCxo2HtWWk": {
+"kind": null,
+"seq": []
+},
+"wS4wgVl9jhA": {
+"kind": null,
+"seq": []
+},
+"2g-yVRO17mQ": {
+"kind": null,
+"seq": []
+},
+"gCjmHaAEg1U": {
+"kind": "times",
+"seq": [
+[
+85,
+"Kettering"
+],
+[
+450,
+"Corby"
+],
+[
+840,
+"Welland Viaduct (Harringworth Viaduct"
+],
+[
+1344,
+"Manton Junction"
+],
+[
+1561,
+"Oakham"
+],
+[
+2164,
+"Melton Mowbray"
+],
+[
+2568,
+"Rearsby"
+],
+[
+2890,
+"Syston East Junction"
+]
+]
+},
+"-g8aReT4eKk": {
+"kind": null,
+"seq": []
+},
+"CRxB1FPy_V4": {
+"kind": null,
+"seq": []
+},
+"sE04Faxfo7I": {
+"kind": null,
+"seq": []
+},
+"KRugGYNkzCs": {
+"kind": null,
+"seq": []
+},
+"LEodQdJXCRs": {
+"kind": null,
+"seq": []
+},
+"jqJisQzyc5I": {
+"kind": null,
+"seq": []
+},
+"r1PREzqnbaM": {
+"kind": null,
+"seq": []
+},
+"nkJ6y2Ok2Qg": {
+"kind": "times",
+"seq": [
+[
+0,
+"Hastings"
+],
+[
+291,
+"St Leonard's Warrior Square"
+],
+[
+846,
+"Battle"
+],
+[
+1817,
+"Wadhurst"
+],
+[
+2201,
+"Tunbridge Wells"
+],
+[
+2393,
+"High Brooms"
+],
+[
+2666,
+"Tonbridge"
+],
+[
+3102,
+"Sevenoaks"
+],
+[
+3580,
+"Orpington"
+],
+[
+973,
+"London Bridge"
+],
+[
+1246,
+"Waterloo East"
+],
+[
+1426,
+"London Charing Cross"
+]
+]
+},
+"TFVyv0BEY_M": {
+"kind": null,
+"seq": []
+},
+"sW8f0CnRbKg": {
+"kind": "times",
+"seq": [
+[
+0,
+"London Waterloo"
+],
+[
+510,
+"Clapham Junction"
+],
+[
+1484,
+"Woking"
+],
+[
+2506,
+"Basingstoke"
+],
+[
+3353,
+"Winchester"
+],
+[
+211,
+"Southampton Airport Parkway"
+],
+[
+612,
+"Southampton Central"
+]
+]
+},
+"O7hfyN5EvQM": {
+"kind": null,
+"seq": []
+},
+"Dke0PakSKy8": {
+"kind": null,
+"seq": []
+},
+"UQVNumKtTOE": {
+"kind": null,
+"seq": []
+},
+"-KCNlPvxomM": {
+"kind": null,
+"seq": []
+},
+"4_qqO6_I_Z0": {
+"kind": "times",
+"seq": [
+[
+0,
+"All aboard!"
+],
+[
+28,
+"Setting off"
+],
+[
+80,
+"Human Driver vs Machine Driver"
+],
+[
+120,
+"Balise beacons"
+],
+[
+169,
+"Into the tunnels"
+],
+[
+224,
+"Automatic Train Operation"
+],
+[
+426,
+"Coming to a stop"
+]
+]
+},
+"0KkzePL78fs": {
+"kind": null,
+"seq": []
+},
+"VgsWUMoAGBc": {
+"kind": null,
+"seq": []
+},
+"3FYPpbP7_Wo": {
+"kind": null,
+"seq": []
+},
+"UFS2RGK243s": {
+"kind": null,
+"seq": []
+},
+"hRfeQH2y434": {
+"kind": null,
+"seq": []
+},
+"FO4_cy6fnsQ": {
+"kind": null,
+"seq": []
+},
+"uMZWrAtYLXo": {
+"kind": null,
+"seq": []
+},
+"jqWHQdPjjgo": {
+"kind": null,
+"seq": []
+},
+"6SfwsH8QIrs": {
+"kind": null,
+"seq": []
+},
+"ey0RVh5NOZ0": {
+"kind": null,
+"seq": []
+},
+"UE2kQAE6Iq4": {
+"kind": "times",
+"seq": [
+[
+0,
+"Cardiff Central"
+],
+[
+680,
+"Newport"
+],
+[
+2066,
+"Bristol Parkway"
+],
+[
+122,
+"Swindon"
+],
+[
+2112,
+"Reading"
+],
+[
+375,
+"London Paddington"
+]
+]
+},
+"osfMCEd4_Uw": {
+"kind": null,
+"seq": []
+},
+"VZpu5h4S8Fg": {
+"kind": null,
+"seq": []
+},
+"EP8UsYGNFR4": {
+"kind": null,
+"seq": []
+},
+"PqWM2EWgxDk": {
+"kind": null,
+"seq": []
+},
+"rfnWaemrDlk": {
+"kind": null,
+"seq": []
+},
+"kJhHuv--R2U": {
+"kind": null,
+"seq": []
+},
+"bS9dh1uuP3c": {
+"kind": null,
+"seq": []
+},
+"WjVKui6_4r8": {
+"kind": null,
+"seq": []
+},
+"y7-OKoo5bgg": {
+"kind": null,
+"seq": []
+},
+"t2FKkBYoyiM": {
+"kind": "times",
+"seq": [
+[
+71,
+"Wolverhampton"
+],
+[
+1125,
+"Telford Central"
+],
+[
+1532,
+"Wellington"
+],
+[
+2224,
+"Shrewsbury"
+],
+[
+3377,
+"Gobowen"
+],
+[
+107,
+"Chirk"
+],
+[
+460,
+"Ruabon"
+],
+[
+852,
+"Wrexham General"
+],
+[
+1773,
+"Chester"
+]
+]
+},
+"TGqBJgJqrq0": {
+"kind": null,
+"seq": []
+},
+"BRri92k1zqo": {
+"kind": "times",
+"seq": [
+[
+0,
+"London Marylebone"
+],
+[
+1454,
+"High Wycombe"
+],
+[
+2677,
+"Bicester North"
+],
+[
+3406,
+"Banbury"
+],
+[
+779,
+"Leamington Spa"
+],
+[
+1714,
+"Dorridge"
+],
+[
+1996,
+"Solihull"
+],
+[
+2491,
+"Birmingham Moor Street"
+]
+]
+},
+"gw83t35PiOs": {
+"kind": "times",
+"seq": [
+[
+52,
+"Kidderminster"
+],
+[
+431,
+"Blakedown"
+],
+[
+638,
+"Hagley"
+],
+[
+857,
+"Stourbridge Junction"
+],
+[
+1419,
+"Rowley Regis"
+],
+[
+2049,
+"Birmingham Snow Hill"
+],
+[
+2199,
+"Birmingham Moor Street"
+]
+]
+},
+"SLMqCqpAc_I": {
+"kind": null,
+"seq": []
+},
+"SOKGXlcRII4": {
+"kind": "times",
+"seq": [
+[
+350,
+"Stratford-upon-Avon Parkway"
+],
+[
+570,
+"Wilmcote"
+],
+[
+1203,
+"Hatton"
+],
+[
+1602,
+"Warwick"
+],
+[
+1868,
+"Leamington Spa"
+],
+[
+2361,
+"Kenilworth"
+],
+[
+2774,
+"Coventry"
+],
+[
+3248,
+"Coventry Arena"
+],
+[
+3531,
+"Bedworth"
+],
+[
+148,
+"Bermuda Park"
+],
+[
+397,
+"Nuneaton"
+]
+]
+},
+"lS-6uM2DrcM": {
+"kind": "times",
+"seq": [
+[
+37,
+"Birmingham New Street"
+],
+[
+429,
+"Smethwick Galton Bridge"
+],
+[
+1130,
+"Wolverhampton"
+],
+[
+1712,
+"Penkridge"
+],
+[
+2099,
+"Stafford"
+],
+[
+3078,
+"Crewe"
+],
+[
+100,
+"Winsford"
+],
+[
+431,
+"Hartford"
+],
+[
+1008,
+"Runcorn"
+],
+[
+1472,
+"Liverpool South Parkway"
+],
+[
+2115,
+"Liverpool Lime Street"
+]
+]
+},
+"YA5q3f_m-tY": {
+"kind": "times",
+"seq": [
+[
+23,
+"Birmingham New Street"
+],
+[
+834,
+"Tame Bridge Parkway"
+],
+[
+1192,
+"Darlaston"
+],
+[
+1405,
+"Willenhall"
+],
+[
+2003,
+"Wolverhampton"
+],
+[
+2617,
+"Bilbrook"
+],
+[
+2747,
+"Codsall"
+],
+[
+3122,
+"Albrighton"
+],
+[
+3304,
+"Cosford"
+],
+[
+3591,
+"Shifnal"
+],
+[
+272,
+"Telford Central"
+]
+]
+},
+"Mi8PnlnToIs": {
+"kind": null,
+"seq": []
+},
+"On2hqwErIrQ": {
+"kind": null,
+"seq": []
+},
+"ERa84X3GNjg": {
+"kind": null,
+"seq": []
+},
+"0e9oN1jEZRQ": {
+"kind": null,
+"seq": []
+},
+"YgOJGhUon1E": {
+"kind": null,
+"seq": []
+},
+"tL1MqwyOKZQ": {
+"kind": null,
+"seq": []
+},
+"dh1plj2a4V4": {
+"kind": null,
+"seq": []
+},
+"luE08Ykr0aA": {
+"kind": null,
+"seq": []
+},
+"XUYQxOCQqsA": {
+"kind": null,
+"seq": []
+},
+"8KCq7xB8ED4": {
+"kind": null,
+"seq": []
+},
+"1neVY0rOYgk": {
+"kind": null,
+"seq": []
+},
+"v_mNeLDrsHE": {
+"kind": "via",
+"seq": [
+[
+null,
+"Llandudno Junction"
+],
+[
+null,
+"Glan Conwy"
+],
+[
+null,
+"Tal-y-Cafn"
+],
+[
+null,
+"Dolgarrog"
+],
+[
+null,
+"Llanrwst"
+],
+[
+null,
+"Betws-y-Coed"
+],
+[
+null,
+"Pont-y-Pant"
+],
+[
+null,
+"Dolwyddelan"
+],
+[
+null,
+"Roman Bridge"
+],
+[
+null,
+"the 2-mile Ffestiniog Tunnel"
+],
+[
+null,
+"Blaenau Ffestiniog"
+]
+]
+},
+"XiO9FuP8Yqo": {
+"kind": null,
+"seq": []
+},
+"QzfjqlHP_I4": {
+"kind": null,
+"seq": []
+},
+"yFNcWT3Qbpw": {
+"kind": null,
+"seq": []
+},
+"NApTOIuLjfw": {
+"kind": null,
+"seq": []
+},
+"L5TpdPUsGNU": {
+"kind": null,
+"seq": []
+},
+"XKqq9DQBrEw": {
+"kind": null,
+"seq": []
+},
+"UlttQYel2z4": {
+"kind": null,
+"seq": []
+},
+"vnme8SmEcIY": {
+"kind": null,
+"seq": []
+},
+"HUPd7L46Xfs": {
+"kind": null,
+"seq": []
+},
+"IXb00Poh3Q4": {
+"kind": null,
+"seq": []
+},
+"Np86PUbHkzY": {
+"kind": null,
+"seq": []
+},
+"5fpxECS1Eas": {
+"kind": null,
+"seq": []
+},
+"Tlqm8o_9KAc": {
+"kind": "via",
+"seq": [
+[
+null,
+"Glasgow Central"
+],
+[
+null,
+"Kilmarnock"
+],
+[
+null,
+"Dumfries"
+],
+[
+null,
+"Carlisle"
+]
+]
+},
+"yXob_Tbso40": {
+"kind": null,
+"seq": []
+},
+"IVr4MoTuGMU": {
+"kind": "times",
+"seq": [
+[
+0,
+"Georgemas Junction"
+],
+[
+584,
+"Thurso"
+],
+[
+1129,
+"Georgemas Junction"
+]
+]
+},
+"Fn2wGORIw0k": {
+"kind": "via",
+"seq": [
+[
+null,
+"Inverness"
+],
+[
+null,
+"Dingwall"
+],
+[
+null,
+"Invergordon"
+],
+[
+null,
+"Tain"
+],
+[
+null,
+"Lairg"
+],
+[
+null,
+"Golspie"
+],
+[
+null,
+"Helmsdale"
+],
+[
+null,
+"Forsinard"
+],
+[
+null,
+"Georgemas Junction"
+],
+[
+null,
+"Thurso"
+],
+[
+null,
+"Wick"
+]
+]
+},
+"vcw8H-uJa1E": {
+"kind": null,
+"seq": []
+},
+"dPElPanKtVA": {
+"kind": "times",
+"seq": [
+[
+0,
+"Inverness Railway Station"
+],
+[
+75,
+"Departing Inverness"
+],
+[
+142,
+"Far North Line junction"
+],
+[
+173,
+"Ness Viaduct & Kessock Bridge"
+],
+[
+264,
+"Beauly Firth"
+],
+[
+309,
+"Clachnaharry Railway Swing Bridge & Caledonian Canal"
+]
+]
+},
+"ghRqiBHnHb4": {
+"kind": null,
+"seq": []
+},
+"-1zJiHvL9Bk": {
+"kind": null,
+"seq": []
+},
+"QSbChNgxY2E": {
+"kind": null,
+"seq": []
+},
+"3hCoSiGpzMI": {
+"kind": null,
+"seq": []
+},
+"hyOOrOe2IgI": {
+"kind": null,
+"seq": []
+},
+"OSaAuSO9hM8": {
+"kind": "times",
+"seq": [
+[
+214,
+"Edinburgh Haymarket"
+],
+[
+380,
+"Forth Rail Bridge"
+],
+[
+930,
+"Cupar"
+],
+[
+1040,
+"Leuchars"
+],
+[
+1248,
+"Tay Rail Bridge"
+],
+[
+1535,
+"Dundee"
+]
+]
+},
+"7q-Kfm6jzi8": {
+"kind": null,
+"seq": []
+},
+"TH5etRx5dTY": {
+"kind": null,
+"seq": []
+},
+"cvoh9l895rE": {
+"kind": null,
+"seq": []
+},
+"mZ4TbHFXWis": {
+"kind": "times",
+"seq": [
+[
+85,
+"Belfast Lanyon Place"
+],
+[
+265,
+"Portadown"
+],
+[
+480,
+"Drogheda"
+],
+[
+510,
+"Dublin Connolly"
+]
+]
+},
+"w-BB5evy4CA": {
+"kind": "times",
+"seq": [
+[
+48,
+"Dublin Connolly"
+],
+[
+303,
+"Dublin to Drogheda"
+],
+[
+479,
+"Drogheda northward across the border into Belfast"
+]
+]
+},
+"6dEEHM0KGZ4": {
+"kind": null,
+"seq": []
+},
+"OT_Cq98CiOg": {
+"kind": null,
+"seq": []
+},
+"gf-KLb6Ezjc": {
+"kind": null,
+"seq": []
+},
+"dP65hOgwUHE": {
+"kind": null,
+"seq": []
+},
+"afH7gRCLJH8": {
+"kind": null,
+"seq": []
+},
+"ctLIWg9aCtQ": {
+"kind": null,
+"seq": []
+},
+"mgA-QOw8pZM": {
+"kind": null,
+"seq": []
+},
+"0YhOYldIVkA": {
+"kind": "times",
+"seq": [
+[
+10,
+"Piccadilly"
+],
+[
+133,
+"Piccadilly Gardens"
+],
+[
+324,
+"St Peter's Square"
+],
+[
+544,
+"Deansgate-Castlefield"
+],
+[
+728,
+"Cornbrook"
+],
+[
+878,
+"Pomona"
+],
+[
+1012,
+"Exchange Quay"
+],
+[
+1127,
+"Salford Quays"
+],
+[
+1276,
+"Anchorage"
+],
+[
+1356,
+"Harbour City"
+],
+[
+1490,
+"MediaCityUK"
+]
+]
+},
+"Qj5ZVny8KeY": {
+"kind": null,
+"seq": []
+},
+"1jzgZsDpZug": {
+"kind": null,
+"seq": []
+},
+"qR2Gr5aVZ4Y": {
+"kind": "table",
+"seq": [
+[
+0,
+"St. James"
+],
+[
+120,
+"Monument"
+],
+[
+210,
+"Manors"
+],
+[
+375,
+"Byker"
+],
+[
+510,
+"Chillingham Road"
+],
+[
+600,
+"Walkergate"
+],
+[
+745,
+"Wallsend"
+],
+[
+855,
+"Hadrian Road"
+],
+[
+1020,
+"Howdon"
+],
+[
+1180,
+"Percy Main"
+],
+[
+null,
+"Meadow Well"
+]
+]
+},
+"IMjf3YBQ-e0": {
+"kind": "times",
+"seq": [
+[
+0,
+"South Shields"
+],
+[
+93,
+"Chichester"
+],
+[
+217,
+"Tyne Dock"
+],
+[
+348,
+"Simonside"
+],
+[
+436,
+"Bede"
+],
+[
+589,
+"Jarrow"
+],
+[
+755,
+"Hebburn"
+],
+[
+1002,
+"Pelaw"
+],
+[
+1179,
+"Heworth"
+],
+[
+1291,
+"Felling"
+],
+[
+1410,
+"Gateshead Stadium"
+],
+[
+1478,
+"Entering Underground"
+],
+[
+1520,
+"Gateshead"
+],
+[
+1603,
+"Crossing Queen Elizabeth II Metro Bridge"
+],
+[
+1653,
+"Central Station"
+],
+[
+1740,
+"Monument"
+]
+]
+},
+"uFef2OovGqM": {
+"kind": null,
+"seq": []
+},
+"Tz0nnWGj21g": {
+"kind": null,
+"seq": []
+},
+"CggsSB9kHHg": {
+"kind": "via",
+"seq": [
+[
+null,
+"Edinburgh Airport"
+],
+[
+null,
+"Ingliston Park & Ride"
+],
+[
+null,
+"Gyle Centre"
+],
+[
+null,
+"Edinburgh Park"
+],
+[
+null,
+"Saughton"
+],
+[
+null,
+"Murrayfield Stadium"
+],
+[
+null,
+"Haymarket"
+],
+[
+null,
+"West End"
+],
+[
+null,
+"Princes Street"
+],
+[
+null,
+"St Andrew Square and Newhaven"
+]
+]
+},
+"oJcT6pa7azU": {
+"kind": "via",
+"seq": [
+[
+null,
+"Edinburgh Airport"
+],
+[
+null,
+"Ingliston Park & Ride"
+],
+[
+null,
+"Gyle Centre"
+],
+[
+null,
+"Edinburgh Park"
+],
+[
+null,
+"Saughton"
+],
+[
+null,
+"Murrayfield Stadium"
+],
+[
+null,
+"Haymarket"
+],
+[
+null,
+"West End"
+],
+[
+null,
+"Princes Street"
+],
+[
+null,
+"St Andrew Square and Newhaven"
+]
+]
+},
+"q1HqsZ7FQw0": {
+"kind": "via",
+"seq": [
+[
+null,
+"Picardy Place down Leith Walk"
+],
+[
+null,
+"McDonald Road"
+],
+[
+null,
+"Balfour Street"
+],
+[
+null,
+"Foot of the Walk"
+],
+[
+null,
+"The Shore"
+],
+[
+null,
+"Port of Leith"
+],
+[
+null,
+"Ocean Terminal"
+],
+[
+null,
+"Newhaven"
+]
+]
+},
+"bhExLY40NAM": {
+"kind": null,
+"seq": []
+},
+"uFCRoODXJbk": {
+"kind": null,
+"seq": []
+},
+"NzBf2YwbngA": {
+"kind": null,
+"seq": []
+},
+"BOIRCKW7-fw": {
+"kind": null,
+"seq": []
+},
+"IFEDUYtpW2Y": {
+"kind": null,
+"seq": []
+},
+"i8si3-9WRes": {
+"kind": "via",
+"seq": [
+[
+null,
+"East Croydon"
+],
+[
+null,
+"Sandilands"
+],
+[
+null,
+"Lloyd Park"
+],
+[
+null,
+"Coombe Lane"
+],
+[
+null,
+"Gravel Hill"
+],
+[
+null,
+"Addington Village"
+],
+[
+null,
+"New Addington"
+]
+]
+},
+"URAke-x2fwA": {
+"kind": null,
+"seq": []
+},
+"GPtmygWOhjU": {
+"kind": null,
+"seq": []
+},
+"USCKAIxX6Qw": {
+"kind": null,
+"seq": []
+},
+"Ociic-nIr_8": {
+"kind": "table",
+"seq": [
+[
+33,
+"Peterborough"
+],
+[
+351,
+"Kings Dyke"
+],
+[
+472,
+"Whittlesey"
+],
+[
+692,
+"Three Horse Shoes"
+],
+[
+1031,
+"March"
+],
+[
+1295,
+"Stonea"
+],
+[
+null,
+"Manea"
+]
+]
+},
+"HbiB6nGb94E": {
+"kind": null,
+"seq": []
+},
+"6GkEoNhoP_w": {
+"kind": null,
+"seq": []
+},
+"WPNp9IzqdpY": {
+"kind": null,
+"seq": []
+},
+"Krwqp1pUj-Y": {
+"kind": "via",
+"seq": [
+[
+null,
+"Crewe"
+],
+[
+null,
+"Stoke-on-Trent"
+],
+[
+null,
+"Uttoxeter"
+],
+[
+null,
+"Derby RTC"
+]
+]
+},
+"oQGISOhpmes": {
+"kind": null,
+"seq": []
+},
+"PuHWv2PJGAo": {
+"kind": "via",
+"seq": [
+[
+null,
+"Hither Green depot across the North Downs Line"
+],
+[
+null,
+"Redhill"
+],
+[
+null,
+"Reigate"
+],
+[
+null,
+"Dorking"
+],
+[
+null,
+"Guildford"
+],
+[
+null,
+"Woking"
+]
+]
+},
+"95KWQsrKAnc": {
+"kind": null,
+"seq": []
+},
+"XEtELaIaVXs": {
+"kind": "times",
+"seq": [
+[
+26,
+"Plain Line Pattern Recognition"
+],
+[
+499,
+"MENTOR"
+],
+[
+990,
+"Overhead Line Inspection"
+],
+[
+1397,
+"New Measurement Train"
+]
+]
+},
+"-fvxhQSN9Xs": {
+"kind": null,
+"seq": []
+},
+"uh1v3pfSTSY": {
+"kind": null,
+"seq": []
+},
+"OkbJR-nUEuk": {
+"kind": null,
+"seq": []
+},
+"HFH625LVmno": {
+"kind": null,
+"seq": []
+},
+"tnkTPm0NYBI": {
+"kind": "via",
+"seq": [
+[
+null,
+"Highley"
+],
+[
+null,
+"Arley"
+],
+[
+null,
+"Northwood Halt"
+],
+[
+null,
+"Bewdley"
+],
+[
+null,
+"Kidderminster Town"
+]
+]
+},
+"_i4Iirc-nKQ": {
+"kind": null,
+"seq": []
+},
+"BCd2hwdfbyE": {
+"kind": null,
+"seq": []
+},
+"BjIP2BfiNAQ": {
+"kind": null,
+"seq": []
+},
+"dqKwALglPF0": {
+"kind": "via",
+"seq": [
+[
+null,
+"Crewe Down Holding Sidings"
+],
+[
+null,
+"Nantwich"
+],
+[
+null,
+"Wrenbury"
+],
+[
+null,
+"Whitchurch"
+],
+[
+null,
+"Prees"
+],
+[
+null,
+"Wem"
+],
+[
+null,
+"Shrewsbury"
+]
+]
+},
+"ecDQAFwE4e0": {
+"kind": null,
+"seq": []
+},
+"NjOXhhKa6XM": {
+"kind": null,
+"seq": []
+},
+"ZL1a6c-RMko": {
+"kind": null,
+"seq": []
+},
+"y8xQ2FT3O0I": {
+"kind": null,
+"seq": []
+},
+"mgAyZphz1tA": {
+"kind": null,
+"seq": []
+},
+"hb4myVHNppw": {
+"kind": "times",
+"seq": [
+[
+0,
+"Pickering"
+],
+[
+1175,
+"Levisham"
+],
+[
+1356,
+"The Grange"
+],
+[
+1539,
+"No Sheep Hut"
+],
+[
+1676,
+"Newtondale Halt"
+],
+[
+2190,
+"Fen Bog"
+],
+[
+2596,
+"Goathland"
+],
+[
+2911,
+"Beck Hole"
+],
+[
+2987,
+"Green End"
+],
+[
+3080,
+"Esk Valley"
+],
+[
+3293,
+"Grosmont MPD"
+],
+[
+3323,
+"Grosmont Tunnel"
+]
+]
+},
+"EmTRgPcsBys": {
+"kind": null,
+"seq": []
+},
+"AHDnbpxEayc": {
+"kind": null,
+"seq": []
+},
+"f9YqL6B74Yc": {
+"kind": null,
+"seq": []
+},
+"dHypQlbrSzU": {
+"kind": null,
+"seq": []
+},
+"0E98UFm_6yM": {
+"kind": null,
+"seq": []
+},
+"X83V092o3rA": {
+"kind": null,
+"seq": []
+},
+"Xlwxndl7KrM": {
+"kind": null,
+"seq": []
+},
+"DP58KVfBIyI": {
+"kind": null,
+"seq": []
+},
+"x-rX0OgwrXo": {
+"kind": null,
+"seq": []
+},
+"w2ee7l2eiIs": {
+"kind": null,
+"seq": []
+},
+"2RA1Uo50mzE": {
+"kind": null,
+"seq": []
+},
+"Gz6q0gXQFY8": {
+"kind": null,
+"seq": []
+},
+"aLcZp3FhxP4": {
+"kind": "table",
+"seq": [
+[
+0,
+"Edinburgh Waverley"
+],
+[
+1221,
+"Dunbar"
+],
+[
+2049,
+"Reston"
+],
+[
+2509,
+"Berwick-upon-Tweed"
+],
+[
+3580,
+"Alnmouth"
+],
+[
+4273,
+"Morpeth"
+],
+[
+5160,
+"Newcastle"
+],
+[
+5823,
+"Durham"
+],
+[
+6639,
+"Darlington"
+],
+[
+7080,
+"Northallerton"
+],
+[
+8074,
+"York"
+],
+[
+9164,
+"Doncaster"
+],
+[
+9704,
+"Retford"
+],
+[
+10269,
+"Newark Northgate"
+],
+[
+10729,
+"Grantham"
+],
+[
+11621,
+"Peterborough"
+],
+[
+null,
+"Stevenage"
+]
+]
+},
+"5ZcQH0eKTlQ": {
+"kind": null,
+"seq": []
+},
+"x7ereuN6tX8": {
+"kind": "via",
+"seq": [
+[
+null,
+"Milton Keynes Central"
+],
+[
+null,
+"Wolverton"
+],
+[
+null,
+"Roade Cutting"
+],
+[
+null,
+"Rugby"
+],
+[
+null,
+"Brandon"
+],
+[
+null,
+"Coventry"
+]
+]
+},
+"nvhYNRCqvbk": {
+"kind": null,
+"seq": []
+},
+"hyPSYtxudYU": {
+"kind": null,
+"seq": []
+},
+"t-OS7r9bY8A": {
+"kind": "via",
+"seq": [
+[
+null,
+"Daventry International Rail Freight Terminal"
+],
+[
+null,
+"Rugby"
+],
+[
+null,
+"Nuneaton"
+],
+[
+null,
+"Tamworth"
+],
+[
+null,
+"Stafford"
+],
+[
+null,
+"Crewe"
+],
+[
+null,
+"Weaver Junction"
+],
+[
+null,
+"Ditton"
+]
+]
+},
+"wLDzrEYwwTM": {
+"kind": "via",
+"seq": [
+[
+null,
+"Norwich"
+],
+[
+null,
+"Diss"
+],
+[
+null,
+"Stowmarket"
+],
+[
+null,
+"Ipswich"
+],
+[
+null,
+"Manningtree"
+],
+[
+null,
+"Colchester"
+],
+[
+null,
+"Chelmsford"
+],
+[
+null,
+"London Liverpool Street"
+]
+]
+},
+"uFHgH3c8QTo": {
+"kind": null,
+"seq": []
+},
+"eK-nM2ZLgGg": {
+"kind": null,
+"seq": []
+},
+"vvoHqV6SrsQ": {
+"kind": null,
+"seq": []
+},
+"2NK-lQbTmK0": {
+"kind": null,
+"seq": []
+},
+"klX6TC50hL4": {
+"kind": null,
+"seq": []
+},
+"wvytV2n-YHA": {
+"kind": "via",
+"seq": [
+[
+null,
+"London Paddington"
+],
+[
+null,
+"Slough"
+],
+[
+null,
+"Reading"
+],
+[
+null,
+"Didcot Parkway"
+],
+[
+null,
+"Swindon"
+],
+[
+null,
+"Chippenham"
+],
+[
+null,
+"Bath Spa"
+],
+[
+null,
+"Bristol Temple Meads during the peak InterCity Swallow livery era"
+]
+]
+},
+"8XFiaYdslxE": {
+"kind": null,
+"seq": []
+},
+"3-oFQk_P7jg": {
+"kind": null,
+"seq": []
+},
+"6vfzT8vGzqI": {
+"kind": "via",
+"seq": [
+[
+null,
+"Hull"
+],
+[
+null,
+"Beverley"
+],
+[
+null,
+"Driffield"
+],
+[
+null,
+"Bridlington"
+],
+[
+null,
+"Filey"
+],
+[
+null,
+"Seamer"
+],
+[
+null,
+"Scarborough"
+]
+]
+},
+"-o1OH5RwcJA": {
+"kind": null,
+"seq": []
+},
+"DrMBN-nwipA": {
+"kind": null,
+"seq": []
+},
+"tkT5gcZkw84": {
+"kind": null,
+"seq": []
+},
+"LAnQsoX_oqg": {
+"kind": null,
+"seq": []
+},
+"kalrT60K6Ac": {
+"kind": null,
+"seq": []
+},
+"D8flNjF1FpQ": {
+"kind": null,
+"seq": []
+},
+"4BCOqkKAi28": {
+"kind": null,
+"seq": []
+},
+"7O0MVxLkwT4": {
+"kind": null,
+"seq": []
+},
+"jkfucz23mx8": {
+"kind": null,
+"seq": []
+},
+"5XVcGRxEtb8": {
+"kind": null,
+"seq": []
+},
+"jtAaaKIzceM": {
+"kind": null,
+"seq": []
+},
+"EP783NTASUE": {
+"kind": null,
+"seq": []
+},
+"cEPXMmjtvPs": {
+"kind": null,
+"seq": []
+},
+"0a453eamgwQ": {
+"kind": null,
+"seq": []
+},
+"gXx_xKLvzHk": {
+"kind": null,
+"seq": []
+},
+"c4oSLbpRx6I": {
+"kind": null,
+"seq": []
+},
+"ZSr0EXGxpdE": {
+"kind": null,
+"seq": []
+},
+"2lLAMwR0HPw": {
+"kind": null,
+"seq": []
+},
+"2EjWsjzCLnw": {
+"kind": null,
+"seq": []
+},
+"0MT_yfSbKpk": {
+"kind": null,
+"seq": []
+},
+"CV77lyR3JIY": {
+"kind": null,
+"seq": []
+},
+"3QfkLC4pY-o": {
+"kind": null,
+"seq": []
+},
+"QiyK1bqmMsc": {
+"kind": null,
+"seq": []
+},
+"z92CHM5XOHU": {
+"kind": null,
+"seq": []
+},
+"EQRS_O-4J0o": {
+"kind": null,
+"seq": []
+},
+"maG6EcIZgjw": {
+"kind": null,
+"seq": []
+},
+"JVdtmuiMnEo": {
+"kind": null,
+"seq": []
+},
+"C0Kmlk9jgCI": {
+"kind": null,
+"seq": []
+},
+"qY-vEIhRCnQ": {
+"kind": "times",
+"seq": [
+[
+0,
+"St Enoch (Start"
+],
+[
+60,
+"St Enoch"
+],
+[
+79,
+"St Enoch"
+],
+[
+90,
+"St Enoch"
+],
+[
+162,
+"Bridge Street"
+],
+[
+183,
+"Bridge Street"
+],
+[
+196,
+"Bridge Street"
+],
+[
+253,
+"West Street"
+],
+[
+268,
+"West Street"
+],
+[
+278,
+"West Street"
+]
+]
+},
+"lA6sd1dBsRY": {
+"kind": null,
+"seq": []
+},
+"h4WY5nOIVNc": {
+"kind": null,
+"seq": []
+},
+"KcMMWNtrcfQ": {
+"kind": null,
+"seq": []
+},
+"6wwO_9xKYQk": {
+"kind": null,
+"seq": []
+},
+"m9dVuHyc8tw": {
+"kind": "times",
+"seq": [
+[
+8,
+"Buchanan St Station"
+],
+[
+118,
+"Waiting for Train"
+],
+[
+212,
+"Onboard to St Enoch"
+],
+[
+325,
+"Watching 3rd Gen Stock Depart"
+],
+[
+373,
+"Exiting St Enoch Station"
+]
+]
+},
+"XCM5KpBtuSQ": {
+"kind": null,
+"seq": []
+},
+"qtcaiEbRzxc": {
+"kind": null,
+"seq": []
+},
+"zfaqvwNuKIg": {
+"kind": "times",
+"seq": [
+[
+16,
+"Rosslare Europort / Calafort Ros Láir"
+],
+[
+293,
+"Rosslare Strand / Trá Ros Láir"
+],
+[
+1176,
+"Wexford O'Hanrahan / Loch Garman Ó hAnnracháin"
+],
+[
+2376,
+"Enniscorthy / Inis Córthaidh"
+],
+[
+3543,
+"Gorey / Guaire"
+],
+[
+657,
+"Arklow / An tInbhear Mór"
+]
+]
+},
+"-PEaCcrGblA": {
+"kind": null,
+"seq": []
+},
+"9IEl78SwZvc": {
+"kind": null,
+"seq": []
+},
+"BgpEIejZhFI": {
+"kind": null,
+"seq": []
+},
+"E2G2HuqnRjY": {
+"kind": null,
+"seq": []
+},
+"nkoFxHtdHSI": {
+"kind": null,
+"seq": []
+},
+"Q1KNl_2AnKg": {
+"kind": null,
+"seq": []
+},
+"qMEikRAnMHM": {
+"kind": null,
+"seq": []
+},
+"3bgbjx3aI7c": {
+"kind": null,
+"seq": []
+},
+"L_OYCokCzG8": {
+"kind": null,
+"seq": []
+},
+"MKgYDySSIpo": {
+"kind": null,
+"seq": []
+},
+"-OYnDPdLgO4": {
+"kind": "times",
+"seq": [
+[
+20,
+"Departing Dublin Heuston"
+],
+[
+33,
+"Passing Inchicore Works"
+],
+[
+85,
+"Passing Kildare"
+],
+[
+98,
+"Passing Portarlington"
+],
+[
+154,
+"Pausing at Limerick Junction"
+],
+[
+253,
+"Arriving into Cork Kent"
+]
+]
+},
+"h-5w7_6Ie2E": {
+"kind": "via",
+"seq": [
+[
+null,
+"Galway Ceannt"
+],
+[
+null,
+"Athenry"
+],
+[
+null,
+"Ballinasloe"
+],
+[
+null,
+"Athlone"
+],
+[
+null,
+"Clara"
+],
+[
+null,
+"Tullamore"
+],
+[
+null,
+"Portarlington"
+],
+[
+null,
+"Kildare"
+],
+[
+null,
+"Dublin Heuston"
+]
+]
+},
+"86a2iPdx82w": {
+"kind": null,
+"seq": []
+},
+"RDutBc2TK4Q": {
+"kind": null,
+"seq": []
+},
+"fuJhCMFxd7Y": {
+"kind": "times",
+"seq": [
+[
+40,
+"Dublin Heuston Station"
+],
+[
+115,
+"InterCity train to Limerick Junction"
+],
+[
+180,
+"Portlaoise"
+],
+[
+235,
+"Connecting shuttle train from Limerick Junction to Limerick Colbert"
+]
+]
+},
+"EOl7xWma390": {
+"kind": null,
+"seq": []
+},
+"I6xccflC8Ms": {
+"kind": null,
+"seq": []
+},
+"nSFZ6xDipPM": {
+"kind": "times",
+"seq": [
+[
+29,
+"Strasbourg"
+],
+[
+453,
+"Beginning of LGV Est européenne"
+],
+[
+894,
+"Tunnel de Saverne"
+],
+[
+2020,
+"Passing Lorraine TGV"
+],
+[
+2831,
+"Passing Meuse TGV"
+],
+[
+361,
+"Passing Champagne-Ardenne TGV"
+],
+[
+1782,
+"End of LGV Est européenne"
+],
+[
+2652,
+"Paris Gare de l'Est"
+]
+]
+},
+"i3m30LG6llY": {
+"kind": null,
+"seq": []
+},
+"0m3eOstD30A": {
+"kind": null,
+"seq": []
+},
+"9sMuYLAChIc": {
+"kind": "table",
+"seq": [
+[
+0,
+"Köln Hbf"
+],
+[
+814,
+"Siegburg/Bonn"
+],
+[
+null,
+"Frankfurt am Main Flughafen Fernbahnhof"
+]
+]
+},
+"WcTz1TtsFCU": {
+"kind": null,
+"seq": []
+},
+"XjvKLmvbJt4": {
+"kind": null,
+"seq": []
+},
+"jUhS0etllSM": {
+"kind": "times",
+"seq": [
+[
+30,
+"Kleine Scheidegg"
+],
+[
+320,
+"Salzegg"
+],
+[
+750,
+"Approaching Alpiglen"
+],
+[
+1070,
+"Approaching Brandegg"
+],
+[
+1515,
+"Approaching Grindelwald Grund"
+],
+[
+1770,
+"Grindelwald"
+]
+]
+},
+"KImLOHR2NyQ": {
+"kind": "table",
+"seq": [
+[
+0,
+"Zürich HB"
+],
+[
+3386,
+"Sargans"
+],
+[
+3925,
+"Landquart"
+],
+[
+null,
+"Chur"
+]
+]
+},
+"J4ymDiUt1Xc": {
+"kind": null,
+"seq": []
+},
+"ZJH9dtyFkr4": {
+"kind": null,
+"seq": []
+},
+"OiXOj3iOURU": {
+"kind": null,
+"seq": []
+},
+"elcpMHIv0_Y": {
+"kind": null,
+"seq": []
+},
+"kHQXnLjiNZ8": {
+"kind": null,
+"seq": []
+},
+"Cz6J5YfYUp8": {
+"kind": "times",
+"seq": [
+[
+0,
+"Llanberis"
+],
+[
+382,
+"History of the Snowdon Mountain Railway"
+],
+[
+850,
+"Reaching Snowdon Summit"
+],
+[
+969,
+"Descent & return to Llanberis"
+]
+]
+},
+"LREohW0975s": {
+"kind": null,
+"seq": []
+},
+"GrWXmMXq-ck": {
+"kind": null,
+"seq": []
+},
+"Yfnaujdnbb0": {
+"kind": null,
+"seq": []
+},
+"ySIQYuX7KyY": {
+"kind": null,
+"seq": []
+},
+"ub6F1ipcxuI": {
+"kind": "times",
+"seq": [
+[
+100,
+"Hythe to Dymchurch"
+],
+[
+401,
+"New Romney"
+],
+[
+1652,
+"New Romney to Dungeness"
+],
+[
+1860,
+"Return journey to Hythe"
+],
+[
+2263,
+"Arriving back at Hythe"
+]
+]
+},
+"l3pvZ5MPJxM": {
+"kind": null,
+"seq": []
+},
+"rlps7KrzU8A": {
+"kind": null,
+"seq": []
+},
+"jpPAGTUR2ts": {
+"kind": null,
+"seq": []
+},
+"JsbsZlQVtaw": {
+"kind": null,
+"seq": []
+},
+"3H8ktUI8dVk": {
+"kind": null,
+"seq": []
+},
+"--CiYFCCUDo": {
+"kind": "via",
+"seq": [
+[
+null,
+"Fairbourne"
+],
+[
+null,
+"Golf Halt"
+],
+[
+null,
+"Estuary Halt"
+],
+[
+null,
+"Barmouth Ferry"
+]
+]
+},
+"IkGJh1mV2nk": {
+"kind": null,
+"seq": []
+},
+"6lVSiDYJ8cg": {
+"kind": null,
+"seq": []
+}
+}
