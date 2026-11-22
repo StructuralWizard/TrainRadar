@@ -284,6 +284,7 @@ test("Sweden: one region a cycle, the key only in Trafiklab's URL, only our trai
     country: SE,
   });
   assert.match(s2.error, /sl\/TripUpdatesSweden.pb: HTTP 403/);
+  assert.equal(s2.nextCallAt, null); // the next region still has its turn
   assert.ok(!JSON.stringify(s2).includes("se-key"));
   assert.ok(!SE.enabled({ SE_ENABLED: "true" }) && SE.enabled({ SE_ENABLED: "true", SE_TRAFIKLAB_RT_KEY: "k" }));
 });

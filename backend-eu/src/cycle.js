@@ -73,7 +73,9 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
         .replaceAll(env.SE_TRAFIKLAB_RT_KEY || "\u0000", "***")
         .slice(0, 300);
       state.failures = (state.failures || 0) + 1;
-      state.nextAt = now + backoffMs(state.failures);
+      // Sweden's regions take turns: one failing region skips its turn
+      // instead of stopping the others.
+      if (!country.rotate) state.nextAt = now + backoffMs(state.failures);
       state.failingSince ||= at;
       state.lastError = cycle.error;
       if (state.feeds[feed.name]) state.feeds[feed.name].ok = false;

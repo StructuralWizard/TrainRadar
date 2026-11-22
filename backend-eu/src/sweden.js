@@ -13,7 +13,8 @@ import { entityTrip } from "./gtfsrt.js";
 
 const CLIENT = "Metranos-TrainRadar";
 
-/** Regions with realtime data (Trafiklab's GTFS Sweden 3 page, Nov 2026),
+/** Regions with realtime data (Trafiklab's GTFS Sweden 3 page, Nov 2026;
+ * Halland's answered 404 on 22 Nov 2026),
  * the ones where trains run: Pågatåg and Öresundståg (skane), SL's
  * pendeltåg, Upptåget, Östgötapendeln, Krösatåg, Kustpilen, Tåg i
  * Bergslagen, Norrtåg… */
@@ -26,7 +27,6 @@ export const SE_REGIONS = [
   "krono",
   "klt",
   "blekinge",
-  "halland",
   "varm",
   "orebro",
   "vastmanland",
