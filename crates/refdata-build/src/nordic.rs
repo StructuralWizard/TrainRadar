@@ -13,11 +13,18 @@ pub const FI: &str = "fi";
 pub const FI_LOCAL: &str = "fi-l";
 pub const NO: &str = "no";
 pub const NL: &str = "nl";
+/// M4, timetable only: Slovakia (ŽSR) and Estonia (Elron).
+pub const SK: &str = "sk";
+pub const EE: &str = "ee";
 
 pub const ATTRIBUTION_FI: &str = "Data: Fintraffic / digitraffic.fi, CC BY 4.0. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NO: &str = "Data: contains data under the NLOD made available by Entur AS. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_SK: &str = "Data: Železnice Slovenskej republiky (data.slovensko.sk), \
+CC BY. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_EE: &str = "Data: Regionaal- ja Põllumajandusministeerium, public transport \
+register open data. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
 shapes ODbL. Track: © OpenStreetMap contributors, ODbL 1.0.";
 
@@ -27,6 +34,8 @@ pub fn tz(code: &str) -> Option<&'static str> {
         FI | FI_LOCAL => "Europe/Helsinki",
         NO => "Europe/Oslo",
         NL => "Europe/Amsterdam",
+        SK => "Europe/Bratislava",
+        EE => "Europe/Tallinn",
         _ => return None,
     })
 }
@@ -37,6 +46,8 @@ pub fn region_name(code: &str) -> &'static str {
         FI_LOCAL => "Finland (commuter trains)",
         NO => "Norway",
         NL => "Netherlands",
+        SK => "Slovakia",
+        EE => "Estonia",
         _ => "",
     }
 }
@@ -193,6 +204,33 @@ pub fn normalise_netherlands(feed: &mut Feed) -> Stats {
     st
 }
 
+/// Slovakia and Estonia (timetable only): the product from the route's
+/// first word ("EC 120" → "EC", "Os 7210" → "Os"); a train number only
+/// where the trip has one (Elron's trips are named by their ends instead).
+pub fn normalise_simple(feed: &mut Feed) -> Stats {
+    let mut st = Stats::default();
+    for r in &mut feed.routes {
+        let first = r
+            .short_name
+            .split_whitespace()
+            .next()
+            .unwrap_or("")
+            .to_owned();
+        if r.short_name.contains(' ') && !first.is_empty() {
+            r.short_name = first;
+        }
+    }
+    for t in &mut feed.trips {
+        if !t.short_name.chars().all(|c| c.is_ascii_digit()) {
+            t.short_name.clear();
+        }
+        *st.by_product
+            .entry(feed.routes[t.route].short_name.clone())
+            .or_default() += 1;
+    }
+    st
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -221,6 +259,40 @@ mod tests {
             "3736"
         );
         assert_eq!(norwegian_number("VYG:ServiceJourney:530d38d0-929a"), "");
+    }
+
+    #[test]
+    fn simple_countries_keep_products_and_numbers() {
+        use crate::load::{Route, Trip};
+        let route = |n: &str| Route {
+            id: n.into(),
+            short_name: n.into(),
+            long_name: String::new(),
+            color: None,
+            text_color: None,
+            route_type: "106".into(),
+        };
+        let trip = |r: usize, n: &str| Trip {
+            id: n.into(),
+            route: r,
+            service: String::new(),
+            headsign: String::new(),
+            short_name: n.into(),
+            shape_id: String::new(),
+            days: 1,
+            stop_times: vec![],
+        };
+        let mut feed = Feed {
+            routes: vec![route("EC 120"), route("E33")],
+            trips: vec![trip(0, "120"), trip(1, "Tallinn -Turba")],
+            ..Feed::default()
+        };
+        normalise_simple(&mut feed);
+        assert_eq!(feed.routes[0].short_name, "EC");
+        assert_eq!(feed.routes[1].short_name, "E33");
+        assert_eq!(feed.trips[0].short_name, "120");
+        assert_eq!(feed.trips[1].short_name, "");
+        assert_eq!(tz(EE), Some("Europe/Tallinn"));
     }
 
     #[test]

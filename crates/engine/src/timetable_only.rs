@@ -1,5 +1,5 @@
 //! Countries shown by timetable only, with no live feed yet (Luxembourg,
-//! docs/europe/west-central.md): nothing to poll, every train placed by
+//! Slovakia, Estonia; docs/europe/): nothing to poll, every train placed by
 //! its timetable (the regions are built with `live: false`).
 
 use crate::source::{DecodeError, FeedData, FeedKind, FeedSpec, SourceAdapter};

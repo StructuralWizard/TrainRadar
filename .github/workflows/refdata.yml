@@ -165,6 +165,24 @@ jobs:
           target/release/refdata-build verify build/nl
           { echo "## Netherlands reference data"; echo; cat refdata-nl.md; } >> "$GITHUB_STEP_SUMMARY"
           cargo run --release -q -p trainradar-engine --example journeys_bench -- build/nl --nl | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Slovakia (timetable only; no key)
+        continue-on-error: true # an outside download: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh sk --no-osm
+          target/release/refdata-build build --out build/sk --sk-gtfs gtfs/sk/gtfs.zip \
+            --sources gtfs/sk/sources.tsv --report refdata-sk.md
+          target/release/refdata-build verify build/sk
+          { echo "## Slovakia reference data"; echo; cat refdata-sk.md; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Estonia (timetable only; no key)
+        continue-on-error: true # an outside download: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh ee --no-osm
+          target/release/refdata-build build --out build/ee --ee-gtfs gtfs/ee/gtfs.zip \
+            --sources gtfs/ee/sources.tsv --report refdata-ee.md
+          target/release/refdata-build verify build/ee
+          { echo "## Estonia reference data"; echo; cat refdata-ee.md; } >> "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

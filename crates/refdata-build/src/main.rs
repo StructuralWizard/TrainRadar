@@ -72,7 +72,8 @@ usage:
                       (Ireland: --ie-gtfs ZIP; France: --fr-gtfs ZIP;
                        Luxembourg: --lu-gtfs ZIP; Finland: --fi-gtfs ZIP;
                        Norway: --no-gtfs ZIP; Netherlands: --nl-gtfs ZIP,
-                       the last two cut to trains by tools/gtfs-rail.py)
+                       the last two cut to trains by tools/gtfs-rail.py;
+                       Slovakia: --sk-gtfs ZIP; Estonia: --ee-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -127,6 +128,10 @@ struct BuildArgs {
     no_gtfs: Option<PathBuf>,
     /// OVapi's national GTFS, cut to trains by tools/gtfs-rail.py.
     nl_gtfs: Option<PathBuf>,
+    /// ŽSR's GTFS (data.slovensko.sk): Slovakia, by timetable.
+    sk_gtfs: Option<PathBuf>,
+    /// Elron's GTFS (the public transport register): Estonia, by timetable.
+    ee_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -155,6 +160,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         fi_gtfs: None,
         no_gtfs: None,
         nl_gtfs: None,
+        sk_gtfs: None,
+        ee_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -193,6 +200,8 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--fi-gtfs" => a.fi_gtfs = Some(val()?.into()),
             "--no-gtfs" => a.no_gtfs = Some(val()?.into()),
             "--nl-gtfs" => a.nl_gtfs = Some(val()?.into()),
+            "--sk-gtfs" => a.sk_gtfs = Some(val()?.into()),
+            "--ee-gtfs" => a.ee_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -221,10 +230,12 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.fi_gtfs.is_none()
         && a.no_gtfs.is_none()
         && a.nl_gtfs.is_none()
+        && a.sk_gtfs.is_none()
+        && a.ee_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs or --nl-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs or --ee-gtfs"
                 .into(),
         );
     }
@@ -363,9 +374,11 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.fi_gtfs, "fi"),
         (&a.no_gtfs, "no"),
         (&a.nl_gtfs, "nl"),
+        (&a.sk_gtfs, "sk"),
+        (&a.ee_gtfs, "ee"),
     ] {
         let Some(path) = path else { continue };
-        if matches!(kind, "fi" | "no" | "nl") {
+        if matches!(kind, "fi" | "no" | "nl" | "sk" | "ee") {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
             let mut g = Gtfs::open(path)?;
@@ -376,8 +389,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
             let (st, operator) = match kind {
                 "fi" => (nordic::normalise_finland(&mut feed), "VR"),
                 "no" => (nordic::normalise_norway(&mut feed), "Entur"),
+                "sk" => (nordic::normalise_simple(&mut feed), "ZSSK"),
+                "ee" => (nordic::normalise_simple(&mut feed), "Elron"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
+            // M4 countries have no open live data yet: by timetable.
+            let live = !matches!(kind, "sk" | "ee");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",
@@ -406,7 +423,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 let (mut tt, legs, rs) =
                     build_timetable(&feed, &trips, &code, header.clone(), router.as_mut());
                 tt.operator = operator.into();
-                tt.live = true;
+                tt.live = live;
                 let rec = RegionRec {
                     name: nordic::region_name(&code).into(),
                     bbox_e5: bbox_e5(&tt),
@@ -856,6 +873,10 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_NO
         } else if a.nl_gtfs.is_some() {
             nordic::ATTRIBUTION_NL
+        } else if a.sk_gtfs.is_some() {
+            nordic::ATTRIBUTION_SK
+        } else if a.ee_gtfs.is_some() {
+            nordic::ATTRIBUTION_EE
         } else {
             ATTRIBUTION
         },

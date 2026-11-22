@@ -138,6 +138,8 @@ const COUNTRY_TEXT = {
   fi: { name: "countryFi", all: "allFi", credit: "attributionFi", scheduled: "scheduledCountOther" },
   no: { name: "countryNo", all: "allNo", credit: "attributionNo", scheduled: "scheduledCountOther" },
   nl: { name: "countryNl", all: "allNl", credit: "attributionNl", scheduled: "scheduledCountOther" },
+  sk: { name: "countrySk", all: "allSk", credit: "attributionSk", scheduled: "scheduledCountOther" },
+  ee: { name: "countryEe", all: "allEe", credit: "attributionEe", scheduled: "scheduledCountOther" },
 };
 /** Whose notices each country shows (the UK has its own panel). */
 const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi: "Fintraffic", nl: "NS" };

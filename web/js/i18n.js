@@ -548,6 +548,10 @@ export const STRINGS = {
     allFi: "Toda Finlandia",
     allNo: "Toda Noruega",
     allNl: "Todos los Países Bajos",
+    countrySk: "Eslovaquia",
+    countryEe: "Estonia",
+    allSk: "Toda Eslovaquia",
+    allEe: "Toda Estonia",
     noticesTitle: "Avisos",
     noticesNotYet: "Aún no hay avisos para {country}: llegarán con los datos en directo.",
     timetableOnly: "Según horario: aún no hay datos en directo de este país",
@@ -580,6 +584,10 @@ export const STRINGS = {
       'Datos: contiene datos bajo la NLOD puestos a disposición por <a href="https://developer.entur.org/" target="_blank" rel="noopener">Entur AS</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Entur ni los operadores',
     attributionNl:
       'Datos: <a href="https://gtfs.ovapi.nl/" target="_blank" rel="noopener">OVapi</a>, de los datos nacionales NDOV (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con NS ni los operadores',
+    attributionSk:
+      'Datos: horario de Železnice Slovenskej republiky en <a href="https://data.slovensko.sk/datasety/ebeeedf1-aca2-451a-bdc0-35d536714888" target="_blank" rel="noopener">data.slovensko.sk</a> (CC BY) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con ŽSR ni ZSSK',
+    attributionEe:
+      'Datos: horario de Elron del registro de transporte público (Ministerio de Asuntos Regionales y Agricultura de Estonia) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Elron',
     attributionIe:
       'Datos: horario de Iarnród Éireann de la <a href="https://www.transportforireland.ie/transitData/PT_Data.html" target="_blank" rel="noopener">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, ofrecido «tal cual» · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Iarnród Éireann ni la NTA',
     attribution:
@@ -1130,6 +1138,10 @@ export const STRINGS = {
     allFi: "All of Finland",
     allNo: "All of Norway",
     allNl: "All of the Netherlands",
+    countrySk: "Slovakia",
+    countryEe: "Estonia",
+    allSk: "All of Slovakia",
+    allEe: "All of Estonia",
     noticesTitle: "Notices",
     noticesNotYet: "No notices for {country} yet: they'll come with the live data.",
     timetableOnly: "By timetable: no live data for this country yet",
@@ -1162,6 +1174,10 @@ export const STRINGS = {
       'Data: contains data under the NLOD made available by <a href="https://developer.entur.org/" target="_blank" rel="noopener">Entur AS</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Entur or the operators',
     attributionNl:
       'Data: <a href="https://gtfs.ovapi.nl/" target="_blank" rel="noopener">OVapi</a>, from the national NDOV data (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with NS or the operators',
+    attributionSk:
+      'Data: Železnice Slovenskej republiky\'s timetable on <a href="https://data.slovensko.sk/datasety/ebeeedf1-aca2-451a-bdc0-35d536714888" target="_blank" rel="noopener">data.slovensko.sk</a> (CC BY) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with ŽSR or ZSSK',
+    attributionEe:
+      'Data: Elron\'s timetable from the public transport register (Estonia\'s Ministry of Regional Affairs and Agriculture) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Elron',
     attributionIe:
       'Data: Iarnród Éireann\'s timetable from the <a href="https://www.transportforireland.ie/transitData/PT_Data.html" target="_blank" rel="noopener">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, provided "as is" · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Iarnród Éireann or the NTA',
     attribution:

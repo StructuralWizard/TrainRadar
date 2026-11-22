@@ -248,6 +248,11 @@ app, and update the "last updated" dates when they change.
   `fr/rt/` every minute. Check `fr/rt/status.json` on the live domain.
 - **Where they show:** hidden countries, opened only with `?country=fr` or `?country=lu`.
 
+## Slovakia and Estonia (M4)
+
+- **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains
+  go by timetable, and nothing is deployed to the live Worker.
+
 ## Finland, Norway and the Netherlands (M2)
 
 - **Turning them on:** the variables **`FI_ENABLED`**, **`NO_ENABLED`** and **`NL_ENABLED`** = `true`.
