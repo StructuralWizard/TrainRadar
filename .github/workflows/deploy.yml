@@ -45,7 +45,7 @@ jobs:
           FR_ENABLED: ${{ vars.FR_ENABLED }}
           LU_ENABLED: ${{ vars.LU_ENABLED }}
           M2_ENABLED: ${{ vars.FI_ENABLED == 'true' || vars.NO_ENABLED == 'true' || vars.NL_ENABLED == 'true' }}
-          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' }}
+          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -77,7 +77,8 @@ jobs:
           # Finland's, Norway's and the Netherlands' live ids match only the
           # same day's timetable too.
           if [ "$M2_ENABLED" = "true" ]; then changed=true; fi
-          # Switzerland's, Sweden's, Poland's and Austria's too (Poland's comes from an
+          # Switzerland's, Sweden's, Poland's, Austria's and Czechia's too (Czechia's
+          # cancellations come daily; Poland's comes from an
           # API, nine days at a time).
           if [ "$M3_ENABLED" = "true" ]; then changed=true; fi
           echo "run=$changed" >> "$GITHUB_OUTPUT"
@@ -591,6 +592,52 @@ jobs:
             { echo "## Estonia reference data"; echo; cat refdata-ee.md; } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::warning::Estonia's reference data failed: deploying without Estonia."
+            exit 1
+          fi
+
+      # Czechia, with CZ_ENABLED: CIS JŘ's national timetable (NeTEx, minus the
+      # CZPTT cancellations), no key; stations and track from OSM (weekly)
+      # → data/cz/ (cz long distance, cz-r regional), by timetable. The
+      # portal's files are cached: a day's run fetches only the new ones.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.CZ_ENABLED == 'true'
+        id: osm_cz
+        with:
+          path: |
+            gtfs/cz/rail.geojsonseq
+            gtfs/cz/stations.geojsonseq
+          key: osm-rail-cz-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-cz-v1-
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.CZ_ENABLED == 'true'
+        with:
+          path: gtfs/cz/cisjr
+          key: cisjr-v1-${{ github.run_id }}
+          restore-keys: cisjr-v1-
+      - name: Czechia reference data
+        if: vars.CZ_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_cz.outputs.cache-hit }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh cz | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/cz-data --gzip \
+              --cz-gtfs gtfs/cz/gtfs.zip --sources gtfs/cz/sources.tsv \
+              $([ -s gtfs/cz/rail.geojsonseq ] && echo --rail gtfs/cz/rail.geojsonseq) --report refdata-cz.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/cz-data; then
+            mv build/cz-data build/data/cz
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/cz-plan --gzip --days 63 \
+                --cz-gtfs gtfs/cz/gtfs.zip --report cz-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/cz-plan; then
+              mv build/cz-plan build/data/cz/plan
+            else
+              echo "::warning::Czechia's plan-ahead timetables failed: Czechia has today's week only."
+            fi
+            { echo "## Czechia reference data"; echo; cat refdata-cz.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Czechia's reference data failed: deploying without Czechia."
             exit 1
           fi
 

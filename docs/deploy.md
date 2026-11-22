@@ -276,6 +276,16 @@ app, and update the "last updated" dates when they change.
 - **Turning it on:** **`AT_ENABLED`** = `true`, with `AT_MVO_USERNAME` and `AT_MVO_PASSWORD`
   (the data portal's login). By timetable only; `?country=at`.
 
+## Czechia (M6)
+
+- **Turning it on:** **`CZ_ENABLED`** = `true`. No key. By timetable for now; `?country=cz`.
+- **What the deploy builds:** `data/cz/` (`cz` long distance, `cz-r` regional) and its `plan/`, from
+  CIS JŘ's national timetable (`tools/cisjr-gtfs.py`): the NeTEx trains minus the CZPTT
+  cancellations of the next nine days. CIS JŘ has no coordinates, so stations are placed from
+  OpenStreetMap (weekly, with the track); the build's report says how many were found.
+- **Rebuilt daily** (cancellations change every day). The portal's files are cached between runs, so
+  a day's run downloads only the new ones; the first run fetches a few thousand small files.
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains

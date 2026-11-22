@@ -560,6 +560,7 @@ export const STRINGS = {
     countrySe: "Suecia",
     countryPl: "Polonia",
     countryAt: "Austria",
+    countryCz: "Chequia",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
@@ -567,6 +568,7 @@ export const STRINGS = {
     allSe: "Toda Suecia",
     allPl: "Toda Polonia",
     allAt: "Toda Austria",
+    allCz: "Toda Chequia",
     noticesTitle: "Avisos",
     noticesNotYet: "Aún no hay avisos para {country}: llegarán con los datos en directo.",
     timetableOnly: "Según horario: aún no hay datos en directo de este país",
@@ -607,6 +609,8 @@ export const STRINGS = {
       'Datos: horario de Samtrafiken en <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SJ ni los operadores',
     attributionPl:
       'Datos: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con PKP PLK ni los operadores',
+    attributionCz:
+      'Datos: horario nacional del Ministerio de Transporte de la República Checa (<a href="https://portal.cisjr.cz/" target="_blank" rel="noopener">CIS JŘ</a>) · Vías y estaciones: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con České dráhy ni los operadores',
     attributionAt:
       'Data source: Mobilitätsverbünde Österreich OG - <a href="https://data.mobilitaetsverbuende.at/" target="_blank" rel="noopener">data.mobilitaetsverbuende.at</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con ÖBB ni los operadores',
     attributionEe:
@@ -1173,6 +1177,7 @@ export const STRINGS = {
     countrySe: "Sweden",
     countryPl: "Poland",
     countryAt: "Austria",
+    countryCz: "Czechia",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
@@ -1180,6 +1185,7 @@ export const STRINGS = {
     allSe: "All of Sweden",
     allPl: "All of Poland",
     allAt: "All of Austria",
+    allCz: "All of Czechia",
     noticesTitle: "Notices",
     noticesNotYet: "No notices for {country} yet: they'll come with the live data.",
     timetableOnly: "By timetable: no live data for this country yet",
@@ -1220,6 +1226,8 @@ export const STRINGS = {
       'Data: Samtrafiken\'s timetable on <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SJ or the operators',
     attributionPl:
       'Data: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with PKP PLK or the operators',
+    attributionCz:
+      'Data: the national timetable of the Czech Ministry of Transport (<a href="https://portal.cisjr.cz/" target="_blank" rel="noopener">CIS JŘ</a>) · Track and stations: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with České dráhy or the operators',
     attributionAt:
       'Data source: Mobilitätsverbünde Österreich OG - <a href="https://data.mobilitaetsverbuende.at/" target="_blank" rel="noopener">data.mobilitaetsverbuende.at</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with ÖBB or the operators',
     attributionEe:

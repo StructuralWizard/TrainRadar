@@ -2,7 +2,7 @@
 // (Renfe), the United Kingdom (Network Rail), Ireland (Iarnród Éireann),
 // France (SNCF), Luxembourg (CFL), Finland (VR), Norway (Entur) or the
 // Netherlands (NS and the others), Slovakia (ZSSK), Estonia (Elron),
-// Switzerland (SBB and the others), Sweden, Poland (PKP PLK) or Austria.
+// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria or Czechia.
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
@@ -25,6 +25,7 @@ export const COUNTRY_INFO = {
   se: { zone: "Europe/Stockholm", center: [15.5, 61.0], zoom: 4.5, live: true },
   pl: { zone: "Europe/Warsaw", center: [19.4, 52.0], zoom: 5.6, live: true },
   at: { zone: "Europe/Vienna", center: [13.3, 47.6], zoom: 6.3, live: false },
+  cz: { zone: "Europe/Prague", center: [15.4, 49.8], zoom: 6.4, live: false },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

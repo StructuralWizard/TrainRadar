@@ -50,6 +50,12 @@ Europe/Prague · Czech · UIC 54.
 **Verdict:** timetables yes (NeTEx), live data no. Trains go by timetable until Správa železnic
 agrees to share its real-time data.
 
+**Built (Nov 2026):** `tools/cisjr-gtfs.py` reads the NeTEx (per train path, the year's file plus
+monthly updates) and removes the CZPTT cancellations, which the NeTEx updates leave out (about
+8,000 base trains cancelled on some day in November 2026 alone). The NeTEx has station names and
+SR70/UIC numbers but no coordinates: stations are placed from OpenStreetMap. Live data next:
+Golemio (PID, Prague and Central Bohemia), key `CZ_GOLEMIO_KEY`.
+
 | | |
 |---|---|
 | Operators and tickets | České dráhy (cd.cz); RegioJet (regiojet.cz); Leo Express (leoexpress.com); Arriva vlaky (arriva.cz); regional operators (GW Train Regio, Die Länderbahn/Trilex, AŽD, KŽC) |

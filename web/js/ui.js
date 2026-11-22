@@ -174,6 +174,8 @@ const TICKET_SITES = {
   Elron: ["Elron", "https://elron.ee/"],
   SBB: ["SBB", "https://www.sbb.ch/"],
   ÖBB: ["ÖBB", "https://www.oebb.at/"],
+  // Czechia: several operators; České dráhy sells for most of them.
+  ČD: ["České dráhy", "https://www.cd.cz/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],
 };

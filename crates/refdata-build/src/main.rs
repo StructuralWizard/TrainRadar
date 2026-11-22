@@ -75,7 +75,8 @@ usage:
                        the last two cut to trains by tools/gtfs-rail.py;
                        Slovakia: --sk-gtfs ZIP; Estonia: --ee-gtfs ZIP;
                        Switzerland: --ch-gtfs ZIP; Sweden: --se-gtfs ZIP;
-                       Poland: --pl-gtfs ZIP; Austria: --at-gtfs ZIP)
+                       Poland: --pl-gtfs ZIP; Austria: --at-gtfs ZIP;
+                       Czechia: --cz-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -142,6 +143,8 @@ struct BuildArgs {
     pl_gtfs: Option<PathBuf>,
     /// Mobilitätsverbünde Österreich's rail GTFS: Austria, by timetable.
     at_gtfs: Option<PathBuf>,
+    /// CIS JŘ's trains as GTFS (tools/cisjr-gtfs.py): Czechia, by timetable.
+    cz_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -176,6 +179,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         se_gtfs: None,
         pl_gtfs: None,
         at_gtfs: None,
+        cz_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -220,6 +224,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--se-gtfs" => a.se_gtfs = Some(val()?.into()),
             "--pl-gtfs" => a.pl_gtfs = Some(val()?.into()),
             "--at-gtfs" => a.at_gtfs = Some(val()?.into()),
+            "--cz-gtfs" => a.cz_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -254,10 +259,11 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.se_gtfs.is_none()
         && a.pl_gtfs.is_none()
         && a.at_gtfs.is_none()
+        && a.cz_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs or --at-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs or --cz-gtfs"
                 .into(),
         );
     }
@@ -402,11 +408,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.se_gtfs, "se"),
         (&a.pl_gtfs, "pl"),
         (&a.at_gtfs, "at"),
+        (&a.cz_gtfs, "cz"),
     ] {
         let Some(path) = path else { continue };
         if matches!(
             kind,
-            "fi" | "no" | "nl" | "sk" | "ee" | "ch" | "se" | "pl" | "at"
+            "fi" | "no" | "nl" | "sk" | "ee" | "ch" | "se" | "pl" | "at" | "cz"
         ) {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
@@ -424,10 +431,11 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 "se" => (nordic::normalise_sweden(&mut feed), "Trafiklab"),
                 "pl" => (nordic::normalise_simple(&mut feed), "PKP PLK"),
                 "at" => (nordic::normalise_simple(&mut feed), "ÖBB"),
+                "cz" => (nordic::normalise_simple(&mut feed), "ČD"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
-            let live = !matches!(kind, "sk" | "ee" | "at");
+            let live = !matches!(kind, "sk" | "ee" | "at" | "cz");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",
@@ -453,6 +461,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 nordic::split_swiss(&feed)
             } else if kind == "pl" {
                 nordic::split_poland(&feed)
+            } else if kind == "cz" {
+                nordic::split_czechia(&feed)
             } else {
                 std::iter::once((kind.to_owned(), feed.trips.iter().collect())).collect()
             };
@@ -922,6 +932,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_PL
         } else if a.at_gtfs.is_some() {
             nordic::ATTRIBUTION_AT
+        } else if a.cz_gtfs.is_some() {
+            nordic::ATTRIBUTION_CZ
         } else {
             ATTRIBUTION
         },
