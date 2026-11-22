@@ -279,11 +279,14 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
         window_secs,
     } = *q;
     let st = Stations::new(net);
-    // Great Britain's and Northern Ireland's timetables: longer walks.
-    let uk = net
-        .regions
-        .iter()
-        .any(|r| r.tt.region == "uk" || r.tt.region == crate::networkrail::NI_REGION);
+    // Great Britain's, Northern Ireland's and Ireland's timetables: longer
+    // walks (London's and Dublin's terminals are a walk apart).
+    let uk = net.regions.iter().any(|r| {
+        matches!(
+            r.tt.region.as_str(),
+            "uk" | crate::networkrail::NI_REGION | crate::networkrail::IE_REGION
+        )
+    });
     let walks = st.walks(if uk { WALK_MAX_UK_M } else { WALK_MAX_M });
     let src: Vec<u32> = from.iter().filter_map(|s| st.get(s)).collect();
     let dst: HashSet<u32> = to.iter().filter_map(|s| st.get(s)).collect();
@@ -468,7 +471,7 @@ fn search(
             let r = &net.regions[ri];
             let sched = &r.sched[pi as usize];
             let pattern = &r.tt.patterns[pi as usize];
-            let behind = crate::networkrail::behind_madrid_secs(&r.tt.region);
+            let behind = r.behind;
             let change = if r.tt.region == "ld" {
                 CHANGE_LD_SECS
             } else {

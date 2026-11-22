@@ -35,3 +35,27 @@ test("country: the UK points CONFIG at data/uk/ and uk/rt/, London time, no hist
   assert.equal(applyCountry({ ...base(), remoteDataBase: "https://site.example/data/" }, "uk").remoteDataBase, "https://site.example/data/uk/");
   assert.equal(applyCountry({ ...base(), remoteDataBase: "https://site.example/data/" }, "es").remoteDataBase, "https://site.example/data/");
 });
+
+test("country: Ireland opens only from the address while it's hidden, then stays", () => {
+  const allowed = ["es", "uk"];
+  assert.equal(pickCountry({ search: "?country=ie", allowed }), "es");
+  assert.equal(pickCountry({ search: "?country=ie", allowed, hidden: ["ie"] }), "ie");
+  assert.equal(pickCountry({ saved: "ie", allowed, hidden: ["ie"] }), "ie");
+  assert.equal(pickCountry({ saved: "ie", allowed }), "es");
+  // A hidden country is never picked from the browser's language.
+  assert.equal(pickCountry({ languages: ["en-IE"], allowed, hidden: ["ie"] }), "es");
+});
+
+test("country: Ireland points CONFIG at data/ie/, Dublin time, no live feeds yet", () => {
+  const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
+  const ie = applyCountry(base(), "ie");
+  assert.equal(ie.country, "ie");
+  assert.equal(ie.dataBase, "data/ie/");
+  assert.equal(ie.liveBase, "");
+  assert.equal(ie.rtBase, "");
+  assert.equal(ie.apiBase, "");
+  assert.equal(ie.replay, false);
+  assert.equal(ie.timeZone, "Europe/Dublin");
+  assert.deepEqual(ie.center, [-7.9, 53.4]);
+  assert.equal(applyCountry({ ...base(), remoteDataBase: "https://site.example/data/" }, "ie").remoteDataBase, "https://site.example/data/ie/");
+});

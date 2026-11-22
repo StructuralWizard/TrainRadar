@@ -2,7 +2,7 @@
 // the plan-ahead files (data/plan/, 63 days as far as each source goes).
 // Loaded only when the user picks a date or time, region by region; live
 // delays never reach it.
-import { fetchBytes, fetchManifest } from "./data.js";
+import { fetchBytes, fetchManifest, setZone } from "./data.js";
 
 /** Regions to load for places `points` ([lon, lat]): every region without
  * a small area (long distance, OUIGO, Great Britain, Northern Ireland) and
@@ -59,6 +59,7 @@ export class Planner {
     for (const code of planCodes(this.manifest, points, d)) {
       if (this.loaded.has(code)) continue;
       const r = this.manifest.regions.find((x) => x.code === code);
+      setZone(this.engine, r);
       this.engine.loadTimetable(await fetchBytes(this.base + r.file), Date.now());
       this.loaded.add(code);
     }

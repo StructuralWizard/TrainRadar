@@ -66,6 +66,7 @@ usage:
                       [--gzip]
                       (the UK: --uk-schedule FILE --naptan FILE [--corpus FILE]
                        [--ni-txc ZIP])
+                      (Ireland: --ie-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -108,6 +109,8 @@ struct BuildArgs {
     corpus: Option<PathBuf>,
     /// Translink's NI Railways timetable (TransXChange, .zip or .xml): plan 4.
     ni_txc: Option<PathBuf>,
+    /// Iarnród Éireann's GTFS (the NTA's GTFS_Irish_Rail.zip): Ireland.
+    ie_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -130,6 +133,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         naptan: None,
         corpus: None,
         ni_txc: None,
+        ie_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -162,6 +166,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--naptan" => a.naptan = Some(val()?.into()),
             "--corpus" => a.corpus = Some(val()?.into()),
             "--ni-txc" => a.ni_txc = Some(val()?.into()),
+            "--ie-gtfs" => a.ie_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -184,9 +189,11 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.ouigo.is_none()
         && a.uk_schedule.is_none()
         && a.ni_txc.is_none()
+        && a.ie_gtfs.is_none()
     {
         return Err(
-            "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc".into(),
+            "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs"
+                .into(),
         );
     }
     if a.uk_schedule.is_some() != a.naptan.is_some() {
@@ -318,8 +325,42 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.ouigo, "ouigo"),
         (&a.uk_schedule, "uk"),
         (&a.ni_txc, "ni"),
+        (&a.ie_gtfs, "ie"),
     ] {
         let Some(path) = path else { continue };
+        if kind == "ie" {
+            // Iarnród Éireann (docs/europe/ie.md): one region, Dublin time,
+            // timetable only until the NTA's live feed is wired in.
+            let mut g = Gtfs::open(path)?;
+            let mut feed = load::load(&mut g, &window)?;
+            let buses = build::drop_replacement_buses(&mut feed);
+            for r in &mut feed.routes {
+                r.short_name = build::irish_product(&r.id, &r.short_name).to_owned();
+            }
+            report.push_str(&format!(
+                "- `{}` (Iarnród Éireann): {} trips in feed, {} in window, {} replacement-bus trips \
+                 dropped, {} outside window, {} too short; {} stop_times rows\n",
+                path.display(),
+                feed.stats.trips_total,
+                feed.trips.len(),
+                buses,
+                feed.stats.trips_outside_window,
+                feed.stats.trips_too_short,
+                feed.stats.stop_time_rows
+            ));
+            let trips: Vec<&load::Trip> = feed.trips.iter().collect();
+            let (mut tt, legs, rs) =
+                build_timetable(&feed, &trips, build::IE, header.clone(), router.as_mut());
+            tt.operator = "Iarnród Éireann".into();
+            tt.live = false;
+            let rec = RegionRec {
+                code: build::IE.into(),
+                name: "Ireland".into(),
+                bbox_e5: bbox_e5(&tt),
+            };
+            built.push((rec, tt, legs, rs));
+            continue;
+        }
         if kind == "ni" {
             // NI Railways (Translink): by timetable only, like OUIGO (plan 4b).
             let xml = read_txc(path)?;
@@ -562,6 +603,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
             until,
             operator: tt.operator.clone(),
             live: tt.live,
+            tz: build::region_tz(&rec.code),
             code: rec.code,
             name: rec.name,
             bbox: [from_e5(b[0]), from_e5(b[1]), from_e5(b[2]), from_e5(b[3])],
@@ -642,7 +684,11 @@ fn run_build(a: BuildArgs) -> Result<()> {
         },
         regions,
         network,
-        attribution: ATTRIBUTION,
+        attribution: if a.ie_gtfs.is_some() {
+            build::ATTRIBUTION_IE
+        } else {
+            ATTRIBUTION
+        },
     };
     std::fs::write(
         a.out.join("manifest.json"),

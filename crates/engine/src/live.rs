@@ -169,7 +169,7 @@ fn scheduled_trains(
     now: i64,
     updates: &HashMap<&str, &RtTripUpdate>,
 ) -> Vec<LiveTrain> {
-    use crate::networkrail::{behind_madrid_secs, placed_by_timetable};
+    use crate::networkrail::placed_by_timetable;
     use trainradar_proto::time::{madrid_day, service_day_base};
     let mut out = Vec::new();
     for (ri, r) in net.regions.iter().enumerate() {
@@ -177,7 +177,7 @@ fn scheduled_trains(
             continue;
         }
         // Timetable times are local: an hour behind Madrid in the UK.
-        let behind = behind_madrid_secs(&r.tt.region);
+        let behind = r.behind;
         let today = madrid_day(now - behind);
         for (ti, trip) in r.tt.trips.iter().enumerate() {
             let tref = crate::network::TripRef {

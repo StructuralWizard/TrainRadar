@@ -32,6 +32,47 @@ pub const OUIGO: &str = "ouigo";
 pub const UK: &str = "uk";
 /// Northern Ireland: NI Railways, Translink's timetable (plan 4).
 pub const NI: &str = "ni";
+/// Ireland: Iarnród Éireann, the NTA's GTFS (docs/europe/ie.md).
+pub const IE: &str = "ie";
+
+/// The time zone a region's timetable is written in (IANA name), for the
+/// manifest: the app converts each region's times with it.
+pub fn region_tz(code: &str) -> &'static str {
+    match code {
+        UK | NI => "Europe/London",
+        IE => "Europe/Dublin",
+        _ => "Europe/Madrid",
+    }
+}
+
+/// Iarnród Éireann's routes by the name it sells them under. The GTFS
+/// names most routes just "rail"; DART, InterCity and Commuter come through
+/// as they are. Route ids end in -I/-O (inbound/outbound).
+pub fn irish_product(route_id: &str, short_name: &str) -> &'static str {
+    match short_name.trim() {
+        "DART" => return "DART",
+        "InterCity" => return "InterCity",
+        "Commuter" => return "Commuter",
+        _ => {}
+    }
+    let base = route_id.rsplit_once('-').map_or(route_id, |(b, _)| b);
+    match base {
+        "BRAY-HOWTH" => "DART",
+        "DUB-BFT" => "Enterprise",
+        "DUB-DRO/DUN" | "DUB-MAYNOOTH" | "DUB-PORTLAOIS" | "MAL-COBH" => "Commuter",
+        _ => "InterCity",
+    }
+}
+
+/// Iarnród Éireann's GTFS lists the replacement buses of planned works as
+/// rail trips named `BUS…` (e.g. `BUS906`): drop them from the trains, so no
+/// bus is drawn on the track. Returns how many were dropped.
+pub fn drop_replacement_buses(feed: &mut crate::load::Feed) -> usize {
+    let before = feed.trips.len();
+    feed.trips
+        .retain(|t| !t.short_name.trim().to_ascii_uppercase().starts_with("BUS"));
+    before - feed.trips.len()
+}
 
 /// OUIGO's GTFS (a UIC MERITS export) uses 9-digit UIC station codes; the
 /// last five digits are the Adif code Renfe uses (`007160000` → `60000`).
@@ -569,8 +610,16 @@ pub struct RegionEntry {
     pub until: Option<String>,
     /// False for timetable-only operators (no live positions).
     pub live: bool,
+    /// The time zone its times are in (IANA name, `region_tz`).
+    pub tz: &'static str,
     pub stats: RegionStats,
 }
+
+/// Ireland's credit: the NTA asks for a CC BY 4.0 attribution and an "as is"
+/// statement (developer.nationaltransport.ie/usagepolicy).
+pub const ATTRIBUTION_IE: &str = "Data: National Transport Authority (Transport for Ireland), \
+     CC BY 4.0, provided as is. Track: © OpenStreetMap contributors, ODbL. \
+     Processed and combined by TrainRadar.";
 
 pub const ATTRIBUTION: &str = "Datos: © Renfe Operadora, CC BY 4.0 (data.renfe.com). \
      OUIGO: horario del Punto de Acceso Nacional, Powered by MITRAMS (datos explotados). \
@@ -770,5 +819,52 @@ mod tests {
         assert_eq!(content_hash(b"trainradar"), content_hash(b"trainradar"));
         assert_ne!(content_hash(b"a"), content_hash(b"b"));
         assert_eq!(content_hash(b"").len(), 10);
+    }
+
+    #[test]
+    fn irish_replacement_buses_are_dropped() {
+        let trip = |id: &str, short: &str| crate::load::Trip {
+            id: id.into(),
+            route: 0,
+            service: "67".into(),
+            headsign: String::new(),
+            short_name: short.into(),
+            shape_id: String::new(),
+            days: 1,
+            stop_times: vec![],
+        };
+        let mut feed = crate::load::Feed {
+            trips: vec![
+                trip("6065_11558", "BUS906"),
+                trip("6065_11559", "D915"),
+                trip("6065_100", "E206"),
+                trip("6065_7", " bus12 "),
+            ],
+            ..Default::default()
+        };
+        assert_eq!(drop_replacement_buses(&mut feed), 2);
+        let left: Vec<&str> = feed.trips.iter().map(|t| t.short_name.as_str()).collect();
+        assert_eq!(left, ["D915", "E206"]);
+    }
+
+    #[test]
+    fn each_region_has_its_time_zone() {
+        assert_eq!(region_tz(LONG_DISTANCE), "Europe/Madrid");
+        assert_eq!(region_tz("10"), "Europe/Madrid");
+        assert_eq!(region_tz(UK), "Europe/London");
+        assert_eq!(region_tz(NI), "Europe/London");
+        assert_eq!(region_tz(IE), "Europe/Dublin");
+    }
+
+    #[test]
+    fn irish_routes_get_their_product_names() {
+        assert_eq!(irish_product("BRAY-HOWTH-I", "DART"), "DART");
+        assert_eq!(irish_product("DUB-CORK-O", "InterCity"), "InterCity");
+        assert_eq!(irish_product("DUB-PORTLAOIS-O", "Commuter"), "Commuter");
+        assert_eq!(irish_product("DUB-BFT-I", "rail"), "Enterprise");
+        assert_eq!(irish_product("DUB-DRO/DUN-O", "rail"), "Commuter");
+        assert_eq!(irish_product("MAL-COBH-O", "rail"), "Commuter");
+        assert_eq!(irish_product("DUB-SLIGO-O", "rail"), "InterCity");
+        assert_eq!(irish_product("GALWAY-LIM-I", "rail"), "InterCity");
     }
 }
