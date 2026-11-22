@@ -135,6 +135,36 @@ jobs:
             --sources gtfs/lu/sources.tsv --report refdata-lu.md
           target/release/refdata-build verify build/lu
           { echo "## Luxembourg reference data"; echo; cat refdata-lu.md; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Finland (open timetable; no key)
+        continue-on-error: true # an outside download: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh fi --no-osm
+          target/release/refdata-build build --out build/fi --fi-gtfs gtfs/fi/gtfs.zip \
+            --sources gtfs/fi/sources.tsv --report refdata-fi.md
+          target/release/refdata-build verify build/fi
+          { echo "## Finland reference data"; echo; cat refdata-fi.md; } >> "$GITHUB_STEP_SUMMARY"
+          cargo run --release -q -p trainradar-engine --example journeys_bench -- build/fi --fi | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Norway (open timetable; no key)
+        continue-on-error: true # an outside download: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh no --no-osm
+          target/release/refdata-build build --out build/no --no-gtfs gtfs/no/gtfs.zip \
+            --sources gtfs/no/sources.tsv --report refdata-no.md
+          target/release/refdata-build verify build/no
+          { echo "## Norway reference data"; echo; cat refdata-no.md; } >> "$GITHUB_STEP_SUMMARY"
+          cargo run --release -q -p trainradar-engine --example journeys_bench -- build/no --no | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Netherlands (open timetable; no key)
+        continue-on-error: true # an outside download: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh nl --no-osm
+          target/release/refdata-build build --out build/nl --nl-gtfs gtfs/nl/gtfs.zip \
+            --sources gtfs/nl/sources.tsv --report refdata-nl.md
+          target/release/refdata-build verify build/nl
+          { echo "## Netherlands reference data"; echo; cat refdata-nl.md; } >> "$GITHUB_STEP_SUMMARY"
+          cargo run --release -q -p trainradar-engine --example journeys_bench -- build/nl --nl | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

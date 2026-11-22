@@ -54,8 +54,14 @@ pub fn behind_madrid_secs(region: &str) -> i64 {
 }
 
 /// Regions whose trains are placed by their timetable: operators that
-/// publish no live data (OUIGO), and the UK, Ireland and France, which
-/// publish delays but no positions.
+/// publish no live data (OUIGO); the UK, Ireland, France and the
+/// Netherlands, which publish delays but no positions; and Finland and
+/// Norway, for their trains without GPS (`nordic::mixed`).
 pub fn placed_by_timetable(region: &str, live: bool) -> bool {
-    !live || region == UK_REGION || region == IE_REGION || crate::france::is_french_region(region)
+    !live
+        || region == UK_REGION
+        || region == IE_REGION
+        || crate::france::is_french_region(region)
+        || crate::nordic::placed(region)
+        || crate::nordic::mixed(region)
 }

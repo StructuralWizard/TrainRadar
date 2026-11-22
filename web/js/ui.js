@@ -99,6 +99,10 @@ const PLACED_SOURCES = {
   // Their own sites are the ticket links (ticketSite): no second link.
   "Iarnród Éireann": { by: "NTA", delay: "srcIeDelay", timetable: "srcIeTimetable", link: null },
   SNCF: { by: "SNCF", delay: "srcFrDelay", timetable: "srcFrTimetable", link: null },
+  NS: { by: "NDOV", delay: "srcNlDelay", timetable: "srcNlTimetable", link: null },
+  // Finland's and Norway's trains without GPS.
+  VR: { by: "Fintraffic", delay: "srcFiDelay", timetable: "srcFiTimetable", link: null },
+  Entur: { by: "Entur", delay: "srcNoDelay", timetable: "srcNoTimetable", link: null },
 };
 const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];
 
@@ -112,6 +116,14 @@ function sourceNote(lang, info) {
       el("details", { class: "small muted sources" }, el("summary", {}, t(lang, "dataSources")), parts.join(" ")),
       src.link && el("a", { class: "small", href: src.link[1], target: "_blank", rel: "noopener" }, `${t(lang, src.link[0])} ↗`),
     ].filter(Boolean);
+  }
+  // GPS outside Spain (Finland, Norway): their operator's sources.
+  const gps = info.operator !== "Renfe" && PLACED_SOURCES[info.operator];
+  if (gps) {
+    const parts = [t(lang, "srcGpsPos", { by: gps.by })];
+    if (info.delay_source) parts.push(t(lang, gps.delay));
+    parts.push(t(lang, gps.timetable));
+    return [el("details", { class: "small muted sources" }, el("summary", {}, t(lang, "dataSources")), parts.join(" "))];
   }
   const parts = [];
   parts.push(t(lang, info.feed === "vp_cer" ? "srcPosCer" : "srcPosLd"));
@@ -151,6 +163,10 @@ const TICKET_SITES = {
   "SNCF/ICE": ["SNCF Connect", "https://www.sncf-connect.com/"],
   "Iarnród Éireann": ["Irish Rail", "https://www.irishrail.ie/"],
   CFL: ["CFL", "https://www.cfl.lu/"],
+  VR: ["VR", "https://www.vr.fi/"],
+  // Entur sells every Norwegian operator's tickets.
+  Entur: ["Entur", "https://entur.no/"],
+  NS: ["NS", "https://www.ns.nl/"],
 };
 
 /** [name, url] of the site selling this train's tickets, or null. */
@@ -370,7 +386,7 @@ export function trainRows(
       t(lang, "delay"),
       el("strong", { style: `color:${COLORS[cls]}` }, formatDelay(lang, info.delay)),
       info.delay_source
-        ? el("span", { class: "muted" }, ` (${isPlaced(info) ? t(lang, "sourceBy", { by: placedSource(info).by }) : t(lang, info.delay_source === "renfe" ? "sourceRenfe" : "sourceEstimated")})`)
+        ? el("span", { class: "muted" }, ` (${isPlaced(info) || (info.operator !== "Renfe" && PLACED_SOURCES[info.operator] && info.delay_source === "renfe") ? t(lang, "sourceBy", { by: placedSource(info).by }) : t(lang, info.delay_source === "renfe" ? "sourceRenfe" : "sourceEstimated")})`)
         : "",
     ),
   );

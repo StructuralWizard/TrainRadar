@@ -35,7 +35,7 @@ off, behind its own variable, so it doesn't hold the others back.
 | Merge | Countries | Why together | Needs from you before it can go live |
 |---|---|---|---|
 | **M1** (built) | France (and Monaco, Eurostar), Luxembourg's timetable, Ireland I3 (the Enterprise joined to NI, operator links) | Cross-border trains and shared stations are built once (plan-europe E0f) | Nothing. `FR_IDFM_PRIM_KEY` is optional (Paris suburban trains) |
-| **M2** | Netherlands, Finland, Norway | Open GTFS and GTFS-Realtime with no key; Finland and Norway add real GPS | Nothing (contact headers only) |
+| **M2** (built) | Netherlands, Finland, Norway | Open GTFS and GTFS-Realtime with no key; Finland and Norway add real GPS | Nothing (contact headers only) |
 | **M3** | Switzerland, Sweden | GTFS-Realtime behind a free key, with tight quotas | `CH_OTD_*`, `SE_TRAFIKLAB_KEY`, `SE_TRAFIKVERKET_KEY` |
 | **M4** | Austria, Slovakia, Slovenia, Estonia, Latvia, Lithuania, Hungary | Timetables only: no live server, the same build for all | `AT_MVO_*`; Hungary's form |
 | **M5** | Germany, Poland | Each needs its own live adapter, behind a key | `DE_*`, `PL_PLK_API_KEY` |
@@ -87,7 +87,8 @@ company's contact address, which I'll ask you for when building M2.
    - GitHub: secret `NL_NS_API_KEY`.
 2. **Bane NOR API portal** (optional; only if its SIRI adds something to Entur). Wait until I ask.
    - GitHub: secret `NO_BANENOR_KEY`.
-3. **Variables when I say:** `NL_ENABLED`, `FI_ENABLED`, `NO_ENABLED`.
+3. **Variables:** `NL_ENABLED`, `FI_ENABLED` and `NO_ENABLED`, set before merging M2 (the merge's
+   deploy then reads them).
 
 ### M3: Switzerland, Sweden
 

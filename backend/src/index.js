@@ -32,6 +32,16 @@ export const SERVED = new Set([
   "fr/rt/status.json",
   "fr/rt/trip_updates.pb",
   "fr/rt/alerts.pb",
+  // Finland, Norway and the Netherlands (M2).
+  "fi/rt/status.json",
+  "fi/rt/trip_updates.pb",
+  "fi/rt/vehicle_positions.pb",
+  "no/rt/status.json",
+  "no/rt/trip_updates.pb",
+  "no/rt/vehicle_positions.pb",
+  "no/rt/alerts.pb",
+  "nl/rt/status.json",
+  "nl/rt/trip_updates.pb",
 ]);
 /** Must match the daily entry in wrangler.toml's crons (UTC). */
 export const DAILY_CRON = "40 2 * * *";

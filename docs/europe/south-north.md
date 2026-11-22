@@ -26,6 +26,15 @@ confirms them before anything is built. "Unverified" marks what couldn't be conf
 
 Europe/Helsinki (an hour ahead of Madrid) · Finnish, Swedish · UIC 10 · track gauge 1,524 mm.
 
+**Built (M2, 2026-11-22):** `data/fi/` and `fi/rt/` behind `FI_ENABLED`, opened with
+`?country=fi`.
+- **Timetable:** Digitraffic's GTFS, platforms merged into stations, museum trains dropped. Two
+  regions: `fi` (InterCity, Pendolino, night and regional trains) and `fi-l` (commuter lines).
+- **Live:** GPS of every running train and its delays, every 30 s, through `backend-eu/`.
+- **Checked:** every live trip id matched; 112 trains on GPS in the browser; Helsinki–Oulu and
+  Turku–Joensuu journeys with changes.
+- **Not yet:** platforms and notices (Digitraffic's JSON APIs).
+
 **Verdict:** the best open rail data in Europe: timetables, live delays, GPS of every train,
 platforms, notices and track works, with no key. Early wave.
 
@@ -50,6 +59,16 @@ platforms, notices and track works, with no key. Early wave.
 ## Norway (no)
 
 Europe/Oslo · Norwegian, Sámi · UIC 76.
+
+**Built (M2, 2026-11-22):** `data/no/` and `no/rt/` behind `NO_ENABLED`, opened with
+`?country=no`.
+- **Timetable:** Entur's GTFS of the four rail operators (Vy, Go-Ahead Nordic, SJ Norge,
+  Flytoget), merged and cut to trains by `tools/gtfs-rail.py` (the national file is 556 MB of every
+  mode). Train numbers come from the trip ids.
+- **Live:** Entur's national feeds filtered to those four (7,674 trip updates → about 1,640; 89 of
+  1,359 vehicles; 37 of 209 alerts). Trains with GPS are drawn where they are; the others by
+  timetable plus delay.
+- **Checked:** 129 trains in the browser, 99 on GPS; Oslo–Bergen, Oslo–Trondheim journeys.
 
 **Verdict:** excellent open data, NLOD licence, no key: timetables, delays, GPS, notices.
 Early wave.

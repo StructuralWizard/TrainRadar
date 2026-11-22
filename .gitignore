@@ -36,3 +36,6 @@ Thumbs.db
 /build/
 /app-www/
 /trainradar-debug.apk
+
+# Python
+__pycache__/

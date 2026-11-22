@@ -30,6 +30,16 @@ Part of [the Europe plan](README.md). Proposed 2026-11-22; nothing built.
 
 Europe/Amsterdam · Dutch · UIC 84.
 
+**Built (M2, 2026-11-22):** `data/nl/` and `nl/rt/` behind `NL_ENABLED`, opened with
+`?country=nl`.
+- **Timetable:** OVapi's national GTFS cut to trains by `tools/gtfs-rail.py` (1.3 GB of stop times
+  → 0.5 million rows), platforms merged into stations; one region. Only the CC0 and ODbL tables are
+  read, never the ticketing ones.
+- **Live:** `trainUpdates.pb` every minute: 4,217 of 4,224 trips matched. Placed by timetable plus
+  delay (no GPS).
+- **Checked:** 312 trains in the browser; Amsterdam–Maastricht, Groningen–Rotterdam journeys.
+- **Not yet:** the platform changes in OVapi's extension; NS's disruptions (needs its key).
+
 **Verdict:** good. OVapi's GTFS and GTFS-Realtime cover every Dutch rail operator, with **platform
 changes**, no key, CC0. Wave 2.
 

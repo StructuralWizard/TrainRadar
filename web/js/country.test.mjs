@@ -79,3 +79,13 @@ test("country: France points CONFIG at data/fr/ and fr/rt/; Luxembourg has no fe
   assert.equal(pickCountry({ search: "?country=lu", allowed, hidden }), "lu");
   assert.equal(pickCountry({ languages: ["fr-FR"], allowed, hidden }), "es");
 });
+
+test("country: Finland, Norway and the Netherlands (M2): their data, feeds and time zones", () => {
+  const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
+  for (const [cc, zone] of [["fi", "Europe/Helsinki"], ["no", "Europe/Oslo"], ["nl", "Europe/Amsterdam"]]) {
+    const c = applyCountry(base(), cc);
+    assert.equal(c.dataBase, `data/${cc}/`);
+    assert.equal(c.liveBase, `https://live.example/${cc}/rt/`);
+    assert.equal(c.timeZone, zone);
+  }
+});

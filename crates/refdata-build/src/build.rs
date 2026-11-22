@@ -44,6 +44,7 @@ pub fn region_tz(code: &str) -> &'static str {
         UK | NI => "Europe/London",
         IE => "Europe/Dublin",
         LU => "Europe/Luxembourg",
+        c if crate::nordic::tz(c).is_some() => crate::nordic::tz(c).unwrap_or("Europe/Madrid"),
         c if c == crate::france::FR || c.starts_with("fr-") => "Europe/Paris",
         _ => "Europe/Madrid",
     }

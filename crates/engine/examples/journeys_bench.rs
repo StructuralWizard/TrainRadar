@@ -44,6 +44,26 @@ const TRIPS_FR: &[(&str, &str)] = &[
     ("Nantes", "Rennes"),
 ];
 
+/// With `--fi`, `--no` or `--nl`: Finland, Norway, the Netherlands (M2).
+const TRIPS_FI: &[(&str, &str)] = &[
+    ("Helsinki", "Tampere"),
+    ("Helsinki", "Oulu"),
+    ("Turku", "Joensuu"),
+    ("Leppävaara", "Lentoasema"),
+];
+const TRIPS_NO: &[(&str, &str)] = &[
+    ("Oslo S", "Bergen"),
+    ("Oslo S", "Trondheim S"),
+    ("Drammen", "Lillehammer"),
+    ("Oslo lufthavn", "Asker"),
+];
+const TRIPS_NL: &[(&str, &str)] = &[
+    ("Amsterdam Centraal", "Maastricht"),
+    ("Groningen", "Rotterdam Centraal"),
+    ("Den Haag Centraal", "Enschede"),
+    ("Utrecht Centraal", "Leeuwarden"),
+];
+
 /// With `--uk`: Great Britain and Northern Ireland (London time).
 const TRIPS_UK: &[(&str, &str)] = &[
     ("London Euston", "Manchester Piccadilly"),
@@ -59,6 +79,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let uk = std::env::args().any(|a| a == "--uk");
     let ie = std::env::args().any(|a| a == "--ie");
     let fr = std::env::args().any(|a| a == "--fr");
+    let other = std::env::args().find_map(|a| match a.as_str() {
+        "--fi" => Some((", Finland", TRIPS_FI)),
+        "--no" => Some((", Norway", TRIPS_NO)),
+        "--nl" => Some((", the Netherlands", TRIPS_NL)),
+        _ => None,
+    });
     let data = Path::new(&data);
     let manifest: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(data.join("manifest.json"))?)?;
@@ -113,7 +139,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     println!(
         "## Journeys with changes{} (all regions loaded, 07:30, no live data)\n",
-        if uk {
+        if let Some((name, _)) = other {
+            name
+        } else if uk {
             ", United Kingdom"
         } else if ie {
             ", Ireland"
@@ -124,7 +152,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     );
     let mut total = 0.0;
-    let trips = if uk {
+    let trips = if let Some((_, t)) = other {
+        t
+    } else if uk {
         TRIPS_UK
     } else if ie {
         TRIPS_IE
