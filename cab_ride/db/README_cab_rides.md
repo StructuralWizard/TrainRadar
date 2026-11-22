@@ -18,9 +18,10 @@ This package adds YouTube cab-ride videos to TrainRadar. In a station popup, the
 - **Gemini documents for Germany and Italy** (added later on 2026-11-21): 499 new videos, all read on YouTube; 497 exist.
 - **Gemini documents for Denmark, Norway, Poland and Sweden** (added later on 2026-11-21): 327 videos, all read on YouTube in full; 323 play and 4 are unavailable (`UNPLAYABLE`). New: DK 89, NO 64, PL 59, SE 111. 119 of them have the uploader's own chapter timestamps.
 - **Gemini documents for 21 more countries** (added 2026-11-22: Albania, Austria, Belarus, Bosnia, Bulgaria, Croatia, Czechia, Estonia, Finland, Greece, Hungary, Latvia, Lithuania, Moldova, Montenegro, Romania, Serbia, Slovakia, Slovenia, Türkiye, Ukraine): 1,311 unique videos, 1,151 of them new. All 1,300 that needed it were read on YouTube in full (149 of these were already in the database from search results and now have chapters too): 1,283 play, 9 are unavailable and 8 IDs don't exist. New country codes: `BY` (Belarus), `TR` (Türkiye), `XK` (Kosovo). A short ride (2–6½ min) is now kept as `partial` rather than hidden as a clip when its title names a cab ride between two places.
+- **Gap filling** (2026-11-22): targeted YouTube searches for the networks and countries that had no video (city metros and trams, Alpine and narrow-gauge lines, Kosovo, North Macedonia, Liechtenstein, Monaco and others). 291 search results were read; only clear front/cab rides are kept (guides, news, station tours and escalator vlogs are marked `out`); 31 more were hand-checked. Notes say `from targeted gap search`. All 909 videos that had only search-result metadata were also read in full, so every video now has its real length and chapter list. New country code `LI` (Liechtenstein, the Feldkirch–Buchs line).
 - **Coverage gaps:** `GAPS_table.md` lists, per country, the notable networks with no video in the database (made by `source/gaps.py`).
 - **Gemini documents for France, Switzerland and Ireland:** 116 videos. 112 are new; 107 exist on YouTube and 4 return "not found" from YouTube's oEmbed lookup (`AoMWOguBnb8`, `mWV09lMNFBU`, `gm1i9p4mjew`, `pOBWdCu-qws`).
-- **How much was read in full:** 522 videos were read on YouTube in full (length, chapters, keywords). Then YouTube's rate limit stopped the job. For the rest of the search results (909 still unread after later passes, 717 of them not hidden), the database uses the title, channel and length from the search results, and their chapters haven't been read yet. The 107 Gemini videos have title and channel only (from oEmbed), so their length is unknown. `notes` says which applies to each video, and `source/europe/pending.json` lists the IDs still to read.
+- **How much was read in full:** 522 videos were read on YouTube in full (length, chapters, keywords). Then YouTube's rate limit stopped the job. All search results have since been read in full (see Gap filling below). The 107 Gemini videos have title and channel only (from oEmbed), so their length is unknown. `notes` says which applies to each video, and `source/europe/pending.json` lists the IDs still to read.
 - **Classification:** done automatically from the title and keywords (`notes` contains "auto-classified"):
   - `country` comes from flag emoji, operator names and place names, falling back to the country searched for.
   - Category comes from keywords (tram, metro, rack railway, heritage, freight, high-speed, suburban).
@@ -45,10 +46,10 @@ The title, channel and real duration were read from YouTube. Station timestamps 
 | Country | core | extended | out |
 |---|---|---|---|
 | ES | 109 | 88 | 70 |
-| PT | 42 | 5 | 2 |
-| Rest of Europe (35 countries) | 2,880 | 466 | 624 |
+| PT | 42 | 8 | 13 |
+| Rest of Europe (36 countries) | 3,066 | 566 | 640 |
 
-Videos per country (rest of Europe, excluding `out`): DE 519, IT 276, CH 217, NL 207, FR 190, AT 157, HU 151, SE 139, BE 121, SK 116, DK 103, PL 101, GR 98, NO 93, FI 86, TR 85, BG 84, SI 77, UA 69, HR 67, RS 61, CZ 60, RO 46, IE 41, BY 36, LU 26, BA 26, LV 20, EE 18, AL 14, LT 12, ME 11, MD 11, MK 7, XK 1.
+Videos per country (rest of Europe, excluding `out`): DE 527, IT 295, CH 234, NL 212, AT 197, FR 196, HU 154, SE 153, BE 126, NO 125, SK 124, PL 105, GR 105, DK 104, FI 98, BG 88, TR 87, SI 77, UA 71, CZ 71, HR 69, RS 61, IE 59, RO 57, BY 41, LU 30, LV 25, EE 25, BA 25, MK 23, LT 16, AL 16, MD 12, ME 11, XK 9, LI 4.
 | GB | 173 | 77 | 50 |
 | IE / NI / IM | – | 13 / 8 / 2 | 8 / 1 / – |
 | FR / DE / CH | – | – | 8 / 3 / 5 |
@@ -60,13 +61,13 @@ How reliable the timestamps are (rides not marked `out`):
 | | precise | approximate | estimated | none |
 |---|---|---|---|---|
 | ES | 21 | 13 | 134 | 29 |
-| PT | 26 | 0 | 18 | 3 |
-| Rest of Europe | 402 | 13 | 990 | 703 |
-| UK / IE | 83 | 0 | 170 | 20 |
+| PT | 28 | 0 | 18 | 4 |
+| Rest of Europe | 1356 | 55 | 1200 | 962 |
+| UK / IE | 85 | 0 | 191 | 43 |
 
 ## Data model
 **videos** has one row per YouTube video.
-- `country`: ISO 3166 code: `ES`, `PT`, `GB`, `NI`, `IE`, `IM`, `FR`, `DE` or `CH`. The three Portuguese rides from the Spanish doc (Porto–Valença, Valença–Porto and Entroncamento–Badajoz) have been moved to `PT`.
+- `country`: ISO 3166 code (`ES`, `PT`, `GB`, `NI`, `IE`, `IM`, `FR`, `DE`, `CH`, … 41 in all; `XK` is Kosovo). The three Portuguese rides from the Spanish doc (Porto–Valença, Valença–Porto and Entroncamento–Badajoz) have been moved to `PT`.
 - `category`: in Spain `hsr`, `long_distance`, `regional`, `cercanias`, `cercanias_am`, `fgc`, `euskotren`, `sfm`, `funicular`. In Portugal, the UK and Ireland `intercity`, `regional`, `suburban`, `archive`. Used in both: `freight`, `test_train`, `heritage`, `metro`, `tram`, `rack`, `foreign`.
 - `view_type`: `cab`, `front`, `passenger`, `trackside` or `mixed`. `coverage`: `full`, `partial`, `clip` or `compilation`.
 - `timestamp_quality`:

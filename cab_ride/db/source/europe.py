@@ -4,26 +4,27 @@ Input: the JSON saved by the browser: {"db": {id: {q:[cc..], gem:1?}}, "det": {i
 import re
 
 COUNTRIES = ['AT','CH','DE','FR','IT','NL','BE','LU','DK','NO','SE','FI','PL','CZ','SK','HU','SI','HR','RS','BA','ME','MK',
-             'AL','GR','BG','RO','MD','UA','EE','LV','LT','IE','TR','BY','XK','ES','PT','GB']
+             'AL','GR','BG','RO','MD','UA','EE','LV','LT','IE','TR','BY','XK','LI','ES','PT','GB']
 FLAGS = {chr(0x1F1E6 + ord(a) - 65) + chr(0x1F1E6 + ord(b) - 65): a + b for a, b in
          [(c[0], c[1]) for c in COUNTRIES + ['UK']]}
 FLAGS = {k: ('GB' if v == 'UK' else v) for k, v in FLAGS.items()}
 
 # (regex, country) — operators and country names in several languages. Order matters (more specific first).
 HINTS = [
- (r'\b(RhB|BLS|SBB|CFF|FFS|SOB|Zentralbahn|zb\b|MGB|Matterhorn|Gornergrat|Jungfrau|Pilatus|Rigi|Schweiz|Switzerland|Suisse|Svizzera|Zürich|Zurich|Bern\b|Basel|Luzern|Lucerne|Gen[eè]v|Lausanne|Chur|Gotthard|Lötschberg|Bernina|Albula|Brig\b|Interlaken|Zermatt|St\. ?Moritz|Davos|Appenzell)', 'CH'),
+ (r'\b(Liechtenstein|Schaan|Vaduz|Nendeln|Buchs.{0,25}Feldkirch|Feldkirch.{0,25}Buchs)', 'LI'),
+ (r'\b(Salvan|Martigny|Finhaut|Le Châble|RhB|BLS|SBB|CFF|FFS|SOB|Zentralbahn|zb\b|MGB|Matterhorn|Gornergrat|Jungfrau|Pilatus|Rigi|Schweiz|Switzerland|Suisse|Svizzera|Zürich|Zurich|Bern\b|Basel|Luzern|Lucerne|Gen[eè]v|Lausanne|Chur|Gotthard|Lötschberg|Bernina|Albula|Brig\b|Interlaken|Zermatt|St\. ?Moritz|Davos|Appenzell)', 'CH'),
  (r'\b(ÖBB|OEBB|Railjet|Österreich|Austria|Autriche|Wien|Vienna|Salzburg|Innsbruck|Graz|Linz|Villach|Klagenfurt|Arlberg|Semmering|Tauern|Mariazell|Zillertal|Bregenz|Tirol|Steiermark|Kärnten)', 'AT'),
- (r'\b(SNCF|TER|TGV|Intercit[ée]s|Transilien|RER|Ouigo|Frankreich|France|Francia|Paris|Lyon|Marseille|Bordeaux|Toulouse|Lille|Nantes|Strasbourg|Nice|Montpellier|Rennes|Grenoble|Chamonix|Corse|Corsica|Brest|Rouen|Dijon|Clermont|Limoges|Perpignan|Normandie|Bretagne|Occitanie|Alsace|Savoie|Provence)', 'FR'),
+ (r'\b(Chamonix|Vallorcine|Saint-Gervais|Train Jaune|SNCF|TER\b|TGV|Intercit[ée]s|Transilien|RER\b|Ouigo|Frankreich|France|Francia|Paris|Lyon|Marseille|Bordeaux|Toulouse|Lille|Nantes|Strasbourg|Nice|Montpellier|Rennes|Grenoble|Chamonix|Corse|Corsica|Brest|Rouen|Dijon|Clermont|Limoges|Perpignan|Normandie|Bretagne|Occitanie|Alsace|Savoie|Provence)', 'FR'),
  (r'\b(Trenitalia|Frecciarossa|Frecciargento|Italo|RFI|Trenord|Italien|Italy|Italia|Italie|Roma|Rome|Milano|Milan|Napoli|Torino|Firenze|Venezia|Bologna|Genova|Verona|Bolzano|Bozen|Brennero|Sardegna|Sardinia|Sassari|Cagliari|Tempio|Sicilia|Sicily|Palermo|Bari|Trieste|Circumvesuviana|Vigezzina)', 'IT'),
  (r'\b(Nederland|Netherlands|Niederlande|Pays-Bas|Amsterdam|Rotterdam|Utrecht|Den Haag|Eindhoven|Groningen|Arnhem|Sprinter|NS\b|cabinerit)', 'NL'),
  (r'\b(SNCB|NMBS|Belgi[eë]|Belgium|Belgique|Belgien|Bruxelles|Brussel|Brussels|Antwerpen|Anvers|Gent|Gand|Liège|Luik|Namur|Charleroi|Oostende|Ostende)', 'BE'),
- (r'\b(CFL|Luxemb(o|u)rg)', 'LU'),
+ (r'\b(CFL|Luxemb(ou|u|o)rg)', 'LU'),
  (r'\b(DSB|Danmark|Denmark|Dänemark|København|Copenhagen|Kopenhagen|Aarhus|Odense|Aalborg|Esbjerg|førerrum)', 'DK'),
  (r'\b(Vy\b|NSB|Norge|Norway|Norwegen|Oslo|Bergen|Bergensbanen|Flåm|Flam|Trondheim|Bodø|Dovre|Rauma|Nordland|Ofoten|Narvik|Stavanger|førerrom)', 'NO'),
  (r'\b(SJ\b|Sverige|Sweden|Schweden|Stockholm|Göteborg|Gothenburg|Malmö|Kiruna|Inlandsbanan|Norrland|Uppsala|förarhytt)', 'SE'),
  (r'\b(VR\b|Suomi|Finland|Finnland|Helsinki|Tampere|Turku|Oulu|Rovaniemi|ohjaamo)', 'FI'),
- (r'\b(PKP|Polska|Poland|Polen|Pologne|Warszawa|Warsaw|Kraków|Krakow|Gdańsk|Gdansk|Wrocław|Poznań|Katowice|Szczecin|Łódź|Zakopane|maszynist|kabiny)', 'PL'),
- (r'\b(ČD|České dráhy|Česk|Czech|Tschechien|Praha|Prague|Prag\b|Brno|Ostrava|Plzeň|strojvedouc)', 'CZ'),
+ (r'\b(PKP|Polska|Poland|Polen|Pologne|Warszawa|Warsaw|Kraków|Krakow|Gdańsk|Gdansk|Wrocław|Poznań|Katowice|Szczecin|Łódź|Zakopane|maszynist)', 'PL'),
+ (r'\b(ČD|České dráhy|Česk|Czech|Tschechien|Praha|Prague|Prag\b|Brno|Ostrava|Plzeň|strojvedouc|[Pp]ohled z kabiny|Praha|Prague)', 'CZ'),
  (r'\b(ZSSK|ŽSR|Prešov|Bardejov|Poprad|Zvolen|Banská|Nitra|Trnava|Slovensk|Slovakia|Slowakei|Bratislava|Košice|Žilina|Tatra|rušňovod)', 'SK'),
  (r'\b(MÁV|MAV\b|GySEV|Magyar|Hungary|Ungarn|Budapest|Debrecen|Szeged|Pécs|Balaton|vezetőáll)', 'HU'),
  (r'\b(SŽ\b|Sloven(ija|ia|ien)|Ljubljana|Maribor|Bohinj|Koper)', 'SI'),
@@ -60,7 +61,9 @@ HSR = re.compile(r'(?i)\bICE\b|\bTGV\b|frecciarossa|frecciargento|\bitalo\b|rail
 SUBURBAN = re.compile(r'(?i)s-bahn|\bRER\b|transilien|\bS ?\d{1,2}\b|sprinter|suburban|cercan|pendeltåg|lokaltog|\bSKM\b|\bSKA\b|esko|rodalies|\bSPR\b')
 WATCH_PASSENGER = re.compile(r'(?i)passenger|\bwindow\b(?! view: europe)|onboard|on board|im zug|sitzplatz|fenster|reisebericht|trip report|first class|1st class|2nd class|business class')
 
+LI_RX = re.compile(r'Liechtenstein|Schaan|Vaduz|Nendeln|Buchs.{0,25}Feldkirch|Feldkirch.{0,25}Buchs')
 def detect_country(text, qcc):
+    if LI_RX.search(text): return 'LI'   # the Feldkirch–Buchs line runs through Liechtenstein
     found = [(text.find(fl), cc) for fl, cc in FLAGS.items() if fl in text]
     if found:
         return min(found)[1]
@@ -69,6 +72,8 @@ def detect_country(text, qcc):
             return cc
     return qcc
 
+GAP_RIDE = re.compile(r'(?i)cab|kabin|kabín|кабин|кабін|führerstand|mitfahrt|driver|pov|front|full (journey|ride)|complete|komplett|whole|cała|przejazd|trasą|linja \d|linie \d|line \d|\bM\d\b|ride (from|on)|journey|tram ride|train ride|förarhytt|førerrom|in cabina|en cabine|makinist|vista')
+GAP_BAD = re.compile(r'(?i)guide|how to|explained|walkthrough|inaugura|télécabine|evolution|episode|action|movie|escalator|elevator|tickets|building|stations?\b.*\b(tour|várias)|várias|dentro do|history|blew my|\b101\b|first impressions|least known|would you')
 def classify(vid, rec, det):
     t = det.get('t') or ''
     text = ' '.join([t, det.get('kw', ''), det.get('d1', '')])
@@ -90,10 +95,12 @@ def classify(vid, rec, det):
         o_, d_ = endpoints(t)
         # short but genuine: a cab ride over one named section (e.g. one metro or branch-line leg)
         cov = 'partial' if (dur >= 120 and RIDE.search(t) and o_ and d_ and not NOT_RIDE.search(t)) else 'clip'
-    ride = bool(RIDE.search(text)) or rec.get('gem') or bool(det.get('ch'))
+    ride = bool(RIDE.search(text)) or rec.get('gem') or rec.get('picked') or bool(det.get('ch')) or bool(rec.get('gapsearch') and GAP_RIDE.search(t))
     bad = bool(NOT_RIDE.search(t))
     if det.get('st') != 'OK':
         scope = 'out'
+    elif rec.get('gapsearch') and not rec.get('picked') and (GAP_BAD.search(t) or not GAP_RIDE.search(t)):
+        scope = 'out'       # targeted search results: only clear front/cab rides, no guides, news or station tours
     elif bad or not ride or cov == 'clip':
         scope = 'out'
     elif cat in ('metro', 'tram', 'rack', 'heritage'):
@@ -102,7 +109,7 @@ def classify(vid, rec, det):
         scope = 'core'
     o, d = endpoints(t)
     return dict(category=cat, operator='', route='', origin=o, destination=d, view=view, coverage=cov,
-                scope=scope, note='auto-classified' + ('; from Gemini doc' if rec.get('gem') else ''), country=country)
+                scope=scope, note='auto-classified' + ('; from Gemini doc' if rec.get('gem') else '') + ('; from targeted gap search' if rec.get('gapsearch') else ''), country=country)
 
 SEP = r'(?:\s+(?:-|–|—|~)\s+|\s*(?:→|➔|⇒|>|<>)\s*|\s+(?:nach|to|à|a|bis|verso|naar|do|till|til)\s+)'
 def endpoints(t):

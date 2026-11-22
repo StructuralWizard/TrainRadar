@@ -259,6 +259,17 @@ for extra in sorted(glob.glob(f'{EU}/gemini_*_ids.json')):
             eu['db'][vid_]['gem'] = 1
         if vid_ in dets_ and vid_ not in eu['det']:
             eu['det'][vid_] = dets_[vid_]
+# Targeted YouTube searches to fill coverage gaps: {id: cc} + details. Not Gemini-vetted, so no leniency.
+for extra in sorted(glob.glob(f'{EU}/search_*_ids.json')):
+    ids_ = json.load(open(extra, encoding='utf-8'))
+    det_path = extra.replace('_ids.json', '_details.json')
+    dets_ = json.load(open(det_path, encoding='utf-8')) if os.path.exists(det_path) else {}
+    for vid_, cc_ in ids_.items():
+        if vid_ not in eu['db']:
+            eu['db'][vid_] = {'q': [cc_], 'gapsearch': 1, 't': '', 'c': '', 'l': ''}
+            if 'picked' in extra: eu['db'][vid_]['picked'] = 1   # hand-checked search result
+        if vid_ in dets_ and vid_ not in eu['det']:
+            eu['det'][vid_] = dets_[vid_]
 # Gemini FR/CH/IE videos confirmed via YouTube oEmbed (title/channel only; length unknown until enrichment).
 # The 4th column may end with a classification hint word added by hand; it is stripped from the displayed title.
 HINT = re.compile(r'\s(documentary|window|spotting|vlog|archive|cab view|cab|zahnrad|metro|reportage|announcements|compilation)$')

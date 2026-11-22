@@ -10,7 +10,7 @@ NET = {
         ('FGV / Metrovalencia', r'FGV|Metrovalencia|TRAM d.Alacant'), ('Metro Bilbao', r'Metro Bilbao'), ('Sóller', r'S[oó]ller'), ('SFM Mallorca', r'SFM|Mallorca')],
  'PT': [('CP Alfa/IC Lisbon–Porto', r'Alfa Pendular|Intercidades|Lisboa.*Porto|Porto.*Lisboa'), ('CP Lisbon suburban', r'Sintra|Cascais|Azambuja|Sado|Fertagus'),
         ('CP Porto suburban', r'Guimar|Braga|Aveiro|Marco de Canaveses'), ('Douro line', r'Douro|Pocinho|R[eé]gua'), ('Algarve', r'Algarve|Lagos|Vila Real de Santo'),
-        ('Beira lines', r'Beira|Guarda|Covilh'), ('Minho', r'Minho|Valen[cç]a|Viana'), ('Metro do Porto', r'Metro do Porto'), ('Lisbon Metro', r'Metro(politano)? de Lisboa')],
+        ('Beira lines', r'Beira|Guarda|Covilh'), ('Minho', r'Minho|Valen[cç]a|Viana'), ('Metro do Porto', r'Metro do Porto'), ('Lisbon Metro', r'Metro(politano)? de Lisboa|Lisbon Metro')],
  'GB': [('Scotland (ScotRail)', r'ScotRail|Glasgow|Edinburgh|Inverness|Aberdeen|West Highland|Kyle|Far North'), ('Wales (TfW)', r'Transport for Wales|TfW|Cardiff|Cambrian|Heart of Wales|Conwy'),
         ('WCML', r'Avanti|West Coast|Euston'), ('ECML', r'LNER|East Coast|King.s Cross|Grand Central|Lumo'), ('GWR', r'GWR|Great Western|Paddington|Cornwall|Devon'),
         ('Southern/Southeastern', r'Southern|Southeastern|Brighton|Kent'), ('SWR', r'South Western|SWR|Waterloo'), ('Northern', r'Northern|Settle|Carlisle|Leeds|Manchester'),
@@ -21,7 +21,7 @@ NET = {
         ('Limerick/Waterford/Tralee', r'Limerick|Waterford|Tralee|Rosslare|Sligo'), ('Luas', r'Luas')],
  'FR': [('TGV', r'TGV|LGV|Ouigo|InOui'), ('TER', r'TER|Intercit'), ('Transilien/RER', r'Transilien|RER'), ('Paris Métro', r'M[ée]tro.*Paris|Paris.*M[ée]tro|RATP'),
         ('Corsica (CFC)', r'Corse|Corsica|CFC'), ('Mont-Blanc Express/Chamonix', r'Chamonix|Mont-Blanc|Saint-Gervais|Vallorcine'), ('Train Jaune', r'Train Jaune|Cerdagne|Font-Romeu|Latour-de-Carol'),
-        ('Chemins de fer de Provence', r'Provence|Digne'), ('Lyon/Toulouse/Lille/Marseille metro', r'M[ée]tro.*(Lyon|Toulouse|Lille|Marseille|Rennes)'), ('Trams', r'[Tt]ram')],
+        ('Chemins de fer de Provence', r'Provence|Digne'), ('Lyon/Toulouse/Lille/Marseille metro', r'M[ée]tro.*(Lyon|Toulouse|Lille|Marseille|Rennes)'), ('Trams', r'[Tt]ram'), ('Nice–Ventimiglia via Monaco', r'Monaco|Menton|Ventimiglia.*Nice|Nice.*Ventimiglia')],
  'BE': [('SNCB IC/L', r'SNCB|NMBS|IC\b'), ('Brussels metro/tram', r'STIB|MIVB|Bruxelles.*m[ée]tro|Brussel.*metro'), ('Kusttram', r'Kusttram|Coast ?Tram'), ('Antwerp/Ghent tram', r'De Lijn|Antwerpen.*tram|Gent.*tram')],
  'NL': [('NS IC/Sprinter', r'NS\b|Sprinter|Intercity'), ('Arriva/Keolis regional', r'Arriva|Keolis|Qbuzz|Blauwnet|Valleilijn'), ('Amsterdam metro', r'Amsterdam.*metro|GVB'),
         ('Rotterdam metro', r'RET|Rotterdam.*metro'), ('RandstadRail/HTM', r'RandstadRail|HTM')],
@@ -56,6 +56,7 @@ NET = {
  'BA': [('Sarajevo–Mostar–Ploče', r'Mostar|Plo[čc]e|Konjic'), ('Sarajevo–Zenica–Doboj', r'Zenica|Doboj'), ('Banja Luka / ŽRS', r'Banja Luka|ŽRS|Republike Srpske')],
  'ME': [('Bar–Bijelo Polje', r'Bijelo Polje|Bar\b|Kola[šs]in'), ('Nikšić–Podgorica', r'Nik[šs]i')],
  'MK': [('Skopje–Gevgelija', r'Gevgelija|Veles'), ('Skopje–Bitola', r'Bitola|Prilep'), ('Skopje–Kičevo / Tabanovce', r'Ki[čc]evo|Tabanovce|Kumanovo')],
+ 'LI': [('Feldkirch–Buchs (ÖBB)', r'Feldkirch|Buchs|Schaan|Nendeln')],
  'XK': [('Pristina–Peja / Fushë Kosovë (Trainkos)', r'Pej|Prisht|Pristina|Fush')],
  'AL': [('Durrës–Tirana/Rrogozhinë', r'Durr[ëe]s|Rrogozhin|Tiran')],
  'GR': [('Athens–Thessaloniki', r'Thessaloniki|Θεσσαλον'), ('Athens Proastiakos', r'Proastiakos|Προαστιακ'), ('Athens metro', r'metro.*Ath|Athens.*metro|Μετρό'), ('Diakopto–Kalavryta', r'Kalavr|Diakopto'), ('Peloponnese / Patras', r'Patra|Kiato|Peloponn'), ('Thessaloniki metro', r'Thessaloniki.*metro')],
@@ -73,7 +74,6 @@ NET = {
 
 NO_FILE = {  # countries/territories with passenger rail but no Gemini doc and no harvest search
  'RU': 'Russia (European part) – Moscow metro/MCD/Lastochka, St Petersburg, Sapsan',
- 'LI': 'Liechtenstein – ÖBB Feldkirch–Buchs line (4 stations)',
  'MC': 'Monaco – SNCF Nice–Ventimiglia line (Monaco-Monte-Carlo)',
  'GE': 'Georgia, Armenia, Azerbaijan – only if TrainRadar ever goes beyond the EU/EEA area',
 }
@@ -89,7 +89,7 @@ def main(dbp, outp):
     out = ['| Country | Videos (core+extended) | Precise timestamps | Networks with no video found |', '|---|---|---|---|']
     miss_all = {}
     for c in sorted(NET, key=lambda x: -cnt[x]):
-        miss = [n for n, rx in NET[c] if not any(re.search(rx, t) for t in by[c])]
+        miss = [n for n, rx in NET[c] if not any(re.search(rx, t, re.I) for t in by[c])]
         miss_all[c] = miss
         out.append(f"| {c} | {cnt[c]} | {prec[c]} | {', '.join(miss) if miss else '—'} |")
     open(outp, 'w').write('\n'.join(out) + '\n')
