@@ -203,7 +203,7 @@ def parse_train(data, window):
         days &= window
         if not days:
             continue
-        ids = [kv.findtext(N + "Value") for kv in sj.find(N + "keyList") or []
+        ids = [kv.findtext(N + "Value") for kv in (sj.find(N + "keyList") if sj.find(N + "keyList") is not None else [])
                if kv.findtext(N + "Key") == "PlannedTransportIdentifiers"]
         pa = next((i for i in ids if i.startswith("PA/")), None) or sj.get("id").rsplit(":", 1)[-1]
         line_ref, pts = patterns.get(sj.find(N + "ServiceJourneyPatternRef").get("ref"), (None, {}))
