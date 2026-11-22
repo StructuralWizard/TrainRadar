@@ -1,10 +1,16 @@
 // TrainRadar Europe ingest (docs/plan-europe.md A5). One Durable Object per
-// country feed, each with its own timer, back-off and status, so a failing
-// feed never touches another. For now: Ireland (the NTA's GTFS-Realtime,
-// filtered to Iarnród Éireann) → ie/rt/ in the shared live bucket.
-// IE_ENABLED is the kill switch; IE_NTA_API_KEY is a Worker secret.
+// country, each with its own timer, back-off and status, so a failing feed
+// never touches another:
+// - Ireland: the NTA's GTFS-Realtime, filtered to Iarnród Éireann → ie/rt/
+//   (IE_ENABLED, and the Worker secret IE_NTA_API_KEY);
+// - France: SNCF's GTFS-Realtime → fr/rt/ (FR_ENABLED; no key).
+// Each *_ENABLED variable is that country's kill switch.
 
-import { CYCLE_MS, emptyState, runCycle } from "./cycle.js";
+import { emptyState, runCycle } from "./cycle.js";
+import { FR } from "./france.js";
+import { IE } from "./ireland.js";
+
+export const COUNTRIES = { ie: IE, fr: FR };
 
 export class FeedIngest {
   constructor(ctx, env) {
@@ -12,39 +18,50 @@ export class FeedIngest {
     this.env = env;
   }
 
-  enabled() {
-    return this.env.IE_ENABLED === "true" && !!this.env.IE_NTA_API_KEY;
+  /** Which country this object serves: set by the first /ensure call. The
+   * object made before France existed is Ireland's. */
+  async country() {
+    return COUNTRIES[(await this.ctx.storage.get("country")) || "ie"];
   }
 
   async fetch(request) {
-    if (new URL(request.url).pathname !== "/ensure") return new Response("not found", { status: 404 });
-    if (this.enabled() && (await this.ctx.storage.getAlarm()) === null) {
+    const url = new URL(request.url);
+    if (url.pathname !== "/ensure") return new Response("not found", { status: 404 });
+    const code = url.searchParams.get("c") || "ie";
+    if (!COUNTRIES[code]) return new Response("unknown country", { status: 400 });
+    await this.ctx.storage.put("country", code);
+    const enabled = COUNTRIES[code].enabled(this.env);
+    if (enabled && (await this.ctx.storage.getAlarm()) === null) {
       await this.ctx.storage.setAlarm(Date.now() + 1000);
       return new Response("armed");
     }
-    return new Response(this.enabled() ? "running" : "disabled");
+    return new Response(enabled ? "running" : "disabled");
   }
 
   async alarm() {
-    if (!this.enabled()) return;
+    const country = await this.country();
+    if (!country.enabled(this.env)) return;
     const started = Date.now();
     const state = (await this.ctx.storage.get("state")) || emptyState();
     try {
-      await runCycle({ state, env: this.env, now: started });
+      await runCycle({ state, env: this.env, now: started, country });
     } finally {
       await this.ctx.storage.put("state", state);
-      await this.ctx.storage.setAlarm(started + CYCLE_MS);
+      await this.ctx.storage.setAlarm(started + country.cycleMs);
     }
   }
 }
 
 export default {
-  // Every minute: re-arm Ireland's alarm in case it ever stopped.
+  // Every minute: re-arm each enabled country's alarm in case it stopped.
   async scheduled(_event, env) {
-    const stub = env.FEED_INGEST.get(env.FEED_INGEST.idFromName("ie"));
-    await stub.fetch("https://ingest/ensure");
+    for (const [code, country] of Object.entries(COUNTRIES)) {
+      if (!country.enabled(env)) continue;
+      const stub = env.FEED_INGEST.get(env.FEED_INGEST.idFromName(code));
+      await stub.fetch(`https://ingest/ensure?c=${code}`);
+    }
   },
   async fetch() {
-    return new Response("TrainRadar Europe ingest: see ie/rt/status.json on the live domain.\n");
+    return new Response("TrainRadar Europe ingest: see <country>/rt/status.json on the live domain (ie, fr).\n");
   },
 };

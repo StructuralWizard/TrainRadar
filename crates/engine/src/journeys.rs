@@ -287,7 +287,13 @@ pub fn journeys(net: &Network, live: &Live, q: &Query) -> Vec<Journey> {
             "uk" | crate::networkrail::NI_REGION | crate::networkrail::IE_REGION
         )
     });
-    let walks = st.walks(if uk { WALK_MAX_UK_M } else { WALK_MAX_M });
+    // Paris's terminals too (Gare du Nord and Gare de l'Est); France keeps
+    // the high-speed bound below.
+    let fr = net
+        .regions
+        .iter()
+        .any(|r| crate::france::is_french_region(&r.tt.region));
+    let walks = st.walks(if uk || fr { WALK_MAX_UK_M } else { WALK_MAX_M });
     let src: Vec<u32> = from.iter().filter_map(|s| st.get(s)).collect();
     let dst: HashSet<u32> = to.iter().filter_map(|s| st.get(s)).collect();
     if src.is_empty() || dst.is_empty() || src.iter().any(|s| dst.contains(s)) {

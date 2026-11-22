@@ -109,6 +109,12 @@ use. DELFI's open feeds are share-alike and partial. Wave 3.
 
 Europe/Luxembourg · Luxembourgish, French, German · UIC 82.
 
+**Built (M1, 2026-11-22): the timetable.** `data/lu/` behind `LU_ENABLED`, opened with
+`?country=lu`. CFL's trains (GTFS `route_type` 2 or 100–117) from the national GTFS, newest weekly
+file found through data.public.lu's API; one region, by timetable. The file couldn't be downloaded
+from this session (`download.data.public.lu` is blocked), so the PR's refdata workflow is its first
+check. Live departures wait for ATP's answer about the key in the URL.
+
 **Verdict:** open timetables. Live departures only through a HAFAS API whose key goes **in the URL**,
 which AGENTS.md forbids for secrets. Ask ATP for a header instead, or the maintainer decides.
 Wave 2, with France and Belgium.

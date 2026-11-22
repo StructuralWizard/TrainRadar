@@ -5,10 +5,11 @@
 //! to draw each frame. Everything (decoding, matching, delays,
 //! interpolation, spacing, stats) happens here, in the browser.
 
+mod france;
 pub mod gtfs_rt;
 pub mod history;
 pub mod incidents;
-pub mod ireland;
+mod ireland;
 pub mod journeys;
 mod json;
 pub mod live;
@@ -23,6 +24,7 @@ pub mod schedule;
 pub mod source;
 pub mod spacing;
 pub mod stats;
+mod timetable_only;
 
 use live::{DelaySource, Live, TrainView};
 use network::Network;
@@ -120,6 +122,9 @@ pub enum Country {
     Spain,
     UnitedKingdom,
     Ireland,
+    France,
+    /// No live feed yet: Luxembourg.
+    TimetableOnly,
 }
 
 impl Country {
@@ -128,6 +133,8 @@ impl Country {
             Country::Spain => &renfe::Renfe,
             Country::UnitedKingdom => &networkrail::NetworkRail,
             Country::Ireland => &ireland::Ireland,
+            Country::France => &france::France,
+            Country::TimetableOnly => &timetable_only::TimetableOnly,
         }
     }
 }
@@ -179,14 +186,17 @@ impl Engine {
     }
 
     /// Which country's live feeds this engine reads: `"es"` (Renfe, the
-    /// default), `"uk"` (Network Rail) or `"ie"` (the NTA, through our
-    /// backend). Set before ingesting anything.
+    /// default), `"uk"` (Network Rail), `"ie"` (the NTA, through our
+    /// backend), `"fr"` (SNCF, through our backend) or `"lu"` (no live
+    /// feed yet). Set before ingesting anything.
     #[wasm_bindgen(js_name = setCountry)]
     pub fn set_country(&mut self, code: &str) -> Result<(), JsError> {
         self.country = match code {
             "es" => Country::Spain,
             "uk" => Country::UnitedKingdom,
             "ie" => Country::Ireland,
+            "fr" => Country::France,
+            "lu" => Country::TimetableOnly,
             _ => return Err(JsError::new(&format!("unknown country {code}"))),
         };
         Ok(())

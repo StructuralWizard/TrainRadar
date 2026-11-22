@@ -90,18 +90,28 @@ function oncomingText(lang, o, onTrain) {
 }
 
 /** A UK train (plan 3): placed by Network Rail's timetable + TRUST delay. */
-const isUk = (info) => info.feed === "timetable" && !info.timetable_only;
+/** Trains placed by timetable plus a live delay (no GPS in the open data):
+ * the UK, Ireland and France. Who publishes the delay and the timetable,
+ * and where to see the operator's own live page, by the region's operator. */
+const isPlaced = (info) => info.feed === "timetable" && !info.timetable_only;
+const PLACED_SOURCES = {
+  "National Rail": { by: "Network Rail", delay: "srcUkDelay", timetable: "srcUkTimetable", link: ["linkNationalRail", "https://www.nationalrail.co.uk/"] },
+  // Their own sites are the ticket links (ticketSite): no second link.
+  "Iarnród Éireann": { by: "NTA", delay: "srcIeDelay", timetable: "srcIeTimetable", link: null },
+  SNCF: { by: "SNCF", delay: "srcFrDelay", timetable: "srcFrTimetable", link: null },
+};
+const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];
 
-/** Where each figure in the popup comes from, and the official live page. */
 function sourceNote(lang, info) {
-  if (isUk(info)) {
-    const parts = [t(lang, "srcUkPos")];
-    if (info.delay_source) parts.push(t(lang, "srcUkDelay"));
-    parts.push(t(lang, "srcUkTimetable"));
+  if (isPlaced(info)) {
+    const src = placedSource(info);
+    const parts = [t(lang, src.by === "Network Rail" ? "srcUkPos" : "srcPlacedPos")];
+    if (info.delay_source) parts.push(t(lang, src.delay));
+    parts.push(t(lang, src.timetable));
     return [
       el("details", { class: "small muted sources" }, el("summary", {}, t(lang, "dataSources")), parts.join(" ")),
-      el("a", { class: "small", href: "https://www.nationalrail.co.uk/", target: "_blank", rel: "noopener" }, `${t(lang, "linkNationalRail")} ↗`),
-    ];
+      src.link && el("a", { class: "small", href: src.link[1], target: "_blank", rel: "noopener" }, `${t(lang, src.link[0])} ↗`),
+    ].filter(Boolean);
   }
   const parts = [];
   parts.push(t(lang, info.feed === "vp_cer" ? "srcPosCer" : "srcPosLd"));
@@ -130,6 +140,23 @@ export const OFFICIAL_LINKS = [
   ["linkAdifMap", "https://www.adif.es/sobre-adif/red-ferroviaria/mapa"],
 ];
 const OPERATOR_SITES = { OUIGO: "https://www.ouigo.com/es/", "NI Railways": "https://www.translink.co.uk/" };
+
+/** Where to buy tickets, by the region's operator, and by product where a
+ * brand sells its own (docs/plan-operators.md). Spain's (OFFICIAL_LINKS)
+ * and the UK's (National Rail, Translink) have their own links already. */
+const TICKET_SITES = {
+  SNCF: ["SNCF Connect", "https://www.sncf-connect.com/"],
+  "SNCF/OUIGO": ["OUIGO", "https://www.ouigo.com/"],
+  "SNCF/Lyria": ["TGV Lyria", "https://www.tgv-lyria.com/"],
+  "SNCF/ICE": ["SNCF Connect", "https://www.sncf-connect.com/"],
+  "Iarnród Éireann": ["Irish Rail", "https://www.irishrail.ie/"],
+  CFL: ["CFL", "https://www.cfl.lu/"],
+};
+
+/** [name, url] of the site selling this train's tickets, or null. */
+export function ticketSite(operator, route) {
+  return TICKET_SITES[`${operator}/${route}`] || TICKET_SITES[operator] || null;
+}
 
 export function officialLinks(lang) {
   return [
@@ -343,7 +370,7 @@ export function trainRows(
       t(lang, "delay"),
       el("strong", { style: `color:${COLORS[cls]}` }, formatDelay(lang, info.delay)),
       info.delay_source
-        ? el("span", { class: "muted" }, ` (${t(lang, isUk(info) ? "sourceNetworkRail" : info.delay_source === "renfe" ? "sourceRenfe" : "sourceEstimated")})`)
+        ? el("span", { class: "muted" }, ` (${isPlaced(info) ? t(lang, "sourceBy", { by: placedSource(info).by }) : t(lang, info.delay_source === "renfe" ? "sourceRenfe" : "sourceEstimated")})`)
         : "",
     ),
   );
@@ -382,11 +409,19 @@ export function trainRows(
     // Northern Ireland (plan 4): Translink's timetable, OGL.
     rows.push(el("div", { class: "small muted" }, t(lang, "timetableSourceNi")));
     rows.push(el("a", { class: "small", href: OPERATOR_SITES["NI Railways"], target: "_blank", rel: "noopener" }, t(lang, "operatorLive", { op: "Translink" })));
-  } else if (info.timetable_only) {
+  } else if (info.timetable_only && info.operator === "OUIGO") {
+    // OUIGO in Spain: its timetable from the NAP (MITRAMS's credit).
     const site = OPERATOR_SITES[info.operator];
     if (napDate) rows.push(el("div", { class: "small muted" }, t(lang, "timetableSource", { date: formatDay(lang, napDate) })));
     if (site) rows.push(el("a", { class: "small", href: site, target: "_blank", rel: "noopener" }, t(lang, "operatorLive", { op: info.operator })));
     rows.push(el("a", { class: "small", href: "https://www.transportes.gob.es/", target: "_blank", rel: "noopener" }, "Powered by MITRAMS"));
+  } else if (info.timetable_only) {
+    // Another country with no live data yet (Luxembourg): by timetable.
+    rows.push(el("div", { class: "small muted" }, t(lang, "timetableOnly")));
+  }
+  const tickets = ticketSite(info.operator, info.route);
+  if (tickets && !skip.has("tickets")) {
+    rows.push(el("a", { class: "small", href: tickets[1], target: "_blank", rel: "noopener" }, t(lang, "operatorTickets", { op: tickets[0] })));
   }
   if (!info.timetable_only && !skip.has("position")) rows.push(
     row(
@@ -1129,14 +1164,17 @@ export function delayedItem(lang, info, onSelect) {
 }
 
 /** The notices panel body: feed age, optional filter, list, Adif link. */
-export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onShowAll, onStop, stopped, onTrain }) {
+export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onShowAll, onStop, stopped, onTrain, operator = "Renfe" }) {
   const out = stopped ? stoppedPanel(lang, stopped, onTrain) : [];
-  out.push(el("h3", {}, t(lang, "incidentsTitle")));
+  // Spain's are Renfe's; other countries' name their operator (SNCF, Irish Rail).
+  const renfe = operator === "Renfe";
+  out.push(el("h3", {}, renfe ? t(lang, "incidentsTitle") : t(lang, "incidentsTitleOp", { op: operator })));
   if (modifiedMs) {
     const ageSecs = (Date.now() - modifiedMs) / 1000;
     const vars = { date: formatDay(lang, modifiedMs / 1000), ago: formatAgo(lang, ageSecs) };
     const stale = ageSecs > 2 * 86_400;
-    out.push(el("p", { class: stale ? "small warn" : "small muted" }, t(lang, stale ? "incidentsStale" : "incidentsAge", vars)));
+    const key = stale ? "incidentsStale" : "incidentsAge";
+    out.push(el("p", { class: stale ? "small warn" : "small muted" }, renfe ? t(lang, key, vars) : t(lang, `${key}Op`, { ...vars, op: operator })));
   }
   if (filter && !filter.commute) {
     out.push(
@@ -1152,7 +1190,7 @@ export function incidentsPanel(lang, { list, modifiedMs, filter, regionName, onS
   const shown = filter ? list.filter(filter.test) : list;
   if (!shown.length) out.push(el("p", { class: "muted" }, filter?.none || (filter?.commute ? t(lang, "noIncidentsCommute", { what: filter.label }) : t(lang, "noIncidents"))));
   out.push(incidentList(lang, shown, regionName, onStop));
-  out.push(...officialLinks(lang));
+  if (renfe) out.push(...officialLinks(lang));
   return out;
 }
 

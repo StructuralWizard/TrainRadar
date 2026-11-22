@@ -168,6 +168,7 @@ Checked 2026-11-22:
   - `live: true` in the app;
   - deployed with `IE_ENABLED` and the `IE_NTA_API_KEY` secret.
 - **I3:**
-  - the Enterprise merged with Northern Ireland's;
-  - operator links;
-  - Ireland offered to everyone (`countries`), then in the Android app.
+  - operator links: done in M1 ("Tickets at Irish Rail" on each train);
+  - the Enterprise merged with Northern Ireland's: waits for the cross-border step (E0f). Each
+    country is shown on its own today, so the Enterprise appears once in each, with no duplicate;
+  - Ireland offered to everyone (`countries`), then in the Android app: the maintainer's call.

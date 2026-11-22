@@ -391,7 +391,11 @@ in its PR, as Spain's was ([costs.md](costs.md)).
 See [europe/README.md](europe/README.md): wave 1 as asked (Portugal, Ireland, France), then the
 countries with the best open data and the closest links.
 
-## 5. How a country is added: one PR per step
+## 5. How a country is added
+
+The steps below are per country, but countries that use the same kind of feed share one PR, with one
+commit per country and a switch each (`<CC>_ENABLED`). The groups are in
+[europe/registrations.md](europe/registrations.md#the-merges).
 
 1. **Feed check and registrations:** accounts opened, secrets approved, downloads proven.
 2. **Reference data:** timetables, stations, track and its kind, regions; `verify` and the bench.

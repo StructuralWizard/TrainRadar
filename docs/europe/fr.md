@@ -1,6 +1,21 @@
 # France (fr)
 
-Part of [the Europe plan](README.md), wave 1. Proposed 2026-11-22; nothing built.
+Part of [the Europe plan](README.md), wave 1. Proposed 2026-11-22.
+
+**Built (M1, 2026-11-22): timetable and live delays.**
+- `data/fr/` behind `FR_ENABLED`; opened on the site with `?country=fr`.
+- **Timetable:** SNCF's GTFS. One station per UIC code (the live feed's ids carry it too); coaches
+  dropped. Regions: `fr` (TGV INOUI, OUIGO, Intercités, Lyria, ICE), loaded up front, and 11 TER
+  areas (`fr-ara`…), loaded like Spain's núcleos. A TER train goes to the area nearest its middle
+  stop.
+- **Live:** `backend-eu/` republishes SNCF's trip updates and alerts every minute (`fr/rt/`).
+  Trains are placed by timetable plus their live delay, like the UK's.
+- **Checked on 22 Nov 2026:**
+  - 17,230 trips in the 8-day window; 3.2 MB raw over 13 files (about 0.7 MB gzipped);
+  - 815 of 940 live trip updates matched the timetable's trip ids. The rest were added trains;
+  - in a headless browser: 449 trains, 85 of them late, and 254 notices in plain text.
+- **Not yet:** SIRI platforms, Eurostar, Trenitalia France, the lift status, Île-de-France (PRIM),
+  French app strings, and the links to Spain's stations (E0f).
 
 Checked 2026-11-22:
 - SNCF's GTFS was downloaded and inspected;

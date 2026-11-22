@@ -31,10 +31,25 @@ status shows `failures`, `nextCallAt` and the error.
 the same name. It is sent only in the `x-api-key` header, never in a URL or the status. Use the
 NTA's **primary** key; the secondary one is a spare for rotating it.
 
+## France (docs/europe/fr.md)
+
+SNCF's open GTFS-Realtime, through transport.data.gouv.fr's proxy: no key, ODbL. SNCF refreshes
+it every two minutes.
+
+**Each cycle (every 30 s)** fetches one feed, alternating, so each is read once a minute:
+- `sncf-gtfs-rt-trip-updates` → `fr/rt/trip_updates.pb`;
+- `sncf-gtfs-rt-service-alerts` → `fr/rt/alerts.pb`.
+
+Nothing is filtered: both feeds hold SNCF's trains only. `fr/rt/status.json` has the same shape as
+Ireland's. The back-off is the same.
+
 ## Settings
 
-- **`IE_ENABLED`** (wrangler var): the kill switch. The deploy job (`eu` in `deploy.yml`) sets it
-  to `true` when the repository variable `IE_ENABLED` is `true` and the secret exists.
+- **Which country an object serves:** its name (`ie`, `fr`), passed by the minute cron's
+  `/ensure?c=<code>`. The object created before France existed is Ireland's.
+- **`IE_ENABLED`** (wrangler var): Ireland's kill switch. The deploy job (`eu` in `deploy.yml`)
+  sets it to `true` when the repository variable `IE_ENABLED` is `true` and the secret exists.
+- **`FR_ENABLED`** (wrangler var): France's, set from the repository variable `FR_ENABLED`.
 - **Redeploys:** a merge redeploys this Worker only when `backend-eu/` changed. Actions → Deploy →
   Run workflow always redeploys it.
 
@@ -42,7 +57,8 @@ NTA's **primary** key; the secondary one is a spare for rotating it.
 
 Run `node --test backend-eu/test/*.test.mjs`. The tests cover:
 - the filters, on feeds built in the test;
-- the one-call-a-minute schedule;
+- the one-call-a-minute schedule, and France's alternating one;
+- which countries the minute cron re-arms;
 - the key sent only in a header;
 - the back-off;
 - running without a key.

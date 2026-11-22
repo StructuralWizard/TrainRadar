@@ -1,6 +1,9 @@
 # Europe, country by country
 
-Part of [plan-europe.md](../plan-europe.md) (the architecture). Proposed 2026-11-22; nothing built.
+Part of [plan-europe.md](../plan-europe.md) (the architecture). Proposed 2026-11-22.
+
+**Built so far:** Ireland (timetable and live delays), France (timetable and live delays) and
+Luxembourg (timetable), each a hidden country behind its `<CC>_ENABLED` variable.
 
 ## The plans
 
@@ -68,6 +71,9 @@ means we need written permission first.
 
 ## Order
 
+The waves below are built as about seven grouped merges (M1–M7), listed in
+[registrations.md](registrations.md#the-merges).
+
 1. **Wave 1, as asked:**
    - **Ireland first:** official live delays, in English, and joined to Northern Ireland.
    - **France next:** the best open data, and the most cross-border trains.
@@ -87,6 +93,8 @@ means we need written permission first.
    again each year: the EU rules require real-time data on national access points by 2025–2028.
 
 ## Registrations, passwords and secrets
+
+Step-by-step instructions, with each GitHub name and the grouped merges: [registrations.md](registrations.md).
 
 Every account is opened by Metranos Ltd with a shared company mailbox. Every secret is approved by
 the maintainer before it's added, and listed in AGENTS.md ([plan-europe.md](../plan-europe.md),

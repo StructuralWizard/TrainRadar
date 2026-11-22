@@ -34,8 +34,9 @@ export function newerData(a, b) {
 }
 
 /** Regions that cover a whole country, loaded up front: Spain's AV/LD/MD,
- * Great Britain (with Northern Ireland as its own small region) and Ireland. */
-export const NATIONAL = ["ld", "uk", "ie"];
+ * Great Britain (with Northern Ireland as its own small region), Ireland
+ * and France's TGV and Intercités (its TER areas load like núcleos). */
+export const NATIONAL = ["ld", "uk", "ie", "fr"];
 
 /** Tell the engine which time zone a region's timetable is in (the
  * manifest's `tz`; docs/plan-europe.md A2). Older data has none: the engine
@@ -194,11 +195,12 @@ export class RefData {
     }
   }
 
-  /** Cercanías núcleos whose bounding box overlaps the given map bounds. */
+  /** Cercanías núcleos (or TER areas) whose bounding box overlaps the given
+   * map bounds. */
   regionsIn(bounds) {
     const [w, s, e, n] = bounds;
     return (this.manifest?.regions || []).filter(
-      (r) => r.code !== "ld" && r.live !== false && !(r.bbox[3] < w || r.bbox[1] > e || r.bbox[2] < s || r.bbox[0] > n),
+      (r) => !NATIONAL.includes(r.code) && r.live !== false && !(r.bbox[3] < w || r.bbox[1] > e || r.bbox[2] < s || r.bbox[0] > n),
     );
   }
 }
