@@ -72,6 +72,12 @@ agrees to share its real-time data.
 
 Europe/Bratislava · Slovak · UIC 56.
 
+**Built (M4, 2026-11-22): the timetable.** `data/sk/` behind `SK_ENABLED`, opened with
+`?country=sk`. ŽSR's GTFS has moved to the national catalogue: data.slovensko.sk's download
+`?id=556da5af-…` (CC BY, valid 14 Dec 2025–12 Dec 2026, updated 13 Nov 2026). 2,239 trains in the
+window (Os, REX, R, EC, RJ…), by timetable; 133 on the map on a Sunday noon. Watch for the 2027
+file: the resource id may change with it.
+
 **Verdict:** a CC0 GTFS that may be out of date; no live data (ŽSR forbids reusing its live
 map).
 
@@ -94,6 +100,8 @@ map).
 | Risks | the GTFS may be stale; live data is explicitly off limits |
 
 ## Hungary (hu)
+
+**M4, 2026-11-22: not built,** waiting for MÁV's GTFS form (docs/europe/registrations.md).
 
 Europe/Budapest · Hungarian · UIC 55.
 
@@ -119,6 +127,8 @@ unknown.
 | Risks | unknown terms; MÁV switched its live map off in 2025 and back on |
 
 ## Slovenia (si)
+
+**M4, 2026-11-22: not built.** nap.si shows no public download; its GTFS seems to need an account.
 
 Europe/Ljubljana · Slovenian · UIC 79.
 

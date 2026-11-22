@@ -5,7 +5,7 @@ Part of [plan-europe.md](../plan-europe.md) (the architecture). Proposed 2026-11
 **Built so far,** each a hidden country behind its `<CC>_ENABLED` variable:
 - Ireland, France and the Netherlands: timetable and live delays;
 - Finland and Norway: timetable, live delays and GPS;
-- Luxembourg: timetable.
+- Luxembourg, Slovakia and Estonia: timetable.
 
 ## The plans
 

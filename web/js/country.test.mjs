@@ -89,3 +89,14 @@ test("country: Finland, Norway and the Netherlands (M2): their data, feeds and t
     assert.equal(c.timeZone, zone);
   }
 });
+
+test("country: Slovakia and Estonia (M4) go by timetable: no feeds", () => {
+  const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
+  for (const [cc, zone] of [["sk", "Europe/Bratislava"], ["ee", "Europe/Tallinn"]]) {
+    const c = applyCountry(base(), cc);
+    assert.equal(c.dataBase, `data/${cc}/`);
+    assert.equal(c.liveBase, "");
+    assert.equal(c.rtBase, "");
+    assert.equal(c.timeZone, zone);
+  }
+});

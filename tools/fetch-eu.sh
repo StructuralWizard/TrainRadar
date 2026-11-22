@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -9,6 +9,10 @@
 #                         cut to trains by tools/gtfs-rail.py
 #                     nl  OVapi's national GTFS (CC0 timetables, ODbL
 #                         shapes), about 280 MB, cut to trains likewise
+#                     sk  ŽSR's GTFS on data.slovensko.sk (CC BY), for the
+#                         timetable year
+#                     ee  Elron's GTFS from the public transport register
+#                         (Ministry of Regional Affairs and Agriculture)
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -60,7 +64,15 @@ case "$cc" in
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
     rm -f "$dir/all.zip"
     region=netherlands ;;
-  *) echo "usage: $0 fi|no|nl [--no-osm]" >&2; exit 2 ;;
+  sk)
+    # The national catalogue's download address for ŽSR's dataset
+    # ("Grafikon vlakovej dopravy vo formáte GTFS").
+    get "ŽSR (data.slovensko.sk)" "https://data.slovensko.sk/download?id=556da5af-9e8a-4674-95f8-d0005299fe90" "$dir/gtfs.zip"
+    region=slovakia ;;
+  ee)
+    get "Elron (public transport register)" https://eu-gtfs.remix.com/elron.zip "$dir/gtfs.zip"
+    region=estonia ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

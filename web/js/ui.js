@@ -167,6 +167,8 @@ const TICKET_SITES = {
   // Entur sells every Norwegian operator's tickets.
   Entur: ["Entur", "https://entur.no/"],
   NS: ["NS", "https://www.ns.nl/"],
+  ZSSK: ["ZSSK", "https://www.zssk.sk/"],
+  Elron: ["Elron", "https://elron.ee/"],
 };
 
 /** [name, url] of the site selling this train's tickets, or null. */

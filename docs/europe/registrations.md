@@ -37,7 +37,7 @@ off, behind its own variable, so it doesn't hold the others back.
 | **M1** (built) | France (and Monaco, Eurostar), Luxembourg's timetable, Ireland I3 (the Enterprise joined to NI, operator links) | Cross-border trains and shared stations are built once (plan-europe E0f) | Nothing. `FR_IDFM_PRIM_KEY` is optional (Paris suburban trains) |
 | **M2** (built) | Netherlands, Finland, Norway | Open GTFS and GTFS-Realtime with no key; Finland and Norway add real GPS | Nothing (contact headers only) |
 | **M3** | Switzerland, Sweden | GTFS-Realtime behind a free key, with tight quotas | `CH_OTD_*`, `SE_TRAFIKLAB_KEY`, `SE_TRAFIKVERKET_KEY` |
-| **M4** | Austria, Slovakia, Slovenia, Estonia, Latvia, Lithuania, Hungary | Timetables only: no live server, the same build for all | `AT_MVO_*`; Hungary's form |
+| **M4** (Slovakia and Estonia built) | Austria, Slovakia, Slovenia, Estonia, Latvia, Lithuania, Hungary | Timetables only: no live server, the same build for all | `AT_MVO_*`; Hungary's form |
 | **M5** | Germany, Poland | Each needs its own live adapter, behind a key | `DE_*`, `PL_PLK_API_KEY` |
 | **M6** | Czechia, Denmark | Both need the NeTEx reader | Denmark's access point login |
 | **M7** | Portugal, Belgium, Italy, Croatia, Romania, Greece | Only when the letters bring permission | Replies to the letters |
@@ -119,9 +119,16 @@ company's contact address, which I'll ask you for when building M2.
    - Where: `mavcsoport.hu/gtfs-igenybejelento` → choose rail → company details.
    - What it gives is unverified. Tell me what arrives (a link, a login or a key) and I'll name the
      secret; probably `HU_MAV_GTFS_KEY`. Ask in the same form whether GTFS-RT is included.
-3. **Nothing to register** for Slovakia, Slovenia, Estonia, Latvia or Lithuania.
-4. **Variables when I say:** `AT_ENABLED`, `HU_ENABLED`, `SK_ENABLED`, `SI_ENABLED`,
-   `EE_ENABLED`, `LV_ENABLED`, `LT_ENABLED`.
+3. **Nothing to register** for Slovakia or Estonia (built), Latvia or Lithuania. Slovenia's access
+   point (nap.si) seems to need an account: open one as Metranos Ltd if it offers one, and tell me
+   what it gives.
+   - Latvia: ViVi's file is behind a bot check; ask ViVi (info@vivi.lv, from their site) for a
+     direct link.
+   - Lithuania: the national GTFS has no trains; ask LTG Link whether it publishes one.
+   - Austria: without the MVO account, ÖBB's yearly GTFS on data.oebb.at (CC BY) needs a click on
+     its terms and is only renewed in December, so it waits for `AT_MVO_*`.
+4. **Variables:** `SK_ENABLED` and `EE_ENABLED` now (before merging M4); the others when their data
+   is in.
 
 ### M5: Germany, Poland
 

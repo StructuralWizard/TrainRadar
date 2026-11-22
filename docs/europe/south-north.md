@@ -169,6 +169,11 @@ Trenitalia and RFI.
 
 ## Estonia (ee)
 
+**Built (M4, 2026-11-22): the timetable.** `data/ee/` behind `EE_ENABLED`, opened with
+`?country=ee`. peatus.ee's GTFS is closed ("Rakendus on suletud"); the register's Elron feed is now
+`eu-gtfs.remix.com/elron.zip` (publisher: Regionaal- ja Põllumajandusministeerium; listed as
+official by the Mobility Database). 1,492 trips, by timetable.
+
 Europe/Tallinn · Estonian · UIC 26 · track gauge 1,520 mm.
 
 **Verdict:** timetables only (Elron). Trains by timetable; ask Elron about live data.
@@ -189,6 +194,10 @@ Europe/Tallinn · Estonian · UIC 26 · track gauge 1,520 mm.
 
 ## Latvia (lv)
 
+**M4, 2026-11-22: not built.** ViVi's `vivi.lv/uploads/GTFS.zip` answers with a bot challenge
+(HTTP 403, so CI couldn't download it either), and the road agency's national GTFS (`atd.lv`)
+closed the connection. Ask ViVi for a direct link.
+
 Europe/Riga · Latvian · UIC 25 · track gauge 1,520 mm.
 
 **Verdict:** timetables only, and possibly stale.
@@ -204,6 +213,10 @@ Europe/Riga · Latvian · UIC 25 · track gauge 1,520 mm.
 | Risks | freshness |
 
 ## Lithuania (lt)
+
+**M4, 2026-11-22: no trains in the open data.** visimarsrutai.lt's national GTFS
+(`google_transit.zip`) and the intercity file (`LTSAR.zip`) hold buses and trolleybuses only. Ask
+LTG Link.
 
 Europe/Vilnius · Lithuanian · UIC 24 · track gauge 1,520 mm (Rail Baltica 1,435 mm, being built).
 

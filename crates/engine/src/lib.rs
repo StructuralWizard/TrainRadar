@@ -195,7 +195,8 @@ impl Engine {
     /// Which country's live feeds this engine reads: `"es"` (Renfe, the
     /// default), `"uk"` (Network Rail), `"ie"` (the NTA, through our
     /// backend), `"fr"` (SNCF), `"fi"` (Digitraffic), `"no"` (Entur), `"nl"`
-    /// (OVapi), all through our backend, or `"lu"` (no live feed yet). Set
+    /// (OVapi), all through our backend, or `"lu"`, `"sk"`, `"ee"` (no live feed
+    /// yet). Set
     /// before ingesting anything.
     #[wasm_bindgen(js_name = setCountry)]
     pub fn set_country(&mut self, code: &str) -> Result<(), JsError> {
@@ -204,7 +205,7 @@ impl Engine {
             "uk" => Country::UnitedKingdom,
             "ie" => Country::Ireland,
             "fr" => Country::France,
-            "lu" => Country::TimetableOnly,
+            "lu" | "sk" | "ee" => Country::TimetableOnly,
             "fi" => Country::Finland,
             "no" => Country::Norway,
             "nl" => Country::Netherlands,

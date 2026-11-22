@@ -415,6 +415,44 @@ jobs:
             exit 1
           fi
 
+      # Slovakia (M4), with SK_ENABLED: timetable only (no key) → data/sk/.
+      - name: Slovakia reference data
+        if: vars.SK_ENABLED == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh sk | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/sk-data --gzip \
+              --sk-gtfs gtfs/sk/gtfs.zip --sources gtfs/sk/sources.tsv \
+              --rail gtfs/sk/rail.geojsonseq --report refdata-sk.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/sk-data; then
+            mv build/sk-data build/data/sk
+            { echo "## Slovakia reference data"; echo; cat refdata-sk.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Slovakia's reference data failed: deploying without Slovakia."
+            exit 1
+          fi
+
+      # Estonia (M4), with EE_ENABLED: timetable only (no key) → data/ee/.
+      - name: Estonia reference data
+        if: vars.EE_ENABLED == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh ee | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/ee-data --gzip \
+              --ee-gtfs gtfs/ee/gtfs.zip --sources gtfs/ee/sources.tsv \
+              --rail gtfs/ee/rail.geojsonseq --report refdata-ee.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/ee-data; then
+            mv build/ee-data build/data/ee
+            { echo "## Estonia reference data"; echo; cat refdata-ee.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Estonia's reference data failed: deploying without Estonia."
+            exit 1
+          fi
+
       - name: Cloudflare names
         id: urls
         run: |
