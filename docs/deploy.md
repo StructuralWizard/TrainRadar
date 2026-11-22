@@ -270,6 +270,11 @@ app, and update the "last updated" dates when they change.
   how many live trips match the timetable. Approved by the maintainer (AGENTS.md).
 - **Where they show:** hidden countries, `?country=ch`, `?country=se`, `?country=pl`.
 
+## Austria (M4)
+
+- **Turning it on:** **`AT_ENABLED`** = `true`, with `AT_MVO_USERNAME` and `AT_MVO_PASSWORD`
+  (the data portal's login). By timetable only; `?country=at`.
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains

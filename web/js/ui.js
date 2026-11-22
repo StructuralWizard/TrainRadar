@@ -173,6 +173,7 @@ const TICKET_SITES = {
   ZSSK: ["ZSSK", "https://www.zssk.sk/"],
   Elron: ["Elron", "https://elron.ee/"],
   SBB: ["SBB", "https://www.sbb.ch/"],
+  ÖBB: ["ÖBB", "https://www.oebb.at/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],
 };

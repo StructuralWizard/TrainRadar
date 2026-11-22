@@ -559,12 +559,14 @@ export const STRINGS = {
     countryCh: "Suiza",
     countrySe: "Suecia",
     countryPl: "Polonia",
+    countryAt: "Austria",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
     allCh: "Toda Suiza",
     allSe: "Toda Suecia",
     allPl: "Toda Polonia",
+    allAt: "Toda Austria",
     noticesTitle: "Avisos",
     noticesNotYet: "Aún no hay avisos para {country}: llegarán con los datos en directo.",
     timetableOnly: "Según horario: aún no hay datos en directo de este país",
@@ -605,6 +607,8 @@ export const STRINGS = {
       'Datos: horario de Samtrafiken en <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SJ ni los operadores',
     attributionPl:
       'Datos: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con PKP PLK ni los operadores',
+    attributionAt:
+      'Data source: Mobilitätsverbünde Österreich OG - <a href="https://data.mobilitaetsverbuende.at/" target="_blank" rel="noopener">data.mobilitaetsverbuende.at</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con ÖBB ni los operadores',
     attributionEe:
       'Datos: horario de Elron del registro de transporte público (Ministerio de Asuntos Regionales y Agricultura de Estonia) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Elron',
     attributionIe:
@@ -1168,12 +1172,14 @@ export const STRINGS = {
     countryCh: "Switzerland",
     countrySe: "Sweden",
     countryPl: "Poland",
+    countryAt: "Austria",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
     allCh: "All of Switzerland",
     allSe: "All of Sweden",
     allPl: "All of Poland",
+    allAt: "All of Austria",
     noticesTitle: "Notices",
     noticesNotYet: "No notices for {country} yet: they'll come with the live data.",
     timetableOnly: "By timetable: no live data for this country yet",
@@ -1214,6 +1220,8 @@ export const STRINGS = {
       'Data: Samtrafiken\'s timetable on <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SJ or the operators',
     attributionPl:
       'Data: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with PKP PLK or the operators',
+    attributionAt:
+      'Data source: Mobilitätsverbünde Österreich OG - <a href="https://data.mobilitaetsverbuende.at/" target="_blank" rel="noopener">data.mobilitaetsverbuende.at</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with ÖBB or the operators',
     attributionEe:
       'Data: Elron\'s timetable from the public transport register (Estonia\'s Ministry of Regional Affairs and Agriculture) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Elron',
     attributionIe:

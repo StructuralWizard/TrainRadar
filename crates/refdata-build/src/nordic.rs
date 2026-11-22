@@ -23,6 +23,8 @@ pub const CH_REGIONAL: &str = "ch-r";
 pub const SE: &str = "se";
 pub const PL: &str = "pl";
 pub const PL_REGIONAL: &str = "pl-r";
+/// Austria (M4): by timetable.
+pub const AT: &str = "at";
 
 pub const ATTRIBUTION_FI: &str = "Data: Fintraffic / digitraffic.fi, CC BY 4.0. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
@@ -38,6 +40,8 @@ pub const ATTRIBUTION_SE: &str = "Data: Samtrafiken / Trafiklab.se (GTFS Sweden 
 Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_PL: &str = "Data: PKP Polskie Linie Kolejowe S.A., Otwarte Dane Kolejowe \
 (pdp-api.plk-sa.pl). Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_AT: &str = "Data source: Mobilitätsverbünde Österreich OG - \
+data.mobilitaetsverbuende.at. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
 shapes ODbL. Track: © OpenStreetMap contributors, ODbL 1.0.";
 
@@ -52,6 +56,7 @@ pub fn tz(code: &str) -> Option<&'static str> {
         CH | CH_REGIONAL => "Europe/Zurich",
         SE => "Europe/Stockholm",
         PL | PL_REGIONAL => "Europe/Warsaw",
+        AT => "Europe/Vienna",
         _ => return None,
     })
 }
@@ -69,6 +74,7 @@ pub fn region_name(code: &str) -> &'static str {
         SE => "Sweden",
         PL => "Poland (long distance)",
         PL_REGIONAL => "Poland (regional)",
+        AT => "Austria",
         _ => "",
     }
 }
