@@ -21,6 +21,8 @@ pub struct Route {
     pub color: Option<u32>,
     pub text_color: Option<u32>,
     pub route_type: String,
+    /// GTFS `route_desc` (Switzerland's product: "IC", "S", "RE"…), or "".
+    pub desc: String,
 }
 
 #[derive(Debug, Clone)]
@@ -104,6 +106,7 @@ pub fn load<R: Read + Seek>(g: &mut Gtfs<R>, window: &Window) -> Result<Feed> {
             color: parse_color(routes.get(r, routes.col("route_color"))),
             text_color: parse_color(routes.get(r, routes.col("route_text_color"))),
             route_type: routes.get(r, routes.col("route_type")).to_owned(),
+            desc: routes.get(r, routes.col("route_desc")).to_owned(),
         });
     }
 

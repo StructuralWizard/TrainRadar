@@ -487,6 +487,7 @@ pub fn load<R: BufRead>(
                 color: None,
                 text_color: None,
                 route_type: "2".into(),
+                desc: String::new(),
             });
             feed.routes.len() - 1
         });

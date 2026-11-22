@@ -2,8 +2,9 @@
 # country feed, writing GTFS-Realtime to the shared live bucket under
 # <country>/rt/: Ireland (docs/europe/ie.md), France (docs/europe/fr.md),
 # Finland, Norway and the Netherlands (docs/europe/registrations.md, M2). Separate from backend/
-# (Spain) and backend-uk/. No secrets here: IE_NTA_API_KEY is a Worker
-# secret, set by the deploy job from the GitHub Actions secret.
+# (Spain) and backend-uk/. Switzerland and Poland (M3/M5). No secrets here:
+# IE_NTA_API_KEY, CH_OTD_* and PL_PLK_API_KEY are Worker secrets, set by the
+# deploy job from the GitHub Actions secrets.
 name = "trainradar-eu"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
@@ -30,3 +31,5 @@ FR_ENABLED = "false"
 FI_ENABLED = "false"
 NO_ENABLED = "false"
 NL_ENABLED = "false"
+CH_ENABLED = "false"
+PL_ENABLED = "false"

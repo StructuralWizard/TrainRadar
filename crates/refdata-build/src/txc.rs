@@ -407,6 +407,7 @@ pub fn load(xml: &str, window: &Window) -> Result<(Feed, TxcStats), String> {
                 color: None,
                 text_color: None,
                 route_type: "2".into(),
+                desc: String::new(),
             });
             feed.routes.len() - 1
         });

@@ -36,7 +36,7 @@ off, behind its own variable, so it doesn't hold the others back.
 |---|---|---|---|
 | **M1** (built) | France (and Monaco, Eurostar), Luxembourg's timetable, Ireland I3 (the Enterprise joined to NI, operator links) | Cross-border trains and shared stations are built once (plan-europe E0f) | Nothing. `FR_IDFM_PRIM_KEY` is optional (Paris suburban trains) |
 | **M2** (built) | Netherlands, Finland, Norway | Open GTFS and GTFS-Realtime with no key; Finland and Norway add real GPS | Nothing (contact headers only) |
-| **M3** | Switzerland, Sweden | GTFS-Realtime behind a free key, with tight quotas | `CH_OTD_*`, `SE_TRAFIKLAB_KEY`, `SE_TRAFIKVERKET_KEY` |
+| **M3** | Switzerland, Sweden | GTFS-Realtime behind a free key, with tight quotas | `CH_OTD_*`, `SE_TRAFIKLAB_STATIC_KEY`, `SE_TRAFIKLAB_RT_KEY`, `SE_TRAFIKVERKET_KEY` |
 | **M4** (Slovakia and Estonia built) | Austria, Slovakia, Slovenia, Estonia, Latvia, Lithuania, Hungary | Timetables only: no live server, the same build for all | `AT_MVO_*`; Hungary's form |
 | **M5** | Germany, Poland | Each needs its own live adapter, behind a key | `DE_*`, `PL_PLK_API_KEY` |
 | **M6** | Czechia, Denmark | Both need the NeTEx reader | Denmark's access point login |
@@ -92,20 +92,26 @@ company's contact address, which I'll ask you for when building M2.
 
 ### M3: Switzerland, Sweden
 
-1. **opentransportdata.swiss** (needed).
-   - Where: `api-manager.opentransportdata.swiss` → register as a company → create one key per API:
-     - "GTFS-RT" → secret `CH_OTD_GTFSRT_KEY`;
-     - "SIRI-SX" (disruptions) → secret `CH_OTD_SIRISX_KEY`.
-   - Free under the limits (a few calls a minute); a paid contract above them.
-2. **Trafiklab** (needed).
-   - Where: `www.trafiklab.se` → account → create a project → add "GTFS Sweden 3" (static and
-     realtime) and "GTFS Sverige 2".
-   - Ask for the **Silver** level on the project (free, usually granted); Bronze is too small.
-   - GitHub: secret `SE_TRAFIKLAB_KEY`. If the project gives separate keys for static and realtime,
-     add both as `SE_TRAFIKLAB_STATIC_KEY` and `SE_TRAFIKLAB_RT_KEY` instead, and tell me.
-3. **Trafikverket open API** (needed).
-   - Where: `data.trafikverket.se` → register → create an API key.
-   - GitHub: secret `SE_TRAFIKVERKET_KEY`.
+Done (keys in GitHub on 2026-11-22). For the record:
+
+1. **opentransportdata.swiss**: `https://api-manager.opentransportdata.swiss/` → one key per
+   API, each sent as `Authorization: Bearer …`:
+   - "GTFS-RT" (trip updates; 5 calls a minute) → secret `CH_OTD_GTFSRT_KEY`;
+   - "GTFS-SA Unplanned" (disruptions; 2 a minute, 3,000 a day) → secret `CH_OTD_GTFSSA_KEY`;
+   - "GTFS-SA Planned" (planned works; 48 a day) → secret `CH_OTD_GTFSSA_PLANNED_KEY`.
+   - Not needed: SIRI-SX (the same alerts), SIRI-ET (the same delays), SIRI-PT. The static
+     timetable (GTFS) needs no key.
+2. **Trafiklab** (Sweden's timetable and live data): register at
+   `https://developer.trafiklab.se/register`, confirm the email, then "New project" → add two APIs
+   from the dropdown ("Add API key to project"), each with its own key:
+   - "GTFS Sweden 3" (static; Bronze, 50 downloads a month, is enough) → secret
+     `SE_TRAFIKLAB_STATIC_KEY`;
+   - "GTFS Sweden 3 Realtime" → secret `SE_TRAFIKLAB_RT_KEY`; ask for **Silver** with "Upgrade
+     quota" (2 million calls a month; free, one or two working days).
+   - Trafiklab takes keys only as `?key=` in the URL: an approved exception (AGENTS.md).
+3. **Trafikverket open API**: register at `https://data.trafikverket.se/oauth2/Account/register`,
+   log in, create a key at `https://data.trafikverket.se/mypage/systems` → secret
+   `SE_TRAFIKVERKET_KEY`. Not "API Järnväg" (railway companies with a contract only).
 4. **Variables when I say:** `CH_ENABLED`, `SE_ENABLED`.
 
 ### M4: timetable-only countries
@@ -208,14 +214,15 @@ company's contact address, which I'll ask you for when building M2.
 | `LU_ATP_API_KEY` | secret | M1 | later (header question first) |
 | `NL_NS_API_KEY` | secret | M2 | optional |
 | `NO_BANENOR_KEY` | secret | M2 | later |
-| `CH_OTD_GTFSRT_KEY`, `CH_OTD_SIRISX_KEY` | secrets | M3 | needed |
-| `SE_TRAFIKLAB_KEY` | secret | M3 | needed |
-| `SE_TRAFIKVERKET_KEY` | secret | M3 | needed |
+| `CH_OTD_GTFSRT_KEY`, `CH_OTD_GTFSSA_KEY`, `CH_OTD_GTFSSA_PLANNED_KEY` | secrets | M3 | done |
+| `SE_TRAFIKLAB_STATIC_KEY` | secret | M3 | done |
+| `SE_TRAFIKLAB_RT_KEY` | secret | M3 | done |
+| `SE_TRAFIKVERKET_KEY` | secret | M3 | done (not used yet) |
 | `AT_MVO_USERNAME`, `AT_MVO_PASSWORD` | secrets | M4 | needed |
 | `HU_MAV_GTFS_KEY` (name to confirm) | secret | M4 | needed |
 | `DE_DELFI_USERNAME`, `DE_DELFI_PASSWORD` | secrets | M5 | needed; start now |
 | `DE_DB_CLIENT_ID`, `DE_DB_API_KEY` | secrets | M5 | needed; start now |
-| `PL_PLK_API_KEY` | secret | M5 | needed; start now |
+| `PL_PLK_API_KEY` | secret | M5 | done |
 | `DK_NAP_…` (name to confirm) | secret | M6 | needed |
 | `BE_SNCB_KEY` | secret | M7 | after SNCB's permission |
 | `YOUTUBE_API_KEY` | secret | cab rides | optional |

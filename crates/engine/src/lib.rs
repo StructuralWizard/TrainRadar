@@ -127,6 +127,8 @@ pub enum Country {
     Finland,
     Norway,
     Netherlands,
+    Switzerland,
+    Poland,
     /// No live feed yet: Luxembourg.
     TimetableOnly,
 }
@@ -141,6 +143,8 @@ impl Country {
             Country::Finland => &nordic::Finland,
             Country::Norway => &nordic::Norway,
             Country::Netherlands => &nordic::Netherlands,
+            Country::Switzerland => &nordic::Switzerland,
+            Country::Poland => &nordic::Poland,
             Country::TimetableOnly => &timetable_only::TimetableOnly,
         }
     }
@@ -205,10 +209,12 @@ impl Engine {
             "uk" => Country::UnitedKingdom,
             "ie" => Country::Ireland,
             "fr" => Country::France,
-            "lu" | "sk" | "ee" => Country::TimetableOnly,
+            "lu" | "sk" | "ee" | "se" => Country::TimetableOnly,
             "fi" => Country::Finland,
             "no" => Country::Norway,
             "nl" => Country::Netherlands,
+            "ch" => Country::Switzerland,
+            "pl" => Country::Poland,
             _ => return Err(JsError::new(&format!("unknown country {code}"))),
         };
         Ok(())

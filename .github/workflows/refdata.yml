@@ -183,6 +183,55 @@ jobs:
             --sources gtfs/ee/sources.tsv --report refdata-ee.md
           target/release/refdata-build verify build/ee
           { echo "## Estonia reference data"; echo; cat refdata-ee.md; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Switzerland (opentransportdata.swiss; timetable without key, live with CH_OTD_* keys)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          CH_OTD_GTFSRT_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY }}
+          CH_OTD_GTFSSA_KEY: ${{ secrets.CH_OTD_GTFSSA_KEY }}
+          CH_OTD_GTFSSA_PLANNED_KEY: ${{ secrets.CH_OTD_GTFSSA_PLANNED_KEY }}
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh ch --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/ch --ch-gtfs gtfs/ch/gtfs.zip \
+            --sources gtfs/ch/sources.tsv --report refdata-ch.md
+          target/release/refdata-build verify build/ch
+          { echo "## Switzerland reference data"; echo; cat refdata-ch.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/ch/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/ch-trips.txt
+          if [ -n "$CH_OTD_GTFSRT_KEY" ]; then
+            echo "### ch: live probe" >> "$GITHUB_STEP_SUMMARY"
+            node tools/feed-check/eu-probe.mjs ch build/ch-trips.txt build/probe-ch | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Sweden (Trafiklab; SE_TRAFIKLAB_* keys, the key in its URL as Trafiklab requires)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          SE_TRAFIKLAB_STATIC_KEY: ${{ secrets.SE_TRAFIKLAB_STATIC_KEY }}
+          SE_TRAFIKLAB_RT_KEY: ${{ secrets.SE_TRAFIKLAB_RT_KEY }}
+        run: |
+          set -o pipefail
+          if [ -z "$SE_TRAFIKLAB_STATIC_KEY" ]; then echo "Sweden (Trafiklab; SE_TRAFIKLAB_* keys, the key in its URL as Trafiklab requires): no SE_TRAFIKLAB_STATIC_KEY (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          tools/fetch-eu.sh se --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/se --se-gtfs gtfs/se/gtfs.zip \
+            --sources gtfs/se/sources.tsv --report refdata-se.md
+          target/release/refdata-build verify build/se
+          { echo "## Sweden reference data"; echo; cat refdata-se.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/se/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/se-trips.txt
+          echo "### se: live probe" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs se build/se-trips.txt build/probe-se | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Poland (PKP PLK's API; PL_PLK_API_KEY in a header)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          PL_PLK_API_KEY: ${{ secrets.PL_PLK_API_KEY }}
+        run: |
+          set -o pipefail
+          if [ -z "$PL_PLK_API_KEY" ]; then echo "Poland (PKP PLK's API; PL_PLK_API_KEY in a header): no PL_PLK_API_KEY (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          tools/fetch-eu.sh pl --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/pl --pl-gtfs gtfs/pl/gtfs.zip \
+            --sources gtfs/pl/sources.tsv --report refdata-pl.md
+          target/release/refdata-build verify build/pl
+          { echo "## Poland reference data"; echo; cat refdata-pl.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/pl/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/pl-trips.txt
+          echo "### pl: live probe" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs pl build/pl-trips.txt build/probe-pl | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

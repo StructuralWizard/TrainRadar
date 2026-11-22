@@ -103,6 +103,8 @@ const PLACED_SOURCES = {
   // Finland's and Norway's trains without GPS.
   VR: { by: "Fintraffic", delay: "srcFiDelay", timetable: "srcFiTimetable", link: null },
   Entur: { by: "Entur", delay: "srcNoDelay", timetable: "srcNoTimetable", link: null },
+  SBB: { by: "opentransportdata.swiss", delay: "srcChDelay", timetable: "srcChTimetable", link: null },
+  "PKP PLK": { by: "PKP PLK", delay: "srcPlDelay", timetable: "srcPlTimetable", link: null },
 };
 const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];
 
@@ -169,6 +171,9 @@ const TICKET_SITES = {
   NS: ["NS", "https://www.ns.nl/"],
   ZSSK: ["ZSSK", "https://www.zssk.sk/"],
   Elron: ["Elron", "https://elron.ee/"],
+  SBB: ["SBB", "https://www.sbb.ch/"],
+  // Koleo sells most Polish operators' tickets.
+  "PKP PLK": ["Koleo", "https://koleo.pl/"],
 };
 
 /** [name, url] of the site selling this train's tickets, or null. */

@@ -254,6 +254,20 @@ app, and update the "last updated" dates when they change.
 - **OpenStreetMap down:** if Geofabrik can't be reached after retries, a country is built without
   its track (trains drawn on straight lines between stations) instead of being left out.
 
+## Switzerland, Sweden and Poland (M3, M5)
+
+- **Turning them on:** **`CH_ENABLED`**, **`SE_ENABLED`**, **`PL_ENABLED`** = `true`, with their
+  keys in GitHub (docs/europe/registrations.md). Each builds `data/ch/`, `data/se/`, `data/pl/`
+  daily; a failure leaves that country out of the deploy and never stops the rest.
+- **Live data:** Switzerland's trip updates and alerts (`ch/rt/`) and Poland's live running
+  (`pl/rt/`, PKP PLK's JSON turned into GTFS-Realtime by the Worker) come from the `eu` job's
+  Worker, which gets the keys as Worker secrets. Sweden goes by timetable for now: its live
+  feeds come per region, mixed with buses (the PR's Refdata run measures them).
+- **Tested on pull requests:** the Refdata workflow builds the three countries and calls each
+  live source once through the Worker's own code (`tools/feed-check/eu-probe.mjs`), reporting
+  how many live trips match the timetable. Approved by the maintainer (AGENTS.md).
+- **Where they show:** hidden countries, `?country=ch`, `?country=se`, `?country=pl`.
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains

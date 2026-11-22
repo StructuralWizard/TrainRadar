@@ -362,6 +362,7 @@ mod tests {
             color: None,
             text_color: None,
             route_type: "2".into(),
+            desc: String::new(),
         };
         let trip = |id: &str, a: usize, b: usize| Trip {
             id: id.into(),

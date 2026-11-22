@@ -16,6 +16,13 @@ pub const NL: &str = "nl";
 /// M4, timetable only: Slovakia (ŽSR) and Estonia (Elron).
 pub const SK: &str = "sk";
 pub const EE: &str = "ee";
+/// M3/M5: Switzerland (long distance, then regional and S-Bahn), Sweden,
+/// Poland (long distance, then regional).
+pub const CH: &str = "ch";
+pub const CH_REGIONAL: &str = "ch-r";
+pub const SE: &str = "se";
+pub const PL: &str = "pl";
+pub const PL_REGIONAL: &str = "pl-r";
 
 pub const ATTRIBUTION_FI: &str = "Data: Fintraffic / digitraffic.fi, CC BY 4.0. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
@@ -25,6 +32,12 @@ pub const ATTRIBUTION_SK: &str = "Data: Železnice Slovenskej republiky (data.sl
 CC BY. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_EE: &str = "Data: Regionaal- ja Põllumajandusministeerium, public transport \
 register open data. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_CH: &str = "Data: opentransportdata.swiss (Open Data Platform Mobility \
+Switzerland). Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_SE: &str = "Data: Samtrafiken / Trafiklab.se (GTFS Sweden 3), CC0 1.0. \
+Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_PL: &str = "Data: PKP Polskie Linie Kolejowe S.A., Otwarte Dane Kolejowe \
+(pdp-api.plk-sa.pl). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
 shapes ODbL. Track: © OpenStreetMap contributors, ODbL 1.0.";
 
@@ -36,6 +49,9 @@ pub fn tz(code: &str) -> Option<&'static str> {
         NL => "Europe/Amsterdam",
         SK => "Europe/Bratislava",
         EE => "Europe/Tallinn",
+        CH | CH_REGIONAL => "Europe/Zurich",
+        SE => "Europe/Stockholm",
+        PL | PL_REGIONAL => "Europe/Warsaw",
         _ => return None,
     })
 }
@@ -48,6 +64,11 @@ pub fn region_name(code: &str) -> &'static str {
         NL => "Netherlands",
         SK => "Slovakia",
         EE => "Estonia",
+        CH => "Switzerland (long distance)",
+        CH_REGIONAL => "Switzerland (regional, S-Bahn)",
+        SE => "Sweden",
+        PL => "Poland (long distance)",
+        PL_REGIONAL => "Poland (regional)",
         _ => "",
     }
 }
@@ -231,6 +252,100 @@ pub fn normalise_simple(feed: &mut Feed) -> Stats {
     st
 }
 
+/// Switzerland: the product is the route's `route_desc` ("IC", "IR", "RE",
+/// "S"…); the route keeps its line when it has one ("S10", "IC1", "RE12"),
+/// not the timetable's internal names ("IC121A", "001A"). Trains are
+/// numbered (`trip_short_name`).
+pub fn swiss_line(desc: &str, short: &str) -> String {
+    let desc = desc.trim();
+    let rest = short.trim().strip_prefix(desc).unwrap_or("");
+    if !desc.is_empty()
+        && !rest.is_empty()
+        && rest.len() <= 2
+        && rest.chars().all(|c| c.is_ascii_digit())
+    {
+        format!("{desc}{rest}")
+    } else if desc.is_empty() {
+        short.trim().to_owned()
+    } else {
+        desc.to_owned()
+    }
+}
+
+/// Long-distance Swiss routes (and foreign ones): TGV, ICE, IC, EC, IR,
+/// night trains, panorama trains. The rest (RE, R, S, rack railways,
+/// specials) is the regional file.
+fn swiss_long(route_type: &str) -> bool {
+    matches!(
+        route_type,
+        "100" | "101" | "102" | "103" | "104" | "105" | "107"
+    )
+}
+
+pub fn normalise_swiss(feed: &mut Feed) -> Stats {
+    let mut st = Stats::default();
+    for r in &mut feed.routes {
+        r.short_name = swiss_line(&r.desc, &r.short_name);
+    }
+    for t in &mut feed.trips {
+        if !t.short_name.chars().all(|c| c.is_ascii_digit()) {
+            t.short_name.clear();
+        }
+        let r = &feed.routes[t.route];
+        *st.by_product
+            .entry(if r.desc.is_empty() {
+                r.short_name.clone()
+            } else {
+                r.desc.clone()
+            })
+            .or_default() += 1;
+    }
+    st
+}
+
+pub fn split_swiss(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
+    let mut out: BTreeMap<String, Vec<&crate::load::Trip>> = BTreeMap::new();
+    for t in &feed.trips {
+        let code = if swiss_long(&feed.routes[t.route].route_type) {
+            CH
+        } else {
+            CH_REGIONAL
+        };
+        out.entry(code.to_owned()).or_default().push(t);
+    }
+    out
+}
+
+/// Poland (tools/plk-gtfs.py): routes are an operator and a commercial
+/// category ("IC:TLK", "PR:R"). PKP Intercity's trains and the
+/// international ones are long distance; the rest regional.
+const POLISH_LONG: [&str; 9] = ["EIP", "EIC", "IC", "TLK", "EC", "EN", "MP", "RJ", "NJ"];
+
+pub fn split_poland(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
+    let mut out: BTreeMap<String, Vec<&crate::load::Trip>> = BTreeMap::new();
+    for t in &feed.trips {
+        let r = &feed.routes[t.route];
+        let agency = r.id.split(':').next().unwrap_or("");
+        let long = agency == "IC" || POLISH_LONG.contains(&r.short_name.as_str());
+        out.entry(if long { PL } else { PL_REGIONAL }.to_owned())
+            .or_default()
+            .push(t);
+    }
+    out
+}
+
+/// Sweden (GTFS Sweden 3, cut to trains): the product from the route's
+/// short name, else its long name ("SJ Snabbtåg", "Pågatåg"); the train
+/// number only when it is one.
+pub fn normalise_sweden(feed: &mut Feed) -> Stats {
+    for r in &mut feed.routes {
+        if r.short_name.trim().is_empty() {
+            r.short_name = r.long_name.trim().to_owned();
+        }
+    }
+    normalise_simple(feed)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -271,6 +386,7 @@ mod tests {
             color: None,
             text_color: None,
             route_type: "106".into(),
+            desc: String::new(),
         };
         let trip = |r: usize, n: &str| Trip {
             id: n.into(),
@@ -293,6 +409,19 @@ mod tests {
         assert_eq!(feed.trips[0].short_name, "120");
         assert_eq!(feed.trips[1].short_name, "");
         assert_eq!(tz(EE), Some("Europe/Tallinn"));
+    }
+
+    #[test]
+    fn swiss_lines() {
+        assert_eq!(swiss_line("S", "S10"), "S10");
+        assert_eq!(swiss_line("IC", "IC1"), "IC1");
+        assert_eq!(swiss_line("IC", "IC121A"), "IC");
+        assert_eq!(swiss_line("TGV", "001A"), "TGV");
+        assert_eq!(swiss_line("RE", "RE"), "RE");
+        assert_eq!(swiss_line("", "E2"), "E2");
+        assert!(swiss_long("102") && !swiss_long("109"));
+        assert_eq!(tz(CH_REGIONAL), Some("Europe/Zurich"));
+        assert_eq!(tz(PL_REGIONAL), Some("Europe/Warsaw"));
     }
 
     #[test]

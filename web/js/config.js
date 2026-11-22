@@ -19,7 +19,7 @@ export const CONFIG = {
   // Countries still being built (docs/europe/): not offered, but a link with
   // ?country=ie opens them, for testing. The Android app has none
   // (tools/build-web.sh).
-  hiddenCountries: ["ie", "fr", "lu", "fi", "no", "nl", "sk", "ee"],
+  hiddenCountries: ["ie", "fr", "lu", "fi", "no", "nl", "sk", "ee", "ch", "se", "pl"],
   // Android app: the site's data/ (absolute URL), newer than the copy in the
   // app once the app is a few days old; "" = only dataBase.
   remoteDataBase: "",

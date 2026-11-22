@@ -7,6 +7,7 @@
 // headers, and what to keep.
 
 import { filterFeed } from "./gtfsrt.js";
+import { concat } from "./protobuf.js";
 import { IE, feedFor } from "./ireland.js";
 
 /** Ireland's cycle (kept for the tests; each country has its `cycleMs`). */
@@ -30,19 +31,34 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
     cycle.skipped = true;
     cycle.error = state.lastError || "backing off";
   } else {
-    const feed = feedFor(state.minute, country);
+    let feed = feedFor(state.minute, country);
+    // A feed whose own key isn't set (Switzerland: one key per API) gives
+    // its turn to the main feed.
+    if (country.ready && !country.ready(env, feed)) feed = country.feeds[0];
     state.minute = (state.minute + 1) % 1_000_000;
     cycle.feed = feed.name;
     try {
-      const r = await fetchFn(country.base + feed.path, { headers: country.headers(env) });
+      const r = await fetchFn(country.base + feed.path, { headers: country.headers(env, feed) });
       if (!r.ok) throw new Error(`${feed.path}: HTTP ${r.status}`);
-      const bytes = new Uint8Array(await r.arrayBuffer());
+      let bytes = new Uint8Array(await r.arrayBuffer());
       if (bytes.length === 0) throw new Error(`${feed.path}: empty response`);
+      // JSON sources (Poland) become GTFS-Realtime here.
+      if (feed.convert) bytes = feed.convert(bytes, now);
       const keep = country.keep(feed.name, bytes);
       const out = filterFeed(bytes, keep || (() => true));
-      await env.LIVE.put(country.prefix + feed.name, out.bytes, {
-        httpMetadata: { contentType: "application/x-protobuf", cacheControl: CACHE },
-      });
+      const meta = { httpMetadata: { contentType: "application/x-protobuf", cacheControl: CACHE } };
+      await env.LIVE.put(country.prefix + feed.name, out.bytes, meta);
+      // Parts of one file (Switzerland's planned and unplanned alerts):
+      // the file is all its parts' entities, one after the other (repeated
+      // protobuf fields concatenate).
+      if (feed.part) {
+        const parts = [];
+        for (const name of country.parts[feed.part]) {
+          const o = name === feed.name ? null : await env.LIVE.get(country.prefix + name);
+          parts.push(o ? new Uint8Array(await o.arrayBuffer()) : name === feed.name ? out.bytes : new Uint8Array());
+        }
+        await env.LIVE.put(country.prefix + feed.part, concat(parts), meta);
+      }
       state.feeds[feed.name] = { ok: true, fetchedAt: at, lm: new Date(now).toUTCString(), entities: out.total, kept: out.kept, bytes: out.bytes.length };
       state.failures = 0;
       state.nextAt = null;
