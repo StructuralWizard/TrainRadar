@@ -3,6 +3,14 @@
 // from the engine's per-pair answers (engine.commuteJson).
 import { cityStations } from "./places.js";
 
+/** A journey's identity across refreshes: its trains, in order (its times
+ * move with delays). The route sheet keeps the open journey open by it. */
+export const journeyKey = (j) =>
+  j.steps
+    .filter((s) => s.kind === "ride")
+    .map((s) => `${s.route || ""} ${s.number || ""}@${s.from_name || ""}`)
+    .join(">");
+
 /** At most this many stations per end: a city's main ones. */
 export const MAX_ENDS = 10;
 

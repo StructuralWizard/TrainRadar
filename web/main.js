@@ -158,6 +158,7 @@ const COUNTRY_TEXT = {
   pl: { name: "countryPl", all: "allPl", credit: "attributionPl", scheduled: "scheduledCountOther" },
   at: { name: "countryAt", all: "allAt", credit: "attributionAt", scheduled: "scheduledCountOther" },
   cz: { name: "countryCz", all: "allCz", credit: "attributionCz", scheduled: "scheduledCountOther" },
+  it: { name: "countryIt", all: "allIt", credit: "attributionIt", scheduled: "scheduledCountOther" },
 };
 /** A country's name; one still being built says so. */
 const countryName = (c) => {
@@ -2693,6 +2694,8 @@ function renderRoute() {
     }
   }
   const journeys = routeCache.journeys;
+  // Redrawn on every live refresh: keep the journey the user opened open.
+  const openKey = body.querySelector("details.journey[open]")?.dataset.key;
   body.replaceChildren(
     ...[field, when ? el("p", { class: "small muted", id: "route-planned" }, t(lang, "plannedNote")) : null].filter(Boolean),
     ...journeyResults(lang, {
@@ -2704,6 +2707,7 @@ function renderRoute() {
         if (info) selectTrain(info, { fly: true });
       },
       onSave: (j) => saveRouteJourney(j),
+      openKey,
     }),
   );
 }

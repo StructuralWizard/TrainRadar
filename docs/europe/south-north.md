@@ -145,6 +145,9 @@ there needs MitID. Rejseplanen's API costs €5,000 a year for commercial use.
 
 Europe/Rome · Italian · UIC 83.
 
+**Update, Nov 2026:** Lombardy (Trenord, CC BY 4.0) is built, by timetable; the national access
+point's catalogue needs a login (SPID). See [it.md](it.md), with the letter asking for access.
+
 **Verdict:** not feasible to a good standard yet. There's no official national timetable or live data
 for Trenitalia or Italo; only regional timetables and RFI's notices. Under the EU rules, Italy's
 national access point owes real-time rail data, so check it again, or seek an agreement with

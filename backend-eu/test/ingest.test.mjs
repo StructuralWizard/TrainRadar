@@ -140,7 +140,7 @@ test("France: SNCF's feeds, no key, everything kept; alternating every 30 s", as
 
 test("the Worker re-arms only the countries switched on", async () => {
   const { default: worker, COUNTRIES } = await import("../src/index.js");
-  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl", "se"]);
+  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl", "se", "cz"]);
   const asked = [];
   const env = {
     FR_ENABLED: "true",
@@ -287,4 +287,20 @@ test("Sweden: one region a cycle, the key only in Trafiklab's URL, only our trai
   assert.equal(s2.nextCallAt, null); // the next region still has its turn
   assert.ok(!JSON.stringify(s2).includes("se-key"));
   assert.ok(!SE.enabled({ SE_ENABLED: "true" }) && SE.enabled({ SE_ENABLED: "true", SE_TRAFIKLAB_RT_KEY: "k" }));
+});
+
+test("Czechia: only PID's trains (vehicle id train-N), from both of Golemio's feeds", async () => {
+  const { CZ } = await import("../src/czechia.js");
+  // A trip update with its vehicle (field 3), and a vehicle position (field 4) with its vehicle (field 8).
+  const tu = (id, trip, vehicle) =>
+    bytes(2, [...string(1, id), ...bytes(3, [...bytes(1, string(1, trip)), ...bytes(3, string(1, vehicle))])]);
+  const vp = (id, trip, vehicle) =>
+    bytes(2, [...string(1, id), ...bytes(4, [...bytes(1, string(1, trip)), ...bytes(8, string(1, vehicle))])]);
+  const keep = CZ.keep("trip_updates.pb");
+  assert.equal(filterFeed(feed(tu("a", "1030_9504_260309", "train-9504"), tu("b", "1781_241_261103", "service-3-1234")), keep).kept, 1);
+  assert.equal(filterFeed(feed(vp("a", "1003_9504_260309", "train-9504"), vp("b", "22_1_1", "tram-9000")), keep).kept, 1);
+  // GPS every 20 s, trip updates (every PID vehicle, about 4 MB) each minute; no key.
+  assert.deepEqual([1, 2, 3].map((n) => feedFor(n, CZ).name), ["vehicle_positions.pb", "vehicle_positions.pb", "trip_updates.pb"]);
+  assert.equal(CZ.enabled({ CZ_ENABLED: "true" }), true);
+  assert.equal(CZ.missing({}), null);
 });

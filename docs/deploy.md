@@ -278,13 +278,23 @@ app, and update the "last updated" dates when they change.
 
 ## Czechia (M6)
 
-- **Turning it on:** **`CZ_ENABLED`** = `true`. No key. By timetable for now; `?country=cz`.
+- **Turning it on:** **`CZ_ENABLED`** = `true` (the timetable), `?country=cz`. No key.
+- **Live data:** **`CZ_LIVE_ENABLED`** = `true` deploys Golemio's feeds to the `eu` Worker
+  (`cz/rt/`): PID's trains in Prague and Central Bohemia, with GPS and delays, matched to the
+  timetable by train number; the rest of the country stays by timetable. Golemio's GTFS-Realtime
+  needs no key (`CZ_GOLEMIO_KEY` isn't used). Read Golemio's terms of use before turning it on.
 - **What the deploy builds:** `data/cz/` (`cz` long distance, `cz-r` regional) and its `plan/`, from
   CIS JŘ's national timetable (`tools/cisjr-gtfs.py`): the NeTEx trains minus the CZPTT
   cancellations of the next nine days. CIS JŘ has no coordinates, so stations are placed from
   OpenStreetMap (weekly, with the track); the build's report says how many were found.
 - **Rebuilt daily** (cancellations change every day). The portal's files are cached between runs, so
   a day's run downloads only the new ones; the first run fetches a few thousand small files.
+
+## Italy, Lombardy only (M7)
+
+- **Turning it on:** **`IT_ENABLED`** = `true`. No key. Trenord's timetable from Regione Lombardia's
+  open data (CC BY 4.0), cut to trains; by timetable; `?country=it`. The rest of Italy waits for the
+  national access point ([europe/it.md](europe/it.md)).
 
 ## Slovakia and Estonia (M4)
 

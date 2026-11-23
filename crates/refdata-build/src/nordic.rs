@@ -28,6 +28,8 @@ pub const AT: &str = "at";
 /// Czechia: by timetable, long distance and regional.
 pub const CZ: &str = "cz";
 pub const CZ_REGIONAL: &str = "cz-r";
+/// Italy: Lombardy only for now (Trenord), by timetable.
+pub const IT: &str = "it";
 
 pub const ATTRIBUTION_FI: &str = "Data: Fintraffic / digitraffic.fi, CC BY 4.0. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
@@ -47,6 +49,8 @@ pub const ATTRIBUTION_AT: &str = "Data source: Mobilitätsverbünde Österreich 
 data.mobilitaetsverbuende.at. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_CZ: &str = "Data: Ministry of Transport of the Czech Republic, CIS JŘ \
 (portal.cisjr.cz). Track and stations: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_IT: &str = "Data: Trenord, Regione Lombardia open data (dati.lombardia.it), \
+CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
 shapes ODbL. Track: © OpenStreetMap contributors, ODbL 1.0.";
 
@@ -63,6 +67,7 @@ pub fn tz(code: &str) -> Option<&'static str> {
         PL | PL_REGIONAL => "Europe/Warsaw",
         AT => "Europe/Vienna",
         CZ | CZ_REGIONAL => "Europe/Prague",
+        IT => "Europe/Rome",
         _ => return None,
     })
 }
@@ -83,6 +88,7 @@ pub fn region_name(code: &str) -> &'static str {
         AT => "Austria",
         CZ => "Czechia (long distance)",
         CZ_REGIONAL => "Czechia (regional)",
+        IT => "Italy (Lombardy)",
         _ => "",
     }
 }
@@ -348,6 +354,18 @@ pub fn split_poland(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
     out
 }
 
+/// Italy (Trenord): routes are lines ("RE11", "S5", "R7"), kept as they
+/// are; Trenord's trips have no `trip_short_name`, but their ids start with
+/// the train number ("10512A-…" → 10512).
+pub fn normalise_italy(feed: &mut Feed) -> Stats {
+    for t in &mut feed.trips {
+        if !t.short_name.chars().all(|c| c.is_ascii_digit()) || t.short_name.is_empty() {
+            t.short_name = t.id.chars().take_while(char::is_ascii_digit).collect();
+        }
+    }
+    normalise_simple(feed)
+}
+
 /// Czechia (tools/cisjr-gtfs.py): routes are an operator and a commercial
 /// category ("Ceskedrahyas:R"). Fast and international trains are long
 /// distance; Os, Sp, Rx and the like regional.
@@ -441,6 +459,18 @@ mod tests {
         assert_eq!(feed.trips[0].short_name, "120");
         assert_eq!(feed.trips[1].short_name, "");
         assert_eq!(tz(EE), Some("Europe/Tallinn"));
+
+        // Trenord: the line kept, the train number from the trip id.
+        let mut it = Feed {
+            routes: vec![route("RE11")],
+            trips: vec![trip(0, "10512A-2c54408d"), trip(0, "x")],
+            ..Feed::default()
+        };
+        it.trips[0].short_name.clear();
+        normalise_italy(&mut it);
+        assert_eq!(it.routes[0].short_name, "RE11");
+        assert_eq!(it.trips[0].short_name, "10512");
+        assert_eq!(it.trips[1].short_name, "");
     }
 
     #[test]
@@ -455,6 +485,7 @@ mod tests {
         assert_eq!(tz(CH_REGIONAL), Some("Europe/Zurich"));
         assert_eq!(tz(PL_REGIONAL), Some("Europe/Warsaw"));
         assert_eq!(tz(CZ_REGIONAL), Some("Europe/Prague"));
+        assert_eq!(tz(IT), Some("Europe/Rome"));
     }
 
     #[test]

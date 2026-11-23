@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -27,6 +27,8 @@
 #                         tools/cisjr-gtfs.py, stations placed from
 #                         OpenStreetMap (so cz needs the OSM extract); its
 #                         downloads are kept in gtfs/cz/cisjr/ (CI caches it)
+#                     it  Italy, Lombardy only for now: Trenord's GTFS on
+#                         dati.lombardia.it (CC BY 4.0), cut to trains
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -186,12 +188,21 @@ except Exception as e:
     fi
     echo "stations.geojsonseq: $(wc -l <"$dir/stations.geojsonseq") OSM stations and halts"
     python3 -I tools/cisjr-gtfs.py "$dir/gtfs.zip" "$dir/stations.geojsonseq" --cache "$dir/cisjr" --sources "$dir/sources.tsv" 63 ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz [--no-osm]" >&2; exit 2 ;;
+  it)
+    # Regione Lombardia's open data portal: "Orario Ferroviario Regionale
+    # Gtfs" (Trenord and Malpensa Express, CC BY 4.0, no registration). It
+    # also holds Trenord's replacement buses, cut out here.
+    get "Trenord (dati.lombardia.it)" "https://www.dati.lombardia.it/download/3z4k-mxz9/application%2Fzip" "$dir/all.zip"
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip"
+    rm -f "$dir/all.zip"
+    region=italy/nord-ovest ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then
   start=$SECONDS
   out="$dir/$region.osm.pbf"
+  mkdir -p "$(dirname "$out")"
   url="https://download.geofabrik.de/europe/$region-latest.osm.pbf"
   [ -s "$out" ] || curl -fsSL --retry 6 --retry-delay 20 --retry-all-errors --speed-limit 100000 --speed-time 60 -o "$out" "$url" ||
     { echo "::warning::OSM: $url failed: built without the track this time (straight lines)." >&2; rm -f "$out"; exit 0; }

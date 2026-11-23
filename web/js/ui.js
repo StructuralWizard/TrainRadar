@@ -106,6 +106,8 @@ const PLACED_SOURCES = {
   SBB: { by: "opentransportdata.swiss", delay: "srcChDelay", timetable: "srcChTimetable", link: null },
   Trafiklab: { by: "Trafiklab", delay: "srcSeDelay", timetable: "srcSeTimetable", link: null },
   "PKP PLK": { by: "PKP PLK", delay: "srcPlDelay", timetable: "srcPlTimetable", link: null },
+  // Czechia: PID's trains from Golemio (GPS), the rest by CIS JŘ's timetable.
+  ČD: { by: "PID", delay: "srcCzDelay", timetable: "srcCzTimetable", link: null },
 };
 const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];
 
@@ -176,6 +178,7 @@ const TICKET_SITES = {
   ÖBB: ["ÖBB", "https://www.oebb.at/"],
   // Czechia: several operators; České dráhy sells for most of them.
   ČD: ["České dráhy", "https://www.cd.cz/"],
+  Trenord: ["Trenord", "https://www.trenord.it/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],
 };

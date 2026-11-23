@@ -53,8 +53,10 @@ agrees to share its real-time data.
 **Built (Nov 2026):** `tools/cisjr-gtfs.py` reads the NeTEx (per train path, the year's file plus
 monthly updates) and removes the CZPTT cancellations, which the NeTEx updates leave out (about
 8,000 base trains cancelled on some day in November 2026 alone). The NeTEx has station names and
-SR70/UIC numbers but no coordinates: stations are placed from OpenStreetMap. Live data next:
-Golemio (PID, Prague and Central Bohemia), key `CZ_GOLEMIO_KEY`.
+SR70/UIC numbers but no coordinates: stations are placed from OpenStreetMap. Live data: Golemio's
+open GTFS-Realtime (no key) for PID's trains in Prague and Central Bohemia, about 230 trains at a
+time with GPS and delays; their vehicle ids carry the national train number ("train-9504"), which
+all matched CIS JŘ's timetable in a test on 23 Nov 2026 (`CZ_LIVE_ENABLED`).
 
 | | |
 |---|---|

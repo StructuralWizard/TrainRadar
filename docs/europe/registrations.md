@@ -39,7 +39,7 @@ off, behind its own variable, so it doesn't hold the others back.
 | **M3** | Switzerland, Sweden | GTFS-Realtime behind a free key, with tight quotas | `CH_OTD_*`, `SE_TRAFIKLAB_STATIC_KEY`, `SE_TRAFIKLAB_RT_KEY`, `SE_TRAFIKVERKET_KEY` |
 | **M4** (Slovakia and Estonia built) | Austria, Slovakia, Slovenia, Estonia, Latvia, Lithuania, Hungary | Timetables only: no live server, the same build for all | `AT_MVO_*`; Hungary's form |
 | **M5** | Germany, Poland | Each needs its own live adapter, behind a key | `DE_*`, `PL_PLK_API_KEY` |
-| **M6** (Czechia built, by timetable) | Czechia, Denmark | Czechia: CIS JŘ's NeTEx read by `tools/cisjr-gtfs.py` with the CZPTT cancellations; live from Golemio (Prague and Central Bohemia) next | `CZ_GOLEMIO_KEY` (done); Denmark's access point login |
+| **M6** (Czechia built, by timetable) | Czechia, Denmark | Czechia: CIS JŘ's NeTEx read by `tools/cisjr-gtfs.py` with the CZPTT cancellations; live from Golemio's open GTFS-Realtime (Prague and Central Bohemia, no key) | Denmark's access point login |
 | **M7** | Portugal, Belgium, Italy, Croatia, Romania, Greece | Only when the letters bring permission | Replies to the letters |
 
 **The trade-off.** Bigger PRs take longer to review, and one failing test holds the whole merge.
@@ -70,10 +70,12 @@ Status: **needed** blocks a merge; **optional** improves it; **later** waits for
 2. **data.gouv.fr** (later: only if republishing a derived timetable turns out to be required).
    - Where: `www.data.gouv.fr` → account → profile → API key.
    - GitHub: secret `FR_DATAGOUV_API_KEY`.
-3. **Luxembourg, ATP** (later: live departures).
-   - Their key goes in the URL, which AGENTS.md forbids. **Don't register yet.** First email
-     `opendata-api@atp.etat.lu` asking whether the key can be sent in a header instead.
-   - GitHub, if they agree: secret `LU_ATP_API_KEY`.
+3. **Luxembourg, ATP** (later: live data).
+   - ATP answered (Nov 2026): the HAFAS key can't go in a header; quotas are 500 requests an hour
+     and 5,000 a day per service. But ATP will publish **a GTFS-Realtime feed in the coming weeks,
+     with no key and no quota**. Credit: « Administration des transports publics ».
+   - **No key needed:** we wait for the GTFS-Realtime feed, then add it to backend-eu like
+     Finland's (no secret).
 4. **Variables:** `FR_ENABLED` and `LU_ENABLED`, once M1 is merged. Then run the Deploy workflow once
    (Actions → Deploy → Run workflow), so the live Worker starts France's feed.
 
@@ -196,7 +198,8 @@ Done (keys in GitHub on 2026-11-22). For the record:
    - Austria: ÖBB (live data);
    - Czechia: SŽ; Slovakia: ŽSR; Hungary: MÁV; Romania: ARF/Infofer; Croatia: HŽPP;
    - Estonia: Elron;
-   - Italy: Trenitalia and RFI;
+   - Italy: Trenitalia and RFI; and the national access point (CCISS), drafted in
+     [it.md](it.md): access without SPID, and the licence of Trenitalia's NeTEx;
    - Greece: Hellenic Train and the Ministry.
 3. **Variables when I say:** `PT_ENABLED`, `BE_ENABLED`, `IT_ENABLED`, `HR_ENABLED`,
    `RO_ENABLED`, `GR_ENABLED`.

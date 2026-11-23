@@ -576,6 +576,26 @@ jobs:
             exit 1
           fi
 
+      # Italy, Lombardy only (Trenord), with IT_ENABLED: Regione Lombardia's
+      # rail GTFS (CC BY 4.0, no key), timetable only, and OSM track → data/it/.
+      - name: Italy (Lombardy) reference data
+        if: vars.IT_ENABLED == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh it | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/it-data --gzip \
+              --it-gtfs gtfs/it/gtfs.zip --sources gtfs/it/sources.tsv \
+              $([ -s gtfs/it/rail.geojsonseq ] && echo --rail gtfs/it/rail.geojsonseq) --report refdata-it.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/it-data; then
+            mv build/it-data build/data/it
+            { echo "## Italy (Lombardy) reference data"; echo; cat refdata-it.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Italy's reference data failed: deploying without Italy."
+            exit 1
+          fi
+
       # Estonia (M4), with EE_ENABLED: timetable only (no key) → data/ee/.
       - name: Estonia reference data
         if: vars.EE_ENABLED == 'true'
@@ -809,6 +829,9 @@ jobs:
           # Sweden's live data has its own switch: it needs Trafiklab's Silver
           # level, the timetable (SE_ENABLED) doesn't.
           SE_LIVE_ENABLED: ${{ vars.SE_LIVE_ENABLED }}
+          # Czechia's live data (Golemio, no key) too: its own switch, apart
+          # from the timetable (CZ_ENABLED).
+          CZ_LIVE_ENABLED: ${{ vars.CZ_LIVE_ENABLED }}
           HAS_KEY: ${{ secrets.IE_NTA_API_KEY != '' }}
           HAS_CH_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY != '' }}
           HAS_PL_KEY: ${{ secrets.PL_PLK_API_KEY != '' }}
@@ -826,9 +849,10 @@ jobs:
           if [ "$(on "$CH_ENABLED")" = "true" ] && [ "$HAS_CH_KEY" = "true" ]; then ch=true; fi
           if [ "$(on "$PL_ENABLED")" = "true" ] && [ "$HAS_PL_KEY" = "true" ]; then pl=true; fi
           if [ "$(on "$SE_LIVE_ENABLED")" = "true" ] && [ "$HAS_SE_KEY" = "true" ]; then se=true; fi
-          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; } >> "$GITHUB_OUTPUT"
-          if [ "$ie$fr$fi_$no$nl$ch$pl$se" = "falsefalsefalsefalsefalsefalsefalsefalse" ]; then
-            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
+          cz=$(on "$CZ_LIVE_ENABLED")
+          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; echo "cz=$cz"; } >> "$GITHUB_OUTPUT"
+          if [ "$ie$fr$fi_$no$nl$ch$pl$se$cz" = "falsefalsefalsefalsefalsefalsefalsefalsefalse" ]; then
+            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys, CZ_LIVE_ENABLED): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "push" ] && git diff --quiet HEAD^ HEAD -- backend-eu/; then
             echo "backend-eu/ unchanged: the Europe ingest keeps running as it is." | tee -a "$GITHUB_STEP_SUMMARY"
           else
@@ -852,6 +876,7 @@ jobs:
           CH_ON: ${{ steps.gate.outputs.ch }}
           PL_ON: ${{ steps.gate.outputs.pl }}
           SE_ON: ${{ steps.gate.outputs.se }}
+          CZ_ON: ${{ steps.gate.outputs.cz }}
           SE_TRAFIKLAB_RT_KEY: ${{ secrets.SE_TRAFIKLAB_RT_KEY }}
           CH_OTD_GTFSRT_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY }}
           CH_OTD_GTFSSA_KEY: ${{ secrets.CH_OTD_GTFSSA_KEY }}
@@ -860,7 +885,8 @@ jobs:
         run: |
           npx --yes "$WRANGLER" deploy --config backend-eu/wrangler.toml --var "IE_ENABLED:$IE_ON" --var "FR_ENABLED:$FR_ON" \
             --var "FI_ENABLED:$FI_ON" --var "NO_ENABLED:$NO_ON" --var "NL_ENABLED:$NL_ON" \
-            --var "CH_ENABLED:$CH_ON" --var "PL_ENABLED:$PL_ON" --var "SE_ENABLED:$SE_ON"
+            --var "CH_ENABLED:$CH_ON" --var "PL_ENABLED:$PL_ON" --var "SE_ENABLED:$SE_ON" \
+            --var "CZ_ENABLED:$CZ_ON"
           # Keys on stdin, never on the command line.
           put() { [ -n "$2" ] && printf '%s' "$2" | npx --yes "$WRANGLER" secret put "$1" --config backend-eu/wrangler.toml; }
           if [ "$IE_ON" = "true" ]; then put IE_NTA_API_KEY "$IE_NTA_API_KEY"; fi
@@ -871,7 +897,7 @@ jobs:
           fi
           if [ "$PL_ON" = "true" ]; then put PL_PLK_API_KEY "$PL_PLK_API_KEY"; fi
           if [ "$SE_ON" = "true" ]; then put SE_TRAFIKLAB_RT_KEY "$SE_TRAFIKLAB_RT_KEY"; fi
-          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON, Sweden: $SE_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
+          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON, Sweden: $SE_ON, Czechia: $CZ_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 
   live:
     # Central poller and history recorder (backend/): Renfe fetched once for
