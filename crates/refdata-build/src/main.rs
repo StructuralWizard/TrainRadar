@@ -76,7 +76,7 @@ usage:
                        Slovakia: --sk-gtfs ZIP; Estonia: --ee-gtfs ZIP;
                        Switzerland: --ch-gtfs ZIP; Sweden: --se-gtfs ZIP;
                        Poland: --pl-gtfs ZIP; Austria: --at-gtfs ZIP;
-                       Czechia: --cz-gtfs ZIP)
+                       Czechia: --cz-gtfs ZIP; Italy (Lombardy): --it-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -145,6 +145,8 @@ struct BuildArgs {
     at_gtfs: Option<PathBuf>,
     /// CIS JŘ's trains as GTFS (tools/cisjr-gtfs.py): Czechia, by timetable.
     cz_gtfs: Option<PathBuf>,
+    /// Trenord's GTFS, cut to trains: Italy (Lombardy), by timetable.
+    it_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -180,6 +182,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         pl_gtfs: None,
         at_gtfs: None,
         cz_gtfs: None,
+        it_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -225,6 +228,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--pl-gtfs" => a.pl_gtfs = Some(val()?.into()),
             "--at-gtfs" => a.at_gtfs = Some(val()?.into()),
             "--cz-gtfs" => a.cz_gtfs = Some(val()?.into()),
+            "--it-gtfs" => a.it_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -260,10 +264,11 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.pl_gtfs.is_none()
         && a.at_gtfs.is_none()
         && a.cz_gtfs.is_none()
+        && a.it_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs or --cz-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs or --it-gtfs"
                 .into(),
         );
     }
@@ -409,11 +414,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.pl_gtfs, "pl"),
         (&a.at_gtfs, "at"),
         (&a.cz_gtfs, "cz"),
+        (&a.it_gtfs, "it"),
     ] {
         let Some(path) = path else { continue };
         if matches!(
             kind,
-            "fi" | "no" | "nl" | "sk" | "ee" | "ch" | "se" | "pl" | "at" | "cz"
+            "fi" | "no" | "nl" | "sk" | "ee" | "ch" | "se" | "pl" | "at" | "cz" | "it"
         ) {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
@@ -432,10 +438,11 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 "pl" => (nordic::normalise_simple(&mut feed), "PKP PLK"),
                 "at" => (nordic::normalise_simple(&mut feed), "ÖBB"),
                 "cz" => (nordic::normalise_simple(&mut feed), "ČD"),
+                "it" => (nordic::normalise_italy(&mut feed), "Trenord"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
-            let live = !matches!(kind, "sk" | "ee" | "at");
+            let live = !matches!(kind, "sk" | "ee" | "at" | "it");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",
@@ -934,6 +941,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_AT
         } else if a.cz_gtfs.is_some() {
             nordic::ATTRIBUTION_CZ
+        } else if a.it_gtfs.is_some() {
+            nordic::ATTRIBUTION_IT
         } else {
             ATTRIBUTION
         },

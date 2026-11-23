@@ -196,7 +196,8 @@ Done (keys in GitHub on 2026-11-22). For the record:
    - Austria: ÖBB (live data);
    - Czechia: SŽ; Slovakia: ŽSR; Hungary: MÁV; Romania: ARF/Infofer; Croatia: HŽPP;
    - Estonia: Elron;
-   - Italy: Trenitalia and RFI;
+   - Italy: Trenitalia and RFI; and the national access point (CCISS), drafted in
+     [it.md](it.md): access without SPID, and the licence of Trenitalia's NeTEx;
    - Greece: Hellenic Train and the Ministry.
 3. **Variables when I say:** `PT_ENABLED`, `BE_ENABLED`, `IT_ENABLED`, `HR_ENABLED`,
    `RO_ENABLED`, `GR_ENABLED`.

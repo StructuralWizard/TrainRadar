@@ -265,6 +265,15 @@ jobs:
           unzip -p gtfs/cz/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_short_name']) for r in csv.DictReader(sys.stdin)]" > build/cz-numbers.txt
           echo "### cz: live probe" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs cz build/cz-numbers.txt build/probe-cz | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Italy, Lombardy (Trenord on dati.lombardia.it, no key)
+        continue-on-error: true # outside services: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh it --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/it --it-gtfs gtfs/it/gtfs.zip \
+            --sources gtfs/it/sources.tsv --report refdata-it.md
+          target/release/refdata-build verify build/it
+          { echo "## Italy (Lombardy) reference data"; echo; cat refdata-it.md; } >> "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

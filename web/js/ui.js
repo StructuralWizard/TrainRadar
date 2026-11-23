@@ -178,6 +178,7 @@ const TICKET_SITES = {
   ÖBB: ["ÖBB", "https://www.oebb.at/"],
   // Czechia: several operators; České dráhy sells for most of them.
   ČD: ["České dráhy", "https://www.cd.cz/"],
+  Trenord: ["Trenord", "https://www.trenord.it/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],
 };

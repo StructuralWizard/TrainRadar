@@ -290,6 +290,12 @@ app, and update the "last updated" dates when they change.
 - **Rebuilt daily** (cancellations change every day). The portal's files are cached between runs, so
   a day's run downloads only the new ones; the first run fetches a few thousand small files.
 
+## Italy, Lombardy only (M7)
+
+- **Turning it on:** **`IT_ENABLED`** = `true`. No key. Trenord's timetable from Regione Lombardia's
+  open data (CC BY 4.0), cut to trains; by timetable; `?country=it`. The rest of Italy waits for the
+  national access point ([europe/it.md](europe/it.md)).
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains
