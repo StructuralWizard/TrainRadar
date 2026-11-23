@@ -2694,6 +2694,8 @@ function renderRoute() {
     }
   }
   const journeys = routeCache.journeys;
+  // Redrawn on every live refresh: keep the journey the user opened open.
+  const openKey = body.querySelector("details.journey[open]")?.dataset.key;
   body.replaceChildren(
     ...[field, when ? el("p", { class: "small muted", id: "route-planned" }, t(lang, "plannedNote")) : null].filter(Boolean),
     ...journeyResults(lang, {
@@ -2705,6 +2707,7 @@ function renderRoute() {
         if (info) selectTrain(info, { fly: true });
       },
       onSave: (j) => saveRouteJourney(j),
+      openKey,
     }),
   );
 }

@@ -29,3 +29,17 @@ test("merge: one row per train, its shortest ride, by departure, gone ones dropp
   assert.equal(out[0].from.id, "60000", "boards at Atocha: the shorter ride");
   assert.equal(mergeRoutes(pairs, 1000, 2).length, 2);
 });
+
+test("journeyKey: the same trains give the same key, whatever their times", async () => {
+  const { journeyKey } = await import("./route.js");
+  const j = (dep, n2) => ({
+    dep,
+    steps: [
+      { kind: "ride", route: "AVE", number: "3071", from_name: "Zaragoza-Delicias", expected_dep: dep },
+      { kind: "walk", secs: 120 },
+      { kind: "ride", route: "C3", number: n2, from_name: "Madrid-Puerta de Atocha", expected_dep: dep + 5000 },
+    ],
+  });
+  assert.equal(journeyKey(j(1000, "21015")), journeyKey(j(1300, "21015")));
+  assert.notEqual(journeyKey(j(1000, "21015")), journeyKey(j(1000, "21017")));
+});

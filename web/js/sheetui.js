@@ -5,6 +5,7 @@ import { t } from "./i18n.js";
 import { formatAgo, formatClock, formatCount, formatDistance, fromZonedInput, zonedInput } from "./format.js";
 import { icon } from "./icons.js";
 import { fold, matchScore } from "./places.js";
+import { journeyKey } from "./route.js";
 import { el, historyBox, minutesUntil, trainAlerts, trainRows, trainTitle } from "./ui.js";
 
 /** "ok" < 5 min, "minor" 5–14, "major" 15+, "none" unknown. */
@@ -593,9 +594,10 @@ export function durationText(lang, secs) {
 /**
  * Journeys with changes (engine journeysJson): one row per journey, its
  * trains and changes inside. `onTrain(ride)` opens a train on the map;
- * `onSave(journey)` (when given) saves it (Pro).
+ * `onSave(journey)` (when given) saves it (Pro). `openKey` (journeyKey)
+ * keeps the journey the user opened open when the list is redrawn.
  */
-export function journeyResults(lang, { from, to, journeys, onTrain, onSave, saveLabel }) {
+export function journeyResults(lang, { from, to, journeys, onTrain, onSave, saveLabel, openKey }) {
   if (!journeys.length) return [el("p", { class: "muted", id: "route-none" }, t(lang, "routeNone", { from: from.item.name, to: to.item.name }))];
   const rides = (j) => j.steps.filter((s) => s.kind === "ride");
   const direct = journeys.filter((j) => j.changes === 0).length;
@@ -666,7 +668,11 @@ export function journeyResults(lang, { from, to, journeys, onTrain, onSave, save
           {},
           el(
             "details",
-            { class: "journey", open: i === 0 && journeys.length === 1 ? "" : null },
+            {
+              class: "journey",
+              "data-key": journeyKey(j),
+              open: (openKey ? journeyKey(j) === openKey : i === 0 && journeys.length === 1) ? "" : null,
+            },
             summary,
             el("ol", { class: "journey-legs" }, legs),
             onSave ? el("button", { type: "button", class: "pill small journey-save", onclick: () => onSave(j) }, icon("star", 16), saveLabel || t(lang, "routeSave")) : null,
