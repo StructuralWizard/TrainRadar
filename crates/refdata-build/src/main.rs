@@ -435,7 +435,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
-            let live = !matches!(kind, "sk" | "ee" | "at" | "cz");
+            let live = !matches!(kind, "sk" | "ee" | "at");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",

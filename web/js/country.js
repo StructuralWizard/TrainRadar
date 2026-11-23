@@ -25,7 +25,7 @@ export const COUNTRY_INFO = {
   se: { zone: "Europe/Stockholm", center: [15.5, 61.0], zoom: 4.5, live: true },
   pl: { zone: "Europe/Warsaw", center: [19.4, 52.0], zoom: 5.6, live: true },
   at: { zone: "Europe/Vienna", center: [13.3, 47.6], zoom: 6.3, live: false },
-  cz: { zone: "Europe/Prague", center: [15.4, 49.8], zoom: 6.4, live: false },
+  cz: { zone: "Europe/Prague", center: [15.4, 49.8], zoom: 6.4, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

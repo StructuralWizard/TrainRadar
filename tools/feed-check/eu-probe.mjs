@@ -2,13 +2,16 @@
 // (the same fetch, filter and conversion the Worker does), and how many of
 // its trips the timetable just built has:
 //
-//   node tools/feed-check/eu-probe.mjs ch|pl|se GTFS_ZIP_TRIP_IDS_FILE OUT_DIR
+//   node tools/feed-check/eu-probe.mjs ch|pl|se|cz GTFS_ZIP_TRIP_IDS_FILE OUT_DIR
+//
+// (For cz the file lists train numbers: Golemio's trips are PID's own and
+// match ours by the number in the vehicle id, "train-9504".)
 //
 // Keys come from the environment (CH_OTD_*, PL_PLK_API_KEY,
 // SE_TRAFIKLAB_RT_KEY) and are never printed: lines show feed names, sizes
 // and counts only. Sweden isn't in the Worker yet: its regional feeds are
 // fetched directly, to see which hold trains.
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { runCycle, emptyState } from "../../backend-eu/src/cycle.js";
 import { CH, PL } from "../../backend-eu/src/central.js";
 import { fields, str, sub } from "../../backend-eu/src/protobuf.js";
@@ -97,4 +100,24 @@ if (cc === "ch") {
     process.exit(0);
   }
   await viaWorker(SE, SE.feeds.map((_, i) => i));
+} else if (cc === "cz") {
+  const { CZ } = await import("../../backend-eu/src/czechia.js");
+  await viaWorker(CZ, [0, 1, 2]);
+  // Which live trains' numbers run in the timetable just built.
+  if (!existsSync(`${out}/vehicle_positions.pb`)) {
+    console.log("cz: no vehicle positions fetched");
+    process.exit(0);
+  }
+  const vp = readFileSync(`${out}/vehicle_positions.pb`);
+  const nums = [];
+  for (const f of fields(vp)) {
+    if (f.field !== 2 || f.wire !== 2) continue;
+    const v = sub(f.value, 4);
+    const id = v ? str(sub(v, 8), 1) : "";
+    if (id.startsWith("train-")) nums.push(id.slice(6));
+  }
+  const found = nums.filter((n) => known.has(n));
+  console.log(`cz: ${nums.length} PID trains with GPS, ${found.length} of their numbers in the timetable` +
+    (nums.length ? ` (${Math.round((100 * found.length) / nums.length)} %)` : "") +
+    `; not found e.g. ${nums.filter((n) => !known.has(n)).slice(0, 5).join(" ")}`);
 }

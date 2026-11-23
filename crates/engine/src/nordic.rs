@@ -49,6 +49,18 @@ static CH: [FeedSpec; 2] = [
 /// by backend-eu.
 static SE: [FeedSpec; 1] = [feed("tu_se", FeedKind::TripUpdates, "trip_updates.pb", 60)];
 static PL: [FeedSpec; 1] = [feed("tu_pl", FeedKind::TripUpdates, "trip_updates.pb", 60)];
+/// Czechia: PID's trains (Prague and Central Bohemia) from Golemio, GPS and
+/// delays, kept to trains by backend-eu; the rest of the country by
+/// timetable.
+static CZ: [FeedSpec; 2] = [
+    feed(
+        "vp_cz",
+        FeedKind::VehiclePositions,
+        "vehicle_positions.pb",
+        20,
+    ),
+    feed("tu_cz", FeedKind::TripUpdates, "trip_updates.pb", 60),
+];
 
 #[derive(Debug)]
 pub struct Finland;
@@ -62,6 +74,8 @@ pub struct Switzerland;
 pub struct Poland;
 #[derive(Debug)]
 pub struct Sweden;
+#[derive(Debug)]
+pub struct Czechia;
 
 macro_rules! adapter {
     ($t:ty, $id:literal, $feeds:ident) => {
@@ -107,6 +121,50 @@ impl SourceAdapter for Norway {
     }
 }
 
+impl SourceAdapter for Czechia {
+    fn id(&self) -> &'static str {
+        "czechia"
+    }
+    fn feeds(&self) -> &'static [FeedSpec] {
+        &CZ
+    }
+    fn decode(&self, kind: FeedKind, bytes: &[u8]) -> Result<FeedData, DecodeError> {
+        let mut data = crate::renfe::Renfe.decode(kind, bytes)?;
+        // Golemio's vehicles are "train-9504": the national train number,
+        // as CIS JŘ's timetable has it. Its trip ids are PID's own
+        // ("1030_9504_260309", route_number_version), and the same train's
+        // can differ between the two feeds: both are keyed by the number,
+        // so a train's delay joins its GPS.
+        match &mut data {
+            FeedData::Vehicles(vs) => {
+                for v in vs {
+                    if let Some(n) = v.train_number.strip_prefix("train-") {
+                        v.train_number = n.to_owned();
+                    }
+                    if !v.train_number.is_empty() {
+                        v.trip_id = format!("cz-{}", v.train_number);
+                    }
+                }
+            }
+            FeedData::TripUpdates(us) => {
+                for u in us {
+                    if let Some(n) = czech_number(&u.trip_id) {
+                        u.trip_id = format!("cz-{n}");
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(data)
+    }
+}
+
+/// The train number in a PID trip id ("1030_9504_260309" → "9504").
+pub fn czech_number(trip_id: &str) -> Option<&str> {
+    let n = trip_id.split('_').nth(1)?;
+    (!n.is_empty() && n.chars().all(|c| c.is_ascii_digit())).then_some(n)
+}
+
 /// Norway's train number in Entur's trip id (as refdata-build's
 /// `nordic::norwegian_number`): the leading digits, or Flytoget's third part.
 pub fn norwegian_number(trip_id: &str) -> String {
@@ -123,7 +181,7 @@ pub fn norwegian_number(trip_id: &str) -> String {
 
 /// Regions with GPS for some trains and timetable plus delay for the rest.
 pub fn mixed(region: &str) -> bool {
-    matches!(region, "fi" | "fi-l" | "no")
+    matches!(region, "fi" | "fi-l" | "no" | "cz" | "cz-r")
 }
 
 /// Regions placed by timetable plus delay only.
@@ -137,7 +195,8 @@ mod tests {
 
     #[test]
     fn which_regions_have_gps() {
-        assert!(mixed("fi") && mixed("fi-l") && mixed("no"));
+        assert!(mixed("fi") && mixed("fi-l") && mixed("no") && mixed("cz-r"));
+        assert_eq!(Czechia.feeds()[0].key, "vp_cz");
         assert!(!mixed("nl") && placed("nl"));
         assert!(placed("ch-r") && placed("pl") && placed("se") && !placed("ee"));
         assert_eq!(Switzerland.feeds()[1].key, "alerts");
@@ -148,5 +207,44 @@ mod tests {
             norwegian_number("FLT:ServiceJourney:1-2614-3736-20261122"),
             "3736"
         );
+    }
+
+    #[test]
+    fn czech_vehicles_carry_the_train_number() {
+        use crate::gtfs_rt::*;
+        use prost::Message;
+        let msg = FeedMessage {
+            header: None,
+            entity: vec![FeedEntity {
+                id: Some("2026-11-23T04:44:00Z_9504".into()),
+                vehicle: Some(VehiclePosition {
+                    trip: Some(TripDescriptor {
+                        trip_id: Some("1003_9504_260309".into()),
+                        ..Default::default()
+                    }),
+                    position: Some(Position {
+                        latitude: 50.28,
+                        longitude: 14.58,
+                        ..Default::default()
+                    }),
+                    vehicle: Some(VehicleDescriptor {
+                        id: Some("train-9504".into()),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }],
+        };
+        let FeedData::Vehicles(v) = Czechia
+            .decode(FeedKind::VehiclePositions, &msg.encode_to_vec())
+            .unwrap()
+        else {
+            panic!("wrong kind");
+        };
+        assert_eq!(v[0].train_number, "9504");
+        assert_eq!(v[0].trip_id, "cz-9504");
+        assert_eq!(czech_number("1030_9504_260309"), Some("9504"));
+        assert_eq!(czech_number("odd"), None);
     }
 }

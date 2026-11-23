@@ -39,7 +39,7 @@ off, behind its own variable, so it doesn't hold the others back.
 | **M3** | Switzerland, Sweden | GTFS-Realtime behind a free key, with tight quotas | `CH_OTD_*`, `SE_TRAFIKLAB_STATIC_KEY`, `SE_TRAFIKLAB_RT_KEY`, `SE_TRAFIKVERKET_KEY` |
 | **M4** (Slovakia and Estonia built) | Austria, Slovakia, Slovenia, Estonia, Latvia, Lithuania, Hungary | Timetables only: no live server, the same build for all | `AT_MVO_*`; Hungary's form |
 | **M5** | Germany, Poland | Each needs its own live adapter, behind a key | `DE_*`, `PL_PLK_API_KEY` |
-| **M6** (Czechia built, by timetable) | Czechia, Denmark | Czechia: CIS JŘ's NeTEx read by `tools/cisjr-gtfs.py` with the CZPTT cancellations; live from Golemio (Prague and Central Bohemia) next | `CZ_GOLEMIO_KEY` (done); Denmark's access point login |
+| **M6** (Czechia built, by timetable) | Czechia, Denmark | Czechia: CIS JŘ's NeTEx read by `tools/cisjr-gtfs.py` with the CZPTT cancellations; live from Golemio's open GTFS-Realtime (Prague and Central Bohemia, no key) | Denmark's access point login |
 | **M7** | Portugal, Belgium, Italy, Croatia, Romania, Greece | Only when the letters bring permission | Replies to the letters |
 
 **The trade-off.** Bigger PRs take longer to review, and one failing test holds the whole merge.

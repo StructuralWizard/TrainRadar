@@ -12,6 +12,7 @@
 //   turned into GTFS-Realtime → pl/rt/.
 // - Sweden (SE_ENABLED, Worker secret SE_TRAFIKLAB_RT_KEY): Trafiklab's
 //   regional feeds, kept to our trains → se/rt/.
+// - Czechia (CZ_ENABLED; no key): Golemio's PID feeds, kept to trains → cz/rt/.
 // Each *_ENABLED variable is that country's kill switch.
 
 import { emptyState, runCycle } from "./cycle.js";
@@ -19,9 +20,10 @@ import { CH, PL } from "./central.js";
 import { FR } from "./france.js";
 import { IE } from "./ireland.js";
 import { SE } from "./sweden.js";
+import { CZ } from "./czechia.js";
 import { FI, NL, NO } from "./nordic.js";
 
-export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE };
+export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ };
 
 export class FeedIngest {
   constructor(ctx, env) {

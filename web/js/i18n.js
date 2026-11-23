@@ -57,6 +57,8 @@ export const STRINGS = {
     srcChTimetable: "Horario y paradas: opentransportdata.swiss.",
     srcSeDelay: "Retraso: Samtrafiken, vía Trafiklab (en directo, CC0).",
     srcSeTimetable: "Horario y paradas: Samtrafiken, vía Trafiklab (CC0).",
+    srcCzDelay: "Retraso y posición: PID (ROPID, vía Golemio), en directo en Praga y Bohemia Central.",
+    srcCzTimetable: "Horario y paradas: Ministerio de Transporte checo (CIS JŘ).",
     srcPlDelay: "Retraso: PKP PLK, Otwarte Dane Kolejowe (en directo).",
     srcPlTimetable: "Horario y paradas: PKP PLK, Otwarte Dane Kolejowe.",
     sourceEstimated: "estimado",
@@ -610,7 +612,7 @@ export const STRINGS = {
     attributionPl:
       'Datos: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con PKP PLK ni los operadores',
     attributionCz:
-      'Datos: horario nacional del Ministerio de Transporte de la República Checa (<a href="https://portal.cisjr.cz/" target="_blank" rel="noopener">CIS JŘ</a>) · Vías y estaciones: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con České dráhy ni los operadores',
+      'Datos: horario nacional del Ministerio de Transporte de la República Checa (<a href="https://portal.cisjr.cz/" target="_blank" rel="noopener">CIS JŘ</a>) · En directo en Praga y Bohemia Central: PID (ROPID, vía <a href="https://golemio.cz/" target="_blank" rel="noopener">Golemio</a>) · Vías y estaciones: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con České dráhy ni los operadores',
     attributionAt:
       'Data source: Mobilitätsverbünde Österreich OG - <a href="https://data.mobilitaetsverbuende.at/" target="_blank" rel="noopener">data.mobilitaetsverbuende.at</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con ÖBB ni los operadores',
     attributionEe:
@@ -674,6 +676,8 @@ export const STRINGS = {
     srcChTimetable: "Timetable and stops: opentransportdata.swiss.",
     srcSeDelay: "Delay: Samtrafiken, via Trafiklab (live, CC0).",
     srcSeTimetable: "Timetable and stops: Samtrafiken, via Trafiklab (CC0).",
+    srcCzDelay: "Delay and position: PID (ROPID, via Golemio), live in Prague and Central Bohemia.",
+    srcCzTimetable: "Timetable and stops: Czech Ministry of Transport (CIS JŘ).",
     srcPlDelay: "Delay: PKP PLK, Otwarte Dane Kolejowe (live).",
     srcPlTimetable: "Timetable and stops: PKP PLK, Otwarte Dane Kolejowe.",
     sourceEstimated: "estimated",
@@ -1227,7 +1231,7 @@ export const STRINGS = {
     attributionPl:
       'Data: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with PKP PLK or the operators',
     attributionCz:
-      'Data: the national timetable of the Czech Ministry of Transport (<a href="https://portal.cisjr.cz/" target="_blank" rel="noopener">CIS JŘ</a>) · Track and stations: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with České dráhy or the operators',
+      'Data: the national timetable of the Czech Ministry of Transport (<a href="https://portal.cisjr.cz/" target="_blank" rel="noopener">CIS JŘ</a>) · Live in Prague and Central Bohemia: PID (ROPID, via <a href="https://golemio.cz/" target="_blank" rel="noopener">Golemio</a>) · Track and stations: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with České dráhy or the operators',
     attributionAt:
       'Data source: Mobilitätsverbünde Österreich OG - <a href="https://data.mobilitaetsverbuende.at/" target="_blank" rel="noopener">data.mobilitaetsverbuende.at</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with ÖBB or the operators',
     attributionEe:
