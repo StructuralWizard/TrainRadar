@@ -38,13 +38,16 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
     state.minute = (state.minute + 1) % 1_000_000;
     cycle.feed = feed.name;
     try {
-      const r = await fetchFn(country.base + feed.path, { headers: country.headers(env, feed) });
+      // Sweden: the key in the URL (Trafiklab's only way; AGENTS.md). Errors
+      // name feed.path, never this URL.
+      const url = country.url ? country.url(env, feed) : country.base + feed.path;
+      const r = await fetchFn(url, { headers: country.headers(env, feed) });
       if (!r.ok) throw new Error(`${feed.path}: HTTP ${r.status}`);
       let bytes = new Uint8Array(await r.arrayBuffer());
       if (bytes.length === 0) throw new Error(`${feed.path}: empty response`);
       // JSON sources (Poland) become GTFS-Realtime here.
       if (feed.convert) bytes = feed.convert(bytes, now);
-      const keep = country.keep(feed.name, bytes);
+      const keep = await country.keep(feed.name, bytes, { env, fetchFn, now });
       const out = filterFeed(bytes, keep || (() => true));
       const meta = { httpMetadata: { contentType: "application/x-protobuf", cacheControl: CACHE } };
       await env.LIVE.put(country.prefix + feed.name, out.bytes, meta);
@@ -66,9 +69,13 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
       state.lastError = null;
     } catch (e) {
       cycle.ok = false;
-      cycle.error = String(e?.message || e).slice(0, 300);
+      cycle.error = String(e?.message || e)
+        .replaceAll(env.SE_TRAFIKLAB_RT_KEY || "\u0000", "***")
+        .slice(0, 300);
       state.failures = (state.failures || 0) + 1;
-      state.nextAt = now + backoffMs(state.failures);
+      // Sweden's regions take turns: one failing region skips its turn
+      // instead of stopping the others.
+      if (!country.rotate) state.nextAt = now + backoffMs(state.failures);
       state.failingSince ||= at;
       state.lastError = cycle.error;
       if (state.feeds[feed.name]) state.feeds[feed.name].ok = false;

@@ -232,6 +232,34 @@ jobs:
           unzip -p gtfs/pl/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/pl-trips.txt
           echo "### pl: live probe" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs pl build/pl-trips.txt build/probe-pl | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Austria (Mobilitätsverbünde Österreich; portal login AT_MVO_*)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          AT_MVO_USERNAME: ${{ secrets.AT_MVO_USERNAME }}
+          AT_MVO_PASSWORD: ${{ secrets.AT_MVO_PASSWORD }}
+        run: |
+          set -o pipefail
+          if [ -z "$AT_MVO_USERNAME" ]; then echo "Austria: no AT_MVO_USERNAME (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          tools/fetch-eu.sh at --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/at --at-gtfs gtfs/at/gtfs.zip \
+            --sources gtfs/at/sources.tsv --report refdata-at.md
+          target/release/refdata-build verify build/at
+          { echo "## Austria reference data"; echo; cat refdata-at.md; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: gtfs/cz/cisjr
+          key: cisjr-v1-${{ github.run_id }}
+          restore-keys: cisjr-v1-
+      - name: Czechia (CIS JŘ, no key; stations from OSM)
+        continue-on-error: true # outside services: a report, not a gate
+        run: |
+          set -o pipefail
+          command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh cz --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/cz --cz-gtfs gtfs/cz/gtfs.zip \
+            --sources gtfs/cz/sources.tsv --report refdata-cz.md
+          target/release/refdata-build verify build/cz
+          { echo "## Czechia reference data"; echo; cat refdata-cz.md; } >> "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

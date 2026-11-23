@@ -261,12 +261,30 @@ app, and update the "last updated" dates when they change.
   daily; a failure leaves that country out of the deploy and never stops the rest.
 - **Live data:** Switzerland's trip updates and alerts (`ch/rt/`) and Poland's live running
   (`pl/rt/`, PKP PLK's JSON turned into GTFS-Realtime by the Worker) come from the `eu` job's
-  Worker, which gets the keys as Worker secrets. Sweden goes by timetable for now: its live
-  feeds come per region, mixed with buses (the PR's Refdata run measures them).
+  Worker, which gets the keys as Worker secrets. Sweden's live delays (`se/rt/`) come from
+  Trafiklab's regional feeds, one region every 8 s, kept to the trains in our timetable (the
+  deploy publishes their trip ids as `data/se/rail-trips.txt`); needs `SE_TRAFIKLAB_RT_KEY`
+  at the Silver level (about 10,000 calls a day) and its own switch, **`SE_LIVE_ENABLED`** =
+  `true`; `SE_ENABLED` alone gives Sweden by timetable.
 - **Tested on pull requests:** the Refdata workflow builds the three countries and calls each
   live source once through the Worker's own code (`tools/feed-check/eu-probe.mjs`), reporting
   how many live trips match the timetable. Approved by the maintainer (AGENTS.md).
 - **Where they show:** hidden countries, `?country=ch`, `?country=se`, `?country=pl`.
+
+## Austria (M4)
+
+- **Turning it on:** **`AT_ENABLED`** = `true`, with `AT_MVO_USERNAME` and `AT_MVO_PASSWORD`
+  (the data portal's login). By timetable only; `?country=at`.
+
+## Czechia (M6)
+
+- **Turning it on:** **`CZ_ENABLED`** = `true`. No key. By timetable for now; `?country=cz`.
+- **What the deploy builds:** `data/cz/` (`cz` long distance, `cz-r` regional) and its `plan/`, from
+  CIS JŘ's national timetable (`tools/cisjr-gtfs.py`): the NeTEx trains minus the CZPTT
+  cancellations of the next nine days. CIS JŘ has no coordinates, so stations are placed from
+  OpenStreetMap (weekly, with the track); the build's report says how many were found.
+- **Rebuilt daily** (cancellations change every day). The portal's files are cached between runs, so
+  a day's run downloads only the new ones; the first run fetches a few thousand small files.
 
 ## Slovakia and Estonia (M4)
 

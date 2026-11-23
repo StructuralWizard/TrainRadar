@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -19,6 +19,14 @@
 #                         needs SE_TRAFIKLAB_STATIC_KEY
 #                     pl  PKP PLK's schedules as GTFS (tools/plk-gtfs.py);
 #                         needs PL_PLK_API_KEY
+#                     at  Mobilitätsverbünde Österreich's rail GTFS
+#                         (dataset 66, "Fahrplandaten Eisenbahn (GTFS) -
+#                         aktuell"); needs AT_MVO_USERNAME, AT_MVO_PASSWORD
+#                     cz  CIS JŘ's national timetable (Ministry of Transport),
+#                         NeTEx and CZPTT cancellations, as GTFS by
+#                         tools/cisjr-gtfs.py, stations placed from
+#                         OpenStreetMap (so cz needs the OSM extract); its
+#                         downloads are kept in gtfs/cz/cisjr/ (CI caches it)
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -118,14 +126,74 @@ case "$cc" in
     printf '%s\t%s\t\t%s\n' "PKP PLK (Otwarte Dane Kolejowe)" https://pdp-api.plk-sa.pl/api/v1/schedules \
       "$(date -u '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
     region=poland ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl [--no-osm]" >&2; exit 2 ;;
+  at)
+    [ -n "${AT_MVO_USERNAME:-}" ] && [ -n "${AT_MVO_PASSWORD:-}" ] || { echo "AT_MVO_USERNAME and AT_MVO_PASSWORD are not set" >&2; exit 2; }
+    # Log in to the portal (its Keycloak, as the website does), then
+    # download with the short-lived token. The password goes only in the
+    # login request's body; neither it nor the token is printed or
+    # written anywhere, nor put on a command line.
+    token=$(python3 -I -c '
+import json, os, sys, urllib.parse, urllib.request
+body = urllib.parse.urlencode({"client_id": "dbp-public-ui", "grant_type": "password", "scope": "openid",
+    "username": os.environ["AT_MVO_USERNAME"], "password": os.environ["AT_MVO_PASSWORD"]}).encode()
+req = urllib.request.Request("https://user.mobilitaetsverbuende.at/auth/realms/dbp-public/protocol/openid-connect/token",
+    data=body, headers={"User-Agent": "Metranos-TrainRadar"})
+try:
+    print(json.load(urllib.request.urlopen(req, timeout=60))["access_token"])
+except Exception as e:
+    sys.exit("Mobilitätsverbünde login failed: " + str(getattr(e, "code", "")) + " " + type(e).__name__)
+')
+    api=https://data.mobilitaetsverbuende.at/api/public/v1/data-sets/66
+    # The file is per timetable year; from mid-December, next year's.
+    year=$(date -u +%Y)
+    got=""
+    for y in "$year" $((year + 1)) $((year - 1)); do
+      if printf 'header = "Authorization: Bearer %s"\n' "$token" | curl -fsSL --retry 3 --retry-delay 15 \
+          -A "$client (+https://mytrainradar.com)" -o "$dir/download.zip" -K - "$api/$y/file"; then
+        got=$y; break
+      fi
+    done
+    unset token
+    [ -n "$got" ] || { echo "Mobilitätsverbünde: no file for $year or around it" >&2; exit 1; }
+    printf '%s\t%s\t\t%s\n' "Mobilitätsverbünde Österreich OG (data.mobilitaetsverbuende.at)" "$api/$got/file" \
+      "$(date -u '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
+    echo "download.zip: $(du -h "$dir/download.zip" | cut -f1), timetable year $got"
+    # The GTFS itself, or a zip holding it.
+    if unzip -l "$dir/download.zip" | grep -q ' stops.txt$'; then
+      mv "$dir/download.zip" "$dir/all.zip"
+    else
+      inner=$(unzip -Z1 "$dir/download.zip" | grep -i '\.zip$' | head -1)
+      [ -n "$inner" ] || { echo "Mobilitätsverbünde: no GTFS in the download" >&2; unzip -l "$dir/download.zip" >&2; exit 1; }
+      unzip -p "$dir/download.zip" "$inner" >"$dir/all.zip"
+      rm -f "$dir/download.zip"
+    fi
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
+    rm -f "$dir/all.zip"
+    region=austria ;;
+  cz)
+    # CIS JŘ has no coordinates: stations come from OpenStreetMap, so the
+    # extract is needed here (the track below reuses it).
+    # (A weekly copy, cached by CI with rail.geojsonseq, is used as is.)
+    region=czech-republic
+    if [ ! -s "$dir/stations.geojsonseq" ]; then
+      out="$dir/$region.osm.pbf"
+      curl -fsSL --retry 6 --retry-delay 20 --retry-all-errors --speed-limit 100000 --speed-time 60 -o "$out" \
+        "https://download.geofabrik.de/europe/$region-latest.osm.pbf" ||
+        { echo "OSM: the Czech extract failed: no station positions, no timetable" >&2; exit 1; }
+      osmium tags-filter --overwrite -o "$dir/stations.osm.pbf" "$out" n/railway=station,halt n/public_transport=station
+      osmium export --overwrite -f geojsonseq --geometry-types=point -o "$dir/stations.geojsonseq" "$dir/stations.osm.pbf"
+      rm -f "$dir/stations.osm.pbf"
+    fi
+    echo "stations.geojsonseq: $(wc -l <"$dir/stations.geojsonseq") OSM stations and halts"
+    python3 -I tools/cisjr-gtfs.py "$dir/gtfs.zip" "$dir/stations.geojsonseq" --cache "$dir/cisjr" --sources "$dir/sources.tsv" 63 ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then
   start=$SECONDS
   out="$dir/$region.osm.pbf"
   url="https://download.geofabrik.de/europe/$region-latest.osm.pbf"
-  curl -fsSL --retry 6 --retry-delay 20 --retry-all-errors --speed-limit 100000 --speed-time 60 -o "$out" "$url" ||
+  [ -s "$out" ] || curl -fsSL --retry 6 --retry-delay 20 --retry-all-errors --speed-limit 100000 --speed-time 60 -o "$out" "$url" ||
     { echo "::warning::OSM: $url failed: built without the track this time (straight lines)." >&2; rm -f "$out"; exit 0; }
   osmium tags-filter --overwrite -o "$dir/rail.osm.pbf" "$out" w/railway=rail,narrow_gauge,disused
   rm "$out"
@@ -134,3 +202,4 @@ if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then
   mv "$dir/rail.geojsonseq.part" "$dir/rail.geojsonseq"
   echo "rail.geojsonseq: $(wc -l <"$dir/rail.geojsonseq") ways, in $((SECONDS - start)) s"
 fi
+rm -f "$dir/$region.osm.pbf"

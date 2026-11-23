@@ -140,7 +140,7 @@ test("France: SNCF's feeds, no key, everything kept; alternating every 30 s", as
 
 test("the Worker re-arms only the countries switched on", async () => {
   const { default: worker, COUNTRIES } = await import("../src/index.js");
-  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl"]);
+  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl", "se"]);
   const asked = [];
   const env = {
     FR_ENABLED: "true",
@@ -248,4 +248,43 @@ test("Poland: PLK's JSON becomes GTFS-Realtime trip updates with the timetable's
   assert.equal(raw.length, 11); // key + ten bytes
   assert.equal(raw[1], 0xc4); // -60's low seven bits, continued
   assert.equal(raw[10], 0x01);
+});
+
+test("Sweden: one region a cycle, the key only in Trafiklab's URL, only our trains", async () => {
+  const { SE, resetRailTrips } = await import("../src/sweden.js");
+  resetRailTrips();
+  const calls = [];
+  const fetchFn = async (url, init) => {
+    calls.push({ url, init });
+    if (url.endsWith("rail-trips.txt")) return new Response("121120100403513959\n55700000091179868\n", { status: 200 });
+    if (url.includes("/skane/")) return new Response(feed(tripUpdate("a", "121120100403513959", null), tripUpdate("b", "121120100000000001", null)), { status: 200 });
+    return new Response(feed(tripUpdate("c", "55700000091179868", null)), { status: 200 });
+  };
+  const LIVE = fakeBucket();
+  const env = { LIVE, SE_TRAFIKLAB_RT_KEY: "se-key", SE_ENABLED: "true" };
+  const s0 = await runCycle({ state: { ...emptyState(), minute: 0 }, env, fetchFn, now: 1_000, country: SE });
+  assert.equal(s0.ok, true, s0.error);
+  assert.equal(s0.fetched, "tu_skane.pb");
+  const call = calls.find((c) => c.url.includes("samtrafiken"));
+  assert.equal(call.url, "https://opendata.samtrafiken.se/gtfs-rt-sweden/skane/TripUpdatesSweden.pb?key=se-key");
+  assert.equal(s0.feeds["tu_skane.pb"].kept, 1);
+  // Next cycle, next region: trip_updates.pb holds both regions' trains.
+  const s1 = await runCycle({ state: { ...emptyState(), minute: 3 }, env, fetchFn, now: 2_000, country: SE });
+  assert.equal(s1.fetched, "tu_otraf.pb");
+  const ids = fields(LIVE.store.get("se/rt/trip_updates.pb").v)
+    .filter((f) => f.field === 2)
+    .map((f) => str(sub(sub(f.value, 3), 1), 1));
+  assert.deepEqual(ids.sort(), ["121120100403513959", "55700000091179868"]);
+  // A refusal names the region, never the URL with the key.
+  const s2 = await runCycle({
+    state: { ...emptyState(), minute: 1 },
+    env,
+    fetchFn: async () => new Response("no", { status: 403 }),
+    now: 3_000,
+    country: SE,
+  });
+  assert.match(s2.error, /sl\/TripUpdatesSweden.pb: HTTP 403/);
+  assert.equal(s2.nextCallAt, null); // the next region still has its turn
+  assert.ok(!JSON.stringify(s2).includes("se-key"));
+  assert.ok(!SE.enabled({ SE_ENABLED: "true" }) && SE.enabled({ SE_ENABLED: "true", SE_TRAFIKLAB_RT_KEY: "k" }));
 });

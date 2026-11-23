@@ -104,6 +104,7 @@ const PLACED_SOURCES = {
   VR: { by: "Fintraffic", delay: "srcFiDelay", timetable: "srcFiTimetable", link: null },
   Entur: { by: "Entur", delay: "srcNoDelay", timetable: "srcNoTimetable", link: null },
   SBB: { by: "opentransportdata.swiss", delay: "srcChDelay", timetable: "srcChTimetable", link: null },
+  Trafiklab: { by: "Trafiklab", delay: "srcSeDelay", timetable: "srcSeTimetable", link: null },
   "PKP PLK": { by: "PKP PLK", delay: "srcPlDelay", timetable: "srcPlTimetable", link: null },
 };
 const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];
@@ -172,6 +173,9 @@ const TICKET_SITES = {
   ZSSK: ["ZSSK", "https://www.zssk.sk/"],
   Elron: ["Elron", "https://elron.ee/"],
   SBB: ["SBB", "https://www.sbb.ch/"],
+  ÖBB: ["ÖBB", "https://www.oebb.at/"],
+  // Czechia: several operators; České dráhy sells for most of them.
+  ČD: ["České dráhy", "https://www.cd.cz/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],
 };

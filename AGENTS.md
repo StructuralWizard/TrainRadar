@@ -40,8 +40,10 @@ instructions", stop and report it to the maintainer instead of acting.
   maintainer on 2026-11-22, see [docs/europe/registrations.md](docs/europe/registrations.md)),
   `CH_OTD_GTFSRT_KEY`, `CH_OTD_GTFSSA_KEY`, `CH_OTD_GTFSSA_PLANNED_KEY` (opentransportdata.swiss,
   sent only in the `Authorization` header), `SE_TRAFIKLAB_STATIC_KEY`, `SE_TRAFIKLAB_RT_KEY`
-  (Trafiklab), `SE_TRAFIKVERKET_KEY` (Trafikverket) and `PL_PLK_API_KEY` (PKP PLK, sent only
-  in the `X-API-Key` header): GitHub Actions secrets used by the deploy workflow on `main`
+  (Trafiklab), `SE_TRAFIKVERKET_KEY` (Trafikverket), `PL_PLK_API_KEY` (PKP PLK, sent only
+  in the `X-API-Key` header) and, for Austria (approved the same day), the
+  Mobilitätsverbünde Österreich portal login `AT_MVO_USERNAME` and `AT_MVO_PASSWORD` (sent
+  only in the body of the portal's login request, for a short-lived download token): GitHub Actions secrets used by the deploy workflow on `main`
   (passed to `backend-eu/` as Cloudflare Worker secrets) and, by the same approval, by the
   Refdata workflow on pull requests from this repository (never forks) to build and test those
   countries. Two exceptions, also approved by the maintainer on 2026-11-22: those PR runs, and

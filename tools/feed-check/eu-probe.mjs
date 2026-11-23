@@ -50,11 +50,15 @@ function bucket() {
   };
 }
 
+/** fetch, but the Swedish train list from the file just built. */
+const fetchFn = async (url, init) =>
+  url.endsWith("rail-trips.txt") ? new Response(readFileSync(tripsFile, "utf8")) : fetch(url, init);
+
 async function viaWorker(country, minutes) {
   const LIVE = bucket();
   const env = { ...process.env, LIVE };
   for (const minute of minutes) {
-    const s = await runCycle({ state: { ...emptyState(), minute }, env, now: Date.now(), country });
+    const s = await runCycle({ state: { ...emptyState(), minute }, env, fetchFn, now: Date.now(), country });
     const f = s.feeds[s.fetched] || {};
     console.log(`${cc} cycle ${minute}: ${s.fetched} ok=${s.ok} ${s.error || ""} entities=${f.entities ?? "-"} kept=${f.kept ?? "-"}`);
   }
@@ -85,31 +89,12 @@ if (cc === "ch") {
 } else if (cc === "pl") {
   await viaWorker(PL, [0]);
 } else if (cc === "se") {
-  const key = process.env.SE_TRAFIKLAB_RT_KEY;
-  if (!key) {
+  // Through the Worker's own code: each region in turn, kept to our trains
+  // (the list the deploy publishes, here the one just built).
+  const { SE } = await import("../../backend-eu/src/sweden.js");
+  if (!process.env.SE_TRAFIKLAB_RT_KEY) {
     console.log("se: SE_TRAFIKLAB_RT_KEY is not set");
     process.exit(0);
   }
-  // Bronze allows 50 calls a minute: a few regions, both of Trafiklab's
-  // realtime APIs (GTFS Sweden 3 Realtime; GTFS Regional Realtime).
-  const ops = ["skane", "otraf", "ul", "sl"];
-  for (const op of ops) {
-    for (const [api, path] of [["Sweden 3", `gtfs-rt-sweden/${op}/TripUpdatesSweden.pb`], ["Regional", `gtfs-rt/${op}/TripUpdates.pb`]]) {
-      try {
-        // Trafiklab takes the key only in the URL (AGENTS.md); never printed.
-        const r = await fetch(`https://opendata.samtrafiken.se/${path}?key=${encodeURIComponent(key)}`, {
-          headers: { "user-agent": "Metranos-TrainRadar", "accept-encoding": "gzip" },
-        });
-        if (!r.ok) {
-          const msg = (await r.text()).slice(0, 200).replaceAll(key, "***");
-          console.log(`se ${op} (${api}): HTTP ${r.status} ${msg}`);
-          continue;
-        }
-        report(`${op} (${api})`, new Uint8Array(await r.arrayBuffer()));
-      } catch (e) {
-        console.log(`se ${op} (${api}): ${String(e.message).replaceAll(key, "***")}`);
-      }
-      await new Promise((r) => setTimeout(r, 1500));
-    }
-  }
+  await viaWorker(SE, SE.feeds.map((_, i) => i));
 }

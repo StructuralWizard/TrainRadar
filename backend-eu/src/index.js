@@ -10,15 +10,18 @@
 //   CH_OTD_GTFSSA_KEY, CH_OTD_GTFSSA_PLANNED_KEY) → ch/rt/;
 // - Poland (PL_ENABLED, Worker secret PL_PLK_API_KEY): PLK's live running,
 //   turned into GTFS-Realtime → pl/rt/.
+// - Sweden (SE_ENABLED, Worker secret SE_TRAFIKLAB_RT_KEY): Trafiklab's
+//   regional feeds, kept to our trains → se/rt/.
 // Each *_ENABLED variable is that country's kill switch.
 
 import { emptyState, runCycle } from "./cycle.js";
 import { CH, PL } from "./central.js";
 import { FR } from "./france.js";
 import { IE } from "./ireland.js";
+import { SE } from "./sweden.js";
 import { FI, NL, NO } from "./nordic.js";
 
-export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL };
+export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE };
 
 export class FeedIngest {
   constructor(ctx, env) {
@@ -70,6 +73,6 @@ export default {
     }
   },
   async fetch() {
-    return new Response("TrainRadar Europe ingest: see <country>/rt/status.json on the live domain (ie, fr, fi, no, nl, ch, pl).\n");
+    return new Response("TrainRadar Europe ingest: see <country>/rt/status.json on the live domain (ie, fr, fi, no, nl, ch, pl, se).\n");
   },
 };

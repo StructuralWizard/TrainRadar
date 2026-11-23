@@ -35,6 +35,8 @@ export const isIrishRailRoute = (id) => IR_ROUTE.test(id || "");
 /** Which of a country's feeds to fetch on cycle `n`: the first one whose
  * `every` divides n, among those fetched less often; else the main one. */
 export function feedFor(n, country = IE) {
+  // Sweden's regions: one after the other.
+  if (country.rotate) return country.feeds[n % country.feeds.length];
   return country.feeds.find((f) => f.every > 1 && n % f.every === 0) || country.feeds[0];
 }
 

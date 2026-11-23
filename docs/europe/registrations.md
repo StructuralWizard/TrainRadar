@@ -39,7 +39,7 @@ off, behind its own variable, so it doesn't hold the others back.
 | **M3** | Switzerland, Sweden | GTFS-Realtime behind a free key, with tight quotas | `CH_OTD_*`, `SE_TRAFIKLAB_STATIC_KEY`, `SE_TRAFIKLAB_RT_KEY`, `SE_TRAFIKVERKET_KEY` |
 | **M4** (Slovakia and Estonia built) | Austria, Slovakia, Slovenia, Estonia, Latvia, Lithuania, Hungary | Timetables only: no live server, the same build for all | `AT_MVO_*`; Hungary's form |
 | **M5** | Germany, Poland | Each needs its own live adapter, behind a key | `DE_*`, `PL_PLK_API_KEY` |
-| **M6** | Czechia, Denmark | Both need the NeTEx reader | Denmark's access point login |
+| **M6** (Czechia built, by timetable) | Czechia, Denmark | Czechia: CIS JŘ's NeTEx read by `tools/cisjr-gtfs.py` with the CZPTT cancellations; live from Golemio (Prague and Central Bohemia) next | `CZ_GOLEMIO_KEY` (done); Denmark's access point login |
 | **M7** | Portugal, Belgium, Italy, Croatia, Romania, Greece | Only when the letters bring permission | Replies to the letters |
 
 **The trade-off.** Bigger PRs take longer to review, and one failing test holds the whole merge.
@@ -116,7 +116,14 @@ Done (keys in GitHub on 2026-11-22). For the record:
 
 ### M4: timetable-only countries
 
-1. **Mobilitätsverbünde Österreich** (needed for Austria).
+1. **Mobilitätsverbünde Österreich** (Austria; done 2026-11-22): the portal login is in
+   `AT_MVO_USERNAME`, `AT_MVO_PASSWORD`. The build logs in like the website (Keycloak realm
+   `dbp-public`, client `dbp-public-ui`, password grant) and downloads dataset 66, "Fahrplandaten
+   Eisenbahn (GTFS) - aktuell" (ÖBB, WESTbahn, GYSEV, Montafonerbahn, ÖGEG; other railways are in
+   the regional files). Commercial use allowed; credit "Data source: Mobilitätsverbünde
+   Österreich OG - data.mobilitaetsverbuende.at". Their terms ask apps to tell
+   services@mobilitaetsverbuende.at where they can be found (a request, not a condition).
+   The original notes:
    - Where: `data.mobilitaetsverbuende.at` → register → accept the data licence → request
      "Fahrplandaten Eisenbahn (GTFS)".
    - Read the licence when you accept it, and tell me if it limits commercial use.
@@ -218,7 +225,7 @@ Done (keys in GitHub on 2026-11-22). For the record:
 | `SE_TRAFIKLAB_STATIC_KEY` | secret | M3 | done |
 | `SE_TRAFIKLAB_RT_KEY` | secret | M3 | done |
 | `SE_TRAFIKVERKET_KEY` | secret | M3 | done (not used yet) |
-| `AT_MVO_USERNAME`, `AT_MVO_PASSWORD` | secrets | M4 | needed |
+| `AT_MVO_USERNAME`, `AT_MVO_PASSWORD` | secrets | M4 | done |
 | `HU_MAV_GTFS_KEY` (name to confirm) | secret | M4 | needed |
 | `DE_DELFI_USERNAME`, `DE_DELFI_PASSWORD` | secrets | M5 | needed; start now |
 | `DE_DB_CLIENT_ID`, `DE_DB_API_KEY` | secrets | M5 | needed; start now |

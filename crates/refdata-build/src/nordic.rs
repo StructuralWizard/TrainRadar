@@ -23,6 +23,11 @@ pub const CH_REGIONAL: &str = "ch-r";
 pub const SE: &str = "se";
 pub const PL: &str = "pl";
 pub const PL_REGIONAL: &str = "pl-r";
+/// Austria (M4): by timetable.
+pub const AT: &str = "at";
+/// Czechia: by timetable, long distance and regional.
+pub const CZ: &str = "cz";
+pub const CZ_REGIONAL: &str = "cz-r";
 
 pub const ATTRIBUTION_FI: &str = "Data: Fintraffic / digitraffic.fi, CC BY 4.0. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
@@ -38,6 +43,10 @@ pub const ATTRIBUTION_SE: &str = "Data: Samtrafiken / Trafiklab.se (GTFS Sweden 
 Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_PL: &str = "Data: PKP Polskie Linie Kolejowe S.A., Otwarte Dane Kolejowe \
 (pdp-api.plk-sa.pl). Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_AT: &str = "Data source: Mobilitätsverbünde Österreich OG - \
+data.mobilitaetsverbuende.at. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_CZ: &str = "Data: Ministry of Transport of the Czech Republic, CIS JŘ \
+(portal.cisjr.cz). Track and stations: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
 shapes ODbL. Track: © OpenStreetMap contributors, ODbL 1.0.";
 
@@ -52,6 +61,8 @@ pub fn tz(code: &str) -> Option<&'static str> {
         CH | CH_REGIONAL => "Europe/Zurich",
         SE => "Europe/Stockholm",
         PL | PL_REGIONAL => "Europe/Warsaw",
+        AT => "Europe/Vienna",
+        CZ | CZ_REGIONAL => "Europe/Prague",
         _ => return None,
     })
 }
@@ -69,6 +80,9 @@ pub fn region_name(code: &str) -> &'static str {
         SE => "Sweden",
         PL => "Poland (long distance)",
         PL_REGIONAL => "Poland (regional)",
+        AT => "Austria",
+        CZ => "Czechia (long distance)",
+        CZ_REGIONAL => "Czechia (regional)",
         _ => "",
     }
 }
@@ -334,6 +348,24 @@ pub fn split_poland(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
     out
 }
 
+/// Czechia (tools/cisjr-gtfs.py): routes are an operator and a commercial
+/// category ("Ceskedrahyas:R"). Fast and international trains are long
+/// distance; Os, Sp, Rx and the like regional.
+const CZECH_LONG: [&str; 13] = [
+    "EC", "IC", "Ex", "EN", "SC", "R", "rj", "LE", "RJ", "AEx", "NJ", "ES", "TLX",
+];
+
+pub fn split_czechia(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
+    let mut out: BTreeMap<String, Vec<&crate::load::Trip>> = BTreeMap::new();
+    for t in &feed.trips {
+        let long = CZECH_LONG.contains(&feed.routes[t.route].short_name.as_str());
+        out.entry(if long { CZ } else { CZ_REGIONAL }.to_owned())
+            .or_default()
+            .push(t);
+    }
+    out
+}
+
 /// Sweden (GTFS Sweden 3, cut to trains): the product from the route's
 /// short name, else its long name ("SJ Snabbtåg", "Pågatåg"); the train
 /// number only when it is one.
@@ -422,6 +454,7 @@ mod tests {
         assert!(swiss_long("102") && !swiss_long("109"));
         assert_eq!(tz(CH_REGIONAL), Some("Europe/Zurich"));
         assert_eq!(tz(PL_REGIONAL), Some("Europe/Warsaw"));
+        assert_eq!(tz(CZ_REGIONAL), Some("Europe/Prague"));
     }
 
     #[test]
