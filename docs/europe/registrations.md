@@ -70,10 +70,12 @@ Status: **needed** blocks a merge; **optional** improves it; **later** waits for
 2. **data.gouv.fr** (later: only if republishing a derived timetable turns out to be required).
    - Where: `www.data.gouv.fr` → account → profile → API key.
    - GitHub: secret `FR_DATAGOUV_API_KEY`.
-3. **Luxembourg, ATP** (later: live departures).
-   - Their key goes in the URL, which AGENTS.md forbids. **Don't register yet.** First email
-     `opendata-api@atp.etat.lu` asking whether the key can be sent in a header instead.
-   - GitHub, if they agree: secret `LU_ATP_API_KEY`.
+3. **Luxembourg, ATP** (later: live data).
+   - ATP answered (Nov 2026): the HAFAS key can't go in a header; quotas are 500 requests an hour
+     and 5,000 a day per service. But ATP will publish **a GTFS-Realtime feed in the coming weeks,
+     with no key and no quota**. Credit: « Administration des transports publics ».
+   - **No key needed:** we wait for the GTFS-Realtime feed, then add it to backend-eu like
+     Finland's (no secret).
 4. **Variables:** `FR_ENABLED` and `LU_ENABLED`, once M1 is merged. Then run the Deploy workflow once
    (Actions → Deploy → Run workflow), so the live Worker starts France's feed.
 

@@ -123,7 +123,9 @@ Europe/Luxembourg · Luxembourgish, French, German · UIC 82.
 `?country=lu`. CFL's trains (GTFS `route_type` 2 or 100–117) from the national GTFS, newest weekly
 file found through data.public.lu's API; one region, by timetable. The file couldn't be downloaded
 from this session (`download.data.public.lu` is blocked), so the PR's refdata workflow is its first
-check. Live departures wait for ATP's answer about the key in the URL.
+check. ATP answered (Nov 2026): no header for the HAFAS key (500 requests an hour, 5,000 a day), but a
+GTFS-Realtime feed with no key and no quota is coming "in the next few weeks". Live data waits for
+that feed. Credit as ATP asks: « Administration des transports publics ».
 
 **Verdict:** open timetables. Live departures only through a HAFAS API whose key goes **in the URL**,
 which AGENTS.md forbids for secrets. Ask ATP for a header instead, or the maintainer decides.
