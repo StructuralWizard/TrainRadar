@@ -40,10 +40,17 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
     try {
       // Sweden: the key in the URL (Trafiklab's only way; AGENTS.md). Errors
       // name feed.path, never this URL.
-      const url = country.url ? country.url(env, feed) : country.base + feed.path;
-      const r = await fetchFn(url, { headers: country.headers(env, feed) });
-      if (!r.ok) throw new Error(`${feed.path}: HTTP ${r.status}`);
-      let bytes = new Uint8Array(await r.arrayBuffer());
+      let bytes;
+      if (feed.produce) {
+        // Denmark: messages received from a queue and merged into the
+        // feed's own state, not one file fetched.
+        bytes = (await feed.produce({ env, fetchFn, now, feed })).bytes;
+      } else {
+        const url = country.url ? country.url(env, feed) : country.base + feed.path;
+        const r = await fetchFn(url, { headers: country.headers(env, feed) });
+        if (!r.ok) throw new Error(`${feed.path}: HTTP ${r.status}`);
+        bytes = new Uint8Array(await r.arrayBuffer());
+      }
       if (bytes.length === 0) throw new Error(`${feed.path}: empty response`);
       // JSON sources (Poland) become GTFS-Realtime here.
       if (feed.convert) bytes = feed.convert(bytes, now);
@@ -71,11 +78,14 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
       cycle.ok = false;
       cycle.error = String(e?.message || e)
         .replaceAll(env.SE_TRAFIKLAB_RT_KEY || "\u0000", "***")
+        .replaceAll(env.DK_NAP_CLIENT_SECRET || "\u0000", "***")
         .slice(0, 300);
       state.failures = (state.failures || 0) + 1;
       // Sweden's regions take turns: one failing region skips its turn
       // instead of stopping the others.
       if (!country.rotate) state.nextAt = now + backoffMs(state.failures);
+      // A refused login (Denmark) won't fix itself: wait the longest.
+      if (e?.fatal) state.nextAt = now + BACKOFF_MAX_MS;
       state.failingSince ||= at;
       state.lastError = cycle.error;
       if (state.feeds[feed.name]) state.feeds[feed.name].ok = false;

@@ -26,6 +26,14 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Local secrets (tools/dk/.env.example shows the names)
+.env
+.env.*
+!.env.example
+
+# Raw samples of live feeds, for inspection only
+/samples/
+
 # Cloudflare
 .wrangler/
 .dev.vars

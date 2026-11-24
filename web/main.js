@@ -2421,7 +2421,7 @@ function renderHomeSummary(st, pos) {
 /** Phone top bar and map buttons: icons and labels (once per language). */
 function phoneChrome() {
   // Close buttons: an SVG cross instead of the ✕ character (labelled).
-  for (const b of document.querySelectorAll('.sheet-head button[id$="-close"], #app-banner-close')) b.replaceChildren(icon("close", 18));
+  for (const b of document.querySelectorAll('.sheet-head button[id$="-close"], #app-banner-close, #country-note-close')) b.replaceChildren(icon("close", 18));
   $("route-swap").replaceChildren(icon("swap", 20));
   $("search-icon").replaceChildren(icon("search", 20));
   $("net-chip").replaceChildren(el("span", { id: "net-chip-l" }, netName()), icon("chevronDown", 16));
@@ -2920,6 +2920,26 @@ function renderAbout() {
       },
     }),
   );
+}
+
+/** A country's note on what it shows, until closed (on this device):
+ * Italy is Lombardy only, as the national timetables aren't open data yet. */
+const COUNTRY_NOTES = { it: { text: "countryNoteIt", link: ["countryNoteItLink", "https://www.cciss.it/"] } };
+function setupCountryNote() {
+  const note = COUNTRY_NOTES[country];
+  const key = `countryNote-${country}`;
+  if (!note || store.get(key) === "closed") return false;
+  $("country-note-text").replaceChildren(
+    t(lang, note.text) + " ",
+    el("a", { href: note.link[1], target: "_blank", rel: "noopener" }, t(lang, note.link[0])),
+  );
+  $("country-note-close").setAttribute("aria-label", t(lang, "close"));
+  $("country-note").hidden = false;
+  $("country-note-close").addEventListener("click", () => {
+    store.set(key, "closed");
+    $("country-note").hidden = true;
+  });
+  return true;
 }
 
 /** One-time "get the app" banner from the 3rd visit (only with a listing). */
@@ -3499,7 +3519,8 @@ $("trips-close").addEventListener("click", () => {
 });
 onBackButton(goBack);
 styleStatusBar();
-setupAppBanner();
+// One banner at a time: a country's note first.
+if (!setupCountryNote()) setupAppBanner();
 $("lang").addEventListener("click", () => {
   lang = lang === "es" ? "en" : "es";
   store.set("lang", lang);

@@ -13,6 +13,8 @@
 // - Sweden (SE_ENABLED, Worker secret SE_TRAFIKLAB_RT_KEY): Trafiklab's
 //   regional feeds, kept to our trains → se/rt/.
 // - Czechia (CZ_ENABLED; no key): Golemio's PID feeds, kept to trains → cz/rt/.
+// - Denmark (DK_ENABLED, Worker secret DK_NAP_CLIENT_SECRET): Rejseplanen's
+//   SIRI-ET from the national access point's Service Bus → dk/rt/.
 // Each *_ENABLED variable is that country's kill switch.
 
 import { emptyState, runCycle } from "./cycle.js";
@@ -21,9 +23,10 @@ import { FR } from "./france.js";
 import { IE } from "./ireland.js";
 import { SE } from "./sweden.js";
 import { CZ } from "./czechia.js";
+import { DK } from "./denmark.js";
 import { FI, NL, NO } from "./nordic.js";
 
-export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ };
+export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK };
 
 export class FeedIngest {
   constructor(ctx, env) {

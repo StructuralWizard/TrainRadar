@@ -123,22 +123,60 @@ Europe/Copenhagen · Danish · UIC 86.
 **Verdict:** feasible through the national access point (NeTEx and SIRI-ET, free), but logging in
 there needs MitID. Rejseplanen's API costs €5,000 a year for commercial use.
 
+**Live data, built (Nov 2026).** A service account on Dataudveksleren is subscribed to six
+SIRI-ET datasets from Rejsekort & Rejseplan A/S, one Azure Service Bus topic each
+(`tools/dk/topics.json`):
+
+| Operator | Dataset | Topic |
+|---|---|---|
+| DSB (long distance, regional) | 785 | `t-distribution-785` |
+| DSB S-tog | 801 | `t-distribution-801` |
+| DSB Vores Tog | 789 | `t-distribution-789` |
+| Lokaltog | 799 | `t-distribution-799` |
+| Nordjyske Jernbaner | 787 | `t-distribution-787` |
+| Öresundståg and Skånetrafiken | 800 | `t-distribution-800` |
+
+- **How it arrives:** namespace `sb-duvproddistribution.servicebus.windows.net`; each dataset is a
+  topic with our named subscription. Messages are SIRI-ET 2.0 XML: one or more
+  `EstimatedVehicleJourney` each, with the line ("Re 4402"), train number (`TrainNumberRef`),
+  `DatedVehicleJourneyRef`, operator, direction, and per call the stop (`StopPointRef`, a UIC
+  station number such as 8600810 for Næstved), aimed and expected or actual times, platform and
+  cancellation. Updates start about an hour before departure, so the night is quiet. No GPS.
+- **How we read it:** the access point is built for AMQP, which a Cloudflare Worker can't hold
+  open, so backend-eu (`src/denmark.js`) uses Service Bus's HTTPS receive instead: one topic every
+  5 s in turn, up to 60 messages each (peek-lock, then complete). `src/siri.js` parses the XML and
+  keeps each topic's journeys (merged by journey ref; dropped an hour after their last call, kept
+  in R2 between cold starts). Out: `dk/rt/trip_updates.pb` (GTFS-Realtime: trip id = the journey
+  ref, the train number as the vehicle label, delays and times per stop, cancellations).
+  `tools/dk/spike.mjs` receives raw messages over AMQP, for inspection.
+- **Login:** Microsoft Entra ID client credentials. Tenant `f1044067-8c60-4022-98d8-69306c5f7238`,
+  client (service account) `a63b12fe-eeae-489c-b1ca-be8a135289f5` (`DK_NAP_TENANT_ID`,
+  `DK_NAP_CLIENT_ID`, these by default), and the secret **`DK_NAP_CLIENT_SECRET`**: a GitHub
+  Actions secret (AGENTS.md), passed to the Worker as a secret; locally in `tools/dk/.env`
+  (gitignored; `tools/dk/.env.example`). A refused login stops Denmark for 30 minutes at a time
+  and says so in `dk/rt/status.json`: the secret can't be recovered, so a new service account is
+  needed (Profile → Service accounts), associated again with all six datasets.
+- **Switch:** `DK_LIVE_ENABLED` (the `eu` job).
+- **Still to do:** the planned timetable. The feeds say to combine them with "Banedanmark
+  Journeys" (no access yet); Rejseplanen's GTFS would do. Until one is built, the trip updates
+  carry their own times, and the app has no Danish timetable to place them on.
+
 | | |
 |---|---|
 | Operators and tickets | DSB, including S-tog (dsb.dk); Arriva; Lokaltog (lokaltog.dk); Nordjyske and Midtjyske Jernbaner; Øresundståg; SJ; DB |
 | Timetables | NeTEx through Dataudveksleren (the national access point, Vejdirektoratet), free after registration. Rejseplanen's GTFS (labs.rejseplanen.dk), "free on request", every ~14 days; commercial terms unverified |
 | Live delays, cancellations | SIRI-ET through Dataudveksleren, free after registration. Rejseplanen API 2.0: €5,000 a year for commercial use |
 | GPS | none open |
-| Platforms | probably in SIRI-ET |
+| Platforms | in SIRI-ET (`DeparturePlatformName`) |
 | Warnings | none open found |
 | Planned works | Banedanmark's web pages only |
 | Lifts | none open |
 | Network and classification | Banedanmark's network statement annexes (no data licence), so OpenStreetMap plus RINF |
-| Station ids | unverified |
+| Station ids | UIC station numbers (`86xxxxx`) in SIRI-ET |
 | Storage | `/dk/` on R2, one national file |
 | Server | adapter `siri` (SIRI-ET → GTFS-RT) |
 | Registrations | Dataudveksleren profile, logged in with MitID: check whether a UK company can get one; otherwise ask Vejdirektoratet for another route. Rejseplanen Labs (request form, approval) only for its GTFS |
-| Secrets | `DK_NAP_…` (the access point's credential, once known) |
+| Secrets | `DK_NAP_CLIENT_SECRET` (the service account's password) |
 | Risks | **needs the NeTEx reader**; the MitID barrier; Rejseplanen's API change on 25 Nov 2026 |
 
 ## Italy (it)

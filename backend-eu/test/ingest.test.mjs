@@ -140,7 +140,7 @@ test("France: SNCF's feeds, no key, everything kept; alternating every 30 s", as
 
 test("the Worker re-arms only the countries switched on", async () => {
   const { default: worker, COUNTRIES } = await import("../src/index.js");
-  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl", "se", "cz"]);
+  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl", "se", "cz", "dk"]);
   const asked = [];
   const env = {
     FR_ENABLED: "true",
@@ -303,4 +303,56 @@ test("Czechia: only PID's trains (vehicle id train-N), from both of Golemio's fe
   assert.deepEqual([1, 2, 3].map((n) => feedFor(n, CZ).name), ["vehicle_positions.pb", "vehicle_positions.pb", "trip_updates.pb"]);
   assert.equal(CZ.enabled({ CZ_ENABLED: "true" }), true);
   assert.equal(CZ.missing({}), null);
+});
+
+test("Poland: every page at first, then only the changes (since), removals applied; 410 reads every page again", async () => {
+  const { PL, resetPolishState } = await import("../src/central.js");
+  resetPolishState();
+  const train = (orderId, delay) => ({
+    scheduleId: 26, orderId, operatingDate: "2026-11-24", trainStatus: "P",
+    stations: [{ stationId: 1, plannedSequenceNumber: 1, actualDeparture: "2026-11-24T08:02:00", departureDelayMinutes: delay }],
+  });
+  const pages = { 1: [train(1, 1), train(2, 2)], 2: [train(3, 3)] };
+  const calls = [];
+  let delta = null;
+  const fetchFn = async (url) => {
+    calls.push(url);
+    const u = new URL(url);
+    if (u.searchParams.get("since")) {
+      if (delta === 410) return new Response("", { status: 410 });
+      return Response.json({ dataVersion: "v2", trains: delta.trains, removedTrains: delta.removed, pagination: { hasNextPage: false } });
+    }
+    const p = Number(u.searchParams.get("page"));
+    return Response.json({ dataVersion: "v1", trains: pages[p], pagination: { page: p, hasNextPage: p < 2 } });
+  };
+  const store = new Map();
+  const LIVE = {
+    put: async (k, v) => store.set(k, v),
+    get: async (k) => (store.has(k) ? { text: async () => store.get(k), arrayBuffer: async () => store.get(k) } : null),
+  };
+  const env = { LIVE, PL_PLK_API_KEY: "pl-key" };
+  const count = () => fields(store.get("pl/rt/trip_updates.pb")).filter((f) => f.field === 2).length;
+  let now = Date.parse("2026-11-24T09:00:00Z");
+  assert.equal((await runCycle({ state: emptyState(), env, fetchFn, now, country: PL })).ok, true);
+  assert.equal(calls.length, 2, "two pages");
+  assert.equal(count(), 3);
+  // The changes: train 2 later, train 3 gone, train 4 new; one call.
+  delta = { trains: [train(2, 5), train(4, 0)], removed: [{ scheduleId: 26, orderId: 3, operatingDate: "2026-11-24" }] };
+  calls.length = 0;
+  now += 120_000;
+  assert.equal((await runCycle({ state: emptyState(), env, fetchFn, now, country: PL })).ok, true);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0], /since=v1/);
+  assert.equal(count(), 3);
+  const state = JSON.parse(store.get("pl/rt/state.json"));
+  assert.equal(state.version, "v2");
+  assert.equal(state.updates["26_2_20261124"].stops[0].departureDelay, 300);
+  assert.ok(!state.updates["26_3_20261124"]);
+  // PLK can't give the changes (410): every page again.
+  delta = 410;
+  calls.length = 0;
+  now += 120_000;
+  assert.equal((await runCycle({ state: emptyState(), env, fetchFn, now, country: PL })).ok, true);
+  assert.equal(calls.length, 3, "the refused delta, then two pages");
+  assert.equal(count(), 3);
 });

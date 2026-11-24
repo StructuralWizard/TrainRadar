@@ -104,21 +104,78 @@ export function polishUpdates(json) {
   return out;
 }
 
+/** Poland's live trains between cycles: { version, fullAt, updates: {id:
+ * update} }, in memory and in R2 (pl/rt/state.json). */
+let plState = null;
+export const resetPolishState = () => (plState = null);
+/** A full read every 6 hours; changes only (`since`) in between. */
+const PL_FULL_MS = 6 * 3_600_000;
+const PL_PAGE = 5000;
+const PL_MAX_PAGES = 10;
+
+async function plkPages(query, { env, fetchFn }) {
+  const headers = PL.headers(env);
+  const trains = [];
+  let removed = [];
+  let version = null;
+  for (let page = 1; page <= PL_MAX_PAGES; page++) {
+    const r = await fetchFn(`${PL.base}operations?pageSize=${PL_PAGE}&withPlanned=true&page=${page}${query}`, { headers });
+    if (r.status === 410) return { gone: true };
+    if (!r.ok) throw new Error(`operations (page ${page}): HTTP ${r.status}`);
+    const j = await r.json();
+    if (page === 1) {
+      version = j.dataVersion || null;
+      removed = j.removedTrains || [];
+    }
+    trains.push(...(j.trains || []));
+    if (!j.pagination?.hasNextPage) return { trains, removed, version, pages: page };
+  }
+  throw new Error(`operations: more than ${PL_MAX_PAGES} pages`);
+}
+
+/** One cycle: every page every 6 hours, else the changes since the last
+ * data version (PLK answers 410 when it can't: then every page). Keeps the
+ * call count within the key's daily quota. */
+async function polishCycle(ctx) {
+  const { env, now } = ctx;
+  if (!plState) {
+    const o = await env.LIVE.get("pl/rt/state.json");
+    plState = o ? JSON.parse(await o.text()) : { version: null, fullAt: 0, updates: {} };
+  }
+  let got = null;
+  if (plState.version && now - plState.fullAt < PL_FULL_MS) {
+    got = await plkPages(`&since=${encodeURIComponent(plState.version)}`, ctx);
+    if (!got.gone) {
+      for (const t of got.trains) {
+        const id = `${t.scheduleId}_${t.orderId}_${String(t.operatingDate || "").slice(0, 10).replaceAll("-", "")}`;
+        const [u] = polishUpdates({ trains: [t] });
+        if (u) plState.updates[id] = u;
+        else delete plState.updates[id];
+      }
+      for (const t of got.removed) {
+        delete plState.updates[`${t.scheduleId}_${t.orderId}_${String(t.operatingDate || "").slice(0, 10).replaceAll("-", "")}`];
+      }
+    }
+  }
+  if (!got || got.gone) {
+    got = await plkPages("", ctx);
+    if (got.gone) throw new Error("operations: HTTP 410 without since");
+    plState.updates = Object.fromEntries(polishUpdates({ trains: got.trains }).map((u) => [u.id, u]));
+    plState.fullAt = now;
+  }
+  if (got.version) plState.version = got.version;
+  await env.LIVE.put("pl/rt/state.json", JSON.stringify(plState), { httpMetadata: { contentType: "application/json", cacheControl: "no-store" } });
+  return { bytes: tripUpdatesFeed(Object.values(plState.updates), Math.floor(now / 1000)), pages: got.pages };
+}
+
 export const PL = {
   code: "pl",
   prefix: "pl/rt/",
   base: "https://pdp-api.plk-sa.pl/api/v1/",
-  // Every 2 minutes: 720 calls a day, within the Basic package (1,000).
+  // Every 2 minutes: one call (the changes), and every page every 6 hours:
+  // about 740 calls a day, within the Basic package (1,000).
   cycleMs: 120_000,
-  feeds: [
-    {
-      name: "trip_updates.pb",
-      path: "operations?pageSize=5000&withPlanned=true",
-      every: 1,
-      convert: (bytes, now) =>
-        tripUpdatesFeed(polishUpdates(JSON.parse(new TextDecoder().decode(bytes))), Math.floor(now / 1000)),
-    },
-  ],
+  feeds: [{ name: "trip_updates.pb", path: "operations", every: 1, produce: polishCycle }],
   source: "PKP Polskie Linie Kolejowe S.A., Otwarte Dane Kolejowe (pdp-api.plk-sa.pl), as GTFS-Realtime",
   enabled: (env) => env.PL_ENABLED === "true" && !!env.PL_PLK_API_KEY,
   missing: (env) => (env.PL_PLK_API_KEY ? null : "no API key (PL_PLK_API_KEY)"),

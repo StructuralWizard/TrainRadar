@@ -274,6 +274,18 @@ jobs:
             --sources gtfs/it/sources.tsv --report refdata-it.md
           target/release/refdata-build verify build/it
           { echo "## Italy (Lombardy) reference data"; echo; cat refdata-it.md; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Denmark spike (Dataudveksleren, SIRI-ET over Azure Service Bus)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          DK_NAP_CLIENT_SECRET: ${{ secrets.DK_NAP_CLIENT_SECRET }}
+        run: |
+          set -o pipefail
+          if [ -z "$DK_NAP_CLIENT_SECRET" ]; then echo "Denmark: no DK_NAP_CLIENT_SECRET (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          (cd tools/dk && npm ci --no-audit --no-fund)
+          node tools/dk/spike.mjs 785 10 samples/dk | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          # The Worker's own receiver, every topic once (HTTPS, as deployed).
+          echo "### dk: live probe" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs dk /dev/null build/probe-dk | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |
