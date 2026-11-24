@@ -286,6 +286,9 @@ jobs:
           # The Worker's own receiver, every topic once (HTTPS, as deployed).
           echo "### dk: live probe" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs dk /dev/null build/probe-dk | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          # The planned timetable: Rejseplanen's NeTEx (dataset 242), described.
+          echo "### dk: NeTEx (dataset 242)" >> "$GITHUB_STEP_SUMMARY"
+          python3 -I tools/dk/netex-spike.py gtfs/dk | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |
