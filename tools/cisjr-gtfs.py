@@ -416,9 +416,15 @@ def download(window, cache, sources, cancel_days=9):
     years = sorted({timetable_year(d) for d in window})
     netex = listing("netex/")
     zips = []
-    for year in years:
+    for year in list(years):
         base = next((n for n in netex if n.lower() == f"netex_gvd{year}.zip"), None)
         if not base:
+            # Next year's timetable is published some weeks before it starts
+            # (mid-December): until then, the window ends with this year's.
+            if year != years[0]:
+                print(f"cz: no NeTEx_GVD{year}.zip on the portal yet: built up to the timetable change", file=sys.stderr)
+                years.remove(year)
+                continue
             raise SystemExit(f"no NeTEx_GVD{year}.zip on the portal")
         zips.append(fetch(PORTAL + "netex/" + base, os.path.join(cache, base), sources, f"cz netex {year}", True))
         for u in sorted(n for n in netex if n.lower().startswith(f"netex_gvd{year}_updates_")):
