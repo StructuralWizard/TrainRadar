@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -35,6 +35,9 @@
 #                         gtfs.zip, and Trenord's GTFS (dati.lombardia.it,
 #                         CC BY 4.0, cut to trains) as trenord.zip when its
 #                         portal serves it
+#                     hu  MÁV Group's GTFS (MÁV-START, GYSEV and the
+#                         Children's Railway; daily), given on registration;
+#                         needs HU_MAV_USERNAME, HU_MAV_PASSWORD
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -247,7 +250,24 @@ except Exception as e:
     python3 -I tools/netex-gtfs.py "$dir/gtfs.zip" "$dir/netex.zip" 63 --profile dk
     rm -f "$dir/netex.zip"
     region=denmark ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk [--no-osm]" >&2; exit 2 ;;
+  hu)
+    [ -n "${HU_MAV_USERNAME:-}" ] && [ -n "${HU_MAV_PASSWORD:-}" ] || { echo "HU_MAV_USERNAME and HU_MAV_PASSWORD are not set" >&2; exit 2; }
+    # HTTP basic authentication. The login goes to curl on its standard
+    # input (a config line), never on a command line, in a URL or a file.
+    url=https://www.mavcsoport.hu/gtfs/gtfsMavMenetrend.zip
+    headers=$(mktemp)
+    python3 -I -c 'import json, os; print("user = " + json.dumps(os.environ["HU_MAV_USERNAME"] + ":" + os.environ["HU_MAV_PASSWORD"]))' |
+      curl -fsSL --retry 4 --retry-delay 15 -D "$headers" -A "$client (+https://mytrainradar.com)" \
+        -o "$dir/gtfs.zip.part" -K - "$url" ||
+      { echo "MÁV GTFS: download refused or failed (HTTP 401 = the login is wrong)" >&2; rm -f "$headers"; exit 1; }
+    mv "$dir/gtfs.zip.part" "$dir/gtfs.zip"
+    printf '%s\t%s\t%s\t%s\n' "MÁV Group GTFS (mavcsoport.hu)" "$url" \
+      "$(grep -i '^etag:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r' || true)" \
+      "$(grep -i '^last-modified:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r' || true)" >>"$dir/sources.tsv"
+    rm -f "$headers"
+    echo "gtfs.zip: $(du -h "$dir/gtfs.zip" | cut -f1)"
+    region=hungary ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

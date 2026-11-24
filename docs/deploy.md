@@ -296,6 +296,14 @@ app, and update the "last updated" dates when they change.
   access point (CCISS) and Trenord's for Lombardy (when its portal serves it); by timetable;
   `?country=it`. See [europe/it.md](europe/it.md).
 
+## Hungary (M4)
+
+- **Turning it on:** **`HU_ENABLED`** = `true`, with `HU_MAV_USERNAME` and `HU_MAV_PASSWORD` (the
+  login MÁV sends after its GTFS form). By timetable only; `?country=hu`.
+- **What the deploy builds:** `data/hu/` (`hu` InterCity, EuroCity, railjet xpress and fast trains;
+  `hu-r` stopping trains and Budapest's suburban lines) and its `plan/`, from MÁV Group's daily GTFS
+  (MÁV-START, GYSEV and the Children's Railway). Replacement buses are left out.
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains

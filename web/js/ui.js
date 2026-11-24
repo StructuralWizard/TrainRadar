@@ -183,6 +183,8 @@ const TICKET_SITES = {
   Trenitalia: ["Trenitalia", "https://www.trenitalia.com/"],
   // Italo's trains are in Trenitalia's file, route ITA.
   "Trenitalia/ITA": ["Italo", "https://www.italotreno.com/"],
+  // MÁV sells GYSEV's tickets too.
+  MÁV: ["MÁV", "https://jegy.mav.hu/"],
   DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],

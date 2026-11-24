@@ -650,6 +650,44 @@ jobs:
             exit 1
           fi
 
+      # Hungary, with HU_ENABLED: MÁV Group's GTFS (login HU_MAV_*), timetable
+      # only, and OSM track → data/hu/.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.HU_ENABLED == 'true'
+        id: osm_hu
+        with:
+          path: gtfs/hu/rail.geojsonseq
+          key: osm-rail-hu-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-hu-v1-
+      - name: Hungary reference data
+        if: vars.HU_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_hu.outputs.cache-hit }}
+          HU_MAV_USERNAME: ${{ secrets.HU_MAV_USERNAME }}
+          HU_MAV_PASSWORD: ${{ secrets.HU_MAV_PASSWORD }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh hu | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/hu-data --gzip \
+              --hu-gtfs gtfs/hu/gtfs.zip --sources gtfs/hu/sources.tsv \
+              $([ -s gtfs/hu/rail.geojsonseq ] && echo --rail gtfs/hu/rail.geojsonseq) --report refdata-hu.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/hu-data; then
+            mv build/hu-data build/data/hu
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/hu-plan --gzip --days 63 \
+                --hu-gtfs gtfs/hu/gtfs.zip --report hu-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/hu-plan; then
+              mv build/hu-plan build/data/hu/plan
+            else
+              echo "::warning::Hungary's plan-ahead timetables failed: Hungary has today's week only."
+            fi
+            { echo "## Hungary reference data"; echo; cat refdata-hu.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Hungary's reference data failed: deploying without Hungary."
+            exit 1
+          fi
+
       # Estonia (M4), with EE_ENABLED: timetable only (no key) → data/ee/.
       - name: Estonia reference data
         if: vars.EE_ENABLED == 'true'
