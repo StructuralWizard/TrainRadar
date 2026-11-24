@@ -30,7 +30,7 @@
 #                     dk  Rejseplanen's NeTEx (Dataudveksleren dataset 242),
 #                         trains as GTFS by tools/netex-gtfs.py; needs
 #                         DK_NAP_CLIENT_SECRET (the service account)
-#                     it  Italy: Trenitalia's NeTEx from the national access
+#                     it  Italy: Trenitalia's and Italo's NeTEx from the national access
 #                         point (CCISS, no key; tools/netex-gtfs.py) as
 #                         gtfs.zip, and Trenord's GTFS (dati.lombardia.it,
 #                         CC BY 4.0, cut to trains) as trenord.zip when its
@@ -200,8 +200,12 @@ except Exception as e:
     # contract"; the Ministry confirmed no agreement is needed).
     get "Trenitalia (Punto di Accesso Nazionale, CCISS)" \
       "https://www.cciss.it/nap/mmtis/public/api/v1/download/blob/Asset/1080596/resource" "$dir/trenitalia.xml.gz"
-    python3 -I tools/netex-gtfs.py "$dir/gtfs.zip" "$dir/trenitalia.xml.gz" 63 --profile it
-    rm -f "$dir/trenitalia.xml.gz"
+    # Italo, from the same access point ("OAP Italo - NeTEx Livello 1",
+    # asset 1814124, same terms), joined to Trenitalia's stations.
+    get "Italo (Punto di Accesso Nazionale, CCISS)" \
+      "https://www.cciss.it/nap/mmtis/public/api/v1/download/blob/Asset/1814124/resource" "$dir/italo.xml.gz"
+    python3 -I tools/netex-gtfs.py "$dir/gtfs.zip" "$dir/trenitalia.xml.gz" 63 --profile it --add "$dir/italo.xml.gz:italo"
+    rm -f "$dir/trenitalia.xml.gz" "$dir/italo.xml.gz"
     # Lombardy: Regione Lombardia's "Orario Ferroviario Regionale Gtfs"
     # (Trenord and Malpensa Express, CC BY 4.0), with its replacement buses
     # cut out. Its portal's download is sometimes broken: Italy is built

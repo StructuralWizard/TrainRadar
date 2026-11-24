@@ -18,9 +18,13 @@ Europe/Rome · Italian · UIC 83. The overview is in [south-north.md](south-nort
   - **Trenord** (Lombardy), Regione Lombardia's GTFS (CC BY 4.0), as region `it-lom` when its
     portal's download works (it redirected to a missing storage host in Nov 2026).
   - Regions `it` (long distance), `it-r` (regional), `it-lom`; switch `IT_ENABLED`.
-- **Italo:** on the access point too ("OAP Italo – NeTEx Livello 1/2", same licence), but its
-  stations are 3-letter codes ("OUE" Torino Porta Susa) and its journeys don't carry the train
-  number plainly: it needs its own mapping to Trenitalia's stations. Next.
+- **Italo (built):** "OAP Italo – NeTEx Livello 1" (asset 1814124, same terms), added to
+  Trenitalia's file with `--add italo.xml.gz:italo`. Its stations are 3-letter codes ("OUE"
+  Torino Porta Susa), joined to the nearest Trenitalia station within 600 m (59 of 63; the other
+  4 are Italobus stops). The train number is the first number of the line's name ("9963_9944" →
+  9963). The file also lists itineraries with a change of train ("8953-8907") and Italobus
+  connections: only each train's own journey is kept, its bus stops dropped. About 115 Italo
+  trains a day, route `ITA`, in the long-distance region, with an Italo ticket link.
 - **Live data: none yet.** The access point says real-time data is being collected and will be
   published; ViaggiaTreno and RFI's station-board endpoints are unofficial and not used.
 

@@ -181,6 +181,8 @@ const TICKET_SITES = {
   ČD: ["České dráhy", "https://www.cd.cz/"],
   Trenord: ["Trenord", "https://www.trenord.it/"],
   Trenitalia: ["Trenitalia", "https://www.trenitalia.com/"],
+  // Italo's trains are in Trenitalia's file, route ITA.
+  "Trenitalia/ITA": ["Italo", "https://www.italotreno.com/"],
   DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],
