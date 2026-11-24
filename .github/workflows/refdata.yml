@@ -283,6 +283,7 @@ jobs:
           if [ -z "$DK_NAP_CLIENT_SECRET" ]; then echo "Denmark: no DK_NAP_CLIENT_SECRET (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
           (cd tools/dk && npm ci --no-audit --no-fund)
           node tools/dk/spike.mjs 785 10 samples/dk | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |
           python3 -I tools/collect-renfe-ld.py gtfs/renfe-ld-pairs.tsv || true
