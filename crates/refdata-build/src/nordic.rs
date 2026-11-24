@@ -54,7 +54,7 @@ pub const ATTRIBUTION_AT: &str = "Data source: Mobilitätsverbünde Österreich 
 data.mobilitaetsverbuende.at. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_CZ: &str = "Data: Ministry of Transport of the Czech Republic, CIS JŘ \
 (portal.cisjr.cz). Track and stations: © OpenStreetMap contributors, ODbL 1.0.";
-pub const ATTRIBUTION_IT: &str = "Data: Trenitalia, via Italy's national access point (CCISS, \
+pub const ATTRIBUTION_IT: &str = "Data: Trenitalia and Italo, via Italy's national access point (CCISS, \
 cciss.it); Trenord, Regione Lombardia open data (dati.lombardia.it), CC BY 4.0. Track: © \
 OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
@@ -380,8 +380,9 @@ pub fn normalise_italy(feed: &mut Feed) -> Stats {
 
 /// Italy (tools/netex-gtfs.py --profile it): routes are Trenitalia's
 /// categories. Frecce, Intercity, EuroCity and night trains are long
-/// distance; Regionale, Regionale Veloce and the suburban services regional.
-const ITALIAN_LONG: [&str; 8] = ["FR", "FA", "FB", "IC", "ICN", "EC", "EN", "EXP"];
+/// distance, as are Italo's (ITA); Regionale, Regionale Veloce and the
+/// suburban services regional.
+const ITALIAN_LONG: [&str; 9] = ["FR", "FA", "FB", "IC", "ICN", "EC", "EN", "EXP", "ITA"];
 
 pub fn split_italy(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
     let mut out: BTreeMap<String, Vec<&crate::load::Trip>> = BTreeMap::new();
