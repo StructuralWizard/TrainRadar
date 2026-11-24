@@ -65,25 +65,42 @@ def main(out):
         print(f"  {i.file_size / 1e6:8.1f} MB  {i.filename}")
     names = [i.filename for i in infos]
     print("dk netex: file name patterns:", collections.Counter(re.sub(r"\d+", "#", n) for n in names).most_common(12))
-    # Element counts in the two largest XML files, and the first rail journey.
-    shown = False
-    for i in [x for x in infos if x.filename.endswith(".xml")][:3]:
-        data = z.read(i.filename).decode("utf-8", "replace")
-        tags = collections.Counter(re.findall(r"<(?:\w+:)?([A-Z]\w+)[\s>/]", data))
-        print(f"dk netex: {i.filename}: {tags.most_common(40)}")
-        modes = collections.Counter(re.findall(r"<TransportMode>(\w+)</TransportMode>", data))
-        print(f"dk netex:   transport modes: {dict(modes)}")
-        if not shown:
-            m = re.search(r"<Line [\s\S]*?</Line>", data)
-            if m:
-                print("dk netex: first Line:", re.sub(r">\s+<", "><", m.group(0))[:1500])
-            m = re.search(r"<ServiceJourney [\s\S]*?</ServiceJourney>", data)
-            if m:
-                print("dk netex: first ServiceJourney:", re.sub(r">\s+<", "><", m.group(0))[:2500])
-                shown = True
-            m = re.search(r"<StopPlace [\s\S]*?</StopPlace>", data)
-            if m:
-                print("dk netex: first StopPlace:", re.sub(r">\s+<", "><", m.group(0))[:1200])
+    # Per operator folder: files, size, and the modes of one file each.
+    dirs = collections.defaultdict(lambda: [0, 0, None])
+    for i in infos:
+        d = i.filename.split("/")[0]
+        dirs[d][0] += 1
+        dirs[d][1] += i.file_size
+    for d, v in dirs.items():
+        small = min((i for i in infos if i.filename.startswith(d + "/") and i.filename.endswith(".xml")), key=lambda i: i.file_size, default=None)
+        if small:
+            head = z.read(small.filename)[:4_000_000].decode("utf-8", "replace")
+            v[2] = dict(collections.Counter(re.findall(r"<TransportMode>(\w+)</TransportMode>", head)))
+    print("dk netex: folders (files, MB, modes in one file):")
+    for d, (n, size, modes) in sorted(dirs.items(), key=lambda kv: -kv[1][1]):
+        print(f"  {d}: {n} files, {size / 1e6:.0f} MB, {modes}")
+    others = [i.filename for i in infos if "_LINE_" not in i.filename]
+    print("dk netex: shared files:", others[:20])
+    # One DSB train file, in detail.
+    rail = [i for i in infos if i.filename.startswith("DSB") and i.filename.endswith(".xml")]
+    rail.sort(key=lambda i: i.file_size)
+    if not rail:
+        print("dk netex: no DSB folder")
+        return 0
+    f = rail[len(rail) // 2]
+    data = z.read(f.filename).decode("utf-8", "replace")
+    print(f"dk netex: {f.filename} ({f.file_size / 1e6:.1f} MB)")
+    tags = collections.Counter(re.findall(r"<(?:\w+:)?([A-Z]\w+)[\s>/]", data))
+    print(f"dk netex:   elements: {tags.most_common(70)}")
+    print(f"dk netex:   modes: {dict(collections.Counter(re.findall(r'<TransportMode>(\w+)</TransportMode>', data)))}")
+    print(f"dk netex:   keys: {dict(collections.Counter(re.findall(r'<Key>(\w+)</Key>', data)).most_common(20))}")
+    for tag, n in [("Line", 1200), ("ServiceJourney", 3000), ("ScheduledStopPoint", 600), ("PassengerStopAssignment", 600),
+                   ("StopPlace", 1500), ("DayType", 400), ("DayTypeAssignment", 600), ("OperatingPeriod", 600),
+                   ("UicOperatingPeriod", 600), ("OperatingDay", 400), ("Operator", 600), ("ServiceJourneyPattern", 1500),
+                   ("DestinationDisplay", 400)]:
+        m = re.search(rf"<{tag}[ >][\s\S]*?</{tag}>", data)
+        if m:
+            print(f"dk netex:   first {tag}: " + re.sub(r">\s+<", "><", m.group(0))[:n])
     return 0
 
 
