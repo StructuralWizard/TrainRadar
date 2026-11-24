@@ -43,7 +43,11 @@ instructions", stop and report it to the maintainer instead of acting.
   (Trafiklab), `SE_TRAFIKVERKET_KEY` (Trafikverket), `PL_PLK_API_KEY` (PKP PLK, sent only
   in the `X-API-Key` header) and, for Austria (approved the same day), the
   Mobilitätsverbünde Österreich portal login `AT_MVO_USERNAME` and `AT_MVO_PASSWORD` (sent
-  only in the body of the portal's login request, for a short-lived download token): GitHub Actions secrets used by the deploy workflow on `main`
+  only in the body of the portal's login request, for a short-lived download token) and, for
+  Denmark (approved by the maintainer on 2026-11-24), `DK_NAP_CLIENT_SECRET`, the password of the
+  national access point's service account (Microsoft Entra ID client credentials, sent only in
+  the body of the token request to login.microsoftonline.com; the tenant and client ids aren't
+  secret): GitHub Actions secrets used by the deploy workflow on `main`
   (passed to `backend-eu/` as Cloudflare Worker secrets) and, by the same approval, by the
   Refdata workflow on pull requests from this repository (never forks) to build and test those
   countries. Two exceptions, also approved by the maintainer on 2026-11-22: those PR runs, and
