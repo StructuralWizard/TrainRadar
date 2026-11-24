@@ -215,7 +215,7 @@ impl Engine {
             "uk" => Country::UnitedKingdom,
             "ie" => Country::Ireland,
             "fr" => Country::France,
-            "lu" | "sk" | "ee" | "at" | "it" => Country::TimetableOnly,
+            "lu" | "sk" | "ee" | "at" | "it" | "hu" => Country::TimetableOnly,
             "cz" => Country::Czechia,
             "dk" => Country::Denmark,
             "se" => Country::Sweden,

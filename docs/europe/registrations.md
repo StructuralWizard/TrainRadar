@@ -130,10 +130,11 @@ Done (keys in GitHub on 2026-11-22). For the record:
      "Fahrplandaten Eisenbahn (GTFS)".
    - Read the licence when you accept it, and tell me if it limits commercial use.
    - GitHub: secrets `AT_MVO_USERNAME`, `AT_MVO_PASSWORD`.
-2. **MÁV GTFS** (needed for Hungary).
-   - Where: `mavcsoport.hu/gtfs-igenybejelento` → choose rail → company details.
-   - What it gives is unverified. Tell me what arrives (a link, a login or a key) and I'll name the
-     secret; probably `HU_MAV_GTFS_KEY`. Ask in the same form whether GTFS-RT is included.
+2. **MÁV GTFS** (Hungary): done 2026-11-24. MÁV sent a login (HTTP basic authentication) for
+   `https://www.mavcsoport.hu/gtfs/gtfsMavMenetrend.zip`.
+   - GitHub: secrets `HU_MAV_USERNAME`, `HU_MAV_PASSWORD`; variable `HU_ENABLED`.
+   - Still to ask MÁV (gtfs@mavcsoport.hu): the licence (can a commercial app show it, and what
+     credit it wants) and whether GTFS-RT is offered.
 3. **Nothing to register** for Slovakia or Estonia (built), Latvia or Lithuania. Slovenia's access
    point (nap.si) seems to need an account: open one as Metranos Ltd if it offers one, and tell me
    what it gives.

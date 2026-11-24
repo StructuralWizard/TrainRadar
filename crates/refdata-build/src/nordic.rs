@@ -35,6 +35,10 @@ pub const IT_REGIONAL: &str = "it-r";
 pub const IT_LOMBARDY: &str = "it-lom";
 /// Denmark: Rejseplanen's NeTEx, every train operator; live from SIRI-ET.
 pub const DK: &str = "dk";
+/// Hungary, by timetable: MÁV-START's and GYSEV's long-distance trains,
+/// then the rest (MÁV's GTFS, which needs a login).
+pub const HU: &str = "hu";
+pub const HU_REGIONAL: &str = "hu-r";
 
 pub const ATTRIBUTION_FI: &str = "Data: Fintraffic / digitraffic.fi, CC BY 4.0. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
@@ -57,6 +61,8 @@ pub const ATTRIBUTION_CZ: &str = "Data: Ministry of Transport of the Czech Repub
 pub const ATTRIBUTION_IT: &str = "Data: Trenitalia and Italo, via Italy's national access point (CCISS, \
 cciss.it); Trenord, Regione Lombardia open data (dati.lombardia.it), CC BY 4.0. Track: © \
 OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_HU: &str = "Data: MÁV Csoport GTFS (mavcsoport.hu), MÁV-START and GYSEV \
+timetables. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
 (Vejdirektoratet). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
@@ -101,6 +107,8 @@ pub fn region_name(code: &str) -> &'static str {
         IT_REGIONAL => "Italy (regional)",
         IT_LOMBARDY => "Italy (Lombardy, Trenord)",
         DK => "Denmark",
+        HU => "Hungary (long distance)",
+        HU_REGIONAL => "Hungary (regional)",
         _ => "",
     }
 }
@@ -413,6 +421,66 @@ pub fn split_czechia(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
     out
 }
 
+/// Hungary (MÁV's GTFS): a route per train, its category and number in the
+/// long name ("IC 702 NAPFÉNY", "Sz 36617", "347 DACIA - RUTHENIA"), or a
+/// Budapest suburban line in the short name ("S10", "Z72", "G43", "IR85"),
+/// whose trains carry no number. Named trains without a category are fast
+/// trains (gyorsvonat, "Gy"), bare numbers stopping trains ("Sz").
+pub fn normalise_hungary(feed: &mut Feed) -> Stats {
+    let mut numbers = Vec::with_capacity(feed.routes.len());
+    for r in &mut feed.routes {
+        let (product, number) = hungarian_product(&r.short_name, &r.long_name);
+        r.short_name = product;
+        numbers.push(number);
+    }
+    for t in &mut feed.trips {
+        t.short_name = numbers[t.route].clone();
+    }
+    normalise_simple(feed)
+}
+
+/// (product, train number) of one of MÁV's routes.
+pub fn hungarian_product(short: &str, long: &str) -> (String, String) {
+    let short = short.trim();
+    if !short.is_empty() {
+        return (short.to_owned(), String::new());
+    }
+    let mut words = long.split_whitespace();
+    let Some(w) = words.next() else {
+        return (String::new(), String::new());
+    };
+    let (category, number) = if w.chars().all(|c| c.is_ascii_digit()) {
+        (None, w)
+    } else {
+        (Some(w), words.next().unwrap_or(""))
+    };
+    if !number.chars().all(|c| c.is_ascii_digit()) {
+        return (category.unwrap_or("").to_owned(), String::new());
+    }
+    let named = words.next().is_some();
+    let product = match category {
+        Some(c) => c.to_owned(),
+        None if named => "Gy".to_owned(),
+        None => "Sz".to_owned(),
+    };
+    (product, number.to_owned())
+}
+
+/// InterCity, EuroCity, EuroNight, railjet xpress and fast trains are long
+/// distance; stopping trains and the suburban lines regional.
+const HUNGARIAN_LONG: [&str; 7] = ["IC", "ICB", "EC", "EN", "rjx", "RJX", "Gy"];
+
+pub fn split_hungary(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
+    let mut out: BTreeMap<String, Vec<&crate::load::Trip>> = BTreeMap::new();
+    for t in &feed.trips {
+        let long = HUNGARIAN_LONG.contains(&feed.routes[t.route].short_name.as_str());
+        out.entry(if long { HU } else { HU_REGIONAL }.to_owned())
+            .or_default()
+            .push(t);
+    }
+    out
+}
+
 /// Sweden (GTFS Sweden 3, cut to trains): the product from the route's
 /// short name, else its long name ("SJ Snabbtåg", "Pågatåg"); the train
 /// number only when it is one.
@@ -428,6 +496,22 @@ pub fn normalise_sweden(feed: &mut Feed) -> Stats {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hungarian_routes() {
+        let p = |s: &str, l: &str| {
+            let (a, b) = hungarian_product(s, l);
+            (a, b)
+        };
+        assert_eq!(p("", "IC 702 NAPFÉNY"), ("IC".into(), "702".into()));
+        assert_eq!(p("", "Sz 36617 "), ("Sz".into(), "36617".into()));
+        assert_eq!(p("", "rjx 19915 "), ("rjx".into(), "19915".into()));
+        assert_eq!(p("", "347 DACIA - RUTHENIA"), ("Gy".into(), "347".into()));
+        assert_eq!(p("", "9440 "), ("Sz".into(), "9440".into()));
+        assert_eq!(p("S10", ""), ("S10".into(), String::new()));
+        assert_eq!(p("", "MÁTRA"), ("MÁTRA".into(), String::new()));
+        assert_eq!(p("", ""), (String::new(), String::new()));
+    }
 
     #[test]
     fn finnish_products() {

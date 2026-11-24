@@ -297,6 +297,19 @@ jobs:
           unzip -p gtfs/dk/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print('#' + r['trip_short_name']) for r in csv.DictReader(sys.stdin) if r['trip_short_name']]" > build/dk-numbers.txt
           echo "### dk: live trains in the timetable" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs dk build/dk-numbers.txt build/probe-dk2 | grep 'trip_updates' | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Hungary (MÁV GTFS; login HU_MAV_*)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          HU_MAV_USERNAME: ${{ secrets.HU_MAV_USERNAME }}
+          HU_MAV_PASSWORD: ${{ secrets.HU_MAV_PASSWORD }}
+        run: |
+          set -o pipefail
+          if [ -z "$HU_MAV_USERNAME" ]; then echo "Hungary: no HU_MAV_USERNAME (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          tools/fetch-eu.sh hu --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/hu --hu-gtfs gtfs/hu/gtfs.zip \
+            --sources gtfs/hu/sources.tsv --report refdata-hu.md
+          target/release/refdata-build verify build/hu
+          { echo "## Hungary reference data"; echo; cat refdata-hu.md; } >> "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

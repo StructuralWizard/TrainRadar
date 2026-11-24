@@ -210,6 +210,11 @@ pub fn load<R: Read + Seek>(g: &mut Gtfs<R>, window: &Window) -> Result<Feed> {
             }
         }
         for (k, mut v) in raw {
+            // A shape needs a line: a single point (MÁV's feed has some)
+            // is no shape, and the leg is drawn another way.
+            if v.len() < 2 {
+                continue;
+            }
             v.sort_by_key(|p| p.0);
             feed.shapes.insert(k, v.into_iter().map(|p| p.1).collect());
         }

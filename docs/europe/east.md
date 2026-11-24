@@ -100,7 +100,7 @@ map).
 | Planned works | `zssk.sk/vyluky/` (HTML, including replacement buses) |
 | Lifts | none open |
 | Network and classification | network statement (PDF) only, so OpenStreetMap, plus RINF |
-| Station ids | unverified |
+| Station ids | MÁV's own numbers (no UIC), with coordinates |
 | Storage | `/sk/` on R2, one national file |
 | Server | none, until there's an agreement with ŽSR |
 | Registrations | none. Ask ŽSR for a data agreement |
@@ -109,7 +109,13 @@ map).
 
 ## Hungary (hu)
 
-**M4, 2026-11-22: not built,** waiting for MÁV's GTFS form (docs/europe/registrations.md).
+**Built 2026-11-24 (hidden, by timetable):** MÁV Group's GTFS, with the login MÁV sent after its
+form (`HU_MAV_USERNAME`, `HU_MAV_PASSWORD`). One daily file for MÁV-START, GYSEV and the Children's
+Railway: about 3,600 trains a weekday, 1,136 stations with coordinates. Regions `hu` (IC, EC, EN,
+rjx and named fast trains, shown as "Gy") and `hu-r` (stopping trains "Sz"/"VESz" and Budapest's
+suburban lines S, Z, G, IR). Each route is one train, its category and number in the long name
+("IC 702 NAPFÉNY"); the suburban lines' trains have no number in the file. Replacement buses
+(route type 3) are left out; one-point shapes are ignored. The licence is not stated: to ask MÁV.
 
 Europe/Budapest · Hungarian · UIC 55.
 
@@ -119,7 +125,7 @@ unknown.
 | | |
 |---|---|
 | Operators and tickets | MÁV Személyszállítás (mavcsoport.hu, MÁV app); GYSEV (gysev.hu); MÁV-HÉV (Budapest suburban) |
-| Timetables | MÁV GTFS, free, requested through `mavcsoport.hu/gtfs-igenybejelento` (choose rail, bus or both). Unverified: GYSEV and HÉV coverage, and the licence. National access point: napportal.kozut.hu |
+| Timetables | MÁV GTFS, free, requested through `mavcsoport.hu/gtfs-igenybejelento`; a login for `mavcsoport.hu/gtfs/gtfsMavMenetrend.zip` (rail: MÁV-START, GYSEV, Children's Railway; no HÉV). Buses (Volánbusz) are a separate file. Licence not stated. National access point: napportal.kozut.hu |
 | Live delays, cancellations | MÁV's privacy notices describe a "GTFS and GTFS-RT planned and actual timetable data service", so GTFS-RT exists, presumably with the same registration. Unverified: endpoint, refresh, quotas, terms |
 | GPS | trains report GPS (shown on MÁV's maps). Open only if MÁV's GTFS-RT has vehicle positions (unverified) |
 | Platforms | none found |
@@ -127,11 +133,11 @@ unknown.
 | Planned works | MÁV's track-closure news and GYSEV's archive (HTML with PDF notices) |
 | Lifts | none open |
 | Network and classification | OpenStreetMap, plus RINF |
-| Station ids | unverified |
+| Station ids | MÁV's own numbers (no UIC), with coordinates |
 | Storage | `/hu/` on R2, one national file plus Budapest's suburban network |
 | Server | adapter `gtfsrt` on MÁV's feed, if the terms allow it |
 | Registrations | MÁV's online form (who can register and what credential it gives: unverified) |
-| Secrets | probably `HU_MAV_GTFS_KEY` (name once known) |
+| Secrets | `HU_MAV_USERNAME`, `HU_MAV_PASSWORD` |
 | Risks | unknown terms; MÁV switched its live map off in 2025 and back on |
 
 ## Slovenia (si)
@@ -153,7 +159,7 @@ Europe/Ljubljana · Slovenian · UIC 79.
 | Planned works | SŽ's pages on replacement buses and construction works (HTML) |
 | Lifts | none open |
 | Network and classification | OpenStreetMap, plus RINF |
-| Station ids | unverified |
+| Station ids | MÁV's own numbers (no UIC), with coordinates |
 | Storage | `/si/` on R2, small |
 | Server | none yet. `gtfsrt` once the access point publishes it |
 | Registrations | none identified |
