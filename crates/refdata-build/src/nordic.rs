@@ -28,8 +28,11 @@ pub const AT: &str = "at";
 /// Czechia: by timetable, long distance and regional.
 pub const CZ: &str = "cz";
 pub const CZ_REGIONAL: &str = "cz-r";
-/// Italy: Lombardy only for now (Trenord), by timetable.
+/// Italy, by timetable: Trenitalia's long-distance and regional trains
+/// (the national access point's NeTEx), and Trenord's in Lombardy.
 pub const IT: &str = "it";
+pub const IT_REGIONAL: &str = "it-r";
+pub const IT_LOMBARDY: &str = "it-lom";
 /// Denmark: Rejseplanen's NeTEx, every train operator; live from SIRI-ET.
 pub const DK: &str = "dk";
 
@@ -51,8 +54,9 @@ pub const ATTRIBUTION_AT: &str = "Data source: Mobilitätsverbünde Österreich 
 data.mobilitaetsverbuende.at. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_CZ: &str = "Data: Ministry of Transport of the Czech Republic, CIS JŘ \
 (portal.cisjr.cz). Track and stations: © OpenStreetMap contributors, ODbL 1.0.";
-pub const ATTRIBUTION_IT: &str = "Data: Trenord, Regione Lombardia open data (dati.lombardia.it), \
-CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_IT: &str = "Data: Trenitalia, via Italy's national access point (CCISS, \
+cciss.it); Trenord, Regione Lombardia open data (dati.lombardia.it), CC BY 4.0. Track: © \
+OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
 (Vejdirektoratet). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
@@ -71,7 +75,7 @@ pub fn tz(code: &str) -> Option<&'static str> {
         PL | PL_REGIONAL => "Europe/Warsaw",
         AT => "Europe/Vienna",
         CZ | CZ_REGIONAL => "Europe/Prague",
-        IT => "Europe/Rome",
+        IT | IT_REGIONAL | IT_LOMBARDY => "Europe/Rome",
         DK => "Europe/Copenhagen",
         _ => return None,
     })
@@ -93,7 +97,9 @@ pub fn region_name(code: &str) -> &'static str {
         AT => "Austria",
         CZ => "Czechia (long distance)",
         CZ_REGIONAL => "Czechia (regional)",
-        IT => "Italy (Lombardy)",
+        IT => "Italy (long distance)",
+        IT_REGIONAL => "Italy (regional)",
+        IT_LOMBARDY => "Italy (Lombardy, Trenord)",
         DK => "Denmark",
         _ => "",
     }
@@ -372,6 +378,22 @@ pub fn normalise_italy(feed: &mut Feed) -> Stats {
     normalise_simple(feed)
 }
 
+/// Italy (tools/netex-gtfs.py --profile it): routes are Trenitalia's
+/// categories. Frecce, Intercity, EuroCity and night trains are long
+/// distance; Regionale, Regionale Veloce and the suburban services regional.
+const ITALIAN_LONG: [&str; 8] = ["FR", "FA", "FB", "IC", "ICN", "EC", "EN", "EXP"];
+
+pub fn split_italy(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
+    let mut out: BTreeMap<String, Vec<&crate::load::Trip>> = BTreeMap::new();
+    for t in &feed.trips {
+        let long = ITALIAN_LONG.contains(&feed.routes[t.route].short_name.as_str());
+        out.entry(if long { IT } else { IT_REGIONAL }.to_owned())
+            .or_default()
+            .push(t);
+    }
+    out
+}
+
 /// Czechia (tools/cisjr-gtfs.py): routes are an operator and a commercial
 /// category ("Ceskedrahyas:R"). Fast and international trains are long
 /// distance; Os, Sp, Rx and the like regional.
@@ -492,6 +514,7 @@ mod tests {
         assert_eq!(tz(PL_REGIONAL), Some("Europe/Warsaw"));
         assert_eq!(tz(CZ_REGIONAL), Some("Europe/Prague"));
         assert_eq!(tz(IT), Some("Europe/Rome"));
+        assert_eq!(tz(IT_LOMBARDY), Some("Europe/Rome"));
         assert_eq!(tz(DK), Some("Europe/Copenhagen"));
     }
 

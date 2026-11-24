@@ -2,21 +2,27 @@
 
 Europe/Rome · Italian · UIC 83. The overview is in [south-north.md](south-north.md#italy-it).
 
-## Where it stands (23 Nov 2026)
+## Where it stands (24 Nov 2026)
 
-- **Built: Lombardy only, by timetable.** Trenord and Malpensa Express, from Regione Lombardia's
-  open data portal: "Orario Ferroviario Regionale Gtfs" (dataset `3z4k-mxz9` on
-  dati.lombardia.it), CC BY 4.0, no registration, updated every few days. The file also holds
-  Trenord's replacement buses, which `tools/gtfs-rail.py` cuts out. Trenord's trips have no
-  `trip_short_name`: the train number is the start of the trip id (`10512A-…`). Region `it`,
-  hidden (`?country=it`), switch `IT_ENABLED`.
-- **The rest of Italy: waiting.** The national access point (`cciss.it/nap/mmtis/`, run by
-  CCISS for the Ministry of Infrastructure and Transport) puts its whole catalogue behind a login.
-  Since 1 October 2021 private citizens can only sign in with SPID, Italy's public digital identity.
-  So we couldn't see whether the national Trenitalia NeTEx dataset ("OAP Trenitalia – NeTEx
-  Livello 1") exists, nor its licence. The letter below asks for access and the terms.
-- **Live data: none.** ViaggiaTreno and RFI's station-board endpoints are unofficial, with no
-  licence, and Trenitalia has gone to court over its data before. Not used.
+- **Built: all of Italy, by timetable.**
+  - **Trenitalia**, from the national access point (CCISS): "OAP Trenitalia – NeTEx Livello 1"
+    (dataset 1077621, asset 1080596, `IT-IT-TRENITALIA_L1.xml.gz`, about 14 MB, 510 MB unpacked,
+    updated about monthly). Licence on the access point: "No licence – No contract"; the Ministry
+    (Div. 4 NAP, DGSSA) confirmed on 24 Nov 2026 that everything published there is free to
+    download with no agreement. No login: `https://www.cciss.it/nap/mmtis/public/catalog/Dataset`.
+    `tools/netex-gtfs.py --profile it`: stations by their 9-digit code (`830000154` Ivrea) with
+    coordinates, calendars from `UicOperatingPeriod` day bits, the train number as the journey's
+    Name, categories from the lines (FR, FA, FB, IC, ICN, EC, EN, EXP long distance; REG, RV, MET,
+    SFM regional); replacement buses dropped. About 6,400 trains on a weekday, every region,
+    plus international trains.
+  - **Trenord** (Lombardy), Regione Lombardia's GTFS (CC BY 4.0), as region `it-lom` when its
+    portal's download works (it redirected to a missing storage host in Nov 2026).
+  - Regions `it` (long distance), `it-r` (regional), `it-lom`; switch `IT_ENABLED`.
+- **Italo:** on the access point too ("OAP Italo – NeTEx Livello 1/2", same licence), but its
+  stations are 3-letter codes ("OUE" Torino Porta Susa) and its journeys don't carry the train
+  number plainly: it needs its own mapping to Trenitalia's stations. Next.
+- **Live data: none yet.** The access point says real-time data is being collected and will be
+  published; ViaggiaTreno and RFI's station-board endpoints are unofficial and not used.
 
 ## Letter to the national access point
 

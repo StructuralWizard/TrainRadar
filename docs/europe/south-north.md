@@ -161,7 +161,7 @@ SIRI-ET datasets from Rejsekort & Rejseplan A/S, one Azure Service Bus topic eac
   (Creative Commons; trains, buses, metro, light rail and boats, one file per line in a folder per
   operator: `DSB_000002` DSB, `DSB_000022` S-tog, `MOV_LOKT` Lokaltog…; 183 MB zipped, 5.7 GB
   unpacked). `tools/fetch-eu.sh dk` downloads it with the service account (token scope: the
-  service account's own id) and `tools/dk/netex-gtfs.py` keeps the rail journeys as GTFS: stops by
+  service account's own id) and `tools/netex-gtfs.py` keeps the rail journeys as GTFS: stops by
   UIC number from `ScheduledStopPoint` ids (`8600655` is Hellerup, as in SIRI-ET), with their
   coordinates; calendars from `UicOperatingPeriod` day bits; `TripNr` as the train number.
   Region `dk`, hidden (`?country=dk`), switch **`DK_ENABLED`**. "Banedanmark Journeys" isn't needed.
@@ -190,8 +190,8 @@ SIRI-ET datasets from Rejsekort & Rejseplan A/S, one Azure Service Bus topic eac
 
 Europe/Rome · Italian · UIC 83.
 
-**Update, Nov 2026:** Lombardy (Trenord, CC BY 4.0) is built, by timetable; the national access
-point's catalogue needs a login (SPID). See [it.md](it.md), with the letter asking for access.
+**Update, Nov 2026:** built by timetable from Trenitalia's NeTEx on the national access point (public,
+no agreement needed) and Trenord's GTFS for Lombardy. See [it.md](it.md).
 
 **Verdict:** not feasible to a good standard yet. There's no official national timetable or live data
 for Trenitalia or Italo; only regional timetables and RFI's notices. Under the EU rules, Italy's

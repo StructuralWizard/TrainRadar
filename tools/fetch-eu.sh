@@ -28,10 +28,13 @@
 #                         OpenStreetMap (so cz needs the OSM extract); its
 #                         downloads are kept in gtfs/cz/cisjr/ (CI caches it)
 #                     dk  Rejseplanen's NeTEx (Dataudveksleren dataset 242),
-#                         trains as GTFS by tools/dk/netex-gtfs.py; needs
+#                         trains as GTFS by tools/netex-gtfs.py; needs
 #                         DK_NAP_CLIENT_SECRET (the service account)
-#                     it  Italy, Lombardy only for now: Trenord's GTFS on
-#                         dati.lombardia.it (CC BY 4.0), cut to trains
+#                     it  Italy: Trenitalia's NeTEx from the national access
+#                         point (CCISS, no key; tools/netex-gtfs.py) as
+#                         gtfs.zip, and Trenord's GTFS (dati.lombardia.it,
+#                         CC BY 4.0, cut to trains) as trenord.zip when its
+#                         portal serves it
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -192,13 +195,25 @@ except Exception as e:
     echo "stations.geojsonseq: $(wc -l <"$dir/stations.geojsonseq") OSM stations and halts"
     python3 -I tools/cisjr-gtfs.py "$dir/gtfs.zip" "$dir/stations.geojsonseq" --cache "$dir/cisjr" --sources "$dir/sources.tsv" 63 ;;
   it)
-    # Regione Lombardia's open data portal: "Orario Ferroviario Regionale
-    # Gtfs" (Trenord and Malpensa Express, CC BY 4.0, no registration). It
-    # also holds Trenord's replacement buses, cut out here.
-    get "Trenord (dati.lombardia.it)" "https://www.dati.lombardia.it/download/3z4k-mxz9/application%2Fzip" "$dir/all.zip"
-    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip"
+    # The national access point (CCISS): "OAP Trenitalia - NeTEx Livello 1",
+    # asset 1080596, one .xml.gz updated about monthly ("No licence - No
+    # contract"; the Ministry confirmed no agreement is needed).
+    get "Trenitalia (Punto di Accesso Nazionale, CCISS)" \
+      "https://www.cciss.it/nap/mmtis/public/api/v1/download/blob/Asset/1080596/resource" "$dir/trenitalia.xml.gz"
+    python3 -I tools/netex-gtfs.py "$dir/gtfs.zip" "$dir/trenitalia.xml.gz" 63 --profile it
+    rm -f "$dir/trenitalia.xml.gz"
+    # Lombardy: Regione Lombardia's "Orario Ferroviario Regionale Gtfs"
+    # (Trenord and Malpensa Express, CC BY 4.0), with its replacement buses
+    # cut out. Its portal's download is sometimes broken: Italy is built
+    # without Lombardy's Trenord trains then.
     rm -f "$dir/all.zip"
-    region=italy/nord-ovest ;;
+    if get "Trenord (dati.lombardia.it)" "https://www.dati.lombardia.it/download/3z4k-mxz9/application%2Fzip" "$dir/all.zip" && [ -s "$dir/all.zip" ]; then
+      python3 -I tools/gtfs-rail.py "$dir/trenord.zip" "$dir/all.zip"
+    else
+      echo "::warning::Trenord's GTFS couldn't be downloaded: Italy without Lombardy's Trenord trains." >&2
+    fi
+    rm -f "$dir/all.zip"
+    region=italy ;;
   dk)
     [ -n "${DK_NAP_CLIENT_SECRET:-}" ] || { echo "DK_NAP_CLIENT_SECRET is not set" >&2; exit 2; }
     # Log in as the service account (Entra ID client credentials; scope =
@@ -225,7 +240,7 @@ except Exception as e:
     printf '%s\t%s\t\t%s\n' "Rejsekort & Rejseplan A/S, NeTEx (Dataudveksleren dataset 242)" "$url" \
       "$(date -u '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
     echo "netex.zip: $(du -h "$dir/netex.zip" | cut -f1)"
-    python3 -I tools/dk/netex-gtfs.py "$dir/gtfs.zip" "$dir/netex.zip" 63
+    python3 -I tools/netex-gtfs.py "$dir/gtfs.zip" "$dir/netex.zip" 63 --profile dk
     rm -f "$dir/netex.zip"
     region=denmark ;;
   *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk [--no-osm]" >&2; exit 2 ;;

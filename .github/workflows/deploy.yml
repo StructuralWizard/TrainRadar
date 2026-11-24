@@ -576,9 +576,16 @@ jobs:
             exit 1
           fi
 
-      # Italy, Lombardy only (Trenord), with IT_ENABLED: Regione Lombardia's
-      # rail GTFS (CC BY 4.0, no key), timetable only, and OSM track → data/it/.
-      - name: Italy (Lombardy) reference data
+      # Italy, with IT_ENABLED: Trenitalia's NeTEx from the national access
+      # point (no key) and Trenord's GTFS for Lombardy when its portal serves
+      # it, timetable only, and OSM track (weekly) → data/it/.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.IT_ENABLED == 'true'
+        with:
+          path: gtfs/it/rail.geojsonseq
+          key: osm-rail-it-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-it-v1-
+      - name: Italy reference data
         if: vars.IT_ENABLED == 'true'
         continue-on-error: true
         run: |
@@ -586,11 +593,19 @@ jobs:
           command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
           tools/fetch-eu.sh it | tee -a "$GITHUB_STEP_SUMMARY"
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/it-data --gzip \
-              --it-gtfs gtfs/it/gtfs.zip --sources gtfs/it/sources.tsv \
+              --it-gtfs gtfs/it/gtfs.zip $([ -s gtfs/it/trenord.zip ] && echo --it-lom-gtfs gtfs/it/trenord.zip) \
+              --sources gtfs/it/sources.tsv \
               $([ -s gtfs/it/rail.geojsonseq ] && echo --rail gtfs/it/rail.geojsonseq) --report refdata-it.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/it-data; then
             mv build/it-data build/data/it
-            { echo "## Italy (Lombardy) reference data"; echo; cat refdata-it.md; } >> "$GITHUB_STEP_SUMMARY"
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/it-plan --gzip --days 63 \
+                --it-gtfs gtfs/it/gtfs.zip $([ -s gtfs/it/trenord.zip ] && echo --it-lom-gtfs gtfs/it/trenord.zip) --report it-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/it-plan; then
+              mv build/it-plan build/data/it/plan
+            else
+              echo "::warning::Italy's plan-ahead timetables failed: Italy has today's week only."
+            fi
+            { echo "## Italy reference data"; echo; cat refdata-it.md; } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::warning::Italy's reference data failed: deploying without Italy."
             exit 1
