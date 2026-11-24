@@ -188,7 +188,19 @@ fn scheduled_trains(
             let st = net.schedule(tref);
             let dur = st.last().map_or(0, |s| i64::from(s.arrival));
             let trip_id = r.tt.trip_id(trip);
-            let tu = r.tt.live.then(|| updates.get(trip_id.as_str())).flatten();
+            // A feed whose trip ids aren't the timetable's (Denmark's SIRI-ET)
+            // keys its updates by train number: "#4402".
+            let tu =
+                r.tt.live
+                    .then(|| {
+                        updates.get(trip_id.as_str()).or_else(|| {
+                            let n = crate::network::train_number(trip);
+                            (!n.is_empty())
+                                .then(|| updates.get(format!("#{n}").as_str()))
+                                .flatten()
+                        })
+                    })
+                    .flatten();
             if tu.is_some_and(|u| u.canceled) {
                 continue;
             }

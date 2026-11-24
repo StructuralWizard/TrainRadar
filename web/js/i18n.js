@@ -59,6 +59,8 @@ export const STRINGS = {
     srcSeTimetable: "Horario y paradas: Samtrafiken, vía Trafiklab (CC0).",
     srcCzDelay: "Retraso y posición: PID (ROPID, vía Golemio), en directo en Praga y Bohemia Central.",
     srcCzTimetable: "Horario y paradas: Ministerio de Transporte checo (CIS JŘ).",
+    srcDkDelay: "Retraso: Rejsekort & Rejseplan, vía el punto de acceso nacional danés (en directo).",
+    srcDkTimetable: "Horario y paradas: Rejsekort & Rejseplan (NeTEx), vía el punto de acceso nacional danés.",
     srcPlDelay: "Retraso: PKP PLK, Otwarte Dane Kolejowe (en directo).",
     srcPlTimetable: "Horario y paradas: PKP PLK, Otwarte Dane Kolejowe.",
     sourceEstimated: "estimado",
@@ -564,6 +566,7 @@ export const STRINGS = {
     countryAt: "Austria",
     countryCz: "Chequia",
     countryIt: "Italia (Lombardía)",
+    countryDk: "Dinamarca",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
@@ -573,6 +576,7 @@ export const STRINGS = {
     allAt: "Toda Austria",
     allCz: "Toda Chequia",
     allIt: "Toda Lombardía",
+    allDk: "Toda Dinamarca",
     countryNoteIt: "Italia: por ahora solo Lombardía (Trenord). Los horarios nacionales de Trenitalia e Italo aún no se publican como datos abiertos.",
     countryNoteItLink: "Punto de acceso nacional (cciss.it)",
     noticesTitle: "Avisos",
@@ -615,6 +619,8 @@ export const STRINGS = {
       'Datos: horario de Samtrafiken en <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SJ ni los operadores',
     attributionPl:
       'Datos: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con PKP PLK ni los operadores',
+    attributionDk:
+      'Datos: horarios y retrasos de <a href="https://www.rejseplanen.dk/" target="_blank" rel="noopener">Rejsekort &amp; Rejseplan A/S</a>, vía el punto de acceso nacional danés (Vejdirektoratet) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con DSB ni los operadores',
     attributionIt:
       'Datos: horario de Trenord, datos abiertos de Regione Lombardia (<a href="https://www.dati.lombardia.it/" target="_blank" rel="noopener">dati.lombardia.it</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Trenord · Solo Lombardía por ahora',
     attributionCz:
@@ -684,6 +690,8 @@ export const STRINGS = {
     srcSeTimetable: "Timetable and stops: Samtrafiken, via Trafiklab (CC0).",
     srcCzDelay: "Delay and position: PID (ROPID, via Golemio), live in Prague and Central Bohemia.",
     srcCzTimetable: "Timetable and stops: Czech Ministry of Transport (CIS JŘ).",
+    srcDkDelay: "Delay: Rejsekort & Rejseplan, via Denmark's national access point (live).",
+    srcDkTimetable: "Timetable and stops: Rejsekort & Rejseplan (NeTEx), via Denmark's national access point.",
     srcPlDelay: "Delay: PKP PLK, Otwarte Dane Kolejowe (live).",
     srcPlTimetable: "Timetable and stops: PKP PLK, Otwarte Dane Kolejowe.",
     sourceEstimated: "estimated",
@@ -1189,6 +1197,7 @@ export const STRINGS = {
     countryAt: "Austria",
     countryCz: "Czechia",
     countryIt: "Italy (Lombardy)",
+    countryDk: "Denmark",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
@@ -1198,6 +1207,7 @@ export const STRINGS = {
     allAt: "All of Austria",
     allCz: "All of Czechia",
     allIt: "All of Lombardy",
+    allDk: "All of Denmark",
     countryNoteIt: "Italy: Lombardy only for now (Trenord). Trenitalia's and Italo's national timetables aren't published as open data yet.",
     countryNoteItLink: "National access point (cciss.it)",
     noticesTitle: "Notices",
@@ -1240,6 +1250,8 @@ export const STRINGS = {
       'Data: Samtrafiken\'s timetable on <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SJ or the operators',
     attributionPl:
       'Data: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with PKP PLK or the operators',
+    attributionDk:
+      'Data: timetables and delays from <a href="https://www.rejseplanen.dk/" target="_blank" rel="noopener">Rejsekort &amp; Rejseplan A/S</a>, via Denmark\'s national access point (Vejdirektoratet) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with DSB or the operators',
     attributionIt:
       'Data: Trenord\'s timetable, Regione Lombardia open data (<a href="https://www.dati.lombardia.it/" target="_blank" rel="noopener">dati.lombardia.it</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Trenord · Lombardy only for now',
     attributionCz:

@@ -108,6 +108,7 @@ const PLACED_SOURCES = {
   "PKP PLK": { by: "PKP PLK", delay: "srcPlDelay", timetable: "srcPlTimetable", link: null },
   // Czechia: PID's trains from Golemio (GPS), the rest by CIS JŘ's timetable.
   ČD: { by: "PID", delay: "srcCzDelay", timetable: "srcCzTimetable", link: null },
+  DSB: { by: "Rejseplanen", delay: "srcDkDelay", timetable: "srcDkTimetable", link: null },
 };
 const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];
 
@@ -179,6 +180,7 @@ const TICKET_SITES = {
   // Czechia: several operators; České dráhy sells for most of them.
   ČD: ["České dráhy", "https://www.cd.cz/"],
   Trenord: ["Trenord", "https://www.trenord.it/"],
+  DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],
 };

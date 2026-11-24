@@ -55,7 +55,8 @@ test("journey state → GTFS-Realtime trip updates, with the train number and de
   const ents = fields(bytes).filter((f) => f.field === 2);
   assert.equal(ents.length, 3);
   const tu = sub(ents[1].value, 3);
-  assert.equal(str(sub(tu, 1), 1), "1035-8600626600000");
+  assert.equal(str(sub(tu, 1), 1), "#1035", "keyed by train number");
+  assert.equal(str(ents[1].value, 1), "1035-8600626600000", "the entity keeps the journey ref");
   assert.equal(str(sub(tu, 1), 3), "20261124");
   assert.equal(str(sub(tu, 3), 2), "1035", "train number as the vehicle label");
   const stus = fields(tu).filter((f) => f.field === 2);

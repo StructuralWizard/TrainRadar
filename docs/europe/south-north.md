@@ -157,9 +157,16 @@ SIRI-ET datasets from Rejsekort & Rejseplan A/S, one Azure Service Bus topic eac
   and says so in `dk/rt/status.json`: the secret can't be recovered, so a new service account is
   needed (Profile → Service accounts), associated again with all six datasets.
 - **Switch:** `DK_LIVE_ENABLED` (the `eu` job).
-- **Still to do:** the planned timetable. The feeds say to combine them with "Banedanmark
-  Journeys" (no access yet); Rejseplanen's GTFS would do. Until one is built, the trip updates
-  carry their own times, and the app has no Danish timetable to place them on.
+- **Planned timetable (built):** Rejseplanen's NeTEx, dataset 242 on the same access point
+  (Creative Commons; trains, buses, metro, light rail and boats, one file per line in a folder per
+  operator: `DSB_000002` DSB, `DSB_000022` S-tog, `MOV_LOKT` Lokaltog…; 183 MB zipped, 5.7 GB
+  unpacked). `tools/fetch-eu.sh dk` downloads it with the service account (token scope: the
+  service account's own id) and `tools/dk/netex-gtfs.py` keeps the rail journeys as GTFS: stops by
+  UIC number from `ScheduledStopPoint` ids (`8600655` is Hellerup, as in SIRI-ET), with their
+  coordinates; calendars from `UicOperatingPeriod` day bits; `TripNr` as the train number.
+  Region `dk`, hidden (`?country=dk`), switch **`DK_ENABLED`**. "Banedanmark Journeys" isn't needed.
+- **Live onto the timetable:** the Worker keys each update by train number (`#4402`), and the engine
+  falls back to that key when a trip id doesn't match, so live delays land on the NeTEx trips.
 
 | | |
 |---|---|
