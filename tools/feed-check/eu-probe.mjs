@@ -48,7 +48,7 @@ function bucket() {
   const m = new Map();
   return {
     put: async (k, v) => m.set(k, v),
-    get: async (k) => (m.has(k) ? { arrayBuffer: async () => m.get(k) } : null),
+    get: async (k) => (m.has(k) ? { arrayBuffer: async () => m.get(k), text: async () => String(m.get(k)) } : null),
     m,
   };
 }
@@ -100,6 +100,15 @@ if (cc === "ch") {
     process.exit(0);
   }
   await viaWorker(SE, SE.feeds.map((_, i) => i));
+} else if (cc === "dk") {
+  // Denmark: every topic once, through the Worker's own code (login, HTTPS
+  // receive, SIRI-ET parse, journey state); messages are acknowledged.
+  const { DK } = await import("../../backend-eu/src/denmark.js");
+  if (!process.env.DK_NAP_CLIENT_SECRET) {
+    console.log("dk: DK_NAP_CLIENT_SECRET is not set");
+    process.exit(0);
+  }
+  await viaWorker(DK, DK.feeds.map((_, i) => i));
 } else if (cc === "cz") {
   const { CZ } = await import("../../backend-eu/src/czechia.js");
   await viaWorker(CZ, [0, 1, 2]);

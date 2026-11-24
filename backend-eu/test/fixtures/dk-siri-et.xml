@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- The structure of a real message from Rejseplanen's DSB topic (dataset 785, 24 Nov 2026):
+     the first journey as received up to its first call (calls 2 and 3 completed by hand); the
+     second and third journeys are made up, to cover recorded calls, a delay, a cancelled
+     call and a cancelled journey. -->
+<Siri xmlns="http://www.siri.org.uk/siri" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.0">
+  <ServiceDelivery>
+    <ResponseTimestamp>2026-11-24T03:36:45.214Z</ResponseTimestamp>
+    <ProducerRef>RKRP_RTH</ProducerRef>
+    <EstimatedTimetableDelivery version="2.0">
+      <ResponseTimestamp>2026-11-24T03:36:45.214Z</ResponseTimestamp>
+      <SubscriberRef>DK-NAP-SIRI</SubscriberRef>
+      <SubscriptionRef>dsb-et</SubscriptionRef>
+      <EstimatedJourneyVersionFrame>
+        <RecordedAtTime>2026-11-24T03:36:45.214Z</RecordedAtTime>
+        <EstimatedVehicleJourney>
+          <RecordedAtTime>2026-11-24T03:36:41Z</RecordedAtTime>
+          <LineRef>4402</LineRef>
+          <DirectionRef>1</DirectionRef>
+          <FramedVehicleJourneyRef>
+            <DataFrameRef>2026-11-24</DataFrameRef>
+            <DatedVehicleJourneyRef>4402-8600341600000</DatedVehicleJourneyRef>
+          </FramedVehicleJourneyRef>
+          <PublishedLineName>Re 4402</PublishedLineName>
+          <DirectionName>Køge Nord St.</DirectionName>
+          <ExternalLineRef>4402</ExternalLineRef>
+          <OriginRef>8600810</OriginRef>
+          <OriginName>Næstved St.</OriginName>
+          <DestinationRef>8600797</DestinationRef>
+          <DestinationName>Køge Nord St.</DestinationName>
+          <OperatorRef>DSB</OperatorRef>
+          <ProductCategoryRef>004</ProductCategoryRef>
+          <ServiceFeatureRef>004</ServiceFeatureRef>
+          <OriginAimedDepartureTime>2026-11-24T05:06:00+01:00</OriginAimedDepartureTime>
+          <DestinationAimedArrivalTime>2026-11-24T05:51:00+01:00</DestinationAimedArrivalTime>
+          <Monitored>true</Monitored>
+          <PredictionInaccurate>false</PredictionInaccurate>
+          <VehicleJourneyRef>4402-8600341600000</VehicleJourneyRef>
+          <TrainNumbers>
+            <TrainNumberRef>4402</TrainNumberRef>
+          </TrainNumbers>
+          <EstimatedCalls>
+            <EstimatedCall>
+              <StopPointRef>8600810</StopPointRef>
+              <VisitNumber>100</VisitNumber>
+              <Order>1</Order>
+              <StopPointName>Næstved St.</StopPointName>
+              <PredictionInaccurate>false</PredictionInaccurate>
+              <AimedDepartureTime>2026-11-24T05:06:00+01:00</AimedDepartureTime>
+              <ExpectedDepartureTime>2026-11-24T05:06:00+01:00</ExpectedDepartureTime>
+              <DeparturePlatformName>5</DeparturePlatformName>
+            </EstimatedCall>
+            <EstimatedCall>
+              <StopPointRef>8600793</StopPointRef>
+              <VisitNumber>100</VisitNumber>
+              <Order>2</Order>
+              <StopPointName>Næstved Nord St.</StopPointName>
+              <PredictionInaccurate>false</PredictionInaccurate>
+              <AimedArrivalTime>2026-11-24T05:09:00+01:00</AimedArrivalTime>
+              <ExpectedArrivalTime>2026-11-24T05:09:00+01:00</ExpectedArrivalTime>
+              <AimedDepartureTime>2026-11-24T05:10:00+01:00</AimedDepartureTime>
+              <ExpectedDepartureTime>2026-11-24T05:10:00+01:00</ExpectedDepartureTime>
+            </EstimatedCall>
+            <EstimatedCall>
+              <StopPointRef>8600797</StopPointRef>
+              <VisitNumber>100</VisitNumber>
+              <Order>3</Order>
+              <StopPointName>Køge Nord St.</StopPointName>
+              <AimedArrivalTime>2026-11-24T05:51:00+01:00</AimedArrivalTime>
+              <ExpectedArrivalTime>2026-11-24T05:51:00+01:00</ExpectedArrivalTime>
+            </EstimatedCall>
+          </EstimatedCalls>
+        </EstimatedVehicleJourney>
+        <EstimatedVehicleJourney>
+          <LineRef>1035</LineRef>
+          <DirectionRef>2</DirectionRef>
+          <FramedVehicleJourneyRef>
+            <DataFrameRef>2026-11-24</DataFrameRef>
+            <DatedVehicleJourneyRef>1035-8600626600000</DatedVehicleJourneyRef>
+          </FramedVehicleJourneyRef>
+          <PublishedLineName>IC 1035</PublishedLineName>
+          <DestinationName>Aarhus H</DestinationName>
+          <OperatorRef>DSB</OperatorRef>
+          <TrainNumbers><TrainNumberRef>1035</TrainNumberRef></TrainNumbers>
+          <RecordedCalls>
+            <RecordedCall>
+              <StopPointRef>8600626</StopPointRef>
+              <Order>1</Order>
+              <StopPointName>København H</StopPointName>
+              <AimedDepartureTime>2026-11-24T05:30:00+01:00</AimedDepartureTime>
+              <ActualDepartureTime>2026-11-24T05:33:00+01:00</ActualDepartureTime>
+            </RecordedCall>
+          </RecordedCalls>
+          <EstimatedCalls>
+            <EstimatedCall>
+              <StopPointRef>8600617</StopPointRef>
+              <Order>2</Order>
+              <Cancellation>true</Cancellation>
+              <AimedArrivalTime>2026-11-24T05:50:00+01:00</AimedArrivalTime>
+            </EstimatedCall>
+            <EstimatedCall>
+              <StopPointRef>8600053</StopPointRef>
+              <Order>3</Order>
+              <AimedArrivalTime>2026-11-24T08:20:00+01:00</AimedArrivalTime>
+              <ExpectedArrivalTime>2026-11-24T08:24:00+01:00</ExpectedArrivalTime>
+            </EstimatedCall>
+          </EstimatedCalls>
+        </EstimatedVehicleJourney>
+        <EstimatedVehicleJourney>
+          <LineRef>2141</LineRef>
+          <FramedVehicleJourneyRef>
+            <DataFrameRef>2026-11-24</DataFrameRef>
+            <DatedVehicleJourneyRef>2141-8600626600000</DatedVehicleJourneyRef>
+          </FramedVehicleJourneyRef>
+          <Cancellation>true</Cancellation>
+          <OperatorRef>DSB</OperatorRef>
+          <TrainNumbers><TrainNumberRef>2141</TrainNumberRef></TrainNumbers>
+          <EstimatedCalls>
+            <EstimatedCall>
+              <StopPointRef>8600626</StopPointRef>
+              <Order>1</Order>
+              <Cancellation>true</Cancellation>
+              <AimedDepartureTime>2026-11-24T06:00:00+01:00</AimedDepartureTime>
+            </EstimatedCall>
+            <EstimatedCall>
+              <StopPointRef>8600617</StopPointRef>
+              <Order>2</Order>
+              <Cancellation>true</Cancellation>
+              <AimedArrivalTime>2026-11-24T06:20:00+01:00</AimedArrivalTime>
+            </EstimatedCall>
+          </EstimatedCalls>
+        </EstimatedVehicleJourney>
+      </EstimatedJourneyVersionFrame>
+    </EstimatedTimetableDelivery>
+  </ServiceDelivery>
+</Siri>

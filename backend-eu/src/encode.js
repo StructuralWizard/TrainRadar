@@ -31,8 +31,10 @@ export const str = (field, s) => bytes(field, te.encode(String(s)));
 export const msg = (field, parts) => bytes(field, concat(parts.filter(Boolean)));
 
 /** A FeedMessage of trip updates: [{ id, tripId, startDate, canceled,
- * stops: [{ seq, stopId, arrivalDelay, departureDelay, skipped }] }]
- * (delays in seconds, null when unknown). */
+ * label, stops: [{ seq, stopId, arrivalDelay, departureDelay, arrivalTime,
+ * departureTime, skipped }] }] (delays in seconds, times in seconds since
+ * the epoch, null when unknown; label = the train number, in the trip
+ * update's VehicleDescriptor, field 3). */
 export function tripUpdatesFeed(updates, nowSecs) {
   const header = msg(1, [str(1, "2.0"), int(2, 0), int(3, nowSecs)]);
   const entities = updates.map((u) =>
@@ -40,11 +42,16 @@ export function tripUpdatesFeed(updates, nowSecs) {
       str(1, u.id || u.tripId),
       msg(3, [
         msg(1, [str(1, u.tripId), u.startDate ? str(3, u.startDate) : null, u.canceled ? int(4, 3) : null]),
+        u.label ? msg(3, [str(2, u.label)]) : null,
         ...(u.stops || []).map((s) =>
           msg(2, [
             s.seq != null ? int(1, s.seq) : null,
-            s.arrivalDelay != null ? msg(2, [int(1, s.arrivalDelay)]) : null,
-            s.departureDelay != null ? msg(3, [int(1, s.departureDelay)]) : null,
+            s.arrivalDelay != null || s.arrivalTime != null
+              ? msg(2, [s.arrivalDelay != null ? int(1, s.arrivalDelay) : null, s.arrivalTime != null ? int(2, s.arrivalTime) : null])
+              : null,
+            s.departureDelay != null || s.departureTime != null
+              ? msg(3, [s.departureDelay != null ? int(1, s.departureDelay) : null, s.departureTime != null ? int(2, s.departureTime) : null])
+              : null,
             str(4, s.stopId),
             s.skipped ? int(5, 1) : null,
           ]),

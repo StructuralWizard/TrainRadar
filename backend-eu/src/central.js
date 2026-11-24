@@ -113,7 +113,9 @@ export const PL = {
   feeds: [
     {
       name: "trip_updates.pb",
-      path: "operations?pageSize=5000&withPlanned=true",
+      // PLK's largest page (10,000 records): 5,000 was full on 24 Nov 2026,
+      // with trains left over.
+      path: "operations?pageSize=10000&withPlanned=true",
       every: 1,
       convert: (bytes, now) =>
         tripUpdatesFeed(polishUpdates(JSON.parse(new TextDecoder().decode(bytes))), Math.floor(now / 1000)),
