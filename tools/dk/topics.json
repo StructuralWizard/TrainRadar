@@ -1,0 +1,11 @@
+{
+  "namespace": "sb-duvproddistribution.servicebus.windows.net",
+  "topics": [
+    { "operator": "DSB", "dataset": 785, "topic": "t-distribution-785", "subscription": "027a12b0-006e-44f6-be04-ee3a1c7ecb82" },
+    { "operator": "DSB S-tog", "dataset": 801, "topic": "t-distribution-801", "subscription": "cc8f717c-aeb5-4f1a-b0f2-8ee6e23d101c" },
+    { "operator": "DSB Vores Tog", "dataset": 789, "topic": "t-distribution-789", "subscription": "6bd33fdc-2883-4f4c-971a-a215bd1125f6" },
+    { "operator": "Lokaltog", "dataset": 799, "topic": "t-distribution-799", "subscription": "3594f34b-7477-40c8-8881-2b2641650220" },
+    { "operator": "Nordjyske Jernbaner", "dataset": 787, "topic": "t-distribution-787", "subscription": "feca7968-0752-40b8-8c77-187474256705" },
+    { "operator": "Öresundståg + Skånetrafiken", "dataset": 800, "topic": "t-distribution-800", "subscription": "e99fac3c-1956-42c0-82af-7d3a428fc273" }
+  ]
+}

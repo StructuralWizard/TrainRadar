@@ -1,0 +1,13 @@
+{
+  "name": "trainradar-dk",
+  "private": true,
+  "type": "module",
+  "description": "Denmark: Rejsekort & Rejseplan's SIRI-ET over Azure Service Bus (the national access point, Dataudveksleren)",
+  "scripts": {
+    "spike": "node spike.mjs"
+  },
+  "dependencies": {
+    "@azure/identity": "4.14.1",
+    "@azure/service-bus": "7.10.0"
+  }
+}
