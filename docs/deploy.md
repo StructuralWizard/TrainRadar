@@ -290,18 +290,11 @@ app, and update the "last updated" dates when they change.
 - **Rebuilt daily** (cancellations change every day). The portal's files are cached between runs, so
   a day's run downloads only the new ones; the first run fetches a few thousand small files.
 
-## Italy, Lombardy only (M7)
+## Italy (M7)
 
-- **Turning it on:** **`IT_ENABLED`** = `true`. No key. Trenord's timetable from Regione Lombardia's
-  open data (CC BY 4.0), cut to trains; by timetable; `?country=it`. The rest of Italy waits for the
-  national access point ([europe/it.md](europe/it.md)).
-
-## Denmark
-
-- **Turning it on:** **`DK_ENABLED`** = `true` builds `data/dk/` from Rejseplanen's NeTEx (the
-  national access point; secret `DK_NAP_CLIENT_SECRET`); **`DK_LIVE_ENABLED`** = `true` runs the
-  live SIRI-ET in the `eu` Worker. `?country=dk`. A refused login means a new service account is
-  needed ([europe/south-north.md](europe/south-north.md#denmark-dk)).
+- **Turning it on:** **`IT_ENABLED`** = `true`. No key. Trenitalia's timetable from the national
+  access point (CCISS) and Trenord's for Lombardy (when its portal serves it); by timetable;
+  `?country=it`. See [europe/it.md](europe/it.md).
 
 ## Slovakia and Estonia (M4)
 

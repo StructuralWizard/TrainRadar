@@ -1,8 +1,21 @@
 #!/usr/bin/env python3
-"""Denmark's trains as GTFS, from Rejseplanen's NeTEx on the national access
-point (Dataudveksleren dataset 242, Rejsekort & Rejseplan A/S).
+"""Trains as GTFS, from a national NeTEx timetable (EU profile):
 
-    python3 -I tools/dk/netex-gtfs.py OUT.zip NETEX.zip [DAYS] [--start YYYY-MM-DD]
+    python3 -I tools/netex-gtfs.py OUT.zip NETEX(.zip|.xml|.xml.gz) [DAYS]
+        [--start YYYY-MM-DD] [--profile dk|it]
+
+Profiles (what differs between publishers):
+
+- `dk`: Rejseplanen's NeTEx on Denmark's national access point
+  (Dataudveksleren dataset 242). The train number is the journey's TripNr;
+  routes are lines (Line PublicCode).
+- `it`: Trenitalia's NeTEx on Italy's national access point (CCISS,
+  "OAP Trenitalia – NeTEx Livello 1", one .xml.gz). The train number is the
+  journey's Name; routes are categories (Line ShortName "0083_FR" → FR);
+  journeys of mode rail or other (the "sfm" and "Metropolitano" services),
+  not the replacement buses ("Autobus").
+
+Denmark's file, in detail:
 
 The ZIP holds one file per line, in a folder per operator and area
 (`DSB_000002/…`, `DSB_000022/…` for S-tog, `MOV_LOKT/…` for Lokaltog…), buses
@@ -27,6 +40,7 @@ alight. Standard library only; nothing secret is read.
 import collections
 import csv
 import datetime as dt
+import gzip
 import io
 import re
 import sys
@@ -35,6 +49,13 @@ import zipfile
 
 N = "{http://www.netex.org.uk/netex}"
 RAIL = b"<TransportMode>rail</TransportMode>"
+
+PROFILES = {
+    "dk": {"modes": {"rail"}, "tz": "Europe/Copenhagen", "lang": "da", "url": "https://www.rejseplanen.dk",
+           "publisher": "Rejsekort & Rejseplan A/S, via Dataudveksleren", "agency": "DSB"},
+    "it": {"modes": {"rail", "other"}, "tz": "Europe/Rome", "lang": "it", "url": "https://www.trenitalia.com",
+           "publisher": "Trenitalia, via the Punto di Accesso Nazionale (CCISS)", "agency": "Trenitalia"},
+}
 
 
 def text(el, path):
@@ -58,11 +79,13 @@ def days_of(period):
 
 
 def stop_id(ref):
-    m = re.search(r"ScheduledStopPoint:(\d{7})", ref or "")
+    # DK::ScheduledStopPoint:8600655_DSB_:: (UIC) or
+    # IT::ScheduledStopPoint:railTRENITALIA:830001020 (station code).
+    m = re.search(r"ScheduledStopPoint:(?:[A-Za-z]+:)?(\d{6,9})", ref or "")
     return m.group(1) if m else re.sub(r"[^A-Za-z0-9]+", "_", ref or "").strip("_")
 
 
-def read_file(data, window, out, counts):
+def read_file(data, window, out, counts, profile="dk"):
     """One NeTEx file's rail journeys in the window into `out`."""
     root = ET.fromstring(data)
     periods = {p.get("id"): days_of(p) for tag in ("UicOperatingPeriod", "OperatingPeriod") for p in root.iter(N + tag)}
@@ -87,13 +110,18 @@ def read_file(data, window, out, counts):
         if lat and lon and sid not in stops:
             stops[sid] = (text(p, "Name") or sid, float(lat), float(lon))
     operators = {o.get("id"): text(o, "Name") or text(o, "ShortName") or "" for o in root.iter(N + "Operator")}
+    prof = PROFILES[profile]
     lines = {}
     for line in root.iter(N + "Line"):
         op = line.find(f"{N}additionalOperators/{N}OperatorRef")
         if op is None:
             op = line.find(N + "OperatorRef")
-        lines[line.get("id")] = (text(line, "PublicCode") or text(line, "Name") or "", text(line, "TransportMode"),
-                                 operators.get(op.get("ref")) if op is not None else None)
+        if profile == "it":
+            # "0083_FR" → FR; the line's Name is the category ("Frecciarossa").
+            code = (text(line, "ShortName") or "").split("_")[-1] or text(line, "Name") or ""
+        else:
+            code = text(line, "PublicCode") or text(line, "Name") or ""
+        lines[line.get("id")] = (code, text(line, "TransportMode"), operators.get(op.get("ref")) if op is not None else None)
     displays = {d.get("id"): text(d, "FrontText") or text(d, "SideText") for d in root.iter(N + "DestinationDisplay")}
     patterns = {}
     for p in root.iter(N + "ServiceJourneyPattern"):
@@ -104,14 +132,14 @@ def read_file(data, window, out, counts):
             dd = sp.find(N + "DestinationDisplayRef")
             pts[sp.get("id")] = (ssp.get("ref") if ssp is not None else None, text(sp, "ForBoarding") != "false" or text(sp, "ForAlighting") != "false",
                                  displays.get(dd.get("ref")) if dd is not None else None)
-        patterns[p.get("id")] = (lref.get("ref") if lref is not None else None, pts)
+        patterns[p.get("id")] = (lref.get("ref") if lref is not None else None, pts, text(p, "Name"))
     for sj in root.iter(N + "ServiceJourney"):
-        if text(sj, "TransportMode") not in (None, "rail"):
+        if text(sj, "TransportMode") not in (None, *prof["modes"]):
             continue
         pref = sj.find(N + "ServiceJourneyPatternRef")
-        line_ref, pts = patterns.get(pref.get("ref") if pref is not None else None, (None, {}))
+        line_ref, pts, pname = patterns.get(pref.get("ref") if pref is not None else None, (None, {}, None))
         code, mode, operator = lines.get(line_ref, ("", None, None))
-        if (text(sj, "TransportMode") or mode) != "rail":
+        if (text(sj, "TransportMode") or mode) not in prof["modes"] or pname == "Autobus":
             continue
         counts["rail_journeys"] += 1
         days = set()
@@ -122,6 +150,8 @@ def read_file(data, window, out, counts):
         if not days:
             continue
         trip_nr = next((text(kv, "Value") for kv in sj.iter(N + "KeyValue") if text(kv, "Key") == "TripNr"), "") or ""
+        if not trip_nr and profile == "it":
+            trip_nr = text(sj, "Name") or ""
         rows, headsign = [], None
         for tpt in sj.iter(N + "TimetabledPassingTime"):
             ref = tpt.find(N + "StopPointInJourneyPatternRef")
@@ -140,10 +170,14 @@ def read_file(data, window, out, counts):
         if len(rows) < 2:
             counts["short"] += 1
             continue
-        jid = re.sub(r"[^0-9_]+", "", sj.get("id").split(":")[-3] if sj.get("id").count(":") >= 3 else sj.get("id")) or sj.get("id")
+        if profile == "it":
+            # IT::VehicleJourney:railTRENITALIA:0083_10083_0_p_1-10201-D5C-0083_p_…
+            jid = re.sub(r"[^A-Za-z0-9_-]+", "", sj.get("id").split(":", 3)[-1])[:80]
+        else:
+            jid = re.sub(r"[^0-9_]+", "", sj.get("id").split(":")[-3] if sj.get("id").count(":") >= 3 else sj.get("id")) or sj.get("id")
         out["trips"].append({
             "id": jid, "number": trip_nr, "line": code, "operator": operator or "DSB",
-            "submode": text(sj, f"TransportSubmode/{N}RailSubmode"), "days": days, "rows": rows,
+            "submode": text(sj, f"TransportSubmode/{N}RailSubmode") or pname, "days": days, "rows": rows,
             "headsign": headsign,
         })
 
@@ -152,19 +186,25 @@ def hms(n):
     return f"{n // 3600:02d}:{n % 3600 // 60:02d}:{n % 60:02d}"
 
 
-def convert(netex_zip, window):
+def convert(netex, window, profile="dk"):
     out = {"stops": {}, "trips": []}
     counts = collections.Counter()
-    with zipfile.ZipFile(netex_zip) as z:
-        for info in z.infolist():
-            if not info.filename.endswith(".xml"):
-                continue
-            counts["files"] += 1
-            data = z.read(info.filename)
-            if RAIL not in data:
-                continue
-            counts["rail_files"] += 1
-            read_file(data, window, out, counts)
+    prof = PROFILES[profile]
+    if netex.endswith(".zip"):
+        with zipfile.ZipFile(netex) as z:
+            for info in z.infolist():
+                if not info.filename.endswith(".xml"):
+                    continue
+                counts["files"] += 1
+                data = z.read(info.filename)
+                if RAIL not in data:
+                    continue
+                counts["rail_files"] += 1
+                read_file(data, window, out, counts, profile)
+    else:
+        counts["files"] = counts["rail_files"] = 1
+        with (gzip.open(netex) if netex.endswith(".gz") else open(netex, "rb")) as f:
+            read_file(f.read(), window, out, counts, profile)
     agencies, routes, trips, times, dates, used = {}, {}, [], [], [], set()
     for t in out["trips"]:
         if any(r[0] not in out["stops"] for r in t["rows"]):
@@ -172,7 +212,7 @@ def convert(netex_zip, window):
             counts["stop_calls_without_position"] += 1
             if len(t["rows"]) < 2:
                 continue
-        agency = re.sub(r"[^A-Za-z0-9]+", "", t["operator"]) or "DSB"
+        agency = re.sub(r"[^A-Za-z0-9]+", "", t["operator"]) or prof["agency"]
         agencies.setdefault(agency, t["operator"])
         route = f"{agency}:{t['line'] or t['submode'] or 'rail'}"
         routes.setdefault(route, (agency, t["line"] or "", t["submode"] or ""))
@@ -186,7 +226,7 @@ def convert(netex_zip, window):
         counts[f"submode:{t['submode']}"] += 1
     tables = {
         "agency.txt": [["agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang"]]
-        + [[a, n, "https://www.rejseplanen.dk", "Europe/Copenhagen", "da"] for a, n in sorted(agencies.items())],
+        + [[a, n, prof["url"], prof["tz"], prof["lang"]] for a, n in sorted(agencies.items())],
         "routes.txt": [["route_id", "agency_id", "route_short_name", "route_desc", "route_type"]]
         + [[r, a, code, sub, 2] for r, (a, code, sub) in sorted(routes.items())],
         "trips.txt": [["route_id", "service_id", "trip_id", "trip_headsign", "trip_short_name"]] + trips,
@@ -195,7 +235,7 @@ def convert(netex_zip, window):
         "stops.txt": [["stop_id", "stop_name", "stop_lat", "stop_lon"]]
         + [[s, *out["stops"][s]] for s in sorted(used)],
         "feed_info.txt": [["feed_publisher_name", "feed_publisher_url", "feed_lang"]]
-        + [["Rejsekort & Rejseplan A/S, via Dataudveksleren", "https://www.rejseplanen.dk", "da"]],
+        + [[prof["publisher"], prof["url"], prof["lang"]]],
     }
     counts["stations"] = len(used)
     return tables, counts
@@ -210,7 +250,11 @@ def write(path, tables):
 
 
 def main(argv):
-    start = None
+    start, profile = None, "dk"
+    if "--profile" in argv:
+        i = argv.index("--profile")
+        profile = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]
     if "--start" in argv:
         i = argv.index("--start")
         start = dt.date.fromisoformat(argv[i + 1])
@@ -222,7 +266,7 @@ def main(argv):
     days = int(argv[2]) if len(argv) > 2 else 9
     start = start or dt.date.today() - dt.timedelta(days=1)
     window = {start + dt.timedelta(days=i) for i in range(days)}
-    tables, c = convert(src, window)
+    tables, c = convert(src, window, profile)
     write(out, tables)
     subs = ", ".join(f"{k.split(':', 1)[1]} {v}" for k, v in sorted(c.items()) if k.startswith("submode:"))
     print(f"{out}: {c['files']} NeTEx files, {c['rail_files']} with trains, {c['rail_journeys']} rail journeys, "

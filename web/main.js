@@ -2923,9 +2923,9 @@ function renderAbout() {
   );
 }
 
-/** A country's note on what it shows, until closed (on this device):
- * Italy is Lombardy only, as the national timetables aren't open data yet. */
-const COUNTRY_NOTES = { it: { text: "countryNoteIt", link: ["countryNoteItLink", "https://www.cciss.it/"] } };
+/** A country's note on what it shows, until closed (on this device), as
+ * { text, link: [label, url] } by country (none at present). */
+const COUNTRY_NOTES = {};
 function setupCountryNote() {
   const note = COUNTRY_NOTES[country];
   const key = `countryNote-${country}`;

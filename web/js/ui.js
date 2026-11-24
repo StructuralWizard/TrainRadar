@@ -180,6 +180,7 @@ const TICKET_SITES = {
   // Czechia: several operators; České dráhy sells for most of them.
   ČD: ["České dráhy", "https://www.cd.cz/"],
   Trenord: ["Trenord", "https://www.trenord.it/"],
+  Trenitalia: ["Trenitalia", "https://www.trenitalia.com/"],
   DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],

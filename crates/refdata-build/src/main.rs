@@ -76,7 +76,8 @@ usage:
                        Slovakia: --sk-gtfs ZIP; Estonia: --ee-gtfs ZIP;
                        Switzerland: --ch-gtfs ZIP; Sweden: --se-gtfs ZIP;
                        Poland: --pl-gtfs ZIP; Austria: --at-gtfs ZIP;
-                       Czechia: --cz-gtfs ZIP; Italy (Lombardy): --it-gtfs ZIP;
+                       Czechia: --cz-gtfs ZIP; Italy: --it-gtfs ZIP (Trenitalia),
+                       --it-lom-gtfs ZIP (Trenord, Lombardy);
                        Denmark: --dk-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
@@ -146,8 +147,10 @@ struct BuildArgs {
     at_gtfs: Option<PathBuf>,
     /// CIS JŘ's trains as GTFS (tools/cisjr-gtfs.py): Czechia, by timetable.
     cz_gtfs: Option<PathBuf>,
-    /// Trenord's GTFS, cut to trains: Italy (Lombardy), by timetable.
+    /// Trenitalia's NeTEx as GTFS (tools/netex-gtfs.py --profile it): Italy.
     it_gtfs: Option<PathBuf>,
+    /// Trenord's GTFS, cut to trains: Italy (Lombardy).
+    it_lom_gtfs: Option<PathBuf>,
     /// Rejseplanen's NeTEx as GTFS (tools/dk/netex-gtfs.py): Denmark.
     dk_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
@@ -186,6 +189,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         at_gtfs: None,
         cz_gtfs: None,
         it_gtfs: None,
+        it_lom_gtfs: None,
         dk_gtfs: None,
         rail: None,
         rail_heights: None,
@@ -233,6 +237,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--at-gtfs" => a.at_gtfs = Some(val()?.into()),
             "--cz-gtfs" => a.cz_gtfs = Some(val()?.into()),
             "--it-gtfs" => a.it_gtfs = Some(val()?.into()),
+            "--it-lom-gtfs" => a.it_lom_gtfs = Some(val()?.into()),
             "--dk-gtfs" => a.dk_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
@@ -270,6 +275,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.at_gtfs.is_none()
         && a.cz_gtfs.is_none()
         && a.it_gtfs.is_none()
+        && a.it_lom_gtfs.is_none()
         && a.dk_gtfs.is_none()
     {
         return Err(
@@ -421,12 +427,24 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.at_gtfs, "at"),
         (&a.cz_gtfs, "cz"),
         (&a.it_gtfs, "it"),
+        (&a.it_lom_gtfs, "it-lom"),
         (&a.dk_gtfs, "dk"),
     ] {
         let Some(path) = path else { continue };
         if matches!(
             kind,
-            "fi" | "no" | "nl" | "sk" | "ee" | "ch" | "se" | "pl" | "at" | "cz" | "it" | "dk"
+            "fi" | "no"
+                | "nl"
+                | "sk"
+                | "ee"
+                | "ch"
+                | "se"
+                | "pl"
+                | "at"
+                | "cz"
+                | "it"
+                | "it-lom"
+                | "dk"
         ) {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
@@ -445,12 +463,13 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 "pl" => (nordic::normalise_simple(&mut feed), "PKP PLK"),
                 "at" => (nordic::normalise_simple(&mut feed), "ÖBB"),
                 "cz" => (nordic::normalise_simple(&mut feed), "ČD"),
-                "it" => (nordic::normalise_italy(&mut feed), "Trenord"),
+                "it" => (nordic::normalise_simple(&mut feed), "Trenitalia"),
+                "it-lom" => (nordic::normalise_italy(&mut feed), "Trenord"),
                 "dk" => (nordic::normalise_simple(&mut feed), "DSB"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
-            let live = !matches!(kind, "sk" | "ee" | "at" | "it");
+            let live = !matches!(kind, "sk" | "ee" | "at" | "it" | "it-lom");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",
@@ -478,6 +497,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 nordic::split_poland(&feed)
             } else if kind == "cz" {
                 nordic::split_czechia(&feed)
+            } else if kind == "it" {
+                nordic::split_italy(&feed)
             } else {
                 std::iter::once((kind.to_owned(), feed.trips.iter().collect())).collect()
             };
@@ -949,7 +970,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_AT
         } else if a.cz_gtfs.is_some() {
             nordic::ATTRIBUTION_CZ
-        } else if a.it_gtfs.is_some() {
+        } else if a.it_gtfs.is_some() || a.it_lom_gtfs.is_some() {
             nordic::ATTRIBUTION_IT
         } else if a.dk_gtfs.is_some() {
             nordic::ATTRIBUTION_DK
