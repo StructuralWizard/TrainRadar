@@ -30,6 +30,8 @@ pub const CZ: &str = "cz";
 pub const CZ_REGIONAL: &str = "cz-r";
 /// Italy: Lombardy only for now (Trenord), by timetable.
 pub const IT: &str = "it";
+/// Denmark: Rejseplanen's NeTEx, every train operator; live from SIRI-ET.
+pub const DK: &str = "dk";
 
 pub const ATTRIBUTION_FI: &str = "Data: Fintraffic / digitraffic.fi, CC BY 4.0. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
@@ -51,6 +53,8 @@ pub const ATTRIBUTION_CZ: &str = "Data: Ministry of Transport of the Czech Repub
 (portal.cisjr.cz). Track and stations: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_IT: &str = "Data: Trenord, Regione Lombardia open data (dati.lombardia.it), \
 CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
+(Vejdirektoratet). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
 shapes ODbL. Track: © OpenStreetMap contributors, ODbL 1.0.";
 
@@ -68,6 +72,7 @@ pub fn tz(code: &str) -> Option<&'static str> {
         AT => "Europe/Vienna",
         CZ | CZ_REGIONAL => "Europe/Prague",
         IT => "Europe/Rome",
+        DK => "Europe/Copenhagen",
         _ => return None,
     })
 }
@@ -89,6 +94,7 @@ pub fn region_name(code: &str) -> &'static str {
         CZ => "Czechia (long distance)",
         CZ_REGIONAL => "Czechia (regional)",
         IT => "Italy (Lombardy)",
+        DK => "Denmark",
         _ => "",
     }
 }
@@ -486,6 +492,7 @@ mod tests {
         assert_eq!(tz(PL_REGIONAL), Some("Europe/Warsaw"));
         assert_eq!(tz(CZ_REGIONAL), Some("Europe/Prague"));
         assert_eq!(tz(IT), Some("Europe/Rome"));
+        assert_eq!(tz(DK), Some("Europe/Copenhagen"));
     }
 
     #[test]

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The layout of Rejseplanen's NeTEx (dataset 242, DSB_000022, 24 Nov 2026), cut to one S-tog
+     journey of three stops; ids, names, positions and calendar as in the real file, the third
+     stop and the bus line made up. -->
+<PublicationDelivery xmlns="http://www.netex.org.uk/netex" version="1.0">
+ <dataObjects><CompositeFrame id="x" version="1"><frames>
+  <ResourceFrame id="r" version="1"><organisations>
+   <Operator id="DK::Operator:416::" version="1"><PublicCode>DSB</PublicCode><Name>DSB S-tog</Name><ShortName>DSB</ShortName></Operator>
+  </organisations></ResourceFrame>
+  <ServiceCalendarFrame id="c" version="1"><ServiceCalendar id="sc" version="1">
+   <dayTypes><DayType id="DK::DayType:7625::" version="1"/></dayTypes>
+   <operatingPeriods><UicOperatingPeriod id="DK::UicOperatingPeriod:7625::" version="1"><FromDate>2026-11-23T00:00:00</FromDate><ToDate>2027-02-10T00:00:00</ToDate><ValidDayBits>11111111111111111111111111111111111111111100001111111111111111111111111111111111</ValidDayBits></UicOperatingPeriod></operatingPeriods>
+   <dayTypeAssignments><DayTypeAssignment id="DK::DayTypeAssignment:7625::" order="1" version="1"><OperatingPeriodRef ref="DK::UicOperatingPeriod:7625::" version="1"/><DayTypeRef ref="DK::DayType:7625::" version="1"/><isAvailable>true</isAvailable></DayTypeAssignment></dayTypeAssignments>
+  </ServiceCalendar></ServiceCalendarFrame>
+  <ServiceFrame id="s" version="1">
+   <lines>
+    <Line id="DK::Line:16453::" version="1"><Name>F</Name><ShortName>F</ShortName><TransportMode>rail</TransportMode><PublicCode>F</PublicCode><additionalOperators><OperatorRef ref="DK::Operator:416::" version="1"/></additionalOperators></Line>
+    <Line id="DK::Line:1::" version="1"><Name>1A</Name><TransportMode>bus</TransportMode><PublicCode>1A</PublicCode></Line>
+   </lines>
+   <destinationDisplays><DestinationDisplay id="DK::DestinationDisplay:3382::" version="1"><SideText>København Syd St.</SideText><FrontText>København Syd St.</FrontText></DestinationDisplay></destinationDisplays>
+   <scheduledStopPoints>
+    <ScheduledStopPoint id="DK::ScheduledStopPoint:8600655_DSB_::" version="1"><Name>Hellerup St.</Name><Location><Longitude>12.567658</Longitude><Latitude>55.731022</Latitude></Location><StopType>railStation</StopType></ScheduledStopPoint>
+    <ScheduledStopPoint id="DK::ScheduledStopPoint:8600739_DSB_::" version="1"><Name>Bispebjerg St.</Name><Location><Longitude>12.541632</Longitude><Latitude>55.706348</Latitude></Location><StopType>railStation</StopType></ScheduledStopPoint>
+    <ScheduledStopPoint id="DK::ScheduledStopPoint:8600783_DSB_::" version="1"><Name>Ny Ellebjerg St.</Name><Location><Longitude>12.517</Longitude><Latitude>55.653</Latitude></Location><StopType>railStation</StopType></ScheduledStopPoint>
+   </scheduledStopPoints>
+   <journeyPatterns>
+    <ServiceJourneyPattern id="DK::ServiceJourneyPattern:14085978_0::" version="1"><RouteView id="rv"><LineRef ref="DK::Line:16453::" version="1"/></RouteView>
+     <pointsInSequence>
+      <StopPointInJourneyPattern id="DK::StopPointInJourneyPattern:14085978_1_0::" order="1" version="1"><ScheduledStopPointRef ref="DK::ScheduledStopPoint:8600655_DSB_::" version="1"/><ForAlighting>true</ForAlighting><ForBoarding>true</ForBoarding><DestinationDisplayRef ref="DK::DestinationDisplay:3382::" version="1"/></StopPointInJourneyPattern>
+      <StopPointInJourneyPattern id="DK::StopPointInJourneyPattern:14085978_1_1::" order="2" version="1"><ScheduledStopPointRef ref="DK::ScheduledStopPoint:8600739_DSB_::" version="1"/><ForAlighting>true</ForAlighting><ForBoarding>true</ForBoarding></StopPointInJourneyPattern>
+      <StopPointInJourneyPattern id="DK::StopPointInJourneyPattern:14085978_1_2::" order="3" version="1"><ScheduledStopPointRef ref="DK::ScheduledStopPoint:8600783_DSB_::" version="1"/><ForAlighting>true</ForAlighting><ForBoarding>false</ForBoarding></StopPointInJourneyPattern>
+     </pointsInSequence></ServiceJourneyPattern>
+   </journeyPatterns>
+  </ServiceFrame>
+  <TimetableFrame id="t" version="1"><vehicleJourneys>
+   <ServiceJourney id="DK::ServiceJourney:171031394_0::" version="1"><keyList><KeyValue><Key>TripNr</Key><Value>671200</Value></KeyValue></keyList><TransportMode>rail</TransportMode><TransportSubmode><RailSubmode>suburbanRailway</RailSubmode></TransportSubmode><DepartureTime>00:01:00</DepartureTime><DepartureDayOffset>1</DepartureDayOffset>
+    <dayTypes><DayTypeRef ref="DK::DayType:7625::" version="1"/></dayTypes><ServiceJourneyPatternRef ref="DK::ServiceJourneyPattern:14085978_0::" version="1"/>
+    <passingTimes>
+     <TimetabledPassingTime id="a"><StopPointInJourneyPatternRef ref="DK::StopPointInJourneyPattern:14085978_1_0::" version="1"/><DepartureTime>00:01:00</DepartureTime><DepartureDayOffset>1</DepartureDayOffset></TimetabledPassingTime>
+     <TimetabledPassingTime id="b"><StopPointInJourneyPatternRef ref="DK::StopPointInJourneyPattern:14085978_1_1::" version="1"/><ArrivalTime>00:03:00</ArrivalTime><ArrivalDayOffset>1</ArrivalDayOffset><DepartureTime>00:03:00</DepartureTime><DepartureDayOffset>1</DepartureDayOffset></TimetabledPassingTime>
+     <TimetabledPassingTime id="c"><StopPointInJourneyPatternRef ref="DK::StopPointInJourneyPattern:14085978_1_2::" version="1"/><ArrivalTime>00:12:00</ArrivalTime><ArrivalDayOffset>1</ArrivalDayOffset></TimetabledPassingTime>
+    </passingTimes></ServiceJourney>
+  </vehicleJourneys></TimetableFrame>
+ </frames></CompositeFrame></dataObjects>
+</PublicationDelivery>

@@ -45,7 +45,7 @@ jobs:
           FR_ENABLED: ${{ vars.FR_ENABLED }}
           LU_ENABLED: ${{ vars.LU_ENABLED }}
           M2_ENABLED: ${{ vars.FI_ENABLED == 'true' || vars.NO_ENABLED == 'true' || vars.NL_ENABLED == 'true' }}
-          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' }}
+          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -593,6 +593,45 @@ jobs:
             { echo "## Italy (Lombardy) reference data"; echo; cat refdata-it.md; } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::warning::Italy's reference data failed: deploying without Italy."
+            exit 1
+          fi
+
+      # Denmark, with DK_ENABLED: Rejseplanen's NeTEx from the national access
+      # point (service account DK_NAP_CLIENT_SECRET), trains only, and OSM
+      # track (weekly) → data/dk/; live delays come from the eu job
+      # (DK_LIVE_ENABLED).
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.DK_ENABLED == 'true'
+        id: osm_dk
+        with:
+          path: gtfs/dk/rail.geojsonseq
+          key: osm-rail-dk-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-dk-v1-
+      - name: Denmark reference data
+        if: vars.DK_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_dk.outputs.cache-hit }}
+          DK_NAP_CLIENT_SECRET: ${{ secrets.DK_NAP_CLIENT_SECRET }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh dk | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/dk-data --gzip \
+              --dk-gtfs gtfs/dk/gtfs.zip --sources gtfs/dk/sources.tsv \
+              $([ -s gtfs/dk/rail.geojsonseq ] && echo --rail gtfs/dk/rail.geojsonseq) --report refdata-dk.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/dk-data; then
+            mv build/dk-data build/data/dk
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/dk-plan --gzip --days 63 \
+                --dk-gtfs gtfs/dk/gtfs.zip --report dk-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/dk-plan; then
+              mv build/dk-plan build/data/dk/plan
+            else
+              echo "::warning::Denmark's plan-ahead timetables failed: Denmark has today's week only."
+            fi
+            { echo "## Denmark reference data"; echo; cat refdata-dk.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Denmark's reference data failed: deploying without Denmark."
             exit 1
           fi
 

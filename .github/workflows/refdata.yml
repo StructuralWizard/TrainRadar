@@ -286,6 +286,16 @@ jobs:
           # The Worker's own receiver, every topic once (HTTPS, as deployed).
           echo "### dk: live probe" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs dk /dev/null build/probe-dk | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          # The planned timetable: Rejseplanen's NeTEx (dataset 242), trains.
+          tools/fetch-eu.sh dk --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/dk --dk-gtfs gtfs/dk/gtfs.zip \
+            --sources gtfs/dk/sources.tsv --report refdata-dk.md
+          target/release/refdata-build verify build/dk
+          { echo "## Denmark reference data"; echo; cat refdata-dk.md; } >> "$GITHUB_STEP_SUMMARY"
+          # How many live trains' numbers the timetable has.
+          unzip -p gtfs/dk/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print('#' + r['trip_short_name']) for r in csv.DictReader(sys.stdin) if r['trip_short_name']]" > build/dk-numbers.txt
+          echo "### dk: live trains in the timetable" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs dk build/dk-numbers.txt build/probe-dk2 | grep 'trip_updates' | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

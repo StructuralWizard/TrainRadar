@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -27,6 +27,9 @@
 #                         tools/cisjr-gtfs.py, stations placed from
 #                         OpenStreetMap (so cz needs the OSM extract); its
 #                         downloads are kept in gtfs/cz/cisjr/ (CI caches it)
+#                     dk  Rejseplanen's NeTEx (Dataudveksleren dataset 242),
+#                         trains as GTFS by tools/dk/netex-gtfs.py; needs
+#                         DK_NAP_CLIENT_SECRET (the service account)
 #                     it  Italy, Lombardy only for now: Trenord's GTFS on
 #                         dati.lombardia.it (CC BY 4.0), cut to trains
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
@@ -196,7 +199,36 @@ except Exception as e:
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip"
     rm -f "$dir/all.zip"
     region=italy/nord-ovest ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it [--no-osm]" >&2; exit 2 ;;
+  dk)
+    [ -n "${DK_NAP_CLIENT_SECRET:-}" ] || { echo "DK_NAP_CLIENT_SECRET is not set" >&2; exit 2; }
+    # Log in as the service account (Entra ID client credentials; scope =
+    # its own id), then download with the short-lived token. The secret goes
+    # only in the login request's body; neither it nor the token is printed,
+    # written or put on a command line.
+    token=$(python3 -I -c '
+import json, os, sys, urllib.parse, urllib.request
+tenant = os.environ.get("DK_NAP_TENANT_ID") or "f1044067-8c60-4022-98d8-69306c5f7238"
+client = os.environ.get("DK_NAP_CLIENT_ID") or "a63b12fe-eeae-489c-b1ca-be8a135289f5"
+body = urllib.parse.urlencode({"client_id": client, "client_secret": os.environ["DK_NAP_CLIENT_SECRET"],
+    "scope": client + "/.default", "grant_type": "client_credentials"}).encode()
+req = urllib.request.Request("https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/token", data=body,
+    headers={"User-Agent": "Metranos-TrainRadar"})
+try:
+    print(json.load(urllib.request.urlopen(req, timeout=60))["access_token"])
+except Exception as e:
+    sys.exit("Dataudveksleren login refused: " + str(getattr(e, "code", "")) + " " + type(e).__name__ + " (a lost secret needs a new service account)")
+')
+    url=https://distribution.dataudveksler.app.vd.dk/api/dataset/242/latest/Zip
+    printf 'header = "Authorization: Bearer %s"\n' "$token" | curl -fsSL --retry 3 --retry-delay 15 \
+      -A "$client (+https://mytrainradar.com)" -o "$dir/netex.zip" -K - "$url"
+    unset token
+    printf '%s\t%s\t\t%s\n' "Rejsekort & Rejseplan A/S, NeTEx (Dataudveksleren dataset 242)" "$url" \
+      "$(date -u '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
+    echo "netex.zip: $(du -h "$dir/netex.zip" | cut -f1)"
+    python3 -I tools/dk/netex-gtfs.py "$dir/gtfs.zip" "$dir/netex.zip" 63
+    rm -f "$dir/netex.zip"
+    region=denmark ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

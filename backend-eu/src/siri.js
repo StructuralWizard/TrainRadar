@@ -131,7 +131,9 @@ export class JourneyState {
     const secs = (ms) => (ms == null ? null : Math.round(ms / 1000));
     return [...this.journeys.values()].map((j) => ({
       id: j.ref,
-      tripId: j.ref,
+      // Our timetable's trip ids are the NeTEx journeys', not these refs:
+      // keyed by train number ("#4402"), as the engine looks them up.
+      tripId: j.train ? `#${j.train}` : j.ref,
       startDate: (j.date || "").replaceAll("-", "") || undefined,
       canceled: j.cancelled,
       label: j.train || null,

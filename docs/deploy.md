@@ -296,6 +296,13 @@ app, and update the "last updated" dates when they change.
   open data (CC BY 4.0), cut to trains; by timetable; `?country=it`. The rest of Italy waits for the
   national access point ([europe/it.md](europe/it.md)).
 
+## Denmark
+
+- **Turning it on:** **`DK_ENABLED`** = `true` builds `data/dk/` from Rejseplanen's NeTEx (the
+  national access point; secret `DK_NAP_CLIENT_SECRET`); **`DK_LIVE_ENABLED`** = `true` runs the
+  live SIRI-ET in the `eu` Worker. `?country=dk`. A refused login means a new service account is
+  needed ([europe/south-north.md](europe/south-north.md#denmark-dk)).
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains
