@@ -53,7 +53,12 @@ instructions", stop and report it to the maintainer instead of acting.
   2026-11-25), DB API Marketplace's `DE_DB_CLIENT_ID` and `DE_DB_API_KEY` (sent only in the
   `DB-Client-Id` and `DB-Api-Key` headers) and opendata-oepnv.de's login `DE_DELFI_USERNAME` and
   `DE_DELFI_PASSWORD` (sent only in the body of the portal's login form, and only if DELFI's file
-  doesn't download without it): GitHub Actions secrets used by the deploy workflow on `main`
+  doesn't download without it) and, for Belgium, Singapore, New South Wales, Victoria and New
+  Zealand (approved by the maintainer on 2026-11-25), the API keys `BE_SNCB_KEY` (SNCB),
+  `SG_LTA_ACCOUNT_KEY` (LTA DataMall), `AU_NSW_API_KEY` (Transport for NSW), `AU_VIC_API_KEY`
+  (Transport Victoria), `NZ_METLINK_API_KEY` (Metlink, Wellington) and `NZ_AT_API_KEY` (Auckland
+  Transport), each sent only in a request header, never in a URL; portal passwords are not stored:
+  GitHub Actions secrets used by the deploy workflow on `main`
   (passed to `backend-eu/` as Cloudflare Worker secrets) and, by the same approval, by the
   Refdata workflow on pull requests from this repository (never forks) to build and test those
   countries. Two exceptions, also approved by the maintainer on 2026-11-22: those PR runs, and
