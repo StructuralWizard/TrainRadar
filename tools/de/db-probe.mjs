@@ -53,22 +53,49 @@ if (fchg.status === 200) {
   console.log(`de: fchg: ${count(fchg.text, /<s /g)} stops, ${count(fchg.text, / ct="/g)} changed times, ${count(fchg.text, / cs="c"/g)} cancellations`);
 }
 
-// 2. OpenBoards.
+// 2. OpenBoards: which time window it honours (the first run's board began
+// five hours before the call and held only 25 departures per transport
+// type), by DHID and by EVA number.
+const iso = (d) => d.toISOString().replace(/\.\d+Z$/, "Z");
+const local = (d) => {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "longOffset" })
+      .formatToParts(d)
+      .map((x) => [x.type, x.value]),
+  );
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}${p.timeZoneName.replace("GMT", "") || "+00:00"}`;
+};
 const now = new Date();
-const ob = await call("ob-departures.json", `${base}/open-boards/v1/departures`, {
-  method: "POST",
-  headers: { "content-type": "application/json", accept: "application/json" },
-  body: JSON.stringify({
-    stopPlaceOrStation: { evaNumbers: ["8000105", "8000261", "8011160"] },
-    timeWindow: { timeStart: now.toISOString().replace(/\.\d+Z$/, "Z"), timeEnd: new Date(+now + 3600e3).toISOString().replace(/\.\d+Z$/, "Z") },
-    maxViaStops: 0,
-  }),
-});
-if (ob.status === 200) {
+const later = new Date(+now + 3600e3);
+const variants = [
+  ["utc-eva", { evaNumbers: ["8000105", "8000261", "8011160"] }, { timeStart: iso(now), timeEnd: iso(later) }, {}],
+  ["local-eva", { evaNumbers: ["8000105", "8000261", "8011160"] }, { timeStart: local(now), timeEnd: local(later) }, {}],
+  ["local-eva-200", { evaNumbers: ["8000105", "8000261", "8011160"] }, { timeStart: local(now), timeEnd: local(later) }, { maxEntriesPerTransportType: 200 }],
+  ["local-dhid-200", { dhids: ["de:06412:10", "de:09162:100", "de:11000:900003201"] }, { timeStart: local(now), timeEnd: local(later) }, { maxEntriesPerTransportType: 200 }],
+  ["nowindow-200", { evaNumbers: ["8000105"] }, null, { maxEntriesPerTransportType: 200 }],
+];
+let sample = null;
+for (const [name, where, timeWindow, extra] of variants) {
+  const ob = await call(`ob-${name}.json`, `${base}/open-boards/v1/departures`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ stopPlaceOrStation: where, ...(timeWindow ? { timeWindow } : {}), maxViaStops: 0, ...extra }),
+  });
+  if (ob.status !== 200) {
+    console.log(`de: ${name}: ${ob.text.slice(0, 200).replace(/\s+/g, " ")}`);
+    continue;
+  }
   const j = JSON.parse(ob.text);
   const d = j.departures || [];
+  const times = d.map((x) => x.timeSchedule).sort();
+  const types = {};
+  for (const x of d) types[x.transport?.type] = (types[x.transport?.type] || 0) + 1;
   const late = d.filter((x) => x.time && x.timeSchedule && x.time !== x.timeSchedule).length;
-  console.log(`de: openboards: ${d.length} departures (${late} not on time), ${j.stopPlaces?.length ?? 0} stop places, ${j.administrations?.length ?? 0} administrations`);
-  const x = d[0];
-  if (x) console.log(`de: first: ${x.transport?.category} ${x.transport?.journeyNumber} at ${x.evaNumber} (${j.stopPlaces?.find((s) => s.evaNumber === x.evaNumber)?.ifopt || "no DHID"}), scheduled ${x.timeSchedule}, best ${x.time} (${x.timeType}), platform ${x.platform?.name || "-"}, dfid ${x.transport?.dfid ? "yes" : "no"}`);
+  console.log(`de: ${name}: ${d.length} departures (${late} not on time), scheduled ${times[0] || "-"} … ${times.at(-1) || "-"}; ${JSON.stringify(types)}; truncated ${JSON.stringify(j.meta?.truncatedTransportTypes || [])}; ${j.stopPlaces?.length ?? 0} stop places`);
+  sample ||= d.find((x) => x.transport?.type === "REGIONAL_TRAIN") && { d: d.find((x) => x.transport?.type === "REGIONAL_TRAIN"), j };
+}
+if (sample) {
+  const { d: x, j } = sample;
+  const sp = (eva) => j.stopPlaces?.find((s) => s.evaNumber === eva)?.ifopt || "no DHID";
+  console.log(`de: a regional departure: ${x.transport.category} ${x.transport.journeyNumber} (${x.transport.journeyDescription}, line ${x.transport.line?.name || "-"}, operator ${j.administrations?.find((a) => a.administrationId === x.transport.administrationId)?.operatorName || "-"}) at ${x.evaNumber} (${sp(x.evaNumber)}), scheduled ${x.timeSchedule}, best ${x.time} (${x.timeType}), cancelled ${!!x.cancelled}, journeyId ${x.journeyId ? "yes" : "no"}, start ${x.journeyInfo?.scheduledStartTime}, origin ${sp(x.journeyInfo?.origin?.evaNumber)}`);
 }
