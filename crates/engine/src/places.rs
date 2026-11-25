@@ -6,7 +6,7 @@ use crate::network::{Network, TripRef};
 use std::collections::HashMap;
 use trainradar_proto::LatLon;
 use trainradar_proto::refdata::StationRec;
-use trainradar_proto::time::{madrid_day, service_day_base};
+use trainradar_proto::time::madrid_day;
 
 /// A station near the user.
 #[derive(Debug, Clone, PartialEq)]
@@ -110,7 +110,7 @@ fn board_of(
             continue;
         };
         // Timetable times are local: an hour behind Madrid in the UK.
-        let behind = r.behind;
+        let behind = r.behind_at(now);
         let today = madrid_day(now - behind);
         for &(pi, pos) in calls {
             let st = &r.sched[pi as usize];
@@ -125,7 +125,7 @@ fn board_of(
                     if !crate::network::runs_on(&r.tt.header, trip, day) {
                         continue;
                     }
-                    let start = service_day_base(day) + behind + i64::from(trip.start);
+                    let start = r.day_base(day) + i64::from(trip.start);
                     let sched_arr = start + i64::from(st[pos].arrival);
                     let sched_dep = start + i64::from(st[pos].departure);
                     let sched = if last || by_arrival {

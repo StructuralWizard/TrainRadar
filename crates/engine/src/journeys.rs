@@ -477,7 +477,7 @@ fn search(
             let r = &net.regions[ri];
             let sched = &r.sched[pi as usize];
             let pattern = &r.tt.patterns[pi as usize];
-            let behind = r.behind;
+            let zone = r.zone;
             let change = if r.tt.region == "ld" {
                 CHANGE_LD_SECS
             } else {
@@ -527,7 +527,7 @@ fn search(
                 if cur_dep.is_some_and(|d| d <= ready) {
                     continue; // the train being ridden is no better
                 }
-                if let Some(c) = earliest_run(net, delays, ri, pi, pos, ready, behind) {
+                if let Some(c) = earliest_run(net, delays, ri, pi, pos, ready, zone) {
                     let dep = c.1 + i64::from(sched[pos].departure) + i64::from(c.2.unwrap_or(0));
                     if cur_dep.is_none_or(|d| dep < d) {
                         cur = Some((c.0, c.1, c.2, c.3, stop, pos as u16));
@@ -589,10 +589,11 @@ fn earliest_run(
     pi: u32,
     pos: usize,
     ready: i64,
-    behind: i64,
+    zone: trainradar_proto::time::Zone,
 ) -> Option<(TripRef, i64, Option<i32>, bool)> {
     let r = &net.regions[ri];
     let st = &r.sched[pi as usize];
+    let behind = zone.behind_madrid(ready);
     let today = madrid_day(ready - behind);
     // Runs by scheduled departure; live state only for the first few
     // (a late train scheduled before `ready` may still be catchable).

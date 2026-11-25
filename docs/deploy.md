@@ -322,6 +322,11 @@ app, and update the "last updated" dates when they change.
 - **Hidden:** SNCB's feeds are marked non-commercial; keep it hidden until SNCB says otherwise in
   writing (docs/europe/west-central.md).
 
+## New South Wales (Australia)
+
+- **Turning it on:** **`AU_NSW_ENABLED`** = `true`, with `AU_NSW_API_KEY`; by timetable for now;
+  `?country=au`. See [world/au-nsw.md](world/au-nsw.md).
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains

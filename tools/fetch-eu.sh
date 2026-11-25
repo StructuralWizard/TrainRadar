@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -44,6 +44,9 @@
 #                     be  SNCB's GTFS through the Belgian Mobility Company's
 #                         gateway, cut to trains; needs BE_SNCB_KEY (sent in
 #                         the Ocp-Apim-Subscription-Key header only)
+#                     au-nsw  Transport for NSW's GTFS: Sydney Trains, NSW
+#                         TrainLink and Sydney Metro, merged and cut to
+#                         trains; needs AU_NSW_API_KEY ("apikey" header)
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -297,14 +300,42 @@ except Exception as e:
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
     rm -f "$dir/all.zip"
     region=belgium ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be [--no-osm]" >&2; exit 2 ;;
+  au-nsw)
+    [ -n "${AU_NSW_API_KEY:-}" ] || { echo "AU_NSW_API_KEY is not set" >&2; exit 2; }
+    # Each operator's schedule, v2 where it exists, else v1; the key in a
+    # header through curl's config on stdin.
+    parts=()
+    for op in sydneytrains nswtrains metro; do
+      got=""
+      for v in v2 v1; do
+        url="https://api.transport.nsw.gov.au/$v/gtfs/schedule/$op"
+        if printf 'header = "Authorization: apikey %s"\n' "$AU_NSW_API_KEY" |
+            curl -fsSL --retry 3 --retry-delay 15 -A "$client (+https://mytrainradar.com)" \
+              -o "$dir/$op.zip" -K - "$url" && [ "$(head -c 2 "$dir/$op.zip")" = "PK" ]; then
+          got=$v; break
+        fi
+      done
+      if [ -z "$got" ]; then echo "TfNSW $op: no schedule (v2 or v1)" >&2; rm -f "$dir/$op.zip"; continue; fi
+      echo "$op.zip ($got): $(du -h "$dir/$op.zip" | cut -f1)"
+      printf '%s\t%s\t\t%s\n' "Transport for NSW, $op GTFS ($got)" "https://api.transport.nsw.gov.au/$got/gtfs/schedule/$op" \
+        "$(date -u '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
+      parts+=("$dir/$op.zip")
+    done
+    [ ${#parts[@]} -gt 0 ] || { echo "TfNSW: no schedule downloaded (the key?)" >&2; exit 1; }
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents
+    rm -f "${parts[@]}"
+    region=australia-oceania/australia ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then
   start=$SECONDS
-  out="$dir/$region.osm.pbf"
+  # A Geofabrik region in Europe ("germany"), or its full path elsewhere
+  # ("australia-oceania/australia").
+  case "$region" in */*) path=$region ;; *) path=europe/$region ;; esac
+  out="$dir/$(basename "$region").osm.pbf"
   mkdir -p "$(dirname "$out")"
-  url="https://download.geofabrik.de/europe/$region-latest.osm.pbf"
+  url="https://download.geofabrik.de/$path-latest.osm.pbf"
   [ -s "$out" ] || curl -fsSL --retry 6 --retry-delay 20 --retry-all-errors --speed-limit 100000 --speed-time 60 -o "$out" "$url" ||
     { echo "::warning::OSM: $url failed: built without the track this time (straight lines)." >&2; rm -f "$out"; exit 0; }
   osmium tags-filter --overwrite -o "$dir/rail.osm.pbf" "$out" w/railway=rail,narrow_gauge,disused
@@ -314,4 +345,4 @@ if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then
   mv "$dir/rail.geojsonseq.part" "$dir/rail.geojsonseq"
   echo "rail.geojsonseq: $(wc -l <"$dir/rail.geojsonseq") ways, in $((SECONDS - start)) s"
 fi
-rm -f "$dir/$region.osm.pbf"
+rm -f "$dir/$(basename "$region").osm.pbf"

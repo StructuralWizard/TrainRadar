@@ -66,6 +66,9 @@ const GERMAN_LANDS: [(&str, &str, &str); 16] = [
 /// Belgium: SNCB's GTFS (the Belgian Mobility Company's gateway), cut to
 /// trains; live trip updates and alerts from its GTFS-Realtime.
 pub const BE: &str = "be";
+/// New South Wales: Transport for NSW's GTFS (Sydney Trains, NSW TrainLink,
+/// Sydney Metro), cut to trains; on Sydney time.
+pub const AU_NSW: &str = "au-nsw";
 /// A German stop whose DHID names no Land (none seen in DELFI).
 pub const DE_OTHER: &str = "de-x";
 
@@ -96,6 +99,8 @@ pub const ATTRIBUTION_DE: &str = "Data: DELFI e.V. (www.delfi.de), via opendata-
 live: DB InfraGO AG, OpenBoards. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_BE: &str = "Data: SNCB/NMBS, via the Belgian Mobility Company's open data \
 gateway (non-commercial use). Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_AU_NSW: &str = "Data: Transport for NSW (opendata.transport.nsw.gov.au), \
+CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
 (Vejdirektoratet). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
@@ -116,6 +121,10 @@ pub fn tz(code: &str) -> Option<&'static str> {
         CZ | CZ_REGIONAL => "Europe/Prague",
         IT | IT_REGIONAL | IT_LOMBARDY => "Europe/Rome",
         DK => "Europe/Copenhagen",
+        HU | HU_REGIONAL => "Europe/Budapest",
+        BE => "Europe/Brussels",
+        c if c == DE || c.starts_with("de-") => "Europe/Berlin",
+        AU_NSW => "Australia/Sydney",
         _ => return None,
     })
 }
@@ -144,6 +153,7 @@ pub fn region_name(code: &str) -> &'static str {
         HU_REGIONAL => "Hungary (regional)",
         DE => "Germany (long distance)",
         BE => "Belgium",
+        AU_NSW => "New South Wales",
         DE_OTHER => "Germany (regional, cross-border)",
         c if c.starts_with("de-") => GERMAN_LANDS.iter().find(|l| l.1 == c).map_or("", |l| l.2),
         _ => "",
@@ -641,6 +651,8 @@ mod tests {
         assert_eq!(german_land("de:02000:10950"), "de-sh");
         assert_eq!(german_land("at:49:1234"), DE_OTHER);
         assert_eq!(region_name("de-by"), "Germany (Bavaria)");
+        assert_eq!(tz("de-by"), Some("Europe/Berlin"));
+        assert_eq!(tz(AU_NSW), Some("Australia/Sydney"));
     }
 
     #[test]

@@ -219,7 +219,7 @@ impl Engine {
             "uk" => Country::UnitedKingdom,
             "ie" => Country::Ireland,
             "fr" => Country::France,
-            "lu" | "sk" | "ee" | "at" | "it" | "hu" => Country::TimetableOnly,
+            "lu" | "sk" | "ee" | "at" | "it" | "hu" | "au" => Country::TimetableOnly,
             "cz" => Country::Czechia,
             "dk" => Country::Denmark,
             "de" => Country::Germany,

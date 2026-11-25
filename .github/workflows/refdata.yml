@@ -354,6 +354,22 @@ jobs:
           unzip -p gtfs/be/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/be-trips.txt
           echo "### be: live probe" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs be build/be-trips.txt build/probe-be | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: New South Wales (Transport for NSW; key AU_NSW_API_KEY)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          AU_NSW_API_KEY: ${{ secrets.AU_NSW_API_KEY }}
+        run: |
+          set -o pipefail
+          if [ -z "$AU_NSW_API_KEY" ]; then echo "NSW: no AU_NSW_API_KEY (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          tools/fetch-eu.sh au-nsw --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/au-nsw --au-nsw-gtfs gtfs/au-nsw/gtfs.zip \
+            --sources gtfs/au-nsw/sources.tsv --report refdata-au-nsw.md
+          target/release/refdata-build verify build/au-nsw
+          { echo "## New South Wales reference data"; echo; cat refdata-au-nsw.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/au-nsw/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/au-nsw-trips.txt
+          unzip -p gtfs/au-nsw/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### au: live endpoints" >> "$GITHUB_STEP_SUMMARY"
+          node tools/au/nsw-probe.mjs build/au-nsw-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |
