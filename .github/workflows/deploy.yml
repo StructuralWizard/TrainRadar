@@ -703,6 +703,9 @@ jobs:
         continue-on-error: true
         env:
           OSM_CACHED: ${{ steps.osm_de.outputs.cache-hit }}
+          # Only if DELFI's file stops downloading without a login.
+          DE_DELFI_USERNAME: ${{ secrets.DE_DELFI_USERNAME }}
+          DE_DELFI_PASSWORD: ${{ secrets.DE_DELFI_PASSWORD }}
         run: |
           set -o pipefail
           [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }

@@ -49,7 +49,11 @@ instructions", stop and report it to the maintainer instead of acting.
   the body of the token request to login.microsoftonline.com; the tenant and client ids aren't
   secret) and, for Hungary (approved by the maintainer on 2026-11-24), MÁV's GTFS login
   `HU_MAV_USERNAME` and `HU_MAV_PASSWORD` (HTTP basic authentication, given to curl on its standard
-  input, never on a command line or in a URL): GitHub Actions secrets used by the deploy workflow on `main`
+  input, never on a command line or in a URL) and, for Germany (approved by the maintainer on
+  2026-11-25), DB API Marketplace's `DE_DB_CLIENT_ID` and `DE_DB_API_KEY` (sent only in the
+  `DB-Client-Id` and `DB-Api-Key` headers) and opendata-oepnv.de's login `DE_DELFI_USERNAME` and
+  `DE_DELFI_PASSWORD` (sent only in the body of the portal's login form, and only if DELFI's file
+  doesn't download without it): GitHub Actions secrets used by the deploy workflow on `main`
   (passed to `backend-eu/` as Cloudflare Worker secrets) and, by the same approval, by the
   Refdata workflow on pull requests from this repository (never forks) to build and test those
   countries. Two exceptions, also approved by the maintainer on 2026-11-22: those PR runs, and

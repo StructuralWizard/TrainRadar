@@ -310,10 +310,18 @@ jobs:
             --sources gtfs/hu/sources.tsv --report refdata-hu.md
           target/release/refdata-build verify build/hu
           { echo "## Hungary reference data"; echo; cat refdata-hu.md; } >> "$GITHUB_STEP_SUMMARY"
-      - name: Germany (DELFI GTFS, no key)
+      - name: Germany (DELFI GTFS; DB live probe with DE_DB_*)
         continue-on-error: true # outside services: a report, not a gate
+        env:
+          DE_DELFI_USERNAME: ${{ secrets.DE_DELFI_USERNAME }}
+          DE_DELFI_PASSWORD: ${{ secrets.DE_DELFI_PASSWORD }}
+          DE_DB_CLIENT_ID: ${{ secrets.DE_DB_CLIENT_ID }}
+          DE_DB_API_KEY: ${{ secrets.DE_DB_API_KEY }}
         run: |
           set -o pipefail
+          # Which of DB's APIs the keys open (Timetables, OpenBoards).
+          echo "### de: DB APIs" >> "$GITHUB_STEP_SUMMARY"
+          node tools/de/db-probe.mjs samples/de | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
           tools/fetch-eu.sh de --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
           target/release/refdata-build build --out build/de --de-gtfs gtfs/de/gtfs.zip \
             --sources gtfs/de/sources.tsv --report refdata-de.md
