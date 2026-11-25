@@ -171,14 +171,14 @@ fn scheduled_trains(
     gps: &std::collections::HashSet<(u16, u32, i64)>,
 ) -> Vec<LiveTrain> {
     use crate::networkrail::placed_by_timetable;
-    use trainradar_proto::time::{madrid_day, service_day_base};
+    use trainradar_proto::time::madrid_day;
     let mut out = Vec::new();
     for (ri, r) in net.regions.iter().enumerate() {
         if !placed_by_timetable(&r.tt.region, r.tt.live) {
             continue;
         }
         // Timetable times are local: an hour behind Madrid in the UK.
-        let behind = r.behind;
+        let behind = r.behind_at(now);
         let today = madrid_day(now - behind);
         for (ti, trip) in r.tt.trips.iter().enumerate() {
             let tref = crate::network::TripRef {
@@ -214,7 +214,7 @@ fn scheduled_trains(
                 if gps.contains(&(tref.region, tref.trip, day)) {
                     continue;
                 }
-                let start = service_day_base(day) + behind + i64::from(trip.start);
+                let start = r.day_base(day) + i64::from(trip.start);
                 if now < start || now > start + dur + late {
                     continue;
                 }

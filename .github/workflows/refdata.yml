@@ -317,6 +317,8 @@ jobs:
           DE_DELFI_PASSWORD: ${{ secrets.DE_DELFI_PASSWORD }}
           DE_DB_CLIENT_ID: ${{ secrets.DE_DB_CLIENT_ID }}
           DE_DB_API_KEY: ${{ secrets.DE_DB_API_KEY }}
+          DE_MOBILITHEK_CERT_P12: ${{ secrets.DE_MOBILITHEK_CERT_P12 }}
+          DE_MOBILITHEK_CERT_PASSWORD: ${{ secrets.DE_MOBILITHEK_CERT_PASSWORD }}
         run: |
           set -o pipefail
           # Which of DB's APIs the keys open (Timetables, OpenBoards).
@@ -333,6 +335,10 @@ jobs:
           unzip -p gtfs/de/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print('#' + r['trip_short_name'].lstrip('0')) for r in csv.DictReader(sys.stdin) if r['trip_short_name'].strip('0')]" > build/de-numbers.txt
           echo "### de: live probe" >> "$GITHUB_STEP_SUMMARY"
           DE_BOARDS_FILE=build/de-boards.txt node tools/feed-check/eu-probe.mjs de build/de-numbers.txt build/probe-de | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          # DELFI's own GTFS-RT on Mobilithek (mutual TLS): size, and trains by trip id.
+          unzip -p gtfs/de/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/de-trips.txt
+          echo "### de: Mobilithek" >> "$GITHUB_STEP_SUMMARY"
+          tools/de/mobilithek-probe.sh build/de-trips.txt samples/de | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Belgium (SNCB GTFS and GTFS-RT; key BE_SNCB_KEY)
         continue-on-error: true # outside services: a report, not a gate
         env:
@@ -348,6 +354,24 @@ jobs:
           unzip -p gtfs/be/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/be-trips.txt
           echo "### be: live probe" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs be build/be-trips.txt build/probe-be | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: New South Wales (Transport for NSW; key AU_NSW_API_KEY)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          AU_NSW_API_KEY: ${{ secrets.AU_NSW_API_KEY }}
+        run: |
+          set -o pipefail
+          if [ -z "$AU_NSW_API_KEY" ]; then echo "NSW: no AU_NSW_API_KEY (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          tools/fetch-eu.sh au-nsw --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/au-nsw --au-nsw-gtfs gtfs/au-nsw/gtfs.zip \
+            --sources gtfs/au-nsw/sources.tsv --report refdata-au-nsw.md
+          target/release/refdata-build verify build/au-nsw
+          { echo "## New South Wales reference data"; echo; cat refdata-au-nsw.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/au-nsw/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/au-nsw-trips.txt
+          unzip -p gtfs/au-nsw/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### au: live endpoints" >> "$GITHUB_STEP_SUMMARY"
+          node tools/au/nsw-probe.mjs build/au-nsw-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### au: through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs au build/au-nsw-trips.txt build/probe-au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

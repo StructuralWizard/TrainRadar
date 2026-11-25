@@ -2,7 +2,7 @@
 // (Renfe), the United Kingdom (Network Rail), Ireland (Iarnród Éireann),
 // France (SNCF), Luxembourg (CFL), Finland (VR), Norway (Entur) or the
 // Netherlands (NS and the others), Slovakia (ZSSK), Estonia (Elron),
-// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB) or Belgium (SNCB).
+// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB) or Australia (New South Wales).
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
@@ -31,6 +31,8 @@ export const COUNTRY_INFO = {
   hu: { zone: "Europe/Budapest", center: [19.4, 47.2], zoom: 6.4, live: false },
   de: { zone: "Europe/Berlin", center: [10.4, 51.2], zoom: 5.4, live: true },
   be: { zone: "Europe/Brussels", center: [4.6, 50.6], zoom: 7.2, live: true },
+  // New South Wales for now (Transport for NSW): GPS, delays and alerts.
+  au: { zone: "Australia/Sydney", center: [151.0, -33.8], zoom: 8.0, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

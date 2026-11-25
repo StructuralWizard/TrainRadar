@@ -572,6 +572,7 @@ export const STRINGS = {
     countryHu: "Hungría",
     countryDe: "Alemania",
     countryBe: "Bélgica",
+    countryAu: "Australia (Nueva Gales del Sur)",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
@@ -585,6 +586,7 @@ export const STRINGS = {
     allHu: "Toda Hungría",
     allDe: "Toda Alemania",
     allBe: "Toda Bélgica",
+    allAu: "Toda Nueva Gales del Sur",
     noticesTitle: "Avisos",
     noticesNotYet: "Aún no hay avisos para {country}: llegarán con los datos en directo.",
     timetableOnly: "Según horario: aún no hay datos en directo de este país",
@@ -625,6 +627,8 @@ export const STRINGS = {
       'Datos: horario de Samtrafiken en <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SJ ni los operadores',
     attributionPl:
       'Datos: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con PKP PLK ni los operadores',
+    attributionAu:
+      'Datos: Transport for NSW (<a href="https://opendata.transport.nsw.gov.au/" target="_blank" rel="noopener">opendata.transport.nsw.gov.au</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Transport for NSW',
     attributionBe:
       'Datos: horarios y retrasos de SNCB/NMBS, vía la pasarela de datos abiertos de Belgian Mobility Company (<a href="https://data.belgianmobility.io/" target="_blank" rel="noopener">data.belgianmobility.io</a>) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SNCB',
     attributionDe:
@@ -1215,6 +1219,7 @@ export const STRINGS = {
     countryHu: "Hungary",
     countryDe: "Germany",
     countryBe: "Belgium",
+    countryAu: "Australia (New South Wales)",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
@@ -1228,6 +1233,7 @@ export const STRINGS = {
     allHu: "All of Hungary",
     allDe: "All of Germany",
     allBe: "All of Belgium",
+    allAu: "All of New South Wales",
     noticesTitle: "Notices",
     noticesNotYet: "No notices for {country} yet: they'll come with the live data.",
     timetableOnly: "By timetable: no live data for this country yet",
@@ -1268,6 +1274,8 @@ export const STRINGS = {
       'Data: Samtrafiken\'s timetable on <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SJ or the operators',
     attributionPl:
       'Data: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with PKP PLK or the operators',
+    attributionAu:
+      'Data: Transport for NSW (<a href="https://opendata.transport.nsw.gov.au/" target="_blank" rel="noopener">opendata.transport.nsw.gov.au</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Transport for NSW',
     attributionBe:
       'Data: timetables and delays from SNCB/NMBS, via the Belgian Mobility Company\'s open data gateway (<a href="https://data.belgianmobility.io/" target="_blank" rel="noopener">data.belgianmobility.io</a>) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SNCB',
     attributionDe:

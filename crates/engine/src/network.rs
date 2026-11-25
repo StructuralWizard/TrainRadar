@@ -7,6 +7,7 @@ use trainradar_proto::geo::Polyline;
 use trainradar_proto::refdata::{
     FormatError, GeometryFile, NO_LEG, StationsFile, StopTime, TimetableFile, TripRec, decode_file,
 };
+use trainradar_proto::time::Zone;
 use trainradar_proto::time::{madrid_day, service_day_base};
 
 /// A trip on a specific service day.
@@ -31,10 +32,12 @@ pub struct Match {
 #[derive(Debug)]
 pub struct Region {
     pub tt: TimetableFile,
-    /// Seconds the region's local time is behind Madrid's (London, Dublin and
-    /// Lisbon +3600; Helsinki or Athens −3600): from the manifest's `tz`
-    /// ([`Network::set_region_zone`]), else by region code.
-    pub behind: i64,
+    /// The region's time zone: in Europe a fixed distance from Madrid
+    /// (London, Dublin and Lisbon an hour behind, Helsinki or Athens an hour
+    /// ahead); elsewhere its own clock rules (Sydney, Auckland, Singapore).
+    /// From the manifest's `tz` ([`Network::set_region_zone`]), else by
+    /// region code.
+    pub zone: Zone,
     /// Decoded stop times per pattern.
     pub sched: Vec<Vec<StopTime>>,
     /// Geometry per pattern: the shape (with an offset) or straight segments.
@@ -45,6 +48,20 @@ pub struct Region {
     pub calls: HashMap<String, Vec<(u32, u16)>>,
     /// Trips using each pattern.
     pub pattern_trips: Vec<Vec<u32>>,
+}
+
+impl Region {
+    /// Seconds the region's clock is behind Madrid's at a UTC instant.
+    pub fn behind_at(&self, utc: i64) -> i64 {
+        self.zone.behind_madrid(utc)
+    }
+
+    /// UTC instant that GTFS time 0 refers to on the region's service day
+    /// `day` (local noon minus 12 hours).
+    pub fn day_base(&self, day: i64) -> i64 {
+        let base = trainradar_proto::time::service_day_base(day);
+        base + self.behind_at(base + 12 * 3_600)
+    }
 }
 
 #[derive(Debug)]
@@ -91,8 +108,8 @@ pub struct Network {
     station_gid: HashMap<String, u32>,
     by_trip_id: HashMap<String, TripRef>,
     by_number: HashMap<String, Vec<TripRef>>,
-    /// Region code → seconds behind Madrid, from the manifests' `tz`.
-    zones: HashMap<String, i64>,
+    /// Region code → time zone, from the manifests' `tz`.
+    zones: HashMap<String, Zone>,
 }
 
 /// Seconds a time zone's clock is behind Madrid's, for the zones that keep
@@ -205,11 +222,13 @@ impl Network {
     /// Region `code`'s timetable is in time zone `tz` (IANA, from the
     /// manifest). Applies to it now if it's loaded, and whenever it loads.
     pub fn set_region_zone(&mut self, code: &str, tz: &str) -> Result<(), String> {
-        let behind =
-            zone_behind_madrid(tz).ok_or_else(|| format!("time zone {tz} isn't supported"))?;
-        self.zones.insert(code.to_owned(), behind);
+        let zone = zone_behind_madrid(tz)
+            .map(Zone::Eu)
+            .or_else(|| Zone::from_iana(tz))
+            .ok_or_else(|| format!("time zone {tz} isn't supported"))?;
+        self.zones.insert(code.to_owned(), zone);
         for r in self.regions.iter_mut().filter(|r| r.tt.region == code) {
-            r.behind = behind;
+            r.zone = zone;
         }
         Ok(())
     }
@@ -288,14 +307,14 @@ impl Network {
         for (ti, t) in tt.trips.iter().enumerate() {
             pattern_trips[t.pattern as usize].push(ti as u32);
         }
-        let behind = self
+        let zone = self
             .zones
             .get(&code)
             .copied()
-            .unwrap_or_else(|| crate::networkrail::behind_madrid_secs(&code));
+            .unwrap_or_else(|| Zone::Eu(crate::networkrail::behind_madrid_secs(&code)));
         self.regions.push(Region {
             tt,
-            behind,
+            zone,
             sched,
             geom,
             stop_gid,
@@ -342,15 +361,9 @@ impl Network {
         for &t in self.by_number.get(n).map_or(&[][..], Vec::as_slice) {
             let r = &self.regions[t.region as usize];
             let trip = &r.tt.trips[t.trip as usize];
-            let behind = r.behind;
             for d in [day - 1, day] {
                 if runs_on(&r.tt.header, trip, d) {
-                    out.push((
-                        t,
-                        trainradar_proto::time::service_day_base(d)
-                            + behind
-                            + i64::from(trip.start),
-                    ));
+                    out.push((t, r.day_base(d) + i64::from(trip.start)));
                 }
             }
         }
@@ -937,18 +950,32 @@ pub mod tests {
         // Set after loading: train 190's 09:00 becomes Dublin's, 10:00 Madrid's.
         let mut n = sample_network();
         n.set_region_zone("10", "Europe/Dublin").unwrap();
-        assert_eq!(n.regions[0].behind, 3_600);
+        assert_eq!(n.regions[0].behind_at(0), 3_600);
         assert_eq!(n.runs_of_number("190", day)[0].1, local(10, 0));
         // Set before loading: applied when the region loads.
         let mut n = Network::default();
         n.set_region_zone("10", "Europe/Helsinki").unwrap();
         n.load_timetable(&encode(&sample_timetable()).unwrap())
             .unwrap();
-        assert_eq!(n.regions[0].behind, -3_600);
+        assert_eq!(n.regions[0].behind_at(0), -3_600);
         assert_eq!(n.runs_of_number("190", day)[0].1, local(8, 0));
         // An unknown zone is refused and changes nothing.
         assert!(n.set_region_zone("10", "Mars/Olympus").is_err());
-        assert_eq!(n.regions[0].behind, -3_600);
+        assert_eq!(n.regions[0].behind_at(0), -3_600);
+    }
+
+    #[test]
+    fn a_region_far_from_madrid_keeps_its_own_clock() {
+        // Train 190 leaves at 09:00 local. In Sydney on 1 November 2026
+        // (summer time, UTC+11) that is 22:00 UTC the day before (the
+        // winter offset is checked in trainradar_proto::time).
+        let mut n = sample_network();
+        n.set_region_zone("10", "Australia/Sydney").unwrap();
+        let nov = days_from_civil(2026, 11, 1);
+        assert_eq!(
+            n.runs_of_number("190", nov)[0].1,
+            nov * 86_400 + 9 * 3_600 - 11 * 3_600
+        );
     }
 
     #[test]
@@ -957,7 +984,7 @@ pub mod tests {
         tt.region = crate::networkrail::IE_REGION.into();
         let mut n = Network::default();
         n.load_timetable(&encode(&tt).unwrap()).unwrap();
-        assert_eq!(n.regions[0].behind, 3_600);
+        assert_eq!(n.regions[0].behind_at(0), 3_600);
     }
 
     #[test]

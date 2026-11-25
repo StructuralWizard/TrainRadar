@@ -189,6 +189,8 @@ const TICKET_SITES = {
   // bahn.de sells nearly every German operator's tickets.
   DB: ["bahn.de", "https://www.bahn.de/"],
   SNCB: ["SNCB/NMBS", "https://www.belgiantrain.be/"],
+  // Opal fares: Transport for NSW's trip planner.
+  TfNSW: ["Transport for NSW", "https://transportnsw.info/"],
   DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],

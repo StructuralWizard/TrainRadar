@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // Times print in the first region's local time (London and Dublin are an
     // hour behind Madrid).
-    let behind = net.regions.first().map_or(0, |r| r.behind);
+    let behind = net.regions.first().map_or(0, |r| r.behind_at(0));
     let live = Live::default();
     let stations = &net.stations.as_ref().unwrap().stations;
     let find = |name: &str| -> Vec<&str> {

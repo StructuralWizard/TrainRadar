@@ -111,3 +111,124 @@ mod tests {
         assert_eq!(madrid_day(utc(2026, 10, 31, 23, 30)), d);
     }
 }
+
+/// Day number of the first Sunday of a month.
+fn first_sunday(year: i64, month: u32) -> i64 {
+    let first = days_from_civil(year, month, 1);
+    first + ((6 - weekday(first) as i64).rem_euclid(7))
+}
+
+/// A time zone the app's countries use, with its own clock rules: the EU's
+/// (a fixed distance from Madrid all year), or one outside Europe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Zone {
+    /// Keeps the EU's summer-time dates: seconds behind Madrid, all year.
+    Eu(i64),
+    /// No summer time: the UTC offset in seconds (Singapore, Brisbane).
+    Fixed(i64),
+    /// South-eastern Australia (Sydney, Melbourne, Canberra, Hobart): UTC+10,
+    /// +11 from the first Sunday of October to the first Sunday of April,
+    /// switching at 02:00 standard time.
+    AustraliaSouthEast,
+    /// New Zealand: UTC+12, +13 from the last Sunday of September to the
+    /// first Sunday of April, switching at 02:00 standard time.
+    NewZealand,
+}
+
+impl Zone {
+    /// The zone of an IANA name, for the zones the app supports.
+    pub fn from_iana(tz: &str) -> Option<Zone> {
+        Some(match tz {
+            "Australia/Sydney"
+            | "Australia/Melbourne"
+            | "Australia/Canberra"
+            | "Australia/Hobart"
+            | "Australia/ACT"
+            | "Australia/NSW"
+            | "Australia/Victoria" => Zone::AustraliaSouthEast,
+            "Australia/Brisbane" | "Australia/Queensland" => Zone::Fixed(10 * 3_600),
+            "Pacific/Auckland" | "NZ" => Zone::NewZealand,
+            "Asia/Singapore" | "Singapore" => Zone::Fixed(8 * 3_600),
+            _ => return None,
+        })
+    }
+
+    /// UTC offset in seconds at a UTC instant.
+    pub fn utc_offset(self, utc: i64) -> i64 {
+        match self {
+            Zone::Eu(behind) => madrid_offset(utc) - behind,
+            Zone::Fixed(o) => o,
+            Zone::AustraliaSouthEast => {
+                let std = 10 * 3_600;
+                let (y, _, _) = civil_from_days((utc + std).div_euclid(86_400));
+                let start = first_sunday(y, 10) * 86_400 + 2 * 3_600 - std;
+                let end = first_sunday(y, 4) * 86_400 + 2 * 3_600 - std;
+                if utc >= start || utc < end {
+                    std + 3_600
+                } else {
+                    std
+                }
+            }
+            Zone::NewZealand => {
+                let std = 12 * 3_600;
+                let (y, _, _) = civil_from_days((utc + std).div_euclid(86_400));
+                let start = last_sunday(y, 9) * 86_400 + 2 * 3_600 - std;
+                let end = first_sunday(y, 4) * 86_400 + 2 * 3_600 - std;
+                if utc >= start || utc < end {
+                    std + 3_600
+                } else {
+                    std
+                }
+            }
+        }
+    }
+
+    /// Seconds the zone's clock is behind Madrid's at a UTC instant
+    /// (negative: ahead).
+    pub fn behind_madrid(self, utc: i64) -> i64 {
+        match self {
+            Zone::Eu(b) => b,
+            _ => madrid_offset(utc) - self.utc_offset(utc),
+        }
+    }
+}
+
+#[cfg(test)]
+mod zone_tests {
+    use super::*;
+
+    fn at(y: i64, m: u32, d: u32, h: i64) -> i64 {
+        days_from_civil(y, m, d) * 86_400 + h * 3_600
+    }
+
+    #[test]
+    fn sydney_changes_clocks_in_october_and_april() {
+        let z = Zone::from_iana("Australia/Sydney").unwrap();
+        // 2026: summer time ends Sunday 5 April at 03:00 local (16:00 UTC
+        // on the 4th) and starts Sunday 4 October at 02:00 (16:00 UTC on
+        // the 3rd).
+        assert_eq!(z.utc_offset(at(2026, 4, 4, 15)), 11 * 3_600);
+        assert_eq!(z.utc_offset(at(2026, 4, 4, 17)), 10 * 3_600);
+        assert_eq!(z.utc_offset(at(2026, 10, 3, 15)), 10 * 3_600);
+        assert_eq!(z.utc_offset(at(2026, 10, 3, 17)), 11 * 3_600);
+        // Madrid winter, Sydney summer: 10 hours ahead; Madrid summer,
+        // Sydney winter: 8 hours ahead.
+        assert_eq!(z.behind_madrid(at(2026, 12, 1, 0)), 3_600 - 11 * 3_600);
+        assert_eq!(z.behind_madrid(at(2026, 7, 1, 0)), 7_200 - 10 * 3_600);
+    }
+
+    #[test]
+    fn new_zealand_and_fixed_zones() {
+        let nz = Zone::from_iana("Pacific/Auckland").unwrap();
+        // 2026: ends Sunday 5 April 03:00 local (14:00 UTC on the 4th),
+        // starts Sunday 27 September 02:00 (14:00 UTC on the 26th).
+        assert_eq!(nz.utc_offset(at(2026, 4, 4, 13)), 13 * 3_600);
+        assert_eq!(nz.utc_offset(at(2026, 4, 4, 15)), 12 * 3_600);
+        assert_eq!(nz.utc_offset(at(2026, 9, 26, 13)), 12 * 3_600);
+        assert_eq!(nz.utc_offset(at(2026, 9, 26, 15)), 13 * 3_600);
+        let sg = Zone::from_iana("Asia/Singapore").unwrap();
+        assert_eq!(sg.utc_offset(at(2026, 7, 1, 0)), 8 * 3_600);
+        assert_eq!(Zone::Eu(3_600).behind_madrid(0), 3_600);
+        assert_eq!(Zone::from_iana("America/New_York"), None);
+    }
+}
