@@ -135,7 +135,8 @@ if (cc === "ch") {
       const res = j?.RESPONSE?.RESULT?.[0] || {};
       const items = Object.entries(res).find(([k, v]) => k !== "INFO" && k !== "ERROR" && Array.isArray(v));
       const sample = items?.[1]?.[0] ? Object.keys(items[1][0]).join(",").slice(0, 300) : "";
-      console.log(`se ${label}: HTTP ${r.status}${res.ERROR ? ` ${String(res.ERROR.MESSAGE).slice(0, 160)}` : ""}${items ? ` ${items[1].length} objects; fields ${sample}` : ""}`);
+      const line = `se ${label}: HTTP ${r.status}${res.ERROR ? ` ${String(res.ERROR.MESSAGE).slice(0, 160)}` : ""}${items ? ` ${items[1].length} objects; fields ${sample}` : ""}`;
+      console.log(line.replaceAll(process.env.SE_TRAFIKVERKET_KEY, "***"));
     }
   }
 } else if (cc === "dk") {
