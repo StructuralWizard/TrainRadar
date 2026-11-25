@@ -54,6 +54,11 @@ static PL: [FeedSpec; 1] = [feed("tu_pl", FeedKind::TripUpdates, "trip_updates.p
 static DK: [FeedSpec; 1] = [feed("tu_dk", FeedKind::TripUpdates, "trip_updates.pb", 30)];
 /// Germany: DB's station boards gathered into trip updates keyed by train
 /// number (backend-eu); placed by timetable plus delay.
+/// Belgium: SNCB's GTFS-Realtime trip updates and alerts (backend-eu).
+static BE: [FeedSpec; 2] = [
+    feed("tu_be", FeedKind::TripUpdates, "trip_updates.pb", 30),
+    feed("alerts", FeedKind::Alerts, "alerts.pb", 300),
+];
 static DE: [FeedSpec; 1] = [feed("tu_de", FeedKind::TripUpdates, "trip_updates.pb", 60)];
 /// Czechia: PID's trains (Prague and Central Bohemia) from Golemio, GPS and
 /// delays, kept to trains by backend-eu; the rest of the country by
@@ -86,6 +91,8 @@ pub struct Czechia;
 pub struct Denmark;
 #[derive(Debug)]
 pub struct Germany;
+#[derive(Debug)]
+pub struct Belgium;
 
 macro_rules! adapter {
     ($t:ty, $id:literal, $feeds:ident) => {
@@ -109,6 +116,7 @@ adapter!(Poland, "poland", PL);
 adapter!(Sweden, "sweden", SE);
 adapter!(Denmark, "denmark", DK);
 adapter!(Germany, "germany", DE);
+adapter!(Belgium, "belgium", BE);
 
 impl SourceAdapter for Norway {
     fn id(&self) -> &'static str {
@@ -198,8 +206,10 @@ pub fn mixed(region: &str) -> bool {
 
 /// Regions placed by timetable plus delay only.
 pub fn placed(region: &str) -> bool {
-    matches!(region, "nl" | "ch" | "ch-r" | "pl" | "pl-r" | "se" | "dk")
-        || region == "de"
+    matches!(
+        region,
+        "nl" | "ch" | "ch-r" | "pl" | "pl-r" | "se" | "dk" | "be"
+    ) || region == "de"
         || region.starts_with("de-")
 }
 

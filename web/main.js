@@ -162,6 +162,7 @@ const COUNTRY_TEXT = {
   dk: { name: "countryDk", all: "allDk", credit: "attributionDk", scheduled: "scheduledCountOther" },
   hu: { name: "countryHu", all: "allHu", credit: "attributionHu", scheduled: "scheduledCountOther" },
   de: { name: "countryDe", all: "allDe", credit: "attributionDe", scheduled: "scheduledCountOther" },
+  be: { name: "countryBe", all: "allBe", credit: "attributionBe", scheduled: "scheduledCountOther" },
 };
 /** A country's name; one still being built says so. */
 const countryName = (c) => {
@@ -174,7 +175,7 @@ const countryChoices = () => {
   return [...COUNTRY_LIST].sort((a, b) => rank(a) - rank(b) || countryName(a).localeCompare(countryName(b), lang));
 };
 /** Whose notices each country shows (the UK has its own panel). */
-const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi: "Fintraffic", nl: "NS", ch: "SBB" };
+const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi: "Fintraffic", nl: "NS", ch: "SBB", be: "SNCB" };
 
 // Each country keeps its own favourites and commutes (station ids differ);
 // Spain's keep the original keys, which the Android widgets and alerts read.

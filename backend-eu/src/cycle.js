@@ -81,6 +81,7 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
         .replaceAll(env.DK_NAP_CLIENT_SECRET || "\u0000", "***")
         .replaceAll(env.DE_DB_API_KEY || "\u0000", "***")
         .replaceAll(env.DE_DB_CLIENT_ID || "\u0000", "***")
+        .replaceAll(env.BE_SNCB_KEY || "\u0000", "***")
         .slice(0, 300);
       state.failures = (state.failures || 0) + 1;
       // Sweden's regions take turns: one failing region skips its turn

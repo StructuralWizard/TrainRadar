@@ -45,7 +45,7 @@ jobs:
           FR_ENABLED: ${{ vars.FR_ENABLED }}
           LU_ENABLED: ${{ vars.LU_ENABLED }}
           M2_ENABLED: ${{ vars.FI_ENABLED == 'true' || vars.NO_ENABLED == 'true' || vars.NL_ENABLED == 'true' }}
-          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' }}
+          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' || vars.BE_ENABLED == 'true' }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -730,6 +730,43 @@ jobs:
             exit 1
           fi
 
+      # Belgium, with BE_ENABLED: SNCB's GTFS (key BE_SNCB_KEY), trains, and OSM
+      # track → data/be/. Hidden: SNCB's terms are non-commercial.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.BE_ENABLED == 'true'
+        id: osm_be
+        with:
+          path: gtfs/be/rail.geojsonseq
+          key: osm-rail-be-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-be-v1-
+      - name: Belgium reference data
+        if: vars.BE_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_be.outputs.cache-hit }}
+          BE_SNCB_KEY: ${{ secrets.BE_SNCB_KEY }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh be | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/be-data --gzip \
+              --be-gtfs gtfs/be/gtfs.zip --sources gtfs/be/sources.tsv \
+              $([ -s gtfs/be/rail.geojsonseq ] && echo --rail gtfs/be/rail.geojsonseq) --report refdata-be.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/be-data; then
+            mv build/be-data build/data/be
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/be-plan --gzip --days 63 \
+                --be-gtfs gtfs/be/gtfs.zip --report be-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/be-plan; then
+              mv build/be-plan build/data/be/plan
+            else
+              echo "::warning::Belgium's plan-ahead timetables failed: Belgium has today's week only."
+            fi
+            { echo "## Belgium reference data"; echo; cat refdata-be.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Belgium's reference data failed: deploying without Belgium."
+            exit 1
+          fi
+
       # Estonia (M4), with EE_ENABLED: timetable only (no key) → data/ee/.
       - name: Estonia reference data
         if: vars.EE_ENABLED == 'true'
@@ -973,6 +1010,9 @@ jobs:
           # Germany (DB's OpenBoards): live, its own switch, with DB's keys.
           DE_LIVE_ENABLED: ${{ vars.DE_LIVE_ENABLED }}
           HAS_DE_KEY: ${{ secrets.DE_DB_CLIENT_ID != '' && secrets.DE_DB_API_KEY != '' }}
+          # Belgium (SNCB's GTFS-Realtime): live, its own switch, with the key.
+          BE_LIVE_ENABLED: ${{ vars.BE_LIVE_ENABLED }}
+          HAS_BE_KEY: ${{ secrets.BE_SNCB_KEY != '' }}
           HAS_KEY: ${{ secrets.IE_NTA_API_KEY != '' }}
           HAS_CH_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY != '' }}
           HAS_PL_KEY: ${{ secrets.PL_PLK_API_KEY != '' }}
@@ -995,9 +1035,11 @@ jobs:
           if [ "$(on "$DK_LIVE_ENABLED")" = "true" ] && [ "$HAS_DK_KEY" = "true" ]; then dk=true; fi
           de=false
           if [ "$(on "$DE_LIVE_ENABLED")" = "true" ] && [ "$HAS_DE_KEY" = "true" ]; then de=true; fi
-          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; echo "cz=$cz"; echo "dk=$dk"; echo "de=$de"; } >> "$GITHUB_OUTPUT"
-          if [ "$ie$fr$fi_$no$nl$ch$pl$se$cz$dk$de" = "falsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalse" ]; then
-            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys, CZ_LIVE_ENABLED, DK_LIVE_ENABLED with DK_NAP_CLIENT_SECRET, DE_LIVE_ENABLED with DE_DB_*): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
+          be=false
+          if [ "$(on "$BE_LIVE_ENABLED")" = "true" ] && [ "$HAS_BE_KEY" = "true" ]; then be=true; fi
+          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; echo "cz=$cz"; echo "dk=$dk"; echo "de=$de"; echo "be=$be"; } >> "$GITHUB_OUTPUT"
+          if [ "$ie$fr$fi_$no$nl$ch$pl$se$cz$dk$de$be" = "falsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalse" ]; then
+            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys, CZ_LIVE_ENABLED, DK_LIVE_ENABLED with DK_NAP_CLIENT_SECRET, DE_LIVE_ENABLED with DE_DB_*, BE_LIVE_ENABLED with BE_SNCB_KEY): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "push" ] && git diff --quiet HEAD^ HEAD -- backend-eu/; then
             echo "backend-eu/ unchanged: the Europe ingest keeps running as it is." | tee -a "$GITHUB_STEP_SUMMARY"
           else
@@ -1027,6 +1069,8 @@ jobs:
           DE_ON: ${{ steps.gate.outputs.de }}
           DE_DB_CLIENT_ID: ${{ secrets.DE_DB_CLIENT_ID }}
           DE_DB_API_KEY: ${{ secrets.DE_DB_API_KEY }}
+          BE_ON: ${{ steps.gate.outputs.be }}
+          BE_SNCB_KEY: ${{ secrets.BE_SNCB_KEY }}
           SE_TRAFIKLAB_RT_KEY: ${{ secrets.SE_TRAFIKLAB_RT_KEY }}
           CH_OTD_GTFSRT_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY }}
           CH_OTD_GTFSSA_KEY: ${{ secrets.CH_OTD_GTFSSA_KEY }}
@@ -1036,7 +1080,7 @@ jobs:
           npx --yes "$WRANGLER" deploy --config backend-eu/wrangler.toml --var "IE_ENABLED:$IE_ON" --var "FR_ENABLED:$FR_ON" \
             --var "FI_ENABLED:$FI_ON" --var "NO_ENABLED:$NO_ON" --var "NL_ENABLED:$NL_ON" \
             --var "CH_ENABLED:$CH_ON" --var "PL_ENABLED:$PL_ON" --var "SE_ENABLED:$SE_ON" \
-            --var "CZ_ENABLED:$CZ_ON" --var "DK_ENABLED:$DK_ON" --var "DE_ENABLED:$DE_ON"
+            --var "CZ_ENABLED:$CZ_ON" --var "DK_ENABLED:$DK_ON" --var "DE_ENABLED:$DE_ON" --var "BE_ENABLED:$BE_ON"
           # Keys on stdin, never on the command line.
           put() { [ -n "$2" ] && printf '%s' "$2" | npx --yes "$WRANGLER" secret put "$1" --config backend-eu/wrangler.toml; }
           if [ "$IE_ON" = "true" ]; then put IE_NTA_API_KEY "$IE_NTA_API_KEY"; fi
@@ -1052,7 +1096,8 @@ jobs:
             put DE_DB_CLIENT_ID "$DE_DB_CLIENT_ID"
             put DE_DB_API_KEY "$DE_DB_API_KEY"
           fi
-          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON, Sweden: $SE_ON, Czechia: $CZ_ON, Denmark: $DK_ON, Germany: $DE_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$BE_ON" = "true" ]; then put BE_SNCB_KEY "$BE_SNCB_KEY"; fi
+          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON, Sweden: $SE_ON, Czechia: $CZ_ON, Denmark: $DK_ON, Germany: $DE_ON, Belgium: $BE_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 
   live:
     # Central poller and history recorder (backend/): Renfe fetched once for

@@ -315,6 +315,13 @@ app, and update the "last updated" dates when they change.
   its `plan/`. The OpenStreetMap extract for the track is Geofabrik's Germany (about 4.5 GB),
   cached for the week; the first run takes longer.
 
+## Belgium
+
+- **Turning it on:** **`BE_ENABLED`** = `true` (the timetable) and **`BE_LIVE_ENABLED`** = `true`
+  (SNCB's trip updates and alerts in the `eu` Worker), with `BE_SNCB_KEY`; `?country=be`.
+- **Hidden:** SNCB's feeds are marked non-commercial; keep it hidden until SNCB says otherwise in
+  writing (docs/europe/west-central.md).
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains
