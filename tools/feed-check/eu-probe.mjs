@@ -75,6 +75,10 @@ async function viaWorker(country, minutes, pauseMs = 0) {
     const name = k.split("/").pop();
     writeFileSync(`${out}/${name}`, v);
     if (name.startsWith("trip_updates") || name === "tu_trafikverket.pb") report(name, v);
+    if (name === "tu_trafikverket.pb") {
+      const n = tripIds(v).filter((id) => id.startsWith("#"));
+      console.log(`${cc} Trafikverket: ${n.length} trains with a delay, e.g. ${n.slice(0, 8).join(" ")}`);
+    }
     else console.log(`${cc} ${name}: ${v.length} bytes, ${fields(v).filter((f) => f.field === 2).length} entities`);
   }
 }

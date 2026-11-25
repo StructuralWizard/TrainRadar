@@ -222,15 +222,22 @@ jobs:
         run: |
           set -o pipefail
           if [ -z "$SE_TRAFIKLAB_STATIC_KEY" ]; then echo "Sweden (Trafiklab; SE_TRAFIKLAB_* keys, the key in its URL as Trafiklab requires): no SE_TRAFIKLAB_STATIC_KEY (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
-          tools/fetch-eu.sh se --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
-          target/release/refdata-build build --out build/se --se-gtfs gtfs/se/gtfs.zip \
-            --sources gtfs/se/sources.tsv --report refdata-se.md
-          target/release/refdata-build verify build/se
-          { echo "## Sweden reference data"; echo; cat refdata-se.md; } >> "$GITHUB_STEP_SUMMARY"
-          # Trip ids, and train numbers ("#1059") for Trafikverket's delays.
-          unzip -p gtfs/se/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) or (r.get('trip_short_name','').lstrip('0') and print('#'+r['trip_short_name'].lstrip('0'))) for r in csv.DictReader(sys.stdin)]" > build/se-trips.txt
-          unzip -p gtfs/se/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "se: $(grep -c '^#' build/se-trips.txt) trips with a train number" | tee -a "$GITHUB_STEP_SUMMARY"
+          mkdir -p build
+          # Without the timetable (GTFS Sweden 3's monthly quota spent), the
+          # live sources are still probed, matched against nothing.
+          : > build/se-trips.txt
+          if tools/fetch-eu.sh se --no-osm | tee -a "$GITHUB_STEP_SUMMARY"; then
+            target/release/refdata-build build --out build/se --se-gtfs gtfs/se/gtfs.zip \
+              --sources gtfs/se/sources.tsv --report refdata-se.md
+            target/release/refdata-build verify build/se
+            { echo "## Sweden reference data"; echo; cat refdata-se.md; } >> "$GITHUB_STEP_SUMMARY"
+            # Trip ids, and train numbers ("#1059") for Trafikverket's delays.
+            unzip -p gtfs/se/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) or (r.get('trip_short_name','').lstrip('0') and print('#'+r['trip_short_name'].lstrip('0'))) for r in csv.DictReader(sys.stdin)]" > build/se-trips.txt
+            unzip -p gtfs/se/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "se: $(grep -c '^#' build/se-trips.txt) trips with a train number" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "se: no timetable (GTFS Sweden 3 not downloaded); the live sources only" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
           echo "### se: live probe" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs se build/se-trips.txt build/probe-se | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Poland (PKP PLK's API; PL_PLK_API_KEY in a header)
