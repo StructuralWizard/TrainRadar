@@ -92,6 +92,24 @@ works and lift faults, with a free key. The quotas are tight. Wave 2.
 
 Europe/Berlin · German · UIC 80.
 
+**Built 2026-11-25 (hidden, by timetable for now):** DELFI's national GTFS, which downloads without
+a login (`/fileadmin/datasets/delfi/YYYYMMDD_fahrplaene_gesamtdeutschland_gtfs.zip`, Mondays, 590
+MB; `tools/delfi-fetch.py` finds it, and logs in with `DE_DELFI_*` only if that stops working), cut
+to trains (route types 2 and 100-117: about 180,000 trips, 10,000 stations). Train numbers are the
+trips' short names ("008230" → 8230); stations are station-level DHIDs. Routes of type 101 and 102
+(ICE, IC, EC, EN, NJ, RJ…, with line numbers as short names) make region `de`; the rest go by the
+Land of their first German stop (`de-bw`, `de-by`, `de-bb` Berlin and Brandenburg, `de-ni` with
+Bremen, `de-sh` with Hamburg, `de-rp` with Saarland, `de-nw`, `de-he`, `de-mv`, `de-sn`, `de-st`,
+`de-th`). DELFI also holds trains that never enter Germany (Swiss, Czech, Austrian local trains):
+left out. About 69,000 trips a week, 8,000 stations.
+
+**Live, next:** DB's boards with `DE_DB_CLIENT_ID` and `DE_DB_API_KEY`, once their use is approved
+in AGENTS.md. Two candidates, to be probed with the keys: the Timetables API (XML; `/plan`, `/fchg`,
+`/rchg` per station; 60 calls a minute on the free plan; CC BY 4.0; an earlier note said it closed on
+22 Nov 2026, which the probe will settle) and OpenBoards (JSON `POST /departures`, up to 15 stations
+a call, with DHIDs and train numbers; its OpenAPI 1.0.3 is in the portal page). Either way, updates
+keyed by train number ("#8230"), as Denmark's.
+
 **Verdict:** feasible, and big. Open timetables and excellent open network data. For live data, the
 free **DB OpenBoards** covers every main-line train, including platforms, if its terms allow our
 use. DELFI's open feeds are share-alike and partial. Wave 3.

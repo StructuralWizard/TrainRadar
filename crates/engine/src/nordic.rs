@@ -52,6 +52,9 @@ static PL: [FeedSpec; 1] = [feed("tu_pl", FeedKind::TripUpdates, "trip_updates.p
 /// Denmark: Rejseplanen's SIRI-ET as trip updates keyed by train number
 /// (backend-eu); placed by timetable plus delay.
 static DK: [FeedSpec; 1] = [feed("tu_dk", FeedKind::TripUpdates, "trip_updates.pb", 30)];
+/// Germany: DB's station boards gathered into trip updates keyed by train
+/// number (backend-eu); placed by timetable plus delay.
+static DE: [FeedSpec; 1] = [feed("tu_de", FeedKind::TripUpdates, "trip_updates.pb", 60)];
 /// Czechia: PID's trains (Prague and Central Bohemia) from Golemio, GPS and
 /// delays, kept to trains by backend-eu; the rest of the country by
 /// timetable.
@@ -81,6 +84,8 @@ pub struct Sweden;
 pub struct Czechia;
 #[derive(Debug)]
 pub struct Denmark;
+#[derive(Debug)]
+pub struct Germany;
 
 macro_rules! adapter {
     ($t:ty, $id:literal, $feeds:ident) => {
@@ -103,6 +108,7 @@ adapter!(Switzerland, "switzerland", CH);
 adapter!(Poland, "poland", PL);
 adapter!(Sweden, "sweden", SE);
 adapter!(Denmark, "denmark", DK);
+adapter!(Germany, "germany", DE);
 
 impl SourceAdapter for Norway {
     fn id(&self) -> &'static str {
@@ -193,6 +199,8 @@ pub fn mixed(region: &str) -> bool {
 /// Regions placed by timetable plus delay only.
 pub fn placed(region: &str) -> bool {
     matches!(region, "nl" | "ch" | "ch-r" | "pl" | "pl-r" | "se" | "dk")
+        || region == "de"
+        || region.starts_with("de-")
 }
 
 #[cfg(test)]
@@ -205,6 +213,7 @@ mod tests {
         assert_eq!(Czechia.feeds()[0].key, "vp_cz");
         assert!(!mixed("nl") && placed("nl"));
         assert!(placed("ch-r") && placed("pl") && placed("se") && !placed("ee"));
+        assert!(placed("de") && placed("de-by") && !placed("dk-x"));
         assert_eq!(Switzerland.feeds()[1].key, "alerts");
         assert_eq!(Norway.feeds().len(), 3);
         assert_eq!(Finland.feeds()[0].key, "vp_fi");

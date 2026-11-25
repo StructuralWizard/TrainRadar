@@ -688,6 +688,43 @@ jobs:
             exit 1
           fi
 
+      # Germany, with DE_ENABLED: DELFI's national GTFS (no key), cut to trains,
+      # and OSM track → data/de/. The OSM extract is big (Geofabrik's Germany,
+      # about 4.5 GB): cached for the week.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.DE_ENABLED == 'true'
+        id: osm_de
+        with:
+          path: gtfs/de/rail.geojsonseq
+          key: osm-rail-de-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-de-v1-
+      - name: Germany reference data
+        if: vars.DE_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          OSM_CACHED: ${{ steps.osm_de.outputs.cache-hit }}
+        run: |
+          set -o pipefail
+          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh de | tee -a "$GITHUB_STEP_SUMMARY"
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/de-data --gzip \
+              --de-gtfs gtfs/de/gtfs.zip --sources gtfs/de/sources.tsv \
+              $([ -s gtfs/de/rail.geojsonseq ] && echo --rail gtfs/de/rail.geojsonseq) --report refdata-de.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/de-data; then
+            mv build/de-data build/data/de
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/de-plan --gzip --days 63 \
+                --de-gtfs gtfs/de/gtfs.zip --report de-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/de-plan; then
+              mv build/de-plan build/data/de/plan
+            else
+              echo "::warning::Germany's plan-ahead timetables failed: Germany has today's week only."
+            fi
+            { echo "## Germany reference data"; echo; cat refdata-de.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Germany's reference data failed: deploying without Germany."
+            exit 1
+          fi
+
       # Estonia (M4), with EE_ENABLED: timetable only (no key) → data/ee/.
       - name: Estonia reference data
         if: vars.EE_ENABLED == 'true'

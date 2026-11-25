@@ -310,6 +310,15 @@ jobs:
             --sources gtfs/hu/sources.tsv --report refdata-hu.md
           target/release/refdata-build verify build/hu
           { echo "## Hungary reference data"; echo; cat refdata-hu.md; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Germany (DELFI GTFS, no key)
+        continue-on-error: true # outside services: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh de --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/de --de-gtfs gtfs/de/gtfs.zip \
+            --sources gtfs/de/sources.tsv --report refdata-de.md
+          target/release/refdata-build verify build/de
+          { echo "## Germany reference data"; echo; cat refdata-de.md; } >> "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

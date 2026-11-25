@@ -304,6 +304,14 @@ app, and update the "last updated" dates when they change.
   `hu-r` stopping trains and Budapest's suburban lines) and its `plan/`, from MÁV Group's daily GTFS
   (MÁV-START, GYSEV and the Children's Railway). Replacement buses are left out.
 
+## Germany
+
+- **Turning it on:** **`DE_ENABLED`** = `true`. No key: DELFI's national GTFS downloads without a
+  login. By timetable for now; `?country=de`.
+- **What the deploy builds:** `data/de/` (`de` long distance; one region per Land, some joined) and
+  its `plan/`. The OpenStreetMap extract for the track is Geofabrik's Germany (about 4.5 GB),
+  cached for the week; the first run takes longer.
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains

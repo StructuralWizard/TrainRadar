@@ -568,6 +568,7 @@ export const STRINGS = {
     countryIt: "Italia",
     countryDk: "Dinamarca",
     countryHu: "Hungría",
+    countryDe: "Alemania",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
@@ -579,6 +580,7 @@ export const STRINGS = {
     allIt: "Toda Italia",
     allDk: "Toda Dinamarca",
     allHu: "Toda Hungría",
+    allDe: "Toda Alemania",
     noticesTitle: "Avisos",
     noticesNotYet: "Aún no hay avisos para {country}: llegarán con los datos en directo.",
     timetableOnly: "Según horario: aún no hay datos en directo de este país",
@@ -619,6 +621,8 @@ export const STRINGS = {
       'Datos: horario de Samtrafiken en <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SJ ni los operadores',
     attributionPl:
       'Datos: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con PKP PLK ni los operadores',
+    attributionDe:
+      'Datos: horario nacional de DELFI e.V. (<a href="https://www.delfi.de/" target="_blank" rel="noopener">delfi.de</a>), vía <a href="https://www.opendata-oepnv.de/" target="_blank" rel="noopener">opendata-oepnv.de</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con DB ni los operadores',
     attributionHu:
       'Datos: horarios de MÁV-START y GYSEV, GTFS de <a href="https://www.mavcsoport.hu/" target="_blank" rel="noopener">MÁV Csoport</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con MÁV ni GYSEV',
     attributionDk:
@@ -1201,6 +1205,7 @@ export const STRINGS = {
     countryIt: "Italy",
     countryDk: "Denmark",
     countryHu: "Hungary",
+    countryDe: "Germany",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
@@ -1212,6 +1217,7 @@ export const STRINGS = {
     allIt: "All of Italy",
     allDk: "All of Denmark",
     allHu: "All of Hungary",
+    allDe: "All of Germany",
     noticesTitle: "Notices",
     noticesNotYet: "No notices for {country} yet: they'll come with the live data.",
     timetableOnly: "By timetable: no live data for this country yet",
@@ -1252,6 +1258,8 @@ export const STRINGS = {
       'Data: Samtrafiken\'s timetable on <a href="https://www.trafiklab.se/" target="_blank" rel="noopener">Trafiklab.se</a> (CC0) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SJ or the operators',
     attributionPl:
       'Data: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with PKP PLK or the operators',
+    attributionDe:
+      'Data: national timetable from DELFI e.V. (<a href="https://www.delfi.de/" target="_blank" rel="noopener">delfi.de</a>), via <a href="https://www.opendata-oepnv.de/" target="_blank" rel="noopener">opendata-oepnv.de</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with DB or the operators',
     attributionHu:
       'Data: MÁV-START\'s and GYSEV\'s timetables, <a href="https://www.mavcsoport.hu/" target="_blank" rel="noopener">MÁV Group</a> GTFS · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with MÁV or GYSEV',
     attributionDk:

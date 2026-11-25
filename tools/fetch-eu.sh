@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -38,6 +38,9 @@
 #                     hu  MÁV Group's GTFS (MÁV-START, GYSEV and the
 #                         Children's Railway; daily), given on registration;
 #                         needs HU_MAV_USERNAME, HU_MAV_PASSWORD
+#                     de  DELFI's national GTFS (opendata-oepnv.de, CC BY 4.0,
+#                         weekly), cut to trains; needs DE_DELFI_USERNAME,
+#                         DE_DELFI_PASSWORD (tools/delfi-fetch.py logs in)
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -267,7 +270,14 @@ except Exception as e:
     rm -f "$headers"
     echo "gtfs.zip: $(du -h "$dir/gtfs.zip" | cut -f1)"
     region=hungary ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu [--no-osm]" >&2; exit 2 ;;
+  de)
+    python3 -I tools/delfi-fetch.py "$dir/all.zip" "$dir/sources.tsv"
+    echo "all.zip: $(du -h "$dir/all.zip" | cut -f1)"
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
+    rm -f "$dir/all.zip"
+    echo "gtfs.zip (trains): $(du -h "$dir/gtfs.zip" | cut -f1)"
+    region=germany ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then
