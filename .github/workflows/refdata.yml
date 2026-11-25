@@ -370,6 +370,8 @@ jobs:
           unzip -p gtfs/au-nsw/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
           echo "### au: live endpoints" >> "$GITHUB_STEP_SUMMARY"
           node tools/au/nsw-probe.mjs build/au-nsw-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### au: through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs au build/au-nsw-trips.txt build/probe-au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

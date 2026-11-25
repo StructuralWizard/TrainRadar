@@ -19,6 +19,8 @@
 //   DB's OpenBoards station boards, merged into trip updates → de/rt/.
 // - Belgium (BE_ENABLED, Worker secret BE_SNCB_KEY): SNCB's GTFS-Realtime
 //   trip updates and alerts → be/rt/.
+// - New South Wales (AU_ENABLED, Worker secret AU_NSW_API_KEY): Transport for
+//   NSW's GPS, trip updates and alerts → au/rt/.
 // Each *_ENABLED variable is that country's kill switch.
 
 import { emptyState, runCycle } from "./cycle.js";
@@ -30,9 +32,10 @@ import { CZ } from "./czechia.js";
 import { DK } from "./denmark.js";
 import { DE } from "./germany.js";
 import { BE } from "./belgium.js";
+import { AU } from "./australia.js";
 import { FI, NL, NO } from "./nordic.js";
 
-export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK, de: DE, be: BE };
+export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK, de: DE, be: BE, au: AU };
 
 export class FeedIngest {
   constructor(ctx, env) {

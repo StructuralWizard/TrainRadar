@@ -114,6 +114,14 @@ if (cc === "ch") {
     process.exit(0);
   }
   await viaWorker(DK, DK.feeds.map((_, i) => i));
+} else if (cc === "au") {
+  // New South Wales: one turn of every feed through the Worker's own code.
+  const { AU } = await import("../../backend-eu/src/australia.js");
+  if (!process.env.AU_NSW_API_KEY) {
+    console.log("au: AU_NSW_API_KEY is not set");
+    process.exit(0);
+  }
+  await viaWorker(AU, [0, 1, 3, 5, 7, 9, 13, 31], 500);
 } else if (cc === "be") {
   // Belgium: trip updates (cycle 1) and alerts (cycle 10), through the
   // Worker's own code; trip ids should be the static GTFS's.

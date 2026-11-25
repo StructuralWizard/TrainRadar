@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cut GTFS feeds down to their trains, streaming, and merge them into one.
 
-    python3 -I tools/gtfs-rail.py OUT.zip IN.zip [IN.zip ...] [--parents]
+    python3 -I tools/gtfs-rail.py OUT.zip IN.zip [IN.zip ...] [--parents] [--also=401,1]
 
 For countries whose national GTFS covers every mode (the Netherlands' is
 1.3 GB of stop times) or comes one file per operator (Norway's): the
@@ -68,7 +68,10 @@ class Table:
 
 def main(argv):
     parents = "--parents" in argv
-    args = [a for a in argv if a != "--parents"]
+    # Other route types to keep too (Sydney Metro is type 401 or 1).
+    also = {t for a in argv if a.startswith("--also=") for t in a[7:].split(",") if t}
+    rail = RAIL | also
+    args = [a for a in argv if a != "--parents" and not a.startswith("--also=")]
     if len(args) < 2:
         print(__doc__, file=sys.stderr)
         return 2
@@ -91,7 +94,7 @@ def main(argv):
                     agencies = set()
                     for row in r:
                         d = dict(zip(h, row))
-                        if d.get("route_type", "").strip() in RAIL:
+                        if d.get("route_type", "").strip() in rail:
                             routes.add(d["route_id"])
                             agencies.add(d.get("agency_id", ""))
                             tables["routes.txt"].add(h, row)

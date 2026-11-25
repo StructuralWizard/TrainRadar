@@ -31,9 +31,8 @@ export const COUNTRY_INFO = {
   hu: { zone: "Europe/Budapest", center: [19.4, 47.2], zoom: 6.4, live: false },
   de: { zone: "Europe/Berlin", center: [10.4, 51.2], zoom: 5.4, live: true },
   be: { zone: "Europe/Brussels", center: [4.6, 50.6], zoom: 7.2, live: true },
-  // New South Wales for now (Transport for NSW); by timetable until its
-  // live feeds are in.
-  au: { zone: "Australia/Sydney", center: [151.0, -33.8], zoom: 8.0, live: false },
+  // New South Wales for now (Transport for NSW): GPS, delays and alerts.
+  au: { zone: "Australia/Sydney", center: [151.0, -33.8], zoom: 8.0, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

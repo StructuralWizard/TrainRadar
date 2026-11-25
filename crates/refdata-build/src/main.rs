@@ -480,7 +480,9 @@ fn run_build(a: BuildArgs) -> Result<()> {
             // the Netherlands placed by timetable plus delay.
             let mut g = Gtfs::open(path)?;
             let mut feed = load::load(&mut g, &window)?;
-            if kind != "fi" {
+            // Already cut to trains (fetch-eu.sh); New South Wales keeps
+            // Sydney Metro (a metro route type) too.
+            if kind != "fi" && kind != "au-nsw" {
                 build::keep_rail(&mut feed);
             }
             let (st, operator) = match kind {
@@ -503,8 +505,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
-            // New South Wales: by timetable until its live feeds are in.
-            let live = !matches!(kind, "sk" | "ee" | "at" | "it" | "it-lom" | "hu" | "au-nsw");
+            let live = !matches!(kind, "sk" | "ee" | "at" | "it" | "it-lom" | "hu");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",

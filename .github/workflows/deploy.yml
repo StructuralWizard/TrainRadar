@@ -1051,6 +1051,9 @@ jobs:
           # Belgium (SNCB's GTFS-Realtime): live, its own switch, with the key.
           BE_LIVE_ENABLED: ${{ vars.BE_LIVE_ENABLED }}
           HAS_BE_KEY: ${{ secrets.BE_SNCB_KEY != '' }}
+          # New South Wales (Transport for NSW): live, its own switch, with the key.
+          AU_NSW_LIVE_ENABLED: ${{ vars.AU_NSW_LIVE_ENABLED }}
+          HAS_AU_KEY: ${{ secrets.AU_NSW_API_KEY != '' }}
           HAS_KEY: ${{ secrets.IE_NTA_API_KEY != '' }}
           HAS_CH_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY != '' }}
           HAS_PL_KEY: ${{ secrets.PL_PLK_API_KEY != '' }}
@@ -1075,9 +1078,11 @@ jobs:
           if [ "$(on "$DE_LIVE_ENABLED")" = "true" ] && [ "$HAS_DE_KEY" = "true" ]; then de=true; fi
           be=false
           if [ "$(on "$BE_LIVE_ENABLED")" = "true" ] && [ "$HAS_BE_KEY" = "true" ]; then be=true; fi
-          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; echo "cz=$cz"; echo "dk=$dk"; echo "de=$de"; echo "be=$be"; } >> "$GITHUB_OUTPUT"
-          if [ "$ie$fr$fi_$no$nl$ch$pl$se$cz$dk$de$be" = "falsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalse" ]; then
-            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys, CZ_LIVE_ENABLED, DK_LIVE_ENABLED with DK_NAP_CLIENT_SECRET, DE_LIVE_ENABLED with DE_DB_*, BE_LIVE_ENABLED with BE_SNCB_KEY): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
+          au=false
+          if [ "$(on "$AU_NSW_LIVE_ENABLED")" = "true" ] && [ "$HAS_AU_KEY" = "true" ]; then au=true; fi
+          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; echo "cz=$cz"; echo "dk=$dk"; echo "de=$de"; echo "be=$be"; echo "au=$au"; } >> "$GITHUB_OUTPUT"
+          if [ "$ie$fr$fi_$no$nl$ch$pl$se$cz$dk$de$be$au" = "falsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalse" ]; then
+            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys, CZ_LIVE_ENABLED, DK_LIVE_ENABLED with DK_NAP_CLIENT_SECRET, DE_LIVE_ENABLED with DE_DB_*, BE_LIVE_ENABLED with BE_SNCB_KEY, AU_NSW_LIVE_ENABLED with AU_NSW_API_KEY): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "push" ] && git diff --quiet HEAD^ HEAD -- backend-eu/; then
             echo "backend-eu/ unchanged: the Europe ingest keeps running as it is." | tee -a "$GITHUB_STEP_SUMMARY"
           else
@@ -1109,6 +1114,8 @@ jobs:
           DE_DB_API_KEY: ${{ secrets.DE_DB_API_KEY }}
           BE_ON: ${{ steps.gate.outputs.be }}
           BE_SNCB_KEY: ${{ secrets.BE_SNCB_KEY }}
+          AU_ON: ${{ steps.gate.outputs.au }}
+          AU_NSW_API_KEY: ${{ secrets.AU_NSW_API_KEY }}
           SE_TRAFIKLAB_RT_KEY: ${{ secrets.SE_TRAFIKLAB_RT_KEY }}
           CH_OTD_GTFSRT_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY }}
           CH_OTD_GTFSSA_KEY: ${{ secrets.CH_OTD_GTFSSA_KEY }}
@@ -1118,7 +1125,7 @@ jobs:
           npx --yes "$WRANGLER" deploy --config backend-eu/wrangler.toml --var "IE_ENABLED:$IE_ON" --var "FR_ENABLED:$FR_ON" \
             --var "FI_ENABLED:$FI_ON" --var "NO_ENABLED:$NO_ON" --var "NL_ENABLED:$NL_ON" \
             --var "CH_ENABLED:$CH_ON" --var "PL_ENABLED:$PL_ON" --var "SE_ENABLED:$SE_ON" \
-            --var "CZ_ENABLED:$CZ_ON" --var "DK_ENABLED:$DK_ON" --var "DE_ENABLED:$DE_ON" --var "BE_ENABLED:$BE_ON"
+            --var "CZ_ENABLED:$CZ_ON" --var "DK_ENABLED:$DK_ON" --var "DE_ENABLED:$DE_ON" --var "BE_ENABLED:$BE_ON" --var "AU_ENABLED:$AU_ON"
           # Keys on stdin, never on the command line.
           put() { [ -n "$2" ] && printf '%s' "$2" | npx --yes "$WRANGLER" secret put "$1" --config backend-eu/wrangler.toml; }
           if [ "$IE_ON" = "true" ]; then put IE_NTA_API_KEY "$IE_NTA_API_KEY"; fi
@@ -1135,7 +1142,8 @@ jobs:
             put DE_DB_API_KEY "$DE_DB_API_KEY"
           fi
           if [ "$BE_ON" = "true" ]; then put BE_SNCB_KEY "$BE_SNCB_KEY"; fi
-          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON, Sweden: $SE_ON, Czechia: $CZ_ON, Denmark: $DK_ON, Germany: $DE_ON, Belgium: $BE_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$AU_ON" = "true" ]; then put AU_NSW_API_KEY "$AU_NSW_API_KEY"; fi
+          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON, Sweden: $SE_ON, Czechia: $CZ_ON, Denmark: $DK_ON, Germany: $DE_ON, Belgium: $BE_ON, New South Wales: $AU_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 
   live:
     # Central poller and history recorder (backend/): Renfe fetched once for

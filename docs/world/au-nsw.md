@@ -3,7 +3,7 @@
 Australia/Sydney (UTC+10, +11 from the first Sunday of October to the first Sunday of April) ·
 English · the app's country `au` (`?country=au`).
 
-**Built 2026-11-25 (hidden, by timetable for now).** The first country outside Europe:
+**Built 2026-11-25 (hidden).** The first country outside Europe:
 - **Time zone:** the engine now keeps a time zone per region with its own clock rules
   (`trainradar_proto::time::Zone`: south-eastern Australia, New Zealand, fixed offsets such as
   Singapore and Brisbane), instead of a fixed distance from Madrid, which only holds for zones with
@@ -15,9 +15,12 @@ English · the app's country `au` (`?country=au`).
   401, is left out for now, as are coaches). Region `au-nsw`.
 - **Track:** Geofabrik's Australia extract (`australia-oceania/australia`), cached weekly.
 
-**Live, next:** TfNSW publishes GTFS-Realtime trip updates and GPS vehicle positions for Sydney
-Trains, NSW TrainLink and Sydney Metro, and alerts. `tools/au/nsw-probe.mjs` tries each v1 and v2
-endpoint with the key in the Refdata run and reports which answer and how many trips match the
-timetable; the Worker follows from that.
+**Live (2026-11-25):** the probe found, with the key: Sydney Trains v2 (trip updates 100 % in the
+timetable, GPS 80 %, the rest non-timetabled runs), NSW TrainLink v1 (trip updates 64 %, GPS 86 %),
+Sydney Metro (v1 and v2 answer; 0 % until its metro route type was kept, now `--also=401,1`), and
+v2 alerts for all three. `backend-eu/src/australia.js` takes one call every 8 s (10,800 a day of the
+60,000 quota): Sydney Trains' GPS every 16 s, every other feed about every two minutes, each a part
+of `au/rt/vehicle_positions.pb`, `trip_updates.pb` and `alerts.pb`. Region `au-nsw` is mixed: GPS
+where a train sends it, timetable plus delay for the rest.
 
-**Variables:** `AU_NSW_ENABLED` (the timetable).
+**Variables:** `AU_NSW_ENABLED` (the timetable), `AU_NSW_LIVE_ENABLED` (the Worker).

@@ -322,7 +322,8 @@ except Exception as e:
       parts+=("$dir/$op.zip")
     done
     [ ${#parts[@]} -gt 0 ] || { echo "TfNSW: no schedule downloaded (the key?)" >&2; exit 1; }
-    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents
+    # Sydney Metro is a metro (route type 401 or 1) in its own file: kept.
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents --also=401,1
     rm -f "${parts[@]}"
     region=australia-oceania/australia ;;
   *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw [--no-osm]" >&2; exit 2 ;;
