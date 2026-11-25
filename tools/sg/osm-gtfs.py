@@ -138,6 +138,10 @@ def codes(tags):
 
 
 BRANCHES = {"CE", "CG"}
+# OSM's line refs (route relations' ref): the main lines only; the LRT and
+# the branches come from by_name. Anything else (Sentosa Express, Changi
+# Airport's Skytrain, the Jurong Region Line) isn't a line here.
+REFS = {"NSL": "NS", "EWL": "EW", "NEL": "NE", "CCL": "CC", "DTL": "DT", "TEL": "TE"}
 
 
 def by_name(low, n_stops):
@@ -208,23 +212,25 @@ def main(argv):
         if "jurong region" in low:
             skipped["Jurong Region Line (not open yet)"] += 1
             continue
-        line = by_name(low, len(stop_nodes))
+        # The name (LRT loops, Changi branch), then OSM's line ref ("NSL"),
+        # then the station codes most stops share.
+        line = by_name(low, len(stop_nodes)) or REFS.get(tags.get("ref", "").upper().replace(" ", ""))
         prefixes = Counter(p for n in stop_nodes for p, _ in codes(n[2])) + Counter(p for p, _ in plat_codes)
         if not line:
             # A branch (CE, CG) only when most of the stops are on it.
             line = next((p for p, n in prefixes.most_common() if p in lines
                          and (p not in BRANCHES or n > len(stop_nodes) / 2)), None)
         if not line:
-            # The relation's own ref ("NSL", "NS") or name.
-            r = tags.get("ref", "").upper()
-            line = next((k for k in lines if r.startswith(k)), None) or next(
-                (k for k, v in lines.items() if v["name"].lower() in tags.get("name", "").lower()), None)
+            # The line's full name in the relation's.
+            line = next((k for k, v in lines.items() if v["name"].lower() in low), None)
         if not line:
             skipped[f"no line ({tags.get('name', rid)})"] += 1
             continue
         names = []
         for n in stop_nodes:
             nm = n[2].get("name:en") or n[2].get("name") or ""
+            # "Sengkang - East Loop Clockwise" (a loop's stop position) is Sengkang.
+            nm = re.sub(r"\s+-\s+.*$", "", nm)
             nm = re.sub(r"\s+(MRT|LRT)?\s*(Station|Stn)?$", "", nm, flags=re.I).strip() or f"{n[0]:.5f},{n[1]:.5f}"
             names.append((nm, n[:2]))
         # Consecutive duplicates (two stop positions of one station).
@@ -274,7 +280,8 @@ def main(argv):
         # One pattern per direction: the longest relation from each end.
         by_ends = {}
         for p in pats:
-            key = (p["stops"][0][0], p["stops"][-1][0])
+            # The first two stops and the last: a loop's two directions differ.
+            key = (p["stops"][0][0], p["stops"][1][0], p["stops"][-1][0])
             if key not in by_ends or len(p["stops"]) > len(by_ends[key]["stops"]):
                 by_ends[key] = p
         chosen = list(by_ends.values())

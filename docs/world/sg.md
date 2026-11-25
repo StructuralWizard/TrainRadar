@@ -21,6 +21,11 @@ from the lines' usual frequencies and every one says so.
   told apart by the relation's name first (the LRT loops, Bukit Panjang, the Changi Airport
   branch), then by the station codes (a branch only with most of the stops); the Jurong Region
   Line (not open yet) is left out. LTA's alerts answered HTTP 401 with the first key.
+- **Second build:** 12 lines, 192 stations, 11,175 trips; then fixed: lines by OSM's line ref
+  (NSL, EWL…) before the station codes (one North-South direction had come out East-West),
+  Sentosa Express and Changi Airport's Skytrain left out, loops keep both directions, a loop's
+  stop position ("Sengkang - East Loop Clockwise") is its station. The Circle Line has two
+  services in OSM (the loop and Dhoby Ghaut–Prince Edward Road), each at the line's headway.
 - **Not yet:** live platform crowd density (DataMall's `PCDRealTime`) on station cards.
 - **Deploy:** `SG_ENABLED` = `true` builds `data/sg/`; `SG_LIVE_ENABLED` = `true` (with
   `SG_LTA_ACCOUNT_KEY`) adds the alerts in the `eu` Worker.
