@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -47,6 +47,17 @@
 #                     au-nsw  Transport for NSW's GTFS: Sydney Trains, NSW
 #                         TrainLink and Sydney Metro, merged and cut to
 #                         trains; needs AU_NSW_API_KEY ("apikey" header)
+#                     au-vic  Transport Victoria's GTFS Schedule: V/Line and
+#                         Metro Trains (tools/au/vic-fetch.py), merged
+#                     nz-wlg  Metlink's GTFS (Wellington), cut to trains; no
+#                         key for the timetable
+#                     nz-akl  Auckland Transport's GTFS, cut to trains; no key
+#                         for the timetable
+#                     nz-osm  only New Zealand's OSM track (for both regions)
+#                     sg  Singapore's MRT and LRT: an estimated timetable from
+#                         OpenStreetMap's routes and tools/sg/lines.tsv
+#                         (tools/sg/osm-gtfs.py); LTA publishes none. The
+#                         track is in it: use --no-osm
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -326,7 +337,63 @@ except Exception as e:
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents --also=401,1
     rm -f "${parts[@]}"
     region=australia-oceania/australia ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw [--no-osm]" >&2; exit 2 ;;
+  au-osm)
+    # Only the OSM track for Australia (shared by its states' builds).
+    region=australia-oceania/australia ;;
+  au-vic)
+    python3 -I tools/au/vic-fetch.py "$dir" "$dir/sources.tsv"
+    parts=()
+    for op in vline metro; do [ -s "$dir/$op.zip" ] && parts+=("$dir/$op.zip"); done
+    # Metro Trains' routes aren't route type 2 (Nov 2026: none kept): its
+    # file is trains only, so the metro types are kept too.
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents --also=400,401,1
+    rm -f "${parts[@]}"
+    region=australia-oceania/australia ;;
+  nz-wlg)
+    url=https://static.opendata.metlink.org.nz/v1/gtfs/full.zip
+    headers=$(mktemp)
+    curl -fsSL --retry 4 --retry-delay 15 -D "$headers" -A "$client (+https://mytrainradar.com)" \
+      -o "$dir/all.zip" "$url" || { echo "Metlink GTFS: download failed" >&2; rm -f "$headers"; exit 1; }
+    printf '%s\t%s\t%s\t%s\n' "Metlink GTFS (Greater Wellington Regional Council)" "$url" \
+      "$(grep -i '^etag:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r"' || true)" \
+      "$(grep -i '^last-modified:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r' || true)" >>"$dir/sources.tsv"
+    rm -f "$headers"
+    echo "all.zip: $(du -h "$dir/all.zip" | cut -f1)"
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
+    rm -f "$dir/all.zip"
+    region=australia-oceania/new-zealand ;;
+  nz-akl)
+    url=https://gtfs.at.govt.nz/gtfs.zip
+    headers=$(mktemp)
+    curl -fsSL --retry 4 --retry-delay 15 -D "$headers" -A "$client (+https://mytrainradar.com)" \
+      -o "$dir/all.zip" "$url" || { echo "Auckland Transport GTFS: download failed" >&2; rm -f "$headers"; exit 1; }
+    printf '%s\t%s\t%s\t%s\n' "Auckland Transport GTFS" "$url" \
+      "$(grep -i '^etag:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r"' || true)" \
+      "$(grep -i '^last-modified:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r' || true)" >>"$dir/sources.tsv"
+    rm -f "$headers"
+    echo "all.zip: $(du -h "$dir/all.zip" | cut -f1)"
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
+    rm -f "$dir/all.zip"
+    region=australia-oceania/new-zealand ;;
+  sg)
+    # Geofabrik's Malaysia, Singapore and Brunei; Singapore's box; the
+    # MRT/LRT route relations with their stops and track, as OPL.
+    pbf="$dir/msb.osm.pbf"
+    curl -fsSL --retry 6 --retry-delay 20 --retry-all-errors -A "$client (+https://mytrainradar.com)" -o "$pbf" \
+      https://download.geofabrik.de/asia/malaysia-singapore-brunei-latest.osm.pbf
+    printf '%s\t%s\t\t%s\n' "OpenStreetMap (Geofabrik), MRT and LRT routes" \
+      https://download.geofabrik.de/asia/malaysia-singapore-brunei-latest.osm.pbf "$(date -u '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
+    osmium extract --overwrite -b 103.55,1.13,104.15,1.50 --strategy=smart -o "$dir/sg.osm.pbf" "$pbf"
+    osmium tags-filter --overwrite -o "$dir/routes.osm.pbf" "$dir/sg.osm.pbf" r/route=subway,light_rail,monorail,train
+    osmium cat --overwrite -f opl -o "$dir/routes.opl" "$dir/routes.osm.pbf"
+    rm -f "$pbf" "$dir/sg.osm.pbf" "$dir/routes.osm.pbf"
+    python3 -I tools/sg/osm-gtfs.py "$dir/routes.opl" tools/sg/lines.tsv "$dir/gtfs.zip" 70
+    rm -f "$dir/routes.opl"
+    region=asia/malaysia-singapore-brunei ;;
+  nz-osm)
+    # Only the OSM track for New Zealand (shared by its regions' builds).
+    region=australia-oceania/new-zealand ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

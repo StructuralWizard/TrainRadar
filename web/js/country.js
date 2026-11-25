@@ -2,7 +2,7 @@
 // (Renfe), the United Kingdom (Network Rail), Ireland (Iarnród Éireann),
 // France (SNCF), Luxembourg (CFL), Finland (VR), Norway (Entur) or the
 // Netherlands (NS and the others), Slovakia (ZSSK), Estonia (Elron),
-// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB) or Australia (New South Wales).
+// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB), Australia (New South Wales, Victoria) New Zealand (Wellington, Auckland) or Singapore (estimated).
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
@@ -31,8 +31,15 @@ export const COUNTRY_INFO = {
   hu: { zone: "Europe/Budapest", center: [19.4, 47.2], zoom: 6.4, live: false },
   de: { zone: "Europe/Berlin", center: [10.4, 51.2], zoom: 5.4, live: true },
   be: { zone: "Europe/Brussels", center: [4.6, 50.6], zoom: 7.2, live: true },
-  // New South Wales for now (Transport for NSW): GPS, delays and alerts.
-  au: { zone: "Australia/Sydney", center: [151.0, -33.8], zoom: 8.0, live: true },
+  // New South Wales (GPS, delays, alerts) and Victoria; both on the same
+  // clock rules (Sydney's and Melbourne's).
+  au: { zone: "Australia/Sydney", center: [147.5, -35.6], zoom: 5.6, live: true },
+  // Wellington (Metlink) and Auckland (Auckland Transport): GPS, delays
+  // and alerts.
+  nz: { zone: "Pacific/Auckland", center: [175.2, -39.0], zoom: 5.9, live: true },
+  // Singapore: estimated trains (LTA publishes no timetable or positions);
+  // live is LTA's disruption alerts only.
+  sg: { zone: "Asia/Singapore", center: [103.82, 1.35], zoom: 10.4, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

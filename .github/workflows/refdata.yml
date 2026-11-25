@@ -372,6 +372,77 @@ jobs:
           node tools/au/nsw-probe.mjs build/au-nsw-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
           echo "### au: through the Worker" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs au build/au-nsw-trips.txt build/probe-au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Victoria (Transport Victoria; key AU_VIC_API_KEY for live)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          AU_VIC_API_KEY: ${{ secrets.AU_VIC_API_KEY }}
+          AU_NSW_API_KEY: ${{ secrets.AU_NSW_API_KEY }}
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh au-vic --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/au-vic --au-vic-gtfs gtfs/au-vic/gtfs.zip \
+            --sources gtfs/au-vic/sources.tsv --report refdata-au-vic.md
+          target/release/refdata-build verify build/au-vic
+          { echo "## Victoria reference data"; echo; cat refdata-au-vic.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/au-vic/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/au-vic-trips.txt
+          unzip -p gtfs/au-vic/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### vic: live endpoints" >> "$GITHUB_STEP_SUMMARY"
+          node tools/au/vic-probe.mjs build/au-vic-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### vic: through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs au-vic build/au-vic-trips.txt build/probe-au-vic | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Wellington (Metlink; key NZ_METLINK_API_KEY for live)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          NZ_METLINK_API_KEY: ${{ secrets.NZ_METLINK_API_KEY }}
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh nz-wlg --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/nz-wlg --nz-wlg-gtfs gtfs/nz-wlg/gtfs.zip \
+            --sources gtfs/nz-wlg/sources.tsv --report refdata-nz-wlg.md
+          target/release/refdata-build verify build/nz-wlg
+          { echo "## Wellington reference data"; echo; cat refdata-nz-wlg.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/nz-wlg/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/nz-wlg-trips.txt
+          unzip -p gtfs/nz-wlg/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/nz-wlg/gtfs.zip routes.txt | head -12 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### wlg: live endpoints" >> "$GITHUB_STEP_SUMMARY"
+          node tools/nz/rt-probe.mjs wlg build/nz-wlg-trips.txt samples/nz | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Auckland (Auckland Transport; key NZ_AT_API_KEY for live)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          NZ_AT_API_KEY: ${{ secrets.NZ_AT_API_KEY }}
+          NZ_METLINK_API_KEY: ${{ secrets.NZ_METLINK_API_KEY }}
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh nz-akl --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/nz-akl --nz-akl-gtfs gtfs/nz-akl/gtfs.zip \
+            --sources gtfs/nz-akl/sources.tsv --report refdata-nz-akl.md
+          target/release/refdata-build verify build/nz-akl
+          { echo "## Auckland reference data"; echo; cat refdata-nz-akl.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/nz-akl/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/nz-akl-trips.txt
+          unzip -p gtfs/nz-akl/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/nz-akl/gtfs.zip routes.txt | head -12 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### akl: live endpoints" >> "$GITHUB_STEP_SUMMARY"
+          node tools/nz/rt-probe.mjs akl build/nz-akl-trips.txt samples/nz | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### nz: through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          cat build/nz-wlg-trips.txt build/nz-akl-trips.txt > build/nz-trips.txt || true
+          node tools/feed-check/eu-probe.mjs nz build/nz-trips.txt build/probe-nz | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Singapore (estimated from OpenStreetMap; key SG_LTA_ACCOUNT_KEY for alerts)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          SG_LTA_ACCOUNT_KEY: ${{ secrets.SG_LTA_ACCOUNT_KEY }}
+        run: |
+          set -o pipefail
+          command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh sg --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/sg --sg-gtfs gtfs/sg/gtfs.zip \
+            --sources gtfs/sg/sources.tsv --report refdata-sg.md
+          target/release/refdata-build verify build/sg
+          { echo "## Singapore reference data (estimated)"; echo; cat refdata-sg.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/sg/gtfs.zip routes.txt | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/sg/gtfs.zip stops.txt | wc -l | sed 's/^/stops.txt lines: /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### sg: alerts through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          : > build/sg-trips.txt
+          node tools/feed-check/eu-probe.mjs sg build/sg-trips.txt build/probe-sg | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

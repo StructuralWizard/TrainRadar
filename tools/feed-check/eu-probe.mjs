@@ -121,7 +121,38 @@ if (cc === "ch") {
     console.log("au: AU_NSW_API_KEY is not set");
     process.exit(0);
   }
-  await viaWorker(AU, [0, 1, 3, 5, 7, 9, 13, 31], 500);
+  // New South Wales' calls are the even ones (Victoria's the odd ones).
+  await viaWorker(AU, [0, 2, 6, 10, 14, 18, 26, 62], 500);
+} else if (cc === "au-vic") {
+  // Victoria: every feed once (the odd calls), through the Worker's own
+  // code, AU_VIC_LIVE on; trip ids against Victoria's timetable.
+  const { AU } = await import("../../backend-eu/src/australia.js");
+  if (!process.env.AU_VIC_API_KEY || !process.env.AU_NSW_API_KEY) {
+    console.log("au-vic: AU_VIC_API_KEY or AU_NSW_API_KEY is not set");
+    process.exit(0);
+  }
+  process.env.AU_VIC_LIVE = "true";
+  await viaWorker(AU, [1, 3, 7, 11, 15], 500);
+} else if (cc === "nz") {
+  // New Zealand: one turn of every feed (both regions) through the
+  // Worker's own code, kept to trains.
+  const { NZ } = await import("../../backend-eu/src/newzealand.js");
+  if (!process.env.NZ_METLINK_API_KEY || !process.env.NZ_AT_API_KEY) {
+    console.log("nz: NZ_METLINK_API_KEY or NZ_AT_API_KEY is not set");
+    process.exit(0);
+  }
+  await viaWorker(NZ, NZ.feeds.map((_, i) => i), 500);
+} else if (cc === "sg") {
+  // Singapore: LTA's train service alerts, once, through the Worker's own
+  // code (JSON → GTFS-RT alerts).
+  const { SG } = await import("../../backend-eu/src/singapore.js");
+  if (!process.env.SG_LTA_ACCOUNT_KEY) {
+    console.log("sg: SG_LTA_ACCOUNT_KEY is not set");
+    process.exit(0);
+  }
+  const k = process.env.SG_LTA_ACCOUNT_KEY;
+  console.log(`sg: key ${k.length} characters${k.trim() === k ? "" : ", with spaces or a newline around it"}`);
+  await viaWorker(SG, [0]);
 } else if (cc === "be") {
   // Belgium: trip updates (cycle 1) and alerts (cycle 10), through the
   // Worker's own code; trip ids should be the static GTFS's.

@@ -164,6 +164,8 @@ const COUNTRY_TEXT = {
   de: { name: "countryDe", all: "allDe", credit: "attributionDe", scheduled: "scheduledCountOther" },
   be: { name: "countryBe", all: "allBe", credit: "attributionBe", scheduled: "scheduledCountOther" },
   au: { name: "countryAu", all: "allAu", credit: "attributionAu", scheduled: "scheduledCountOther" },
+  nz: { name: "countryNz", all: "allNz", credit: "attributionNz", scheduled: "scheduledCountOther" },
+  sg: { name: "countrySg", all: "allSg", credit: "attributionSg", scheduled: "scheduledCountOther", scheduledAll: "scheduledAllSg" },
 };
 /** A country's name; one still being built says so. */
 const countryName = (c) => {
@@ -176,7 +178,7 @@ const countryChoices = () => {
   return [...COUNTRY_LIST].sort((a, b) => rank(a) - rank(b) || countryName(a).localeCompare(countryName(b), lang));
 };
 /** Whose notices each country shows (the UK has its own panel). */
-const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi: "Fintraffic", nl: "NS", ch: "SBB", be: "SNCB", au: "Transport for NSW" };
+const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi: "Fintraffic", nl: "NS", ch: "SBB", be: "SNCB", au: "Transport for NSW", nz: "Metlink and Auckland Transport", sg: "LTA" };
 
 // Each country keeps its own favourites and commutes (station ids differ);
 // Spain's keep the original keys, which the Android widgets and alerts read.
@@ -3041,7 +3043,7 @@ function render(force = false) {
   renderLiveChip(st, now);
   const scheduled = st.scheduled ? t(lang, COUNTRY_TEXT[country].scheduled, { n: st.scheduled }) : "";
   // Every train by timetable (no live data yet): just say how many.
-  $("stats").textContent = !st.trains && st.scheduled ? t(lang, "scheduledAll", { n: formatCount(lang, st.scheduled) }) : statsText(lang, st) + (scheduled ? ` ${scheduled}` : "");
+  $("stats").textContent = !st.trains && st.scheduled ? t(lang, COUNTRY_TEXT[country]?.scheduledAll || "scheduledAll", { n: formatCount(lang, st.scheduled) }) : statsText(lang, st) + (scheduled ? ` ${scheduled}` : "");
   const last = feeds?.lastUpdate() || 0;
   $("status").textContent = TIMETABLE_ONLY
     ? t(lang, "timetableOnly")

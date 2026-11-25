@@ -69,6 +69,17 @@ pub const BE: &str = "be";
 /// New South Wales: Transport for NSW's GTFS (Sydney Trains, NSW TrainLink,
 /// Sydney Metro), cut to trains; on Sydney time.
 pub const AU_NSW: &str = "au-nsw";
+/// Victoria: Transport Victoria's GTFS (V/Line, Metro Trains); Melbourne
+/// time (the same rules as Sydney's).
+pub const AU_VIC: &str = "au-vic";
+/// Wellington: Metlink's GTFS (Greater Wellington Regional Council), cut to
+/// trains; New Zealand time.
+pub const NZ_WLG: &str = "nz-wlg";
+/// Auckland: Auckland Transport's GTFS, cut to trains; New Zealand time.
+pub const NZ_AKL: &str = "nz-akl";
+/// Singapore: the MRT and LRT, an estimated timetable (OSM routes and
+/// published frequencies; LTA publishes none).
+pub const SG: &str = "sg";
 /// A German stop whose DHID names no Land (none seen in DELFI).
 pub const DE_OTHER: &str = "de-x";
 
@@ -101,6 +112,19 @@ pub const ATTRIBUTION_BE: &str = "Data: SNCB/NMBS, via the Belgian Mobility Comp
 gateway (non-commercial use). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_AU_NSW: &str = "Data: Transport for NSW (opendata.transport.nsw.gov.au), \
 CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_AU_VIC: &str = "Data: Transport Victoria (opendata.transport.vic.gov.au), \
+CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_NZ_WLG: &str = "Data: Metlink, Greater Wellington Regional Council \
+(opendata.metlink.org.nz), CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_NZ_AKL: &str = "Data: Auckland Transport (at.govt.nz), CC BY 4.0. \
+Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_NZ: &str = "Data: Metlink (Greater Wellington Regional Council) and \
+Auckland Transport open data, CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_SG: &str = "Estimated timetable from OpenStreetMap (© OpenStreetMap \
+contributors, ODbL 1.0) and published frequencies; alerts: LTA DataMall (Singapore Open Data \
+Licence).";
+pub const ATTRIBUTION_AU: &str = "Data: Transport for NSW and Transport Victoria open data, CC BY \
+4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
 (Vejdirektoratet). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
@@ -125,6 +149,9 @@ pub fn tz(code: &str) -> Option<&'static str> {
         BE => "Europe/Brussels",
         c if c == DE || c.starts_with("de-") => "Europe/Berlin",
         AU_NSW => "Australia/Sydney",
+        AU_VIC => "Australia/Melbourne",
+        NZ_WLG | NZ_AKL => "Pacific/Auckland",
+        SG => "Asia/Singapore",
         _ => return None,
     })
 }
@@ -154,6 +181,10 @@ pub fn region_name(code: &str) -> &'static str {
         DE => "Germany (long distance)",
         BE => "Belgium",
         AU_NSW => "New South Wales",
+        AU_VIC => "Victoria",
+        NZ_WLG => "Wellington",
+        NZ_AKL => "Auckland",
+        SG => "Singapore (estimated)",
         DE_OTHER => "Germany (regional, cross-border)",
         c if c.starts_with("de-") => GERMAN_LANDS.iter().find(|l| l.1 == c).map_or("", |l| l.2),
         _ => "",

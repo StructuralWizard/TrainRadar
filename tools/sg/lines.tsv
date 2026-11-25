@@ -1,0 +1,22 @@
+# Singapore's MRT and LRT lines: service hours and headways for the
+# estimated timetable (tools/sg/osm-gtfs.py). LTA publishes no timetable;
+# these are approximations of the operators' published frequencies
+# (Nov 2026), to be corrected here when better figures are known. Times are
+# local (Asia/Singapore); last after 24:00 runs past midnight. Headways in
+# minutes: peak (weekdays 07:00-09:30 and 17:00-20:00), off-peak, and
+# weekends/public holidays (all day).
+#
+# ref	name	operator	first	last	peak	offpeak	weekend	kmh	dwell_s
+NS	North-South Line	SMRT Trains	05:30	24:00	2.5	5	5	45	30
+EW	East-West Line	SMRT Trains	05:30	24:00	2.5	5	5	45	30
+CG	East-West Line (Changi Airport branch)	SMRT Trains	05:30	23:30	7	8	8	45	30
+NE	North East Line	SBS Transit	05:30	24:00	2.5	5	5	45	30
+CC	Circle Line	SMRT Trains	05:30	24:00	3.5	6	6	40	30
+CE	Circle Line (Marina Bay branch)	SMRT Trains	05:30	24:00	7	8	8	40	30
+DT	Downtown Line	SBS Transit	05:30	24:00	3	5	5	45	30
+TE	Thomson-East Coast Line	SMRT Trains	05:30	24:00	3.5	6	6	45	30
+BP	Bukit Panjang LRT	SMRT Trains	05:30	24:00	4	6	6	30	25
+SE	Sengkang LRT (East Loop)	SBS Transit	05:30	24:00	4	6	6	30	25
+SW	Sengkang LRT (West Loop)	SBS Transit	05:30	24:00	4	6	6	30	25
+PE	Punggol LRT (East Loop)	SBS Transit	05:30	24:00	4	6	6	30	25
+PW	Punggol LRT (West Loop)	SBS Transit	05:30	24:00	4	6	6	30	25

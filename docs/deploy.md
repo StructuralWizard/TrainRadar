@@ -325,7 +325,25 @@ app, and update the "last updated" dates when they change.
 ## New South Wales (Australia)
 
 - **Turning it on:** **`AU_NSW_ENABLED`** = `true` (the timetable) and **`AU_NSW_LIVE_ENABLED`** =
-  `true` (GPS, delays and alerts in the `eu` Worker), with `AU_NSW_API_KEY`; `?country=au`. See [world/au-nsw.md](world/au-nsw.md).
+  `true` (GPS, delays and alerts in the `eu` Worker), with `AU_NSW_API_KEY`; `?country=au`.
+- **Victoria:** **`AU_VIC_ENABLED`** = `true` adds it to the same Australia build
+  ([world/au-vic.md](world/au-vic.md)); **`AU_VIC_LIVE_ENABLED`** = `true` adds its live data to the
+  Australia Worker part (with `AU_VIC_API_KEY`, and New South Wales' live data on). See [world/au-nsw.md](world/au-nsw.md).
+
+## New Zealand (Wellington, Auckland)
+
+- **Turning it on:** **`NZ_WLG_ENABLED`** = `true` (Metlink, Wellington) and/or
+  **`NZ_AKL_ENABLED`** = `true` (Auckland Transport) build their timetables (no key) into one
+  `data/nz/`; `?country=nz`. **`NZ_LIVE_ENABLED`** = `true` adds both regions' GPS, delays and
+  alerts in the `eu` Worker, with `NZ_METLINK_API_KEY` and `NZ_AT_API_KEY`. See [world/nz-wlg.md](world/nz-wlg.md) and
+  [world/nz-akl.md](world/nz-akl.md).
+
+## Singapore (estimated)
+
+- **Turning it on:** **`SG_ENABLED`** = `true` builds an estimated MRT/LRT timetable (OpenStreetMap
+  and `tools/sg/lines.tsv`; LTA publishes none) into `data/sg/`; `?country=sg`.
+  **`SG_LIVE_ENABLED`** = `true` adds LTA DataMall's train service alerts in the `eu` Worker, with
+  `SG_LTA_ACCOUNT_KEY`. See [world/sg.md](world/sg.md).
 
 ## Slovakia and Estonia (M4)
 

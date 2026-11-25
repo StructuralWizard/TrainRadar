@@ -21,6 +21,11 @@
 //   trip updates and alerts → be/rt/.
 // - New South Wales (AU_ENABLED, Worker secret AU_NSW_API_KEY): Transport for
 //   NSW's GPS, trip updates and alerts → au/rt/.
+// - New Zealand (NZ_ENABLED, Worker secrets NZ_METLINK_API_KEY, NZ_AT_API_KEY):
+//   Metlink's and Auckland Transport's GPS, trip updates and alerts, kept to
+//   trains → nz/rt/.
+// - Singapore (SG_ENABLED, Worker secret SG_LTA_ACCOUNT_KEY): LTA DataMall's
+//   train service alerts → sg/rt/ (its trains are estimated, no live data).
 // Each *_ENABLED variable is that country's kill switch.
 
 import { emptyState, runCycle } from "./cycle.js";
@@ -33,9 +38,11 @@ import { DK } from "./denmark.js";
 import { DE } from "./germany.js";
 import { BE } from "./belgium.js";
 import { AU } from "./australia.js";
+import { NZ } from "./newzealand.js";
+import { SG } from "./singapore.js";
 import { FI, NL, NO } from "./nordic.js";
 
-export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK, de: DE, be: BE, au: AU };
+export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK, de: DE, be: BE, au: AU, nz: NZ, sg: SG };
 
 export class FeedIngest {
   constructor(ctx, env) {

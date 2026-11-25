@@ -83,6 +83,10 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
         .replaceAll(env.DE_DB_CLIENT_ID || "\u0000", "***")
         .replaceAll(env.BE_SNCB_KEY || "\u0000", "***")
         .replaceAll(env.AU_NSW_API_KEY || "\u0000", "***")
+        .replaceAll(env.AU_VIC_API_KEY || "\u0000", "***")
+        .replaceAll(env.NZ_METLINK_API_KEY || "\u0000", "***")
+        .replaceAll(env.NZ_AT_API_KEY || "\u0000", "***")
+        .replaceAll(env.SG_LTA_ACCOUNT_KEY || "\u0000", "***")
         .slice(0, 300);
       state.failures = (state.failures || 0) + 1;
       // Sweden's regions take turns: one failing region skips its turn
