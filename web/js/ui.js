@@ -354,7 +354,10 @@ export function trainPopup(lang, info, regionName, onIncidents, opts = {}) {
 export function trainAlerts(lang, info, onIncidents) {
   const rows = [];
   if (info.canceled) rows.push(el("div", { class: "badge badge-red" }, t(lang, "canceled")));
-  if (info.timetable_only) {
+  if (info.timetable_only && String(info.trip_id || "").startsWith("est-")) {
+    // Singapore: drawn from the line's frequency, not a timetable.
+    rows.push(el("div", { class: "notice-box" }, t(lang, "estimatedPosition")));
+  } else if (info.timetable_only) {
     rows.push(el("div", { class: "notice-box" }, t(lang, info.operator === "NI Railways" ? "timetableOnlyNi" : "timetableOnly", { op: info.operator })));
   }
   if (info.stopped) {
@@ -464,7 +467,7 @@ export function trainRows(
     if (napDate) rows.push(el("div", { class: "small muted" }, t(lang, "timetableSource", { date: formatDay(lang, napDate) })));
     if (site) rows.push(el("a", { class: "small", href: site, target: "_blank", rel: "noopener" }, t(lang, "operatorLive", { op: info.operator })));
     rows.push(el("a", { class: "small", href: "https://www.transportes.gob.es/", target: "_blank", rel: "noopener" }, "Powered by MITRAMS"));
-  } else if (info.timetable_only) {
+  } else if (info.timetable_only && !String(info.trip_id || "").startsWith("est-")) {
     // Another country with no live data yet (Luxembourg): by timetable.
     rows.push(el("div", { class: "small muted" }, t(lang, "timetableOnly")));
   }

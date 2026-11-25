@@ -423,6 +423,23 @@ jobs:
           echo "### nz: through the Worker" >> "$GITHUB_STEP_SUMMARY"
           cat build/nz-wlg-trips.txt build/nz-akl-trips.txt > build/nz-trips.txt || true
           node tools/feed-check/eu-probe.mjs nz build/nz-trips.txt build/probe-nz | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Singapore (estimated from OpenStreetMap; key SG_LTA_ACCOUNT_KEY for alerts)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          SG_LTA_ACCOUNT_KEY: ${{ secrets.SG_LTA_ACCOUNT_KEY }}
+        run: |
+          set -o pipefail
+          command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+          tools/fetch-eu.sh sg --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/sg --sg-gtfs gtfs/sg/gtfs.zip \
+            --sources gtfs/sg/sources.tsv --report refdata-sg.md
+          target/release/refdata-build verify build/sg
+          { echo "## Singapore reference data (estimated)"; echo; cat refdata-sg.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/sg/gtfs.zip routes.txt | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/sg/gtfs.zip stops.txt | wc -l | sed 's/^/stops.txt lines: /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### sg: alerts through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          : > build/sg-trips.txt
+          node tools/feed-check/eu-probe.mjs sg build/sg-trips.txt build/probe-sg | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

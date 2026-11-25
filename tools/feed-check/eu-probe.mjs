@@ -131,6 +131,15 @@ if (cc === "ch") {
     process.exit(0);
   }
   await viaWorker(NZ, NZ.feeds.map((_, i) => i), 500);
+} else if (cc === "sg") {
+  // Singapore: LTA's train service alerts, once, through the Worker's own
+  // code (JSON → GTFS-RT alerts).
+  const { SG } = await import("../../backend-eu/src/singapore.js");
+  if (!process.env.SG_LTA_ACCOUNT_KEY) {
+    console.log("sg: SG_LTA_ACCOUNT_KEY is not set");
+    process.exit(0);
+  }
+  await viaWorker(SG, [0]);
 } else if (cc === "be") {
   // Belgium: trip updates (cycle 1) and alerts (cycle 10), through the
   // Worker's own code; trip ids should be the static GTFS's.

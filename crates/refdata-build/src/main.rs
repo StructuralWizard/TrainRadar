@@ -81,7 +81,8 @@ usage:
                        Denmark: --dk-gtfs ZIP; Hungary: --hu-gtfs ZIP;
                        Germany: --de-gtfs ZIP; Belgium: --be-gtfs ZIP;
                        New South Wales: --au-nsw-gtfs ZIP; Victoria: --au-vic-gtfs ZIP;
-                       Wellington: --nz-wlg-gtfs ZIP; Auckland: --nz-akl-gtfs ZIP)
+                       Wellington: --nz-wlg-gtfs ZIP; Auckland: --nz-akl-gtfs ZIP;
+                       Singapore: --sg-gtfs ZIP, estimated by tools/sg/osm-gtfs.py)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -170,6 +171,8 @@ struct BuildArgs {
     nz_wlg_gtfs: Option<PathBuf>,
     /// Auckland Transport's GTFS cut to trains: Auckland.
     nz_akl_gtfs: Option<PathBuf>,
+    /// Singapore's MRT and LRT, an estimated timetable (tools/sg/osm-gtfs.py).
+    sg_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -215,6 +218,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         au_vic_gtfs: None,
         nz_wlg_gtfs: None,
         nz_akl_gtfs: None,
+        sg_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -270,6 +274,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--au-vic-gtfs" => a.au_vic_gtfs = Some(val()?.into()),
             "--nz-wlg-gtfs" => a.nz_wlg_gtfs = Some(val()?.into()),
             "--nz-akl-gtfs" => a.nz_akl_gtfs = Some(val()?.into()),
+            "--sg-gtfs" => a.sg_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -315,10 +320,11 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.au_vic_gtfs.is_none()
         && a.nz_wlg_gtfs.is_none()
         && a.nz_akl_gtfs.is_none()
+        && a.sg_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs, --it-gtfs, --dk-gtfs, --hu-gtfs, --de-gtfs, --be-gtfs, --au-nsw-gtfs, --au-vic-gtfs, --nz-wlg-gtfs or --nz-akl-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs, --it-gtfs, --dk-gtfs, --hu-gtfs, --de-gtfs, --be-gtfs, --au-nsw-gtfs, --au-vic-gtfs, --nz-wlg-gtfs, --nz-akl-gtfs or --sg-gtfs"
                 .into(),
         );
     }
@@ -474,6 +480,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.au_vic_gtfs, "au-vic"),
         (&a.nz_wlg_gtfs, "nz-wlg"),
         (&a.nz_akl_gtfs, "nz-akl"),
+        (&a.sg_gtfs, "sg"),
     ] {
         let Some(path) = path else { continue };
         if matches!(
@@ -497,6 +504,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 | "au-vic"
                 | "nz-wlg"
                 | "nz-akl"
+                | "sg"
         ) {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
@@ -505,7 +513,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
             // Already cut to trains (fetch-eu.sh); New South Wales and
             // Victoria keep their metro route types (Sydney Metro, Metro
             // Trains Melbourne) too.
-            if kind != "fi" && kind != "au-nsw" && kind != "au-vic" {
+            if !matches!(kind, "fi" | "au-nsw" | "au-vic" | "sg") {
                 build::keep_rail(&mut feed);
             }
             let (st, operator) = match kind {
@@ -528,10 +536,13 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 "au-vic" => (nordic::normalise_sweden(&mut feed), "PTV"),
                 "nz-wlg" => (nordic::normalise_sweden(&mut feed), "Metlink"),
                 "nz-akl" => (nordic::normalise_sweden(&mut feed), "AT"),
+                "sg" => (nordic::normalise_simple(&mut feed), "SMRT / SBS Transit"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
-            let live = !matches!(kind, "sk" | "ee" | "at" | "it" | "it-lom" | "hu");
+            // Singapore: every train estimated from frequencies (no live
+            // positions or delays; its alerts are notices only).
+            let live = !matches!(kind, "sk" | "ee" | "at" | "it" | "it-lom" | "hu" | "sg");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",
@@ -1058,6 +1069,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_NZ_WLG
         } else if a.nz_akl_gtfs.is_some() {
             nordic::ATTRIBUTION_NZ_AKL
+        } else if a.sg_gtfs.is_some() {
+            nordic::ATTRIBUTION_SG
         } else {
             ATTRIBUTION
         },

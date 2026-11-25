@@ -85,6 +85,9 @@ static NZ: [FeedSpec; 3] = [
     feed("tu_nz", FeedKind::TripUpdates, "trip_updates.pb", 30),
     feed("alerts", FeedKind::Alerts, "alerts.pb", 300),
 ];
+/// Singapore: LTA's train service alerts only (backend-eu); its trains are
+/// an estimated timetable.
+static SG: [FeedSpec; 1] = [feed("alerts", FeedKind::Alerts, "alerts.pb", 120)];
 static DE: [FeedSpec; 1] = [feed("tu_de", FeedKind::TripUpdates, "trip_updates.pb", 60)];
 /// Czechia: PID's trains (Prague and Central Bohemia) from Golemio, GPS and
 /// delays, kept to trains by backend-eu; the rest of the country by
@@ -123,6 +126,8 @@ pub struct Belgium;
 pub struct Australia;
 #[derive(Debug)]
 pub struct NewZealand;
+#[derive(Debug)]
+pub struct Singapore;
 
 macro_rules! adapter {
     ($t:ty, $id:literal, $feeds:ident) => {
@@ -149,6 +154,7 @@ adapter!(Germany, "germany", DE);
 adapter!(Belgium, "belgium", BE);
 adapter!(Australia, "australia", AU);
 adapter!(NewZealand, "new-zealand", NZ);
+adapter!(Singapore, "singapore", SG);
 
 impl SourceAdapter for Norway {
     fn id(&self) -> &'static str {

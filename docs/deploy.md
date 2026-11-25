@@ -337,6 +337,13 @@ app, and update the "last updated" dates when they change.
   alerts in the `eu` Worker, with `NZ_METLINK_API_KEY` and `NZ_AT_API_KEY`. See [world/nz-wlg.md](world/nz-wlg.md) and
   [world/nz-akl.md](world/nz-akl.md).
 
+## Singapore (estimated)
+
+- **Turning it on:** **`SG_ENABLED`** = `true` builds an estimated MRT/LRT timetable (OpenStreetMap
+  and `tools/sg/lines.tsv`; LTA publishes none) into `data/sg/`; `?country=sg`.
+  **`SG_LIVE_ENABLED`** = `true` adds LTA DataMall's train service alerts in the `eu` Worker, with
+  `SG_LTA_ACCOUNT_KEY`. See [world/sg.md](world/sg.md).
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains

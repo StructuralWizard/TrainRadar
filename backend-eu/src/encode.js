@@ -61,3 +61,29 @@ export function tripUpdatesFeed(updates, nowSecs) {
   );
   return concat([header, ...entities]);
 }
+
+/** A FeedMessage of alerts (Singapore): [{ id, start, routes: [route_id],
+ * stops: [stop_id], effect, header, description, lang }] (start in seconds
+ * since the epoch or null; effect a GTFS-RT Effect number: 1 NO_SERVICE,
+ * 2 REDUCED_SERVICE, 3 SIGNIFICANT_DELAYS, 7 OTHER_EFFECT). Alert: 1
+ * active_period (TimeRange: 1 start), 5 informed_entity (EntitySelector:
+ * 2 route_id, 5 stop_id), 7 effect, 10 header_text, 11 description_text
+ * (TranslatedString: 1 translation; Translation: 1 text, 2 language). */
+export function alertsFeed(alerts, nowSecs) {
+  const header = msg(1, [str(1, "2.0"), int(2, 0), int(3, nowSecs)]);
+  const text = (field, s, lang) => (s ? msg(field, [msg(1, [str(1, s), lang ? str(2, lang) : null])]) : null);
+  const entities = alerts.map((a) =>
+    msg(2, [
+      str(1, a.id),
+      msg(5, [
+        a.start ? msg(1, [int(1, a.start)]) : null,
+        ...(a.routes || []).map((r) => msg(5, [str(2, r)])),
+        ...(a.stops || []).map((s) => msg(5, [str(5, s)])),
+        a.effect ? int(7, a.effect) : null,
+        text(10, a.header, a.lang),
+        text(11, a.description, a.lang),
+      ]),
+    ]),
+  );
+  return concat([header, ...entities]);
+}

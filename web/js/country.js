@@ -2,7 +2,7 @@
 // (Renfe), the United Kingdom (Network Rail), Ireland (Iarnród Éireann),
 // France (SNCF), Luxembourg (CFL), Finland (VR), Norway (Entur) or the
 // Netherlands (NS and the others), Slovakia (ZSSK), Estonia (Elron),
-// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB), Australia (New South Wales, Victoria) or New Zealand (Wellington, Auckland).
+// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB), Australia (New South Wales, Victoria) New Zealand (Wellington, Auckland) or Singapore (estimated).
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
@@ -37,6 +37,9 @@ export const COUNTRY_INFO = {
   // Wellington (Metlink) and Auckland (Auckland Transport): GPS, delays
   // and alerts.
   nz: { zone: "Pacific/Auckland", center: [175.2, -39.0], zoom: 5.9, live: true },
+  // Singapore: estimated trains (LTA publishes no timetable or positions);
+  // live is LTA's disruption alerts only.
+  sg: { zone: "Asia/Singapore", center: [103.82, 1.35], zoom: 10.4, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);
