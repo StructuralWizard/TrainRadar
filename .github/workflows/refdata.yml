@@ -310,6 +310,29 @@ jobs:
             --sources gtfs/hu/sources.tsv --report refdata-hu.md
           target/release/refdata-build verify build/hu
           { echo "## Hungary reference data"; echo; cat refdata-hu.md; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Germany (DELFI GTFS; DB live probe with DE_DB_*)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          DE_DELFI_USERNAME: ${{ secrets.DE_DELFI_USERNAME }}
+          DE_DELFI_PASSWORD: ${{ secrets.DE_DELFI_PASSWORD }}
+          DE_DB_CLIENT_ID: ${{ secrets.DE_DB_CLIENT_ID }}
+          DE_DB_API_KEY: ${{ secrets.DE_DB_API_KEY }}
+        run: |
+          set -o pipefail
+          # Which of DB's APIs the keys open (Timetables, OpenBoards).
+          echo "### de: DB APIs" >> "$GITHUB_STEP_SUMMARY"
+          node tools/de/db-probe.mjs samples/de | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          tools/fetch-eu.sh de --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/de --de-gtfs gtfs/de/gtfs.zip \
+            --sources gtfs/de/sources.tsv --report refdata-de.md
+          target/release/refdata-build verify build/de
+          { echo "## Germany reference data"; echo; cat refdata-de.md; } >> "$GITHUB_STEP_SUMMARY"
+          # Live: OpenBoards through the Worker's own code, on the busiest
+          # stations, and how many of its trains' numbers the timetable has.
+          python3 -I tools/de/boards.py gtfs/de/gtfs.zip build/de-boards.txt | tee -a "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/de/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print('#' + r['trip_short_name'].lstrip('0')) for r in csv.DictReader(sys.stdin) if r['trip_short_name'].strip('0')]" > build/de-numbers.txt
+          echo "### de: live probe" >> "$GITHUB_STEP_SUMMARY"
+          DE_BOARDS_FILE=build/de-boards.txt node tools/feed-check/eu-probe.mjs de build/de-numbers.txt build/probe-de | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

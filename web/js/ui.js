@@ -109,6 +109,7 @@ const PLACED_SOURCES = {
   // Czechia: PID's trains from Golemio (GPS), the rest by CIS JŘ's timetable.
   ČD: { by: "PID", delay: "srcCzDelay", timetable: "srcCzTimetable", link: null },
   DSB: { by: "Rejseplanen", delay: "srcDkDelay", timetable: "srcDkTimetable", link: null },
+  DB: { by: "DB", delay: "srcDeDelay", timetable: "srcDeTimetable", link: null },
 };
 const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];
 
@@ -185,6 +186,8 @@ const TICKET_SITES = {
   "Trenitalia/ITA": ["Italo", "https://www.italotreno.com/"],
   // MÁV sells GYSEV's tickets too.
   MÁV: ["MÁV", "https://jegy.mav.hu/"],
+  // bahn.de sells nearly every German operator's tickets.
+  DB: ["bahn.de", "https://www.bahn.de/"],
   DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],

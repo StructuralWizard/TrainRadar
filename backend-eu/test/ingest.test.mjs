@@ -140,7 +140,7 @@ test("France: SNCF's feeds, no key, everything kept; alternating every 30 s", as
 
 test("the Worker re-arms only the countries switched on", async () => {
   const { default: worker, COUNTRIES } = await import("../src/index.js");
-  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl", "se", "cz", "dk"]);
+  assert.deepEqual(Object.keys(COUNTRIES), ["ie", "fr", "fi", "no", "nl", "ch", "pl", "se", "cz", "dk", "de"]);
   const asked = [];
   const env = {
     FR_ENABLED: "true",

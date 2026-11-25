@@ -92,6 +92,30 @@ works and lift faults, with a free key. The quotas are tight. Wave 2.
 
 Europe/Berlin · German · UIC 80.
 
+**Built 2026-11-25 (hidden, by timetable for now):** DELFI's national GTFS, which downloads without
+a login (`/fileadmin/datasets/delfi/YYYYMMDD_fahrplaene_gesamtdeutschland_gtfs.zip`, Mondays, 590
+MB; `tools/delfi-fetch.py` finds it, and logs in with `DE_DELFI_*` only if that stops working), cut
+to trains (route types 2 and 100-117: about 180,000 trips, 10,000 stations). Train numbers are the
+trips' short names ("008230" → 8230); stations are station-level DHIDs. Routes of type 101 and 102
+(ICE, IC, EC, EN, NJ, RJ…, with line numbers as short names) make region `de`; the rest go by the
+Land of their first German stop (`de-bw`, `de-by`, `de-bb` Berlin and Brandenburg, `de-ni` with
+Bremen, `de-sh` with Hamburg, `de-rp` with Saarland, `de-nw`, `de-he`, `de-mv`, `de-sn`, `de-st`,
+`de-th`). DELFI also holds trains that never enter Germany (Swiss, Czech, Austrian local trains):
+left out. About 69,000 trips a week, 8,000 stations.
+
+**Live (2026-11-25):** DB's **OpenBoards** with `DE_DB_CLIENT_ID` and `DE_DB_API_KEY` (the keys
+open OpenBoards; the Timetables API answers 401 to them). `backend-eu/src/germany.js` asks for the
+departure boards of the 2,000 busiest stations (`data/de/boards.txt`, from the timetable by
+`tools/de/boards.py`), 3 stations a call (by DHID, DELFI's ids), six calls every 6 s: a call a
+second against the plan's ten, each station about every 11 minutes (a train passes many, so its
+delay is fresher). Each departure (scheduled and best-known time, `REAL`/`PREVIEW`/`SCHEDULE`,
+cancellation, platform) is merged into its journey (OpenBoards' journey id); journeys become trip
+updates keyed by train number ("#8230"), with a delay only where the time is a forecast or actual.
+What the probes found: at most 50 departures per transport type a call, for all its stations
+together (more is HTTP 400); `entryCount` "not yet supported"; one station's board honours the
+window (now to now + 30 min, in UTC or local time alike), several stations' boards spread wider.
+In CI, five cycles gave 860 trains, 97 % of them in DELFI's timetable by number.
+
 **Verdict:** feasible, and big. Open timetables and excellent open network data. For live data, the
 free **DB OpenBoards** covers every main-line train, including platforms, if its terms allow our
 use. DELFI's open feeds are share-alike and partial. Wave 3.

@@ -39,6 +39,32 @@ pub const DK: &str = "dk";
 /// then the rest (MÁV's GTFS, which needs a login).
 pub const HU: &str = "hu";
 pub const HU_REGIONAL: &str = "hu-r";
+/// Germany: DELFI's national GTFS, cut to trains. Long-distance trains in
+/// one region; the rest by the Land of their first stop (its DHID's first
+/// two digits: "de:05315:11201" is North Rhine-Westphalia), Bremen with
+/// Lower Saxony and Hamburg with Schleswig-Holstein, as their networks are
+/// one; live delays from DB's OpenBoards.
+pub const DE: &str = "de";
+const GERMAN_LANDS: [(&str, &str, &str); 16] = [
+    ("01", "de-sh", "Germany (Schleswig-Holstein, Hamburg)"),
+    ("02", "de-sh", "Germany (Schleswig-Holstein, Hamburg)"),
+    ("03", "de-ni", "Germany (Lower Saxony, Bremen)"),
+    ("04", "de-ni", "Germany (Lower Saxony, Bremen)"),
+    ("05", "de-nw", "Germany (North Rhine-Westphalia)"),
+    ("06", "de-he", "Germany (Hesse)"),
+    ("07", "de-rp", "Germany (Rhineland-Palatinate, Saarland)"),
+    ("10", "de-rp", "Germany (Rhineland-Palatinate, Saarland)"),
+    ("08", "de-bw", "Germany (Baden-Württemberg)"),
+    ("09", "de-by", "Germany (Bavaria)"),
+    ("11", "de-bb", "Germany (Berlin, Brandenburg)"),
+    ("12", "de-bb", "Germany (Berlin, Brandenburg)"),
+    ("13", "de-mv", "Germany (Mecklenburg-Vorpommern)"),
+    ("14", "de-sn", "Germany (Saxony)"),
+    ("15", "de-st", "Germany (Saxony-Anhalt)"),
+    ("16", "de-th", "Germany (Thuringia)"),
+];
+/// A German stop whose DHID names no Land (none seen in DELFI).
+pub const DE_OTHER: &str = "de-x";
 
 pub const ATTRIBUTION_FI: &str = "Data: Fintraffic / digitraffic.fi, CC BY 4.0. \
 Track: © OpenStreetMap contributors, ODbL 1.0.";
@@ -63,6 +89,8 @@ cciss.it); Trenord, Regione Lombardia open data (dati.lombardia.it), CC BY 4.0. 
 OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_HU: &str = "Data: MÁV Csoport GTFS (mavcsoport.hu), MÁV-START and GYSEV \
 timetables. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_DE: &str = "Data: DELFI e.V. (www.delfi.de), via opendata-oepnv.de, CC BY 4.0; \
+live: DB InfraGO AG, OpenBoards. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
 (Vejdirektoratet). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
@@ -109,6 +137,9 @@ pub fn region_name(code: &str) -> &'static str {
         DK => "Denmark",
         HU => "Hungary (long distance)",
         HU_REGIONAL => "Hungary (regional)",
+        DE => "Germany (long distance)",
+        DE_OTHER => "Germany (regional, cross-border)",
+        c if c.starts_with("de-") => GERMAN_LANDS.iter().find(|l| l.1 == c).map_or("", |l| l.2),
         _ => "",
     }
 }
@@ -481,6 +512,95 @@ pub fn split_hungary(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
     out
 }
 
+/// Germany (DELFI): routes of GTFS type 101 (high speed) and 102 (long
+/// distance) carry a line number ("21") or a brand ("RJ", "THA", "NJ"):
+/// the product is the brand, else "ICE" or "IC"; other routes keep their
+/// line ("RE1", "S3"). The train number is the trip's short name without
+/// its leading zeros ("008230" → 8230).
+pub fn normalise_germany(feed: &mut Feed) -> Stats {
+    for r in &mut feed.routes {
+        r.short_name = german_product(&r.route_type, r.short_name.trim(), r.long_name.trim());
+    }
+    for t in &mut feed.trips {
+        t.short_name = german_number(&t.short_name);
+    }
+    normalise_simple(feed)
+}
+
+pub fn german_product(route_type: &str, short: &str, long: &str) -> String {
+    let short = if short.is_empty() {
+        long.split_whitespace().next().unwrap_or("")
+    } else {
+        short
+    };
+    let brand = !short.is_empty() && short.chars().all(|c| c.is_ascii_alphabetic());
+    match route_type.trim() {
+        "101" if !brand => "ICE".into(),
+        "102" | "105" if !brand => "IC".into(),
+        _ => short.to_owned(),
+    }
+}
+
+/// The train number in a trip's short name: its last all-digit word,
+/// without leading zeros.
+pub fn german_number(short: &str) -> String {
+    let n = short
+        .split_whitespace()
+        .rev()
+        .find(|w| w.chars().all(|c| c.is_ascii_digit()))
+        .unwrap_or("")
+        .trim_start_matches('0');
+    n.to_owned()
+}
+
+/// Long-distance products: ICE, Intercity, EuroCity, the night trains,
+/// FlixTrain, railjet, TGV, Eurostar and the like.
+const GERMAN_LONG: [&str; 16] = [
+    "ICE", "IC", "EC", "ECE", "EN", "NJ", "FLX", "RJ", "RJX", "TGV", "EST", "ES", "D", "IR", "ICN",
+    "WB",
+];
+
+pub fn german_long(product: &str) -> bool {
+    let first: String = product
+        .chars()
+        .take_while(|c| c.is_ascii_alphabetic())
+        .collect();
+    GERMAN_LONG.contains(&first.to_ascii_uppercase().as_str())
+}
+
+/// The region of a German regional train from its first stop's DHID.
+pub fn german_land(stop_id: &str) -> &'static str {
+    let land = stop_id.strip_prefix("de:").and_then(|r| r.get(..2));
+    land.and_then(|l| GERMAN_LANDS.iter().find(|x| x.0 == l))
+        .map_or(DE_OTHER, |x| x.1)
+}
+
+pub fn split_germany(feed: &Feed) -> BTreeMap<String, Vec<&crate::load::Trip>> {
+    let mut out: BTreeMap<String, Vec<&crate::load::Trip>> = BTreeMap::new();
+    for t in &feed.trips {
+        // DELFI also has trains that never enter Germany (Swiss, Czech and
+        // Austrian local trains near the border): left out. The others go
+        // by their first German stop.
+        let Some(first_de) = t
+            .stop_times
+            .iter()
+            .map(|s| feed.stops[s.0].id.as_str())
+            .find(|id| id.starts_with("de:"))
+        else {
+            continue;
+        };
+        let r = &feed.routes[t.route];
+        let code =
+            if matches!(r.route_type.trim(), "101" | "102" | "105") || german_long(&r.short_name) {
+                DE
+            } else {
+                german_land(first_de)
+            };
+        out.entry(code.to_owned()).or_default().push(t);
+    }
+    out
+}
+
 /// Sweden (GTFS Sweden 3, cut to trains): the product from the route's
 /// short name, else its long name ("SJ Snabbtåg", "Pågatåg"); the train
 /// number only when it is one.
@@ -496,6 +616,26 @@ pub fn normalise_sweden(feed: &mut Feed) -> Stats {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn german_routes() {
+        assert_eq!(german_number("ICE 123"), "123");
+        assert_eq!(german_number("4711"), "4711");
+        assert_eq!(german_number("008230"), "8230");
+        assert_eq!(german_product("101", "21", ""), "ICE");
+        assert_eq!(german_product("101", "RJ", ""), "RJ");
+        assert_eq!(german_product("102", "20N", ""), "IC");
+        assert_eq!(german_product("109", "S2", ""), "S2");
+        assert_eq!(german_number("RE1"), "");
+        assert!(
+            german_long("ICE") && german_long("IC") && german_long("FLX10") && german_long("ec")
+        );
+        assert!(!german_long("RE1") && !german_long("S3") && !german_long("RB"));
+        assert_eq!(german_land("de:05315:11201"), "de-nw");
+        assert_eq!(german_land("de:02000:10950"), "de-sh");
+        assert_eq!(german_land("at:49:1234"), DE_OTHER);
+        assert_eq!(region_name("de-by"), "Germany (Bavaria)");
+    }
 
     #[test]
     fn hungarian_routes() {

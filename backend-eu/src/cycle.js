@@ -79,12 +79,14 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
       cycle.error = String(e?.message || e)
         .replaceAll(env.SE_TRAFIKLAB_RT_KEY || "\u0000", "***")
         .replaceAll(env.DK_NAP_CLIENT_SECRET || "\u0000", "***")
+        .replaceAll(env.DE_DB_API_KEY || "\u0000", "***")
+        .replaceAll(env.DE_DB_CLIENT_ID || "\u0000", "***")
         .slice(0, 300);
       state.failures = (state.failures || 0) + 1;
       // Sweden's regions take turns: one failing region skips its turn
       // instead of stopping the others.
       if (!country.rotate) state.nextAt = now + backoffMs(state.failures);
-      // A refused login (Denmark) won't fix itself: wait the longest.
+      // A refused login (Denmark, Germany) won't fix itself: wait the longest.
       if (e?.fatal) state.nextAt = now + BACKOFF_MAX_MS;
       state.failingSince ||= at;
       state.lastError = cycle.error;
