@@ -17,6 +17,8 @@ Wales.
   part (`backend-eu/src/australia.js`) takes Victoria's feeds on every other call (New South
   Wales' on the others, one call every 5 s), into the same `au/rt/` files; its switch is
   **`AU_VIC_LIVE_ENABLED`** (with `AU_NSW_LIVE_ENABLED` on). Refdata runs them through the
-  Worker's code (`eu-probe.mjs au-vic`).
+  Worker's code (`eu-probe.mjs au-vic`). With the new key (36 characters) every feed answered and matched the
+  timetable (Metro 46 trip updates and 22 GPS, V/Line 16 and 3: 100 %) except V/Line's alerts
+  (HTTP 403 for this subscription), left out.
 - **Deploy:** one Australia build (`data/au/`) holds both states; `AU_VIC_ENABLED` adds Victoria,
   and the OSM track (Geofabrik's Australia) is fetched once for both.

@@ -137,6 +137,23 @@ def codes(tags):
     return out
 
 
+BRANCHES = {"CE", "CG"}
+
+
+def by_name(low, n_stops):
+    """The line a relation's name gives without doubt: the LRT loops, Bukit
+    Panjang's LRT, the Changi Airport branch."""
+    if "lrt" in low or "light rail" in low:
+        for place, east, west in (("sengkang", "SE", "SW"), ("punggol", "PE", "PW")):
+            if place in low:
+                return east if "east" in low else west if "west" in low else None
+        if "bukit panjang" in low:
+            return "BP"
+    if "changi airport" in low and n_stops <= 4:
+        return "CG"
+    return None
+
+
 def slug(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
 
@@ -178,14 +195,25 @@ def main(argv):
             if role.startswith("platform"):
                 t = nodes[ref][2] if kind == "n" and ref in nodes else ways[ref][1] if kind == "w" and ref in ways else {}
                 plat_codes += codes(t)
+        print(f"osm: relation {rid} route={tags.get('route')} ref={tags.get('ref', '')!r} name={tags.get('name', '')!r}: "
+              f"{len(stop_nodes)} stops, codes {sorted({c for n in stop_nodes for _, c in codes(n[2])})[:6]}")
         if len(stop_nodes) < 2:
             skipped["fewer than 2 stops"] += 1
             continue
         if not all(BBOX[0] <= n[0] <= BBOX[2] and BBOX[1] <= n[1] <= BBOX[3] for n in stop_nodes):
             skipped["outside Singapore"] += 1
             continue
+        name = tags.get("name", "")
+        low = name.lower()
+        if "jurong region" in low:
+            skipped["Jurong Region Line (not open yet)"] += 1
+            continue
+        line = by_name(low, len(stop_nodes))
         prefixes = Counter(p for n in stop_nodes for p, _ in codes(n[2])) + Counter(p for p, _ in plat_codes)
-        line = next((p for p, _ in prefixes.most_common() if p in lines), None)
+        if not line:
+            # A branch (CE, CG) only when most of the stops are on it.
+            line = next((p for p, n in prefixes.most_common() if p in lines
+                         and (p not in BRANCHES or n > len(stop_nodes) / 2)), None)
         if not line:
             # The relation's own ref ("NSL", "NS") or name.
             r = tags.get("ref", "").upper()

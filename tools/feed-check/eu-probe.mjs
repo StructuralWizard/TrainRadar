@@ -132,7 +132,7 @@ if (cc === "ch") {
     process.exit(0);
   }
   process.env.AU_VIC_LIVE = "true";
-  await viaWorker(AU, [1, 3, 7, 11, 15, 31], 500);
+  await viaWorker(AU, [1, 3, 7, 11, 15], 500);
 } else if (cc === "nz") {
   // New Zealand: one turn of every feed (both regions) through the
   // Worker's own code, kept to trains.
@@ -150,6 +150,8 @@ if (cc === "ch") {
     console.log("sg: SG_LTA_ACCOUNT_KEY is not set");
     process.exit(0);
   }
+  const k = process.env.SG_LTA_ACCOUNT_KEY;
+  console.log(`sg: key ${k.length} characters${k.trim() === k ? "" : ", with spaces or a newline around it"}`);
   await viaWorker(SG, [0]);
 } else if (cc === "be") {
   // Belgium: trip updates (cycle 1) and alerts (cycle 10), through the

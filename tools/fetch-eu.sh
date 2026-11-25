@@ -384,7 +384,7 @@ except Exception as e:
     printf '%s\t%s\t\t%s\n' "OpenStreetMap (Geofabrik), MRT and LRT routes" \
       https://download.geofabrik.de/asia/malaysia-singapore-brunei-latest.osm.pbf "$(date -u '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
     osmium extract --overwrite -b 103.55,1.13,104.15,1.50 --strategy=smart -o "$dir/sg.osm.pbf" "$pbf"
-    osmium tags-filter --overwrite -o "$dir/routes.osm.pbf" "$dir/sg.osm.pbf" r/route=subway,light_rail
+    osmium tags-filter --overwrite -o "$dir/routes.osm.pbf" "$dir/sg.osm.pbf" r/route=subway,light_rail,monorail,train
     osmium cat --overwrite -f opl -o "$dir/routes.opl" "$dir/routes.osm.pbf"
     rm -f "$pbf" "$dir/sg.osm.pbf" "$dir/routes.osm.pbf"
     python3 -I tools/sg/osm-gtfs.py "$dir/routes.opl" tools/sg/lines.tsv "$dir/gtfs.zip" 70

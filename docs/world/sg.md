@@ -17,6 +17,10 @@ from the lines' usual frequencies and every one says so.
 - **Live:** LTA DataMall's Train Service Alerts (`ltaodataservice/TrainServiceAlerts`, the key
   `SG_LTA_ACCOUNT_KEY` in the `AccountKey` header, once a minute), turned into GTFS-Realtime
   alerts on the lines' route ids by `backend-eu/src/singapore.js` → `sg/rt/alerts.pb`.
+- **First build (Nov 2026):** 7 lines, 146 stations, 7,800 estimated trips a day-pair. Lines are
+  told apart by the relation's name first (the LRT loops, Bukit Panjang, the Changi Airport
+  branch), then by the station codes (a branch only with most of the stops); the Jurong Region
+  Line (not open yet) is left out. LTA's alerts answered HTTP 401 with the first key.
 - **Not yet:** live platform crowd density (DataMall's `PCDRealTime`) on station cards.
 - **Deploy:** `SG_ENABLED` = `true` builds `data/sg/`; `SG_LIVE_ENABLED` = `true` (with
   `SG_LTA_ACCOUNT_KEY`) adds the alerts in the `eu` Worker.

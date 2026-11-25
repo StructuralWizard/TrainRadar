@@ -39,7 +39,8 @@ const VP_VL = part("vp_vic_vline.pb", "vline/vehicle-positions", "vehicle_positi
 const TU_MTM = part("tu_vic_metro.pb", "metro/trip-updates", "trip_updates.pb", "vic");
 const TU_VL = part("tu_vic_vline.pb", "vline/trip-updates", "trip_updates.pb", "vic");
 const AL_MTM = part("al_vic_metro.pb", "metro/service-alerts", "alerts.pb", "vic");
-const AL_VL = part("al_vic_vline.pb", "vline/service-alerts", "alerts.pb", "vic");
+// V/Line's alerts answered HTTP 403 with the key (Nov 2026, Refdata): left
+// out; Metro's alerts cover the shared network's notices.
 
 /** New South Wales: one turn of 16 calls, in order. */
 const TURN = [
@@ -53,7 +54,7 @@ const NSW_CALLS = [...TURN, ...TURN2];
 /** Victoria: 16 calls, twice. */
 const VTURN = [
   VP_MTM, TU_MTM, VP_MTM, VP_VL, VP_MTM, TU_VL, VP_MTM, AL_MTM,
-  VP_MTM, TU_MTM, VP_MTM, VP_VL, VP_MTM, TU_VL, VP_MTM, AL_VL,
+  VP_MTM, TU_MTM, VP_MTM, VP_VL, VP_MTM, TU_VL, VP_MTM, VP_VL,
 ];
 const VIC_CALLS = [...VTURN, ...VTURN];
 
@@ -72,7 +73,7 @@ export const AU = {
   parts: {
     "vehicle_positions.pb": [VP_SYD.name, VP_NSW.name, VP_METRO.name, VP_MTM.name, VP_VL.name],
     "trip_updates.pb": [TU_SYD.name, TU_NSW.name, TU_METRO.name, TU_MTM.name, TU_VL.name],
-    "alerts.pb": [AL_SYD.name, AL_NSW.name, AL_METRO.name, AL_MTM.name, AL_VL.name],
+    "alerts.pb": [AL_SYD.name, AL_NSW.name, AL_METRO.name, AL_MTM.name],
   },
   source:
     "Transport for NSW (Sydney Trains, NSW TrainLink, Sydney Metro) and Transport Victoria (Metro Trains, V/Line), GTFS-Realtime, CC BY 4.0",
