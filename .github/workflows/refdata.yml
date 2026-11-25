@@ -376,6 +376,7 @@ jobs:
         continue-on-error: true # outside services: a report, not a gate
         env:
           AU_VIC_API_KEY: ${{ secrets.AU_VIC_API_KEY }}
+          AU_NSW_API_KEY: ${{ secrets.AU_NSW_API_KEY }}
         run: |
           set -o pipefail
           tools/fetch-eu.sh au-vic --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
@@ -387,6 +388,8 @@ jobs:
           unzip -p gtfs/au-vic/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
           echo "### vic: live endpoints" >> "$GITHUB_STEP_SUMMARY"
           node tools/au/vic-probe.mjs build/au-vic-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### vic: through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs au-vic build/au-vic-trips.txt build/probe-au-vic | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Wellington (Metlink; key NZ_METLINK_API_KEY for live)
         continue-on-error: true # outside services: a report, not a gate
         env:

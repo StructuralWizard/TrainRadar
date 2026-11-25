@@ -327,7 +327,8 @@ app, and update the "last updated" dates when they change.
 - **Turning it on:** **`AU_NSW_ENABLED`** = `true` (the timetable) and **`AU_NSW_LIVE_ENABLED`** =
   `true` (GPS, delays and alerts in the `eu` Worker), with `AU_NSW_API_KEY`; `?country=au`.
 - **Victoria:** **`AU_VIC_ENABLED`** = `true` adds it to the same Australia build
-  ([world/au-vic.md](world/au-vic.md)); live data to follow. See [world/au-nsw.md](world/au-nsw.md).
+  ([world/au-vic.md](world/au-vic.md)); **`AU_VIC_LIVE_ENABLED`** = `true` adds its live data to the
+  Australia Worker part (with `AU_VIC_API_KEY`, and New South Wales' live data on). See [world/au-nsw.md](world/au-nsw.md).
 
 ## New Zealand (Wellington, Auckland)
 
