@@ -195,6 +195,8 @@ const TICKET_SITES = {
   PTV: ["PTV", "https://www.ptv.vic.gov.au/"],
   // Snapper and Motu fares: Metlink's journey planner.
   Metlink: ["Metlink", "https://www.metlink.org.nz/"],
+  // AT HOP fares: Auckland Transport's journey planner.
+  AT: ["Auckland Transport", "https://at.govt.nz/"],
   DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],

@@ -329,11 +329,13 @@ app, and update the "last updated" dates when they change.
 - **Victoria:** **`AU_VIC_ENABLED`** = `true` adds it to the same Australia build
   ([world/au-vic.md](world/au-vic.md)); live data to follow. See [world/au-nsw.md](world/au-nsw.md).
 
-## New Zealand (Wellington)
+## New Zealand (Wellington, Auckland)
 
-- **Turning it on:** **`NZ_WLG_ENABLED`** = `true` builds Metlink's timetable (no key) into
-  `data/nz/`; `?country=nz`, by timetable until the live part (key `NZ_METLINK_API_KEY`) is in.
-  See [world/nz-wlg.md](world/nz-wlg.md).
+- **Turning it on:** **`NZ_WLG_ENABLED`** = `true` (Metlink, Wellington) and/or
+  **`NZ_AKL_ENABLED`** = `true` (Auckland Transport) build their timetables (no key) into one
+  `data/nz/`; `?country=nz`, by timetable until the live parts (keys `NZ_METLINK_API_KEY`,
+  `NZ_AT_API_KEY`) are in. See [world/nz-wlg.md](world/nz-wlg.md) and
+  [world/nz-akl.md](world/nz-akl.md).
 
 ## Slovakia and Estonia (M4)
 

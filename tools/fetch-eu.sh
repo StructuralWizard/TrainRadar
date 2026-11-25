@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -51,6 +51,9 @@
 #                         Metro Trains (tools/au/vic-fetch.py), merged
 #                     nz-wlg  Metlink's GTFS (Wellington), cut to trains; no
 #                         key for the timetable
+#                     nz-akl  Auckland Transport's GTFS, cut to trains; no key
+#                         for the timetable
+#                     nz-osm  only New Zealand's OSM track (for both regions)
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -353,7 +356,23 @@ except Exception as e:
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
     rm -f "$dir/all.zip"
     region=australia-oceania/new-zealand ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg [--no-osm]" >&2; exit 2 ;;
+  nz-akl)
+    url=https://gtfs.at.govt.nz/gtfs.zip
+    headers=$(mktemp)
+    curl -fsSL --retry 4 --retry-delay 15 -D "$headers" -A "$client (+https://mytrainradar.com)" \
+      -o "$dir/all.zip" "$url" || { echo "Auckland Transport GTFS: download failed" >&2; rm -f "$headers"; exit 1; }
+    printf '%s\t%s\t%s\t%s\n' "Auckland Transport GTFS" "$url" \
+      "$(grep -i '^etag:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r"' || true)" \
+      "$(grep -i '^last-modified:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r' || true)" >>"$dir/sources.tsv"
+    rm -f "$headers"
+    echo "all.zip: $(du -h "$dir/all.zip" | cut -f1)"
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
+    rm -f "$dir/all.zip"
+    region=australia-oceania/new-zealand ;;
+  nz-osm)
+    # Only the OSM track for New Zealand (shared by its regions' builds).
+    region=australia-oceania/new-zealand ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

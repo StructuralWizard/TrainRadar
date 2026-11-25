@@ -45,7 +45,7 @@ jobs:
           FR_ENABLED: ${{ vars.FR_ENABLED }}
           LU_ENABLED: ${{ vars.LU_ENABLED }}
           M2_ENABLED: ${{ vars.FI_ENABLED == 'true' || vars.NO_ENABLED == 'true' || vars.NL_ENABLED == 'true' }}
-          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' || vars.BE_ENABLED == 'true' || vars.AU_NSW_ENABLED == 'true' || vars.AU_VIC_ENABLED == 'true' || vars.NZ_WLG_ENABLED == 'true' }}
+          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' || vars.BE_ENABLED == 'true' || vars.AU_NSW_ENABLED == 'true' || vars.AU_VIC_ENABLED == 'true' || vars.NZ_WLG_ENABLED == 'true' || vars.NZ_AKL_ENABLED == 'true' }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -817,27 +817,37 @@ jobs:
           fi
 
       # New Zealand → data/nz/ (the app's country "nz"): Wellington with
-      # NZ_WLG_ENABLED (Metlink's GTFS, no key), and OSM track from
+      # NZ_WLG_ENABLED (Metlink) and Auckland with NZ_AKL_ENABLED (Auckland
+      # Transport), one build, timetables need no key; OSM track from
       # Geofabrik's New Zealand. By timetable for now.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: vars.NZ_WLG_ENABLED == 'true'
+        if: vars.NZ_WLG_ENABLED == 'true' || vars.NZ_AKL_ENABLED == 'true'
         id: osm_nz
         with:
-          path: gtfs/nz-wlg/rail.geojsonseq
+          path: gtfs/nz-osm/rail.geojsonseq
           key: osm-rail-nz-v1-${{ steps.week.outputs.week }}
           restore-keys: osm-rail-nz-v1-
       - name: New Zealand reference data
-        if: vars.NZ_WLG_ENABLED == 'true'
+        if: vars.NZ_WLG_ENABLED == 'true' || vars.NZ_AKL_ENABLED == 'true'
         continue-on-error: true
         env:
           OSM_CACHED: ${{ steps.osm_nz.outputs.cache-hit }}
+          WLG: ${{ vars.NZ_WLG_ENABLED }}
+          AKL: ${{ vars.NZ_AKL_ENABLED }}
         run: |
           set -o pipefail
-          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
-          tools/fetch-eu.sh nz-wlg | tee -a "$GITHUB_STEP_SUMMARY"
-          args=(--nz-wlg-gtfs gtfs/nz-wlg/gtfs.zip)
-          if cargo run --release -q -p trainradar-refdata-build -- build --out build/nz-data --gzip "${args[@]}" --sources gtfs/nz-wlg/sources.tsv \
-              $([ -s gtfs/nz-wlg/rail.geojsonseq ] && echo --rail gtfs/nz-wlg/rail.geojsonseq) --report refdata-nz.md \
+          args=()
+          if [ "$WLG" = "true" ]; then tools/fetch-eu.sh nz-wlg --no-osm | tee -a "$GITHUB_STEP_SUMMARY" && args+=(--nz-wlg-gtfs gtfs/nz-wlg/gtfs.zip); fi
+          if [ "$AKL" = "true" ]; then tools/fetch-eu.sh nz-akl --no-osm | tee -a "$GITHUB_STEP_SUMMARY" && args+=(--nz-akl-gtfs gtfs/nz-akl/gtfs.zip); fi
+          [ ${#args[@]} -gt 0 ] || { echo "::warning::New Zealand: no region's timetable downloaded: deploying without New Zealand."; exit 1; }
+          cat gtfs/nz-wlg/sources.tsv gtfs/nz-akl/sources.tsv 2>/dev/null > gtfs/nz-sources.tsv || true
+          # The track: New Zealand's OSM extract once, for both regions.
+          if [ ! -s gtfs/nz-osm/rail.geojsonseq ]; then
+            [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+            tools/fetch-eu.sh nz-osm | tee -a "$GITHUB_STEP_SUMMARY" || true
+          fi
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/nz-data --gzip "${args[@]}" --sources gtfs/nz-sources.tsv \
+              $([ -s gtfs/nz-osm/rail.geojsonseq ] && echo --rail gtfs/nz-osm/rail.geojsonseq) --report refdata-nz.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/nz-data; then
             mv build/nz-data build/data/nz
             if cargo run --release -q -p trainradar-refdata-build -- build --out build/nz-plan --gzip --days 63 \

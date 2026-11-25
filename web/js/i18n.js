@@ -573,7 +573,7 @@ export const STRINGS = {
     countryDe: "Alemania",
     countryBe: "Bélgica",
     countryAu: "Australia (Nueva Gales del Sur, Victoria)",
-    countryNz: "Nueva Zelanda (Wellington)",
+    countryNz: "Nueva Zelanda (Wellington, Auckland)",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
@@ -588,7 +588,7 @@ export const STRINGS = {
     allDe: "Toda Alemania",
     allBe: "Toda Bélgica",
     allAu: "Nueva Gales del Sur y Victoria",
-    allNz: "Toda la región de Wellington",
+    allNz: "Wellington y Auckland",
     noticesTitle: "Avisos",
     noticesNotYet: "Aún no hay avisos para {country}: llegarán con los datos en directo.",
     timetableOnly: "Según horario: aún no hay datos en directo de este país",
@@ -632,7 +632,7 @@ export const STRINGS = {
     attributionAu:
       'Datos: Transport for NSW (<a href="https://opendata.transport.nsw.gov.au/" target="_blank" rel="noopener">opendata.transport.nsw.gov.au</a>) y Transport Victoria (<a href="https://opendata.transport.vic.gov.au/" target="_blank" rel="noopener">opendata.transport.vic.gov.au</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Transport for NSW ni Transport Victoria',
     attributionNz:
-      'Datos: Metlink, Greater Wellington Regional Council (<a href="https://opendata.metlink.org.nz/" target="_blank" rel="noopener">opendata.metlink.org.nz</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Metlink ni Greater Wellington',
+      'Datos: Metlink, Greater Wellington Regional Council (<a href="https://opendata.metlink.org.nz/" target="_blank" rel="noopener">opendata.metlink.org.nz</a>) y Auckland Transport (<a href="https://at.govt.nz/about-us/at-data-sources/" target="_blank" rel="noopener">at.govt.nz</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Metlink, Greater Wellington ni Auckland Transport',
     attributionBe:
       'Datos: horarios y retrasos de SNCB/NMBS, vía la pasarela de datos abiertos de Belgian Mobility Company (<a href="https://data.belgianmobility.io/" target="_blank" rel="noopener">data.belgianmobility.io</a>) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SNCB',
     attributionDe:
@@ -1224,7 +1224,7 @@ export const STRINGS = {
     countryDe: "Germany",
     countryBe: "Belgium",
     countryAu: "Australia (New South Wales, Victoria)",
-    countryNz: "New Zealand (Wellington)",
+    countryNz: "New Zealand (Wellington, Auckland)",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
@@ -1239,7 +1239,7 @@ export const STRINGS = {
     allDe: "All of Germany",
     allBe: "All of Belgium",
     allAu: "New South Wales and Victoria",
-    allNz: "All of the Wellington region",
+    allNz: "Wellington and Auckland",
     noticesTitle: "Notices",
     noticesNotYet: "No notices for {country} yet: they'll come with the live data.",
     timetableOnly: "By timetable: no live data for this country yet",
@@ -1283,7 +1283,7 @@ export const STRINGS = {
     attributionAu:
       'Data: Transport for NSW (<a href="https://opendata.transport.nsw.gov.au/" target="_blank" rel="noopener">opendata.transport.nsw.gov.au</a>) and Transport Victoria (<a href="https://opendata.transport.vic.gov.au/" target="_blank" rel="noopener">opendata.transport.vic.gov.au</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Transport for NSW or Transport Victoria',
     attributionNz:
-      'Data: Metlink, Greater Wellington Regional Council (<a href="https://opendata.metlink.org.nz/" target="_blank" rel="noopener">opendata.metlink.org.nz</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Metlink or Greater Wellington',
+      'Data: Metlink, Greater Wellington Regional Council (<a href="https://opendata.metlink.org.nz/" target="_blank" rel="noopener">opendata.metlink.org.nz</a>) and Auckland Transport (<a href="https://at.govt.nz/about-us/at-data-sources/" target="_blank" rel="noopener">at.govt.nz</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Metlink, Greater Wellington or Auckland Transport',
     attributionBe:
       'Data: timetables and delays from SNCB/NMBS, via the Belgian Mobility Company\'s open data gateway (<a href="https://data.belgianmobility.io/" target="_blank" rel="noopener">data.belgianmobility.io</a>) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SNCB',
     attributionDe:
