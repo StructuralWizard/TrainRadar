@@ -92,8 +92,8 @@ getkey() { # name url-without-key out key — the key in the URL only for curl,
   # through its config on stdin (not the command line, not sources.tsv).
   local headers
   headers=$(mktemp)
-  printf 'url = "%s?key=%s"\n' "$2" "$4" | curl -fsSL --retry 4 --retry-delay 15 --compressed -D "$headers" \
-    -A "$client (+https://mytrainradar.com)" -o "$3.part" -K -
+  printf 'url = "%s?key=%s"\n' "$2" "$4" | curl -fsSL --retry "${retries:-4}" --retry-delay 15 --compressed -D "$headers" \
+    -A "$client (+https://mytrainradar.com)" -o "$3.part" -K - || { rm -f "$3.part" "$headers"; return 1; }
   mv "$3.part" "$3"
   local modified
   modified=$(grep -i '^last-modified:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r' || true)
@@ -146,10 +146,22 @@ case "$cc" in
     region=switzerland ;;
   se)
     [ -n "${SE_TRAFIKLAB_STATIC_KEY:-}" ] || { echo "SE_TRAFIKLAB_STATIC_KEY is not set" >&2; exit 2; }
-    getkey "Samtrafiken (Trafiklab, GTFS Sweden 3)" https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip \
-      "$dir/all.zip" "$SE_TRAFIKLAB_STATIC_KEY"
-    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
-    rm -f "$dir/all.zip"
+    # The key allows 50 downloads a month: the workflows keep sweden.zip in
+    # their cache, one download a day at most (SE_GTFS_REUSE=1: a copy from
+    # the cache is used as it is). No retries: a refusal (HTTP 429, the
+    # month's quota) won't pass in 15 s, and each try counts.
+    if [ "${SE_GTFS_REUSE:-}" = 1 ] && [ -s "$dir/sweden.zip" ]; then
+      echo "sweden.zip: from the cache, $(du -h "$dir/sweden.zip" | cut -f1)"
+      printf '%s\t%s\t\t%s\n' "Samtrafiken (Trafiklab, GTFS Sweden 3)" https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip \
+        "$(date -u -r "$dir/sweden.zip" '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
+    elif ! retries=0 getkey "Samtrafiken (Trafiklab, GTFS Sweden 3)" https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip \
+      "$dir/sweden.zip" "$SE_TRAFIKLAB_STATIC_KEY"; then
+      [ -s "$dir/sweden.zip" ] || { echo "GTFS Sweden 3: download failed and no earlier copy" >&2; exit 1; }
+      echo "::warning::GTFS Sweden 3: download failed; using the earlier copy from the cache"
+      printf '%s\t%s\t\t%s\n' "Samtrafiken (Trafiklab, GTFS Sweden 3)" https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip \
+        "$(date -u -r "$dir/sweden.zip" '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
+    fi
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/sweden.zip" --parents
     region=sweden ;;
   pl)
     [ -n "${PL_PLK_API_KEY:-}" ] || { echo "PL_PLK_API_KEY is not set" >&2; exit 2; }

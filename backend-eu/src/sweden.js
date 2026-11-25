@@ -8,8 +8,18 @@
 // Trafiklab takes its key only as `?key=` in the URL: an exception approved
 // by the maintainer (AGENTS.md). The URL is never logged or stored; errors
 // name the region.
+//
+// The regions' feeds have few trains (SJ, Mälartåg, Västtågen… aren't in
+// them), so every train's delay also comes from Trafikverket's open API
+// (TrainAnnouncement: each train's advertised and actual time at each
+// station), keyed by train number ("#1059", as the engine looks trains up
+// when a feed's trip ids aren't the timetable's). (Its traffic messages,
+// TrainMessage, no longer exist in the API: "ObjectType 'TrainMessage' does
+// not exists", Nov 2026.) Trafikverket takes its key only in the query's
+// body (SE_TRAFIKVERKET_KEY, AGENTS.md); errors never include it.
 
 import { entityTrip } from "./gtfsrt.js";
+import { tripUpdatesFeed } from "./encode.js";
 
 const CLIENT = "Metranos-TrainRadar";
 
@@ -52,25 +62,150 @@ export async function railTrips(env, fetchFn = fetch, now = Date.now()) {
 }
 export const resetRailTrips = () => (trips = { set: null, at: 0 });
 
-const feeds = SE_REGIONS.map((op) => ({ name: `tu_${op}.pb`, path: `${op}/TripUpdatesSweden.pb`, part: "trip_updates.pb" }));
+const regionFeeds = SE_REGIONS.map((op) => ({ name: `tu_${op}.pb`, path: `${op}/TripUpdatesSweden.pb`, part: "trip_updates.pb" }));
+
+const TV_URL = "https://api.trafikinfo.trafikverket.se/v2/data.json";
+const xmlAttr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+/** One Trafikverket query: the key in the body only. */
+async function tvQuery(env, fetchFn, query, what) {
+  const body = `<REQUEST><LOGIN authenticationkey="${xmlAttr(env.SE_TRAFIKVERKET_KEY)}"/>${query}</REQUEST>`;
+  const r = await fetchFn(TV_URL, {
+    method: "POST",
+    headers: { "content-type": "text/xml", accept: "application/json", "user-agent": CLIENT },
+    body,
+  });
+  if (!r.ok) {
+    // Its error says what in the query it refused (never the key).
+    const why = await r.json().then((j) => j?.RESPONSE?.RESULT?.[0]?.ERROR?.MESSAGE, () => null);
+    throw new Error(`Trafikverket ${what}: HTTP ${r.status}${why ? ` (${String(why).slice(0, 160)})` : ""}`);
+  }
+  const j = await r.json();
+  const res = j?.RESPONSE?.RESULT?.[0] || {};
+  if (res.ERROR) throw new Error(`Trafikverket ${what}: ${String(res.ERROR.MESSAGE || "error").slice(0, 120)}`);
+  return res;
+}
+
+/** Calls that have happened (or are expected, or cancelled), advertised from
+ * three hours ago to an hour ahead; `changeid` gives the changes since the
+ * last answer. */
+export const announcementQuery = (changeId) =>
+  `<QUERY objecttype="TrainAnnouncement" schemaversion="1.9" changeid="${xmlAttr(changeId)}">` +
+  "<FILTER><AND>" +
+  '<EQ name="Advertised" value="true"/>' +
+  '<GT name="AdvertisedTimeAtLocation" value="$dateadd(-03:00:00)"/>' +
+  '<LT name="AdvertisedTimeAtLocation" value="$dateadd(01:00:00)"/>' +
+  '<OR><EXISTS name="TimeAtLocation" value="true"/><EXISTS name="EstimatedTimeAtLocation" value="true"/><EQ name="Canceled" value="true"/></OR>' +
+  "</AND></FILTER>" +
+  ["AdvertisedTrainIdent", "ScheduledDepartureDateTime", "LocationSignature", "ActivityType", "AdvertisedTimeAtLocation", "TimeAtLocation", "EstimatedTimeAtLocation", "Canceled", "Deleted"]
+    .map((f) => `<INCLUDE>${f}</INCLUDE>`)
+    .join("") +
+  "</QUERY>";
+
+/** Calls by `ident|date|station|activity` → { n, day, sig, t, a, e, c } (ms). */
+let tv = null;
+export const resetTrafikverket = () => (tv = null);
+/** Every call again every 30 minutes (the changes only in between); calls
+ * advertised more than three hours ago are dropped. */
+const TV_FULL_MS = 30 * 60_000;
+const TV_KEEP_MS = 3 * 3_600_000;
+
+/** Merge TrainAnnouncements into `calls`. */
+export function mergeAnnouncements(calls, list) {
+  for (const x of list || []) {
+    if (!x?.AdvertisedTrainIdent || !x.AdvertisedTimeAtLocation) continue;
+    const day = String(x.ScheduledDepartureDateTime || x.AdvertisedTimeAtLocation).slice(0, 10).replaceAll("-", "");
+    const k = `${x.AdvertisedTrainIdent}|${day}|${x.LocationSignature}|${x.ActivityType}`;
+    if (x.Deleted) {
+      delete calls[k];
+      continue;
+    }
+    const ms = (v) => (v ? Date.parse(v) : null);
+    calls[k] = {
+      n: String(x.AdvertisedTrainIdent),
+      day,
+      sig: String(x.LocationSignature || ""),
+      dep: x.ActivityType === "Avgang",
+      t: ms(x.AdvertisedTimeAtLocation),
+      a: ms(x.TimeAtLocation),
+      e: ms(x.EstimatedTimeAtLocation),
+      c: !!x.Canceled,
+    };
+  }
+  return calls;
+}
+
+/** Calls → trip updates keyed by train number: the delay at the last call
+ * that happened (else the next expected one); a train every one of whose
+ * calls is cancelled, cancelled. */
+export function announcementUpdates(calls) {
+  const trains = new Map();
+  for (const c of Object.values(calls)) {
+    const k = `${c.n}|${c.day}`;
+    if (!trains.has(k)) trains.set(k, []);
+    trains.get(k).push(c);
+  }
+  const out = [];
+  for (const [k, list] of trains) {
+    const [n, day] = k.split("|");
+    list.sort((x, y) => x.t - y.t);
+    const done = list.filter((c) => c.a != null);
+    const last = done[done.length - 1];
+    const next = last ? null : list.find((c) => c.e != null);
+    const at = last || next;
+    const canceled = list.length >= 2 && list.every((c) => c.c);
+    if (!at && !canceled) continue;
+    const delay = at ? Math.round(((last ? at.a : at.e) - at.t) / 1000) : null;
+    out.push({
+      id: `tv-${n}-${day}`,
+      tripId: `#${n}`,
+      startDate: day,
+      label: n,
+      canceled,
+      stops: at ? [{ stopId: at.sig, arrivalDelay: at.dep ? null : delay, departureDelay: at.dep ? delay : null }] : [],
+    });
+  }
+  return out;
+}
+
+async function trafikverketCycle({ env, fetchFn, now }) {
+  if (!tv || now - tv.fullAt >= TV_FULL_MS) tv = { changeId: "0", fullAt: now, calls: {} };
+  const res = await tvQuery(env, fetchFn, announcementQuery(tv.changeId), "TrainAnnouncement");
+  if (tv.changeId === "0") tv.calls = {};
+  mergeAnnouncements(tv.calls, res.TrainAnnouncement);
+  const last = res.INFO?.LASTCHANGEID;
+  if (last) tv.changeId = String(last);
+  for (const [k, c] of Object.entries(tv.calls)) if (c.t < now - TV_KEEP_MS) delete tv.calls[k];
+  return { bytes: tripUpdatesFeed(announcementUpdates(tv.calls), Math.floor(now / 1000)) };
+}
+
+const TV = { name: "tu_trafikverket.pb", path: "TrainAnnouncement", part: "trip_updates.pb", trafikverket: true, produce: trafikverketCycle };
+
+/** One turn: the regions in order, Trafikverket's delays after every other
+ * region (about every 24 s). */
+const feeds = SE_REGIONS.flatMap((op, i) => (i % 2 === 1 ? [regionFeeds[i], TV] : [regionFeeds[i]]));
 
 export const SE = {
   code: "se",
   prefix: "se/rt/",
   base: "https://opendata.samtrafiken.se/gtfs-rt-sweden/",
-  // A region every 8 s: each one about every 2 minutes, ~11,000 calls a
-  // day (Silver allows 2 million a month).
+  // A call every 8 s: each region about every 3 minutes (~7,700 calls a
+  // day; Silver allows 2 million a month), Trafikverket every 24 s.
   cycleMs: 8_000,
   rotate: true,
   feeds,
-  parts: { "trip_updates.pb": feeds.map((f) => f.name) },
-  source: "Samtrafiken / Trafiklab.se, GTFS Sweden 3 Realtime, CC0 1.0",
+  parts: { "trip_updates.pb": [...regionFeeds.map((f) => f.name), TV.name] },
+  source: "Samtrafiken / Trafiklab.se, GTFS Sweden 3 Realtime, and Trafikverket, open API, CC0 1.0",
   // The Worker's SE_ENABLED is set from the GitHub variable SE_LIVE_ENABLED.
   enabled: (env) => env.SE_ENABLED === "true" && !!env.SE_TRAFIKLAB_RT_KEY,
   missing: (env) => (env.SE_TRAFIKLAB_RT_KEY ? null : "no API key (SE_TRAFIKLAB_RT_KEY)"),
+  // Trafikverket's turns, without its key, go to the first region.
+  ready: (env, feed) => !feed.trafikverket || !!env.SE_TRAFIKVERKET_KEY,
   url: (env, feed) => `${SE.base}${feed.path}?key=${encodeURIComponent(env.SE_TRAFIKLAB_RT_KEY)}`,
   headers: () => ({ "user-agent": CLIENT, accept: "application/x-protobuf", "accept-encoding": "gzip" }),
-  keep: async (_name, _bytes, { env, fetchFn, now }) => {
+  keep: async (name, _bytes, { env, fetchFn, now }) => {
+    // Trafikverket's: every train (keyed by number).
+    if (name === TV.name) return null;
     const set = await railTrips(env, fetchFn, now);
     return (entity) => set.has(entityTrip(entity).tripId);
   },

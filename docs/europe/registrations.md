@@ -228,7 +228,7 @@ Done (keys in GitHub on 2026-11-22). For the record:
 | `CH_OTD_GTFSRT_KEY`, `CH_OTD_GTFSSA_KEY`, `CH_OTD_GTFSSA_PLANNED_KEY` | secrets | M3 | done |
 | `SE_TRAFIKLAB_STATIC_KEY` | secret | M3 | done |
 | `SE_TRAFIKLAB_RT_KEY` | secret | M3 | done |
-| `SE_TRAFIKVERKET_KEY` | secret | M3 | done (not used yet) |
+| `SE_TRAFIKVERKET_KEY` | secret | M3 | done (live delays of every train) |
 | `AT_MVO_USERNAME`, `AT_MVO_PASSWORD` | secrets | M4 | done |
 | `HU_MAV_GTFS_KEY` (name to confirm) | secret | M4 | needed |
 | `DE_DELFI_USERNAME`, `DE_DELFI_PASSWORD` | secrets | M5 | needed; start now |

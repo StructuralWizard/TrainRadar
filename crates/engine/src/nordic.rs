@@ -44,11 +44,15 @@ static CH: [FeedSpec; 2] = [
     feed("tu_ch", FeedKind::TripUpdates, "trip_updates.pb", 30),
     feed("alerts", FeedKind::Alerts, "alerts.pb", 120),
 ];
-/// Poland (M5): PKP PLK's live running, as trip updates (backend-eu).
-/// Sweden (M3): Trafiklab's regional feeds, kept to our trains and merged
-/// by backend-eu.
-static SE: [FeedSpec; 1] = [feed("tu_se", FeedKind::TripUpdates, "trip_updates.pb", 60)];
-static PL: [FeedSpec; 1] = [feed("tu_pl", FeedKind::TripUpdates, "trip_updates.pb", 60)];
+/// Poland (M5): PKP PLK's live running, as trip updates, and its disruptions,
+/// as alerts (backend-eu).
+/// Sweden (M3): Trafiklab's regional feeds, kept to our trains, and
+/// Trafikverket's delays by train number, merged by backend-eu.
+static SE: [FeedSpec; 1] = [feed("tu_se", FeedKind::TripUpdates, "trip_updates.pb", 30)];
+static PL: [FeedSpec; 2] = [
+    feed("tu_pl", FeedKind::TripUpdates, "trip_updates.pb", 60),
+    feed("alerts", FeedKind::Alerts, "alerts.pb", 300),
+];
 /// Denmark: Rejseplanen's SIRI-ET as trip updates keyed by train number
 /// (backend-eu); placed by timetable plus delay.
 static DK: [FeedSpec; 1] = [feed("tu_dk", FeedKind::TripUpdates, "trip_updates.pb", 30)];

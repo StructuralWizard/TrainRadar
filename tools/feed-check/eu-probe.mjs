@@ -74,7 +74,11 @@ async function viaWorker(country, minutes, pauseMs = 0) {
     if (!k.endsWith(".pb")) continue;
     const name = k.split("/").pop();
     writeFileSync(`${out}/${name}`, v);
-    if (name.startsWith("trip_updates")) report(name, v);
+    if (name.startsWith("trip_updates") || name === "tu_trafikverket.pb") report(name, v);
+    if (name === "tu_trafikverket.pb") {
+      const n = tripIds(v).filter((id) => id.startsWith("#"));
+      console.log(`${cc} Trafikverket: ${n.length} trains with a delay, e.g. ${n.slice(0, 8).join(" ")}`);
+    }
     else console.log(`${cc} ${name}: ${v.length} bytes, ${fields(v).filter((f) => f.field === 2).length} entities`);
   }
 }
@@ -95,7 +99,8 @@ if (cc === "ch") {
     console.log(`ch ${path}: ${codes.join(", ")}`);
   }
 } else if (cc === "pl") {
-  await viaWorker(PL, [0]);
+  // The changes (cycle 1) and the disruptions (cycle 15).
+  await viaWorker(PL, [1, 15]);
 } else if (cc === "se") {
   // Through the Worker's own code: each region in turn, kept to our trains
   // (the list the deploy publishes, here the one just built).
@@ -104,7 +109,11 @@ if (cc === "ch") {
     console.log("se: SE_TRAFIKLAB_RT_KEY is not set");
     process.exit(0);
   }
-  await viaWorker(SE, SE.feeds.map((_, i) => i));
+  // Each feed once: every region and Trafikverket's delays
+  // (the trips file also lists the timetable's train numbers, "#1059").
+  const names = [...new Set(SE.feeds.map((f) => f.name))];
+  console.log(`se: Trafikverket key ${process.env.SE_TRAFIKVERKET_KEY ? "set" : "not set"}`);
+  await viaWorker(SE, names.map((n) => SE.feeds.findIndex((f) => f.name === n)));
 } else if (cc === "dk") {
   // Denmark: every topic once, through the Worker's own code (login, HTTPS
   // receive, SIRI-ET parse, journey state); messages are acknowledged.

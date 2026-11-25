@@ -9,11 +9,12 @@
 //
 // Poland: PKP PLK's open railway data API publishes live running as JSON
 // (/api/v1/operations); the Worker turns it into GTFS-Realtime trip updates
-// whose trip and stop ids are the timetable's (tools/plk-gtfs.py). Key in
-// the X-API-Key header.
+// whose trip and stop ids are the timetable's (tools/plk-gtfs.py), and its
+// disruptions (/api/v1/disruptions) into GTFS-Realtime alerts on the
+// stations they name. Key in the X-API-Key header.
 
 import { alertTargets, entityTrip } from "./gtfsrt.js";
-import { tripUpdatesFeed } from "./encode.js";
+import { alertsFeed, tripUpdatesFeed } from "./encode.js";
 
 const CLIENT = "Metranos-TrainRadar";
 
@@ -168,14 +169,48 @@ async function polishCycle(ctx) {
   return { bytes: tripUpdatesFeed(Object.values(plState.updates), Math.floor(now / 1000)), pages: got.pages };
 }
 
+/** PLK /disruptions JSON → alerts: the type and the stretch as the header,
+ * PLK's message as the text, on the stretch's end stations (or, without a
+ * stretch, the stations of the trains it names). Polish, as PLK writes it. */
+export function polishAlerts(json) {
+  const types = json?.disruptionTypes || {};
+  const names = json?.stations || {};
+  const out = [];
+  for (const d of json?.disruptions || []) {
+    if (d?.disruptionId == null) continue;
+    const ends = [d.startStationId, d.endStationId].filter((x) => x != null);
+    const stops = [...new Set((ends.length ? ends : (d.affectedRoutes || []).map((r) => r.stationId)).filter((x) => x != null).map(String))].slice(0, 20);
+    const place = ends.map((id) => names[id]).filter(Boolean);
+    const kind = types[d.disruptionTypeCode] || "Utrudnienie";
+    const message = String(d.message || "").trim();
+    out.push({
+      id: `pl-${d.disruptionId}`,
+      stops,
+      header: (place.length ? `${kind}: ${[...new Set(place)].join(" – ")}` : kind).slice(0, 160),
+      description: message || kind,
+      lang: "pl",
+    });
+  }
+  return out;
+}
+
 export const PL = {
   code: "pl",
   prefix: "pl/rt/",
   base: "https://pdp-api.plk-sa.pl/api/v1/",
-  // Every 2 minutes: one call (the changes), and every page every 6 hours:
-  // about 740 calls a day, within the Basic package (1,000).
+  // Every 2 minutes: one call (the changes), and every page every 6 hours;
+  // the disruptions every 30 minutes in the changes' turn: about 790 calls
+  // a day, within the Basic package (1,000).
   cycleMs: 120_000,
-  feeds: [{ name: "trip_updates.pb", path: "operations", every: 1, produce: polishCycle }],
+  feeds: [
+    { name: "trip_updates.pb", path: "operations", every: 1, produce: polishCycle },
+    {
+      name: "alerts.pb",
+      path: "disruptions",
+      every: 15,
+      convert: (bytes, now) => alertsFeed(polishAlerts(JSON.parse(new TextDecoder().decode(bytes))), Math.floor(now / 1000)),
+    },
+  ],
   source: "PKP Polskie Linie Kolejowe S.A., Otwarte Dane Kolejowe (pdp-api.plk-sa.pl), as GTFS-Realtime",
   enabled: (env) => env.PL_ENABLED === "true" && !!env.PL_PLK_API_KEY,
   missing: (env) => (env.PL_PLK_API_KEY ? null : "no API key (PL_PLK_API_KEY)"),
