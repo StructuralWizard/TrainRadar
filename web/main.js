@@ -3,7 +3,7 @@
 // works out delays, positions and spacing.
 import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
-import { COUNTRY_KEY, applyCountry, areaKey, areaName, areasOf, pickCountry, viewKey } from "./js/country.js";
+import { COUNTRY_INFO, COUNTRY_KEY, applyCountry, areaKey, areaName, areasOf, pickCountry, viewKey } from "./js/country.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
@@ -19,8 +19,10 @@ import {
   ARROW_ZOOM,
   FLAG,
   SERVICE_COLORS,
+  OVERVIEW_ZOOM,
   addCountries,
   addLayers,
+  addOverview,
   createMap,
   emptyGeoJson,
   maplibregl,
@@ -33,9 +35,9 @@ import { formatClock, setTimeZone } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from "./js/replay.js";
 import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
-import { FREE_LIMIT, STORAGE_KEY, favKey, isFavourite, moveFavourite, neighbourFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
+import { FREE_LIMIT, STORAGE_KEY, favKey, favouritesInOrder, isFavourite, moveFavourite, neighbourFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
 import { decodeView, encodeView } from "./js/lastview.js";
-import { appNative, canShare, copyText, exportBlob, exportFile, haptic as nativeHaptic, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
+import { appNative, canShare, copyText, exportBlob, exportFile, haptic as nativeHaptic, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, shortcutLink, styleStatusBar } from "./js/native.js";
 import { backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./js/backup.js";
 import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
 import { decide, parseCache } from "./js/entitlement.js";
@@ -227,6 +229,55 @@ function restoreDetail(d) {
   return !!st;
 }
 const attribution = () => t(lang, COUNTRY_TEXT[country].credit);
+
+/** Each country's live status (status.json next to its feeds), for the
+ * overview: { at, data: { code: { ok, live } } }, read at most once a minute. */
+let overview = { at: 0, data: {} };
+const statusUrl = (code) => {
+  const base = NATIVE_BASES.liveBase || "/rt/";
+  return `${code === "es" ? base : base.replace(/rt\/?$/, `${code}/rt/`)}status.json`;
+};
+/** How many trains a status.json says have live data (the largest feed's
+ * entities kept), or null when it doesn't say. */
+function liveCount(st) {
+  const n = Object.entries(st?.feeds || {})
+    .filter(([name]) => /trip_updates|vehicle_positions/.test(name))
+    .map(([, f]) => f.kept ?? f.entities)
+    .filter(Number.isFinite);
+  return n.length ? Math.max(...n) : null;
+}
+async function refreshOverview() {
+  const src = map?.getSource("overview");
+  if (!src) return;
+  if (Date.now() - overview.at > 60_000) {
+    overview.at = Date.now();
+    await Promise.all(
+      COUNTRY_LIST.map(async (c) => {
+        if (!COUNTRY_INFO[c]?.live) return void (overview.data[c] = { ok: true, live: null, timetable: true });
+        try {
+          const r = await fetch(statusUrl(c), { cache: "no-cache", signal: AbortSignal.timeout(8000) });
+          const st = r.ok ? await r.json() : null;
+          overview.data[c] = { ok: !!st && st.ok !== false, live: liveCount(st) };
+        } catch {
+          overview.data[c] = { ok: false, live: null };
+        }
+      }),
+    );
+  }
+  const here = engine ? JSON.parse(engine.statsJson(Date.now()) || "null") : null;
+  const features = COUNTRY_LIST.map((c) => {
+    const d = overview.data[c] || {};
+    const n = c === country && here?.trains ? here.trains : d.live;
+    const line = d.timetable ? t(lang, "overviewTimetable") : n ? t(lang, "overviewLive", { n: formatCount(lang, n) }) : d.ok ? "" : t(lang, "overviewNoLive");
+    return { type: "Feature", properties: { code: c, label: line ? `${countryName(c)}\n${line}` : countryName(c) }, geometry: { type: "Point", coordinates: COUNTRY_INFO[c].center } };
+  });
+  src.setData({ type: "FeatureCollection", features });
+}
+
+/** Zoom out to every country (the website's overview). */
+function showOverview() {
+  map.flyTo({ center: [60, 25], zoom: 1.4 });
+}
 
 let countryPop = null;
 /** "Ir a Francia" where another country was tapped. */
@@ -651,6 +702,7 @@ function fillJump() {
         "optgroup",
         { label: t(lang, "country") },
         countryChoices().map((c) => el("option", { value: `country:${c}` }, countryName(c))),
+        CONFIG.platform === "web" ? el("option", { value: "overview" }, t(lang, "allCountries")) : null,
       );
   if (!ES) {
     const areas = countryAreas();
@@ -1461,6 +1513,8 @@ async function refreshEntitlement() {
     render(true);
     if (!next.pro && alertsOn) setAlerts(false);
     appNative.refreshWidget().catch(() => {});
+    syncShortcuts();
+    renderFavourites();
   }
   $("pro-chip").hidden = !next.pro;
   renderSettings();
@@ -1890,6 +1944,57 @@ function saveFavourites(list) {
     .then(() => appNative.refreshWidget())
     .catch((e) => console.warn("favourites", e));
   renderFavourites();
+  syncShortcuts();
+}
+
+/** A short message at the bottom of the screen, gone after a few seconds. */
+function toast(text) {
+  document.querySelector(".toast")?.remove();
+  const box = el("div", { class: "toast", role: "status" }, text);
+  document.body.append(box);
+  setTimeout(() => box.remove(), 3500);
+}
+
+/** "Add to the home screen" for a favourite station, train or commute
+ * (Android): with Pro, asks the launcher for an icon that opens it; without,
+ * the Pro offer. Null on the web. */
+function shortcutButton({ kind, id, label }) {
+  if (CONFIG.platform !== "android" || !appNative.available()) return null;
+  const text = t(lang, "shortcutAdd");
+  if (!CONFIG.pro) {
+    return el("button", { class: "pill small shortcut-btn", type: "button", title: text, "aria-label": `${text} (Pro)`, onclick: () => (openSheet("settings"), renderSettings()) }, icon("home", 14), el("span", { class: "pro-tag" }, "Pro"));
+  }
+  return el(
+    "button",
+    {
+      class: "pill small shortcut-btn",
+      type: "button",
+      title: text,
+      "aria-label": `${text}: ${label}`,
+      "data-kind": kind,
+      onclick: async () => {
+        const ok = await appNative.pinShortcut({ id: `${kind}-${country}-${id}`, label: label.slice(0, 24), url: shortcutLink(kind, country, id), kind }).catch(() => false);
+        if (!ok) toast(t(lang, "shortcutNo"));
+      },
+    },
+    icon("home", 14),
+  );
+}
+
+/** The app icon's long-press menu (Pro): this country's first favourites in
+ * Favoritos' order (stations, the first commute, trains), four at most. */
+function syncShortcuts() {
+  if (CONFIG.platform !== "android" || !appNative.available()) return;
+  if (!CONFIG.pro) return void appNative.setShortcuts([]).catch(() => {});
+  const ordered = favouritesInOrder(favs);
+  const items = [
+    ...ordered.filter((f) => f.type === "station").map((f) => ({ kind: "station", id: f.id, label: f.name })),
+    ...(commutes.list.length ? [{ kind: "commute", id: "0", label: `${commutes.list[0].from.name} → ${commutes.list[0].to.name}` }] : []),
+    ...ordered.filter((f) => f.type === "train").map((f) => ({ kind: "train", id: f.number, label: f.label || f.number })),
+  ]
+    .slice(0, 4)
+    .map((x) => ({ id: `${x.kind}-${country}-${x.id}`, label: x.label.slice(0, 24), url: shortcutLink(x.kind, country, x.id), kind: x.kind }));
+  appNative.setShortcuts(items).catch(() => {});
 }
 
 /** The live train for a favourite (by number), as popup info, or null. */
@@ -1950,7 +2055,7 @@ function stepFavourite(dir) {
 function favPager() {
   const cur = currentFavourite();
   if (!cur || favs.length < 2) return null;
-  const ordered = [...favs.filter((f) => f.type === "train"), ...favs.filter((f) => f.type === "station")];
+  const ordered = favouritesInOrder(favs);
   const i = ordered.findIndex((x) => favKey(x) === favKey(cur));
   return el(
     "div",
@@ -1964,6 +2069,23 @@ function favPager() {
 function renderFavourites() {
   if ($("favs").hidden) return;
   if ($("favs-add").dataset.lang !== lang) renderFavAdd();
+  // Usual commutes (Android), between the stations and the trains.
+  const middle =
+    CONFIG.platform !== "android"
+      ? []
+      : favCommutes(lang, {
+          list: commutes.list,
+          active: commutes.active,
+          pro: CONFIG.pro,
+          onOpen: (i) => {
+            saveCommutes(selectCommute(commutes, i));
+            openSheet("commute");
+            renderCommute();
+          },
+          onAdd: () => (openSheet("commute"), renderCommute()),
+          onPro: () => (openSheet("settings"), renderSettings()),
+          shortcut: (c, i) => shortcutButton({ kind: "commute", id: String(i), label: `${c.from.name} → ${c.to.name}` }),
+        });
   $("favs-body").replaceChildren(
     ...favouritesPanel(lang, favs, {
       trainInfo: (f) => liveTrain(f.number),
@@ -1978,29 +2100,35 @@ function renderFavourites() {
       onRemove: (f) => saveFavourites(toggleFavourite(favs, f).list),
       onMove: (f, to) => saveFavourites(moveFavourite(favs, f, to)),
       limit: favLimit(),
+      middle,
+      shortcut: (f) =>
+        f.type === "station" ? shortcutButton({ kind: "station", id: f.id, label: f.name }) : shortcutButton({ kind: "train", id: f.number, label: f.label || f.number }),
     }),
   );
-  // Usual commutes (Android): first with Pro, else the offer at the end.
-  if (CONFIG.platform !== "android") return;
-  const c = favCommutes(lang, {
-    list: commutes.list,
-    active: commutes.active,
-    pro: CONFIG.pro,
-    onOpen: (i) => {
-      saveCommutes(selectCommute(commutes, i));
-      openSheet("commute");
-      renderCommute();
-    },
-    onAdd: () => (openSheet("commute"), renderCommute()),
-    onPro: () => (openSheet("settings"), renderSettings()),
-  });
-  if (CONFIG.pro) $("favs-body").prepend(...c, el("h3", { class: "group-h" }, t(lang, "favItems")));
-  else $("favs-body").append(...c);
 }
 
-/** Open what a link asks for (app link or the web's ?train= / ?station=). */
+/** Open what a link asks for (app link or the web's ?train= / ?station=);
+ * one for another country (a home-screen shortcut) reloads in that country
+ * with the same request. */
 function openLink(link) {
-  if (!link || !engine) return;
+  if (!link) return;
+  if (link.country && link.country !== country && COUNTRY_LIST.includes(link.country)) {
+    store.set(COUNTRY_KEY, link.country);
+    const u = new URL(location.href);
+    for (const k of ["train", "station", "commute"]) u.searchParams.delete(k);
+    u.searchParams.set("country", link.country);
+    if (link.type === "train") u.searchParams.set("train", link.number);
+    else if (link.type === "station") u.searchParams.set("station", link.id);
+    else u.searchParams.set("commute", String(link.index));
+    return location.replace(u.toString());
+  }
+  if (!engine) return;
+  if (link.type === "commute") {
+    if (!CONFIG.pro || !commutes.list[link.index]) return;
+    saveCommutes(selectCommute(commutes, link.index));
+    openSheet("commute");
+    return renderCommute();
+  }
   if (link.type === "train") {
     const info = liveTrain(link.number);
     if (info) return selectTrain(info, { fly: true });
@@ -2583,7 +2711,13 @@ function renderNetworks(keepInput = false) {
     query: netQuery,
     near,
     spain: { trains, onPick: () => pick("es"), label: ES ? null : t(lang, COUNTRY_TEXT[country].all) },
-    countries: !MULTI_COUNTRY ? null : countryChoices().map((c) => ({ code: c, name: countryName(c), current: c === country, onPick: () => switchCountry(c) })),
+    countries: !MULTI_COUNTRY
+      ? null
+      : [
+          ...countryChoices().map((c) => ({ code: c, name: countryName(c), current: c === country, onPick: () => switchCountry(c) })),
+          // The website: every country at once (zoomed out).
+          ...(CONFIG.platform === "web" ? [{ code: "overview", name: t(lang, "allCountries"), current: false, onPick: () => (($("networks").hidden = true), showOverview()) }] : []),
+        ],
     // The area drop-down: the country's areas (Spain: núcleos, then its
     // communities and provinces).
     areas: countryAreas(),
@@ -3350,7 +3484,11 @@ async function main() {
   applyLang();
   sheets.apply(); // phone: the home sheet peeks from the start
   // Where the app was left, else the country's default view.
-  ({ map, attr } = createMap("map", lastView ? { ...CONFIG, center: lastView.center, zoom: lastView.zoom } : CONFIG, attribution()));
+  ({ map, attr } = createMap(
+    "map",
+    { ...CONFIG, ...(lastView ? { center: lastView.center, zoom: lastView.zoom } : {}), minZoom: MULTI_COUNTRY && CONFIG.platform === "web" ? 1 : 4 },
+    attribution(),
+  ));
   map.on("moveend", saveView);
   document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveView());
   window.addEventListener("pagehide", saveView);
@@ -3413,6 +3551,13 @@ async function main() {
   setMapLanguage(map, lang);
   addLayers(map);
   if (MULTI_COUNTRY) addCountries(map, country);
+  // The website's overview of every country, zoomed out (too heavy for the
+  // app: it isn't offered there).
+  if (MULTI_COUNTRY && CONFIG.platform === "web") {
+    addOverview(map);
+    map.on("moveend", () => map.getZoom() < OVERVIEW_ZOOM && refreshOverview());
+    if (map.getZoom() < OVERVIEW_ZOOM) refreshOverview();
+  }
   if (window.innerWidth < 720) map.once("idle", foldCredits);
   if (store.get("basemap") === "satellite") {
     setBasemap(map, "satellite");
@@ -3444,6 +3589,12 @@ async function main() {
       if (hit) showReplayTrain(hit.properties.i);
       else replayPop?.remove();
       return;
+    }
+    // The overview (zoomed out on the website): a click goes to the country.
+    if (map.getLayer("countries-all") && map.getZoom() < OVERVIEW_ZOOM) {
+      const c = map.queryRenderedFeatures(e.point, { layers: ["countries-all"] })[0]?.properties.code;
+      if (c && c !== country && COUNTRY_LIST.includes(c)) return switchCountry(c);
+      if (c === country) return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
     }
     const hits = map.queryRenderedFeatures(
       [
@@ -3522,9 +3673,15 @@ async function main() {
       // Back to a country whose map wasn't saved: its last area, if any.
       if (!lastView && savedArea && (ref?.region(savedArea) || placeByCode(savedArea))) goToNetwork(savedArea);
       if (lastView?.detail && restoreDetail(lastView.detail)) return;
-      if (CONFIG.pro && activeCommute(commutes) && (isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden))) {
+      const nothingOpen = isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden);
+      if (CONFIG.pro && activeCommute(commutes) && nothingOpen) {
         openSheet("commute");
         renderCommute();
+      } else if (CONFIG.platform === "android" && nothingOpen && (favs.length || (CONFIG.pro && commutes.list.length))) {
+        // Daily trips first: with favourites, the app opens on them (the map
+        // is one tap away). The website keeps opening on the map.
+        openSheet("favs");
+        renderFavourites();
       }
     });
   onAppLink((url) => whenTrains().then(() => openLink(parseLink(url))));
@@ -3558,6 +3715,7 @@ prefs
   .get(COMMUTE_KEY)
   .then((v) => {
     commutes = parseCommutes(v);
+    syncShortcuts();
   })
   .catch(() => {});
 prefs
@@ -3638,6 +3796,7 @@ $("jump").addEventListener("change", (e) => {
   const v = e.target.value;
   e.target.value = "";
   if (v.startsWith("country:")) return switchCountry(v.slice(8));
+  if (v === "overview") return showOverview();
   if (v) goToNetwork(v);
 });
 function applyLayerVisibility() {

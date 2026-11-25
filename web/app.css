@@ -768,3 +768,10 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .when-pick input { border-color: #374151; color-scheme: dark; }
   .trainday-stops li { border-color: #1f2937; }
 }
+
+/* A short message ("couldn't add the icon"), above the tab bar. */
+.toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px);
+  padding: 10px 16px; border-radius: 12px; background: #111827; color: #fff; font-size: 14px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.shortcut-btn { display: inline-flex; align-items: center; gap: 4px; }

@@ -305,6 +305,28 @@ outlined (`web/countries.geojson`: Natural Earth, public domain, cut and simplif
 `tools/outlines/build.py`, 27 KB gzipped); tapping one shows "Ir a Francia", and that button
 switches. A stray tap near a border doesn't reload anything.
 
+**Daily trips first.** With favourites saved (or, with Pro, a usual commute), the app opens on
+Favoritos instead of the map (unless it reopens a train or station left open, or the active
+commute's next trains, Pro); the map is one tap away. The website keeps opening on the map.
+Favoritos lists the stations first, then the usual commutes, then the trains (storage order
+too: `favouritesInOrder()`; the pager and the swipe follow it).
+
+**Home-screen icons (TrainRadar Pro).** Each favourite station, train and commute in Favoritos
+has a ⌂ button: it asks the launcher (`ShortcutManagerCompat.requestPinShortcut`) for an icon
+that opens `trainradar://<station|train|commute>/<country>/<id>` (a commute by its position in
+the list). The icon carries no data and updates nothing in the background. The app icon's
+long-press menu shows the current country's first four favourites in the same order
+(`setDynamicShortcuts`, refreshed when favourites, commutes or Pro change). A link for another
+country reloads the app in that country (`?country=de&station=…`). Without Pro the ⌂ button
+opens the Pro offer, and the long-press menu is empty.
+
+### The website's overview of every country
+
+Zoomed out below 3.5 (or "Todos los países" in the country drop-down and "Ir a…"), the website
+shows every country outlined, each with its name and how many of its trains have live data
+(from its `status.json`, read at most once a minute; timetable-only countries say so). A click
+on a country goes there. The app doesn't offer it (its map stops at zoom 4).
+
 ## Saved journeys' alerts (plan journeys, J4)
 
 A commute (Trayecto habitual, Pro) can hold a journey's trains (`docs/plan-journeys.md`). The

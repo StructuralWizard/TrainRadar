@@ -73,15 +73,18 @@ await page.waitForSelector(".popup .fav-full", { timeout: 3000 }).catch(() => fa
 if (await page.$('.popup .fav-btn[aria-pressed="true"]')) await fail("third favourite saved past the limit");
 await page.click("#detail-close");
 
-// Kept after a reload; the panel lists them and opens one.
+// Kept after a reload, and the app now opens on them (daily trips first);
+// the panel lists them (stations, then the usual commutes, then trains:
+// two trains here, so the commute offer comes first), and opens one.
 await page.reload();
 await ready();
-await page.click("#tab-favs");
-await page.waitForSelector("#favs-body li");
+await page.waitForSelector("#favs:not([hidden]) #favs-body li", { timeout: 30000 }).catch(() => fail("the app didn't open on the favourites"));
+const groups = await page.$$eval("#favs-body .group-h", (h) => h.map((x) => x.id));
+if (JSON.stringify(groups) !== JSON.stringify(["favs-commutes-h", "favs-trains-h"])) await fail(`favourites' groups: ${JSON.stringify(groups)}`);
 const items = await page.$$eval("#favs-body li", (l) => l.length);
 console.log("favourites:", (await page.textContent("#favs-body")).replace(/\s+/g, " "));
 if (items !== 2) await fail(`${items} favourites after reload, expected 2`);
-await page.click("#favs-body li button.link");
+await page.click("#favs-trains li button.link");
 await page.waitForSelector(".popup .popup-title", { timeout: 5000 }).catch(() => fail("favourite didn't open its train"));
 if (!(await page.isHidden("#favs"))) await fail("panel still open");
 await page.screenshot({ path: `${out}/app-favourite.png` });

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen shortcut icon (TrainRadar Pro): a coloured disc and a white glyph. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#FFC2410C" android:pathData="M24,2a22,22 0,1 0,0.01 0z" />
+    <group android:translateX="12" android:translateY="12">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M4,11h11.2l-3.6,-3.6L13,6l6,6 -6,6 -1.4,-1.4 3.6,-3.6H4z" />
+    </group>
+</vector>

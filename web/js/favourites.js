@@ -49,14 +49,15 @@ export function toggleFavourite(list, f, limit = FREE_LIMIT) {
   return { list: [...list, f], added: true, full: false };
 }
 
-/** Favoritos' order: trains first, then stations, each as the user sorted them. */
+/** Favoritos' order: stations first (then, in the sheet, the usual
+ * commutes), then trains, each as the user sorted them. */
 export function favouritesInOrder(list) {
-  return [...list.filter((f) => f.type === "train"), ...list.filter((f) => f.type === "station")];
+  return [...list.filter((f) => f.type === "station"), ...list.filter((f) => f.type === "train")];
 }
 
 /**
  * Move `f` to position `to` among the favourites of its own type (trains and
- * stations are sorted separately). Returns a new list, trains first.
+ * stations are sorted separately). Returns a new list, stations first.
  */
 export function moveFavourite(list, f, to) {
   const ordered = favouritesInOrder(list);
@@ -68,7 +69,7 @@ export function moveFavourite(list, f, to) {
   const moved = [...same];
   moved.splice(j, 0, ...moved.splice(i, 1));
   const other = ordered.filter((x) => x.type !== f.type);
-  return f.type === "train" ? [...moved, ...other] : [...other, ...moved];
+  return f.type === "station" ? [...moved, ...other] : [...other, ...moved];
 }
 
 /** The favourite `dir` (+1 / −1) places from `f` in Favoritos' order, or null. */
