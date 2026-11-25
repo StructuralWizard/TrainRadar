@@ -6,6 +6,8 @@
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
+import { VIEW_KEY } from "./lastview.js";
+
 /** What the app needs to know about each country.
  * - `zone`: the time zone its times are shown in;
  * - `center`, `zoom`: the first view;
@@ -45,16 +47,82 @@ export const COUNTRY_INFO = {
 export const COUNTRIES = Object.keys(COUNTRY_INFO);
 export const COUNTRY_KEY = "country";
 
-/** Which country to show: `?country=uk` in the address, else the one saved,
- * else the UK for a British English browser, else Spain. `allowed` are the
- * countries offered; `hidden` ones (still being built) open only from the
- * address, and are then remembered like any other. */
-export function pickCountry({ search = "", saved = null, languages = [], allowed = COUNTRIES, hidden = [] } = {}) {
+/** Other time zones in a country (Victoria's, Belfast's) → the country. */
+const ZONE_ALIASES = {
+  "Australia/Melbourne": "au",
+  "Australia/Canberra": "au",
+  "Europe/Belfast": "uk",
+  "Europe/Busingen": "de",
+  "Europe/Vaduz": "ch",
+  "Arctic/Longyearbyen": "no",
+  "Europe/Monaco": "fr",
+  "Pacific/Chatham": "nz",
+};
+/** A language's region (en-GB, de-AT) → our country code. */
+const REGION_ALIASES = { gb: "uk" };
+
+/** The country of a time zone (the device's, Intl), or null. */
+export function countryOfZone(zone) {
+  if (!zone) return null;
+  if (ZONE_ALIASES[zone]) return ZONE_ALIASES[zone];
+  return COUNTRIES.find((c) => COUNTRY_INFO[c].zone === zone) || null;
+}
+
+/** Which country to show: `?country=uk` in the address, else the one saved
+ * (the last one opened), else the device's: its time zone, then its
+ * language's region (en-GB, de-AT); else Spain. Nothing leaves the device.
+ * `allowed` are the countries offered; `hidden` ones (still being built)
+ * open only from the address, and are then remembered like any other. */
+export function pickCountry({ search = "", saved = null, languages = [], zone = null, allowed = COUNTRIES, hidden = [] } = {}) {
   const ok = (c) => COUNTRIES.includes(c) && (allowed.includes(c) || hidden.includes(c));
   const asked = new URLSearchParams(search).get("country");
   if (ok(asked)) return asked;
   if (ok(saved)) return saved;
-  return languages[0] === "en-GB" && allowed.includes("uk") ? "uk" : "es";
+  const byZone = countryOfZone(zone);
+  if (byZone && allowed.includes(byZone)) return byZone;
+  for (const l of languages) {
+    const region = String(l).split("-")[1]?.toLowerCase();
+    const c = REGION_ALIASES[region] || region;
+    if (c && allowed.includes(c)) return c;
+  }
+  return "es";
+}
+
+/** Where each country's map was left (lastview.js), one per country so
+ * coming back to one opens where it was. Spain's keeps the old key. */
+export const viewKey = (code) => (code === "es" ? VIEW_KEY : `${VIEW_KEY}-${code}`);
+/** The area last chosen in each country (a Cercanías núcleo, a French
+ * region, a German state…; areasOf). */
+export const areaKey = (code) => `area-${code}`;
+
+/** Regions of a country's manifest that aren't areas: the national
+ * timetable (and, for Spain, OUIGO), and the ones covering the whole country
+ * (regional trains, commuter trains, cross-border trains). */
+const NOT_AREAS = new Set(["ld", "ouigo", "fi-l", "de-x"]);
+
+/**
+ * A country's areas, to choose from (the second drop-down): the manifest's
+ * regions that are a part of the country, A–Z, each `{ code, name, bbox }`
+ * (bbox [s, w, n, e]). Spain: its Cercanías núcleos; France: its TER
+ * regions; Germany: its states; Australia: New South Wales and Victoria;
+ * New Zealand: Wellington and Auckland; Italy: Lombardy. Others: none.
+ */
+export function areasOf(manifest, code, lang = "en") {
+  const regions = manifest?.regions || [];
+  const national = code === "es" ? "ld" : code;
+  return regions
+    .filter((r) => r.bbox && r.code !== national && !NOT_AREAS.has(r.code) && !r.code.endsWith("-r") && (code !== "es" || r.live !== false))
+    .map((r) => ({ code: r.code, name: areaName(r.name || r.code), bbox: r.bbox }))
+    .filter((a) => a.name)
+    .sort((a, b) => a.name.localeCompare(b.name, lang));
+}
+
+/** "Germany (Berlin, Brandenburg)" → "Berlin, Brandenburg"; "TER Bretagne"
+ * → "Bretagne"; "Italy (Lombardy, Trenord)" → "Lombardy". */
+export function areaName(name) {
+  const n = String(name).trim().replace(/^TER /, "");
+  const m = /^[A-Z][a-z]+ \((.+)\)$/.exec(n);
+  return (m ? m[1] : n).replace(/, Trenord$/, "");
 }
 
 /** Point CONFIG at a country's data and feeds (mutates and returns it). */

@@ -3,7 +3,7 @@
 // works out delays, positions and spacing.
 import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
-import { COUNTRY_KEY, applyCountry, pickCountry } from "./js/country.js";
+import { COUNTRY_KEY, applyCountry, areaKey, pickCountry, viewKey } from "./js/country.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
@@ -33,7 +33,7 @@ import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from "./js/replay.js";
 import { FREE_DAYS, HistoryApi, HistoryCache, RANGES, dailySeries, rangeBefore, renfeOfficialUrl } from "./js/history.js";
 import { FREE_LIMIT, STORAGE_KEY, favKey, isFavourite, moveFavourite, neighbourFavourite, parseFavourites, toggleFavourite } from "./js/favourites.js";
-import { VIEW_KEY, decodeView, encodeView } from "./js/lastview.js";
+import { decodeView, encodeView } from "./js/lastview.js";
 import { appNative, canShare, copyText, exportBlob, exportFile, haptic as nativeHaptic, isNative, onAppLink, onBackButton, onResume, parseLink, prefs, share, styleStatusBar } from "./js/native.js";
 import { backupName, makeBackup, mergeFavourites, mergeTrips, parseBackup } from "./js/backup.js";
 import { Billing, ENTITLEMENT_KEY } from "./js/billing.js";
@@ -108,6 +108,13 @@ const country = pickCountry({
   search: location.search,
   saved: store.get(COUNTRY_KEY),
   languages: navigator.languages || [],
+  zone: (() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return null;
+    }
+  })(),
   allowed: CONFIG.countries,
   hidden: CONFIG.hiddenCountries || [],
 });
@@ -185,7 +192,9 @@ const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi:
 const FAV_KEY = ES ? STORAGE_KEY : `favourites-${country}`;
 // Open where the app was left (map and the train or station open), unless
 // a link asks for something else.
-const lastView = parseLink(location.href) ? null : decodeView(store.get(VIEW_KEY), { country });
+const lastView = parseLink(location.href) ? null : decodeView(store.get(viewKey(country)), { country });
+/** The area last chosen in this country (a núcleo, a region, a state). */
+const savedArea = store.get(areaKey(country));
 let lastStation = null; // the station last shown (popup or sheet), for the saved view
 
 /** The train or station open now, for the saved view. */
@@ -200,7 +209,7 @@ function openDetail() {
 function saveView() {
   if (!map || replay) return;
   const c = map.getCenter();
-  store.set(VIEW_KEY, encodeView({ country, center: [c.lng, c.lat], zoom: map.getZoom(), detail: openDetail() }));
+  store.set(viewKey(country), encodeView({ country, center: [c.lng, c.lat], zoom: map.getZoom(), detail: openDetail() }));
 }
 
 /** Reopen the train or station left open (if the train still runs). */
@@ -2500,6 +2509,8 @@ function openNetworks() {
  * "prov:28", "ccaa:md", "city:madrid"), as "Ir a…" does. */
 function goToNetwork(code) {
   netPinned = code;
+  // Remembered per country: the next visit (and the area picker) starts there.
+  store.set(areaKey(country), code === "es" ? "" : code);
   updateNetChip();
   if (code === "es") return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
   const place = placeByCode(code);
@@ -3326,7 +3337,8 @@ async function main() {
     await ref.start();
   } catch (e) {
     console.error(e);
-    $("status").textContent = t(lang, "loadError");
+    // Offline, a country not opened before has no copy on the device yet.
+    $("status").textContent = navigator.onLine === false ? t(lang, "loadOffline", { country: countryName(country) }) : t(lang, "loadError");
     setTimeout(() => location.reload(), 30_000);
     return;
   }
@@ -3464,6 +3476,8 @@ async function main() {
   // Commute mode (Pro): open on the next trains of the saved commute.
   else
     whenTrains().then(() => {
+      // Back to a country whose map wasn't saved: its last area, if any.
+      if (!lastView && savedArea && (ref?.region(savedArea) || placeByCode(savedArea))) goToNetwork(savedArea);
       if (lastView?.detail && restoreDetail(lastView.detail)) return;
       if (CONFIG.pro && activeCommute(commutes) && (isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden))) {
         openSheet("commute");

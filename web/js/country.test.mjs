@@ -100,3 +100,49 @@ test("country: Slovakia and Estonia (M4) go by timetable: no feeds", () => {
     assert.equal(c.timeZone, zone);
   }
 });
+
+test("country: the first time, the device's time zone, then its language's region", async () => {
+  const { countryOfZone, viewKey, areaKey } = await import("./country.js");
+  assert.equal(countryOfZone("Europe/Berlin"), "de");
+  assert.equal(countryOfZone("Australia/Melbourne"), "au");
+  assert.equal(countryOfZone("America/New_York"), null);
+  assert.equal(pickCountry({ zone: "Europe/Paris" }), "fr");
+  // The one opened last wins over the device.
+  assert.equal(pickCountry({ zone: "Europe/Paris", saved: "pl" }), "pl");
+  // No zone of ours: the language's region (de-AT → Austria, en-GB → the UK).
+  assert.equal(pickCountry({ zone: "America/New_York", languages: ["de-AT", "de"] }), "at");
+  assert.equal(pickCountry({ zone: "UTC", languages: ["en-GB"] }), "uk");
+  assert.equal(pickCountry({ zone: "UTC", languages: ["pt-BR"] }), "es");
+  // Not offered in this build: Spain.
+  assert.equal(pickCountry({ zone: "Europe/Paris", allowed: ["es", "uk"] }), "es");
+  // Each country's map and area are kept apart; Spain's view keeps its key.
+  assert.equal(viewKey("es"), "lastView");
+  assert.equal(viewKey("de"), "lastView-de");
+  assert.equal(areaKey("fr"), "area-fr");
+});
+
+test("country: a country's areas are its manifest's regions that are a part of it", async () => {
+  const { areasOf, areaName } = await import("./country.js");
+  const box = [0, 0, 1, 1];
+  const de = { regions: [
+    { code: "de", name: "Germany (long distance)", bbox: box },
+    { code: "de-by", name: "Germany (Bavaria)", bbox: box },
+    { code: "de-bb", name: "Germany (Berlin, Brandenburg)", bbox: box },
+    { code: "de-x", name: "Germany (regional, cross-border)", bbox: box },
+  ] };
+  assert.deepEqual(areasOf(de, "de").map((a) => [a.code, a.name]), [["de-by", "Bavaria"], ["de-bb", "Berlin, Brandenburg"]]);
+  const es = { regions: [
+    { code: "ld", name: "AV/LD/MD", bbox: box },
+    { code: "ouigo", name: "OUIGO", bbox: box, live: false },
+    { code: "10", name: "Madrid", bbox: box },
+    { code: "51", name: "Barcelona", bbox: box },
+  ] };
+  assert.deepEqual(areasOf(es, "es", "es").map((a) => a.code), ["51", "10"]);
+  const pl = { regions: [{ code: "pl", name: "Poland (long distance)", bbox: box }, { code: "pl-r", name: "Poland (regional)", bbox: box }] };
+  assert.deepEqual(areasOf(pl, "pl"), []);
+  const au = { regions: [{ code: "au-vic", name: "Victoria", bbox: box }, { code: "au-nsw", name: "New South Wales", bbox: box }] };
+  assert.deepEqual(areasOf(au, "au").map((a) => a.name), ["New South Wales", "Victoria"]);
+  assert.equal(areaName("TER Auvergne-Rhône-Alpes"), "Auvergne-Rhône-Alpes");
+  assert.equal(areaName("Italy (Lombardy, Trenord)"), "Lombardy");
+  assert.deepEqual(areasOf(null, "fr"), []);
+});

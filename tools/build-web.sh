@@ -85,7 +85,7 @@ if [ -n "${DIST:-}" ]; then
     grep -q 'hiddenCountries: \[\]' "$DIST/js/config.js" || { echo "hiddenCountries not cleared" >&2; exit 1; }
     # The UK (plan 3) is in the app from 3.0; UK_APP=false builds Spain only.
     if [ "${UK_APP:-true}" = "false" ]; then
-      sed -i 's#countries: \["es", "uk"\]#countries: ["es"]#' "$DIST/js/config.js"
+      sed -i 's#countries: \["es", "uk"[^]]*\]#countries: ["es"]#' "$DIST/js/config.js"
       grep -q 'countries: \["es"\]' "$DIST/js/config.js" || { echo "countries not set" >&2; exit 1; }
     fi
   fi

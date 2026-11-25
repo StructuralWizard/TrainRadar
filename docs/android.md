@@ -283,6 +283,20 @@ stay with Spain in either country: they read Spain's keys and servers (`widget-c
 says so. The emulator test switches to the UK through the picker (`tools/demo-uk.sh` data
 and feeds in the test APK).
 
+### Every country (next version)
+
+Every country is offered, in the app and on the site (`CONFIG.countries`; Singapore says
+"estimated"). Only Spain's data is bundled; any other country's comes from the site's
+`data/<code>/` the first time it's opened and is kept on the phone (the Cache API,
+`trainradar-data-v1`: content-hashed files are used from the copy without asking the
+network, the manifest is asked for first and the copy used only offline, and a newer
+manifest drops the files it no longer names). Opening a country for the first time without
+a connection says so. The app opens on the last country used; the very first time, on the
+phone's time zone's country (else its language's region, else Spain), without sending
+anything anywhere. Each country remembers its own map view (`lastView-<code>`; Spain's
+stays `lastView`) and its last area (`area-<code>`: a núcleo, region, state…;
+`areasOf()` in `web/js/country.js` lists a country's areas from its manifest).
+
 ## Saved journeys' alerts (plan journeys, J4)
 
 A commute (Trayecto habitual, Pro) can hold a journey's trains (`docs/plan-journeys.md`). The
