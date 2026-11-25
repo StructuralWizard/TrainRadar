@@ -387,6 +387,22 @@ jobs:
           unzip -p gtfs/au-vic/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
           echo "### vic: live endpoints" >> "$GITHUB_STEP_SUMMARY"
           node tools/au/vic-probe.mjs build/au-vic-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Wellington (Metlink; key NZ_METLINK_API_KEY for live)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          NZ_METLINK_API_KEY: ${{ secrets.NZ_METLINK_API_KEY }}
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh nz-wlg --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/nz-wlg --nz-wlg-gtfs gtfs/nz-wlg/gtfs.zip \
+            --sources gtfs/nz-wlg/sources.tsv --report refdata-nz-wlg.md
+          target/release/refdata-build verify build/nz-wlg
+          { echo "## Wellington reference data"; echo; cat refdata-nz-wlg.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/nz-wlg/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/nz-wlg-trips.txt
+          unzip -p gtfs/nz-wlg/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/nz-wlg/gtfs.zip routes.txt | head -12 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### wlg: live endpoints" >> "$GITHUB_STEP_SUMMARY"
+          node tools/nz/wlg-probe.mjs build/nz-wlg-trips.txt samples/nz | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

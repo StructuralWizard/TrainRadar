@@ -2,7 +2,7 @@
 // (Renfe), the United Kingdom (Network Rail), Ireland (Iarnród Éireann),
 // France (SNCF), Luxembourg (CFL), Finland (VR), Norway (Entur) or the
 // Netherlands (NS and the others), Slovakia (ZSSK), Estonia (Elron),
-// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB) or Australia (New South Wales, Victoria).
+// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB), Australia (New South Wales, Victoria) or New Zealand (Wellington).
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
@@ -34,6 +34,8 @@ export const COUNTRY_INFO = {
   // New South Wales (GPS, delays, alerts) and Victoria; both on the same
   // clock rules (Sydney's and Melbourne's).
   au: { zone: "Australia/Sydney", center: [147.5, -35.6], zoom: 5.6, live: true },
+  // Wellington for now (Metlink); by timetable until its live feeds are in.
+  nz: { zone: "Pacific/Auckland", center: [175.1, -41.1], zoom: 8.6, live: false },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

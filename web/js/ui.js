@@ -193,6 +193,8 @@ const TICKET_SITES = {
   TfNSW: ["Transport for NSW", "https://transportnsw.info/"],
   // Myki fares: PTV's journey planner.
   PTV: ["PTV", "https://www.ptv.vic.gov.au/"],
+  // Snapper and Motu fares: Metlink's journey planner.
+  Metlink: ["Metlink", "https://www.metlink.org.nz/"],
   DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],

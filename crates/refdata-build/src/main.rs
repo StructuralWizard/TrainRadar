@@ -80,7 +80,8 @@ usage:
                        --it-lom-gtfs ZIP (Trenord, Lombardy);
                        Denmark: --dk-gtfs ZIP; Hungary: --hu-gtfs ZIP;
                        Germany: --de-gtfs ZIP; Belgium: --be-gtfs ZIP;
-                       New South Wales: --au-nsw-gtfs ZIP; Victoria: --au-vic-gtfs ZIP)
+                       New South Wales: --au-nsw-gtfs ZIP; Victoria: --au-vic-gtfs ZIP;
+                       Wellington: --nz-wlg-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -165,6 +166,8 @@ struct BuildArgs {
     au_nsw_gtfs: Option<PathBuf>,
     /// Transport Victoria's GTFS cut to trains: Victoria.
     au_vic_gtfs: Option<PathBuf>,
+    /// Metlink's GTFS cut to trains: Wellington.
+    nz_wlg_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -208,6 +211,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         be_gtfs: None,
         au_nsw_gtfs: None,
         au_vic_gtfs: None,
+        nz_wlg_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -261,6 +265,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--be-gtfs" => a.be_gtfs = Some(val()?.into()),
             "--au-nsw-gtfs" => a.au_nsw_gtfs = Some(val()?.into()),
             "--au-vic-gtfs" => a.au_vic_gtfs = Some(val()?.into()),
+            "--nz-wlg-gtfs" => a.nz_wlg_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -304,10 +309,11 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.be_gtfs.is_none()
         && a.au_nsw_gtfs.is_none()
         && a.au_vic_gtfs.is_none()
+        && a.nz_wlg_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs, --it-gtfs, --dk-gtfs, --hu-gtfs, --de-gtfs, --be-gtfs, --au-nsw-gtfs or --au-vic-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs, --it-gtfs, --dk-gtfs, --hu-gtfs, --de-gtfs, --be-gtfs, --au-nsw-gtfs, --au-vic-gtfs or --nz-wlg-gtfs"
                 .into(),
         );
     }
@@ -461,6 +467,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.be_gtfs, "be"),
         (&a.au_nsw_gtfs, "au-nsw"),
         (&a.au_vic_gtfs, "au-vic"),
+        (&a.nz_wlg_gtfs, "nz-wlg"),
     ] {
         let Some(path) = path else { continue };
         if matches!(
@@ -482,6 +489,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 | "be"
                 | "au-nsw"
                 | "au-vic"
+                | "nz-wlg"
         ) {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
@@ -510,10 +518,12 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 "be" => (nordic::normalise_sweden(&mut feed), "SNCB"),
                 "au-nsw" => (nordic::normalise_sweden(&mut feed), "TfNSW"),
                 "au-vic" => (nordic::normalise_sweden(&mut feed), "PTV"),
+                "nz-wlg" => (nordic::normalise_sweden(&mut feed), "Metlink"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
-            let live = !matches!(kind, "sk" | "ee" | "at" | "it" | "it-lom" | "hu");
+            // Wellington: by timetable until its live feeds are in.
+            let live = !matches!(kind, "sk" | "ee" | "at" | "it" | "it-lom" | "hu" | "nz-wlg");
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",
@@ -1034,6 +1044,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_AU_NSW
         } else if a.au_vic_gtfs.is_some() {
             nordic::ATTRIBUTION_AU_VIC
+        } else if a.nz_wlg_gtfs.is_some() {
+            nordic::ATTRIBUTION_NZ_WLG
         } else {
             ATTRIBUTION
         },

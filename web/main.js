@@ -164,6 +164,7 @@ const COUNTRY_TEXT = {
   de: { name: "countryDe", all: "allDe", credit: "attributionDe", scheduled: "scheduledCountOther" },
   be: { name: "countryBe", all: "allBe", credit: "attributionBe", scheduled: "scheduledCountOther" },
   au: { name: "countryAu", all: "allAu", credit: "attributionAu", scheduled: "scheduledCountOther" },
+  nz: { name: "countryNz", all: "allNz", credit: "attributionNz", scheduled: "scheduledCountOther" },
 };
 /** A country's name; one still being built says so. */
 const countryName = (c) => {

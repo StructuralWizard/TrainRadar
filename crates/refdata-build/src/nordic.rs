@@ -72,6 +72,9 @@ pub const AU_NSW: &str = "au-nsw";
 /// Victoria: Transport Victoria's GTFS (V/Line, Metro Trains); Melbourne
 /// time (the same rules as Sydney's).
 pub const AU_VIC: &str = "au-vic";
+/// Wellington: Metlink's GTFS (Greater Wellington Regional Council), cut to
+/// trains; New Zealand time.
+pub const NZ_WLG: &str = "nz-wlg";
 /// A German stop whose DHID names no Land (none seen in DELFI).
 pub const DE_OTHER: &str = "de-x";
 
@@ -106,6 +109,8 @@ pub const ATTRIBUTION_AU_NSW: &str = "Data: Transport for NSW (opendata.transpor
 CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_AU_VIC: &str = "Data: Transport Victoria (opendata.transport.vic.gov.au), \
 CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_NZ_WLG: &str = "Data: Metlink, Greater Wellington Regional Council \
+(opendata.metlink.org.nz), CC BY 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_AU: &str = "Data: Transport for NSW and Transport Victoria open data, CC BY \
 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
@@ -133,6 +138,7 @@ pub fn tz(code: &str) -> Option<&'static str> {
         c if c == DE || c.starts_with("de-") => "Europe/Berlin",
         AU_NSW => "Australia/Sydney",
         AU_VIC => "Australia/Melbourne",
+        NZ_WLG => "Pacific/Auckland",
         _ => return None,
     })
 }
@@ -163,6 +169,7 @@ pub fn region_name(code: &str) -> &'static str {
         BE => "Belgium",
         AU_NSW => "New South Wales",
         AU_VIC => "Victoria",
+        NZ_WLG => "Wellington",
         DE_OTHER => "Germany (regional, cross-border)",
         c if c.starts_with("de-") => GERMAN_LANDS.iter().find(|l| l.1 == c).map_or("", |l| l.2),
         _ => "",
