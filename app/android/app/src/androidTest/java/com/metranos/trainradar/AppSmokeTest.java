@@ -122,8 +122,9 @@ public class AppSmokeTest {
         waitFor("window.__trainradar && window.__trainradar.engine && window.__trainradar.engine.positions(Date.now()).length > 0", 90_000);
         try {
             eval("document.getElementById('net-chip').click(); return true;");
-            waitFor("document.querySelector('#networks:not([hidden]) .net-countries button[data-country=\"uk\"]')", 10_000);
-            eval("window.__beforeUk = true; document.querySelector('.net-countries button[data-country=\"uk\"]').click(); return true;");
+            waitFor("document.querySelector('#networks:not([hidden]) #net-country option[value=\"uk\"]')", 10_000);
+            eval("window.__beforeUk = true; var s = document.getElementById('net-country'); s.value = 'uk';"
+                    + " s.dispatchEvent(new Event('change')); return true;");
             // A new page: the mark is gone once the UK has loaded.
             waitFor("!window.__beforeUk && window.__trainradar && window.__trainradar.engine && window.__trainradar.engine.positions(Date.now()).length > 0", 90_000);
             // The timetable places trains first; Network Rail's delays follow.

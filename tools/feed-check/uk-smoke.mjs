@@ -121,14 +121,14 @@ console.log("UK route:", ukRoute.slice(0, 160));
 if (!/formas de llegar/.test(ukRoute) || !(await page.$('#route .journey-row[data-changes="0"]'))) await fail("UK route: no direct journey");
 await page.click("#route-close");
 
-// The picker: España and Reino Unido first, then every other country; the
-// choice is remembered.
+// The picker: the country drop-down, España and Reino Unido first, then
+// every other country; the choice is remembered.
 await page.click("#net-chip");
-await page.waitForSelector("#networks:not([hidden]) .net-countries");
-const countries = await page.$$eval(".net-countries button", (b) => b.map((x) => [x.dataset.country, x.getAttribute("aria-pressed")]));
+await page.waitForSelector("#networks:not([hidden]) #net-country");
+const countries = await page.$$eval("#net-country option", (o) => o.map((x) => [x.value, String(x.selected)]));
 if (JSON.stringify(countries.slice(0, 2)) !== JSON.stringify([["es", "false"], ["uk", "true"]]) || countries.length < 20) await fail(`countries: ${JSON.stringify(countries)}`);
 await page.screenshot({ path: `${out}/uk-networks.png` });
-await Promise.all([page.waitForNavigation(), page.click('.net-countries button[data-country="es"]')]);
+await Promise.all([page.waitForNavigation(), page.selectOption("#net-country", "es")]);
 await page.waitForFunction(() => window.__trainradar?.engine?.positions(Date.now()).length > 0, null, { timeout: 30000 }).catch(() => fail("Spain didn't load"));
 if ((await page.textContent("#net-chip")).trim() === "Reino Unido") await fail("still the UK after choosing España");
 const saved = await page.evaluate(() => localStorage.getItem("country"));

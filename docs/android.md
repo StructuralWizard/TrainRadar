@@ -297,6 +297,14 @@ anything anywhere. Each country remembers its own map view (`lastView-<code>`; S
 stays `lastView`) and its last area (`area-<code>`: a núcleo, region, state…;
 `areasOf()` in `web/js/country.js` lists a country's areas from its manifest).
 
+The network picker (the chip at the top) starts with two drop-downs: **País** (every
+country: Spain and the UK first, the others A–Z; choosing one reloads with its data) and
+**Zona** (the whole country, then its areas; Spain adds its communities and provinces). Other
+countries' areas are also listed below, searchable. On the map, the other countries are faintly
+outlined (`web/countries.geojson`: Natural Earth, public domain, cut and simplified by
+`tools/outlines/build.py`, 27 KB gzipped); tapping one shows "Ir a Francia", and that button
+switches. A stray tap near a border doesn't reload anything.
+
 ## Saved journeys' alerts (plan journeys, J4)
 
 A commute (Trayecto habitual, Pro) can hold a journey's trains (`docs/plan-journeys.md`). The

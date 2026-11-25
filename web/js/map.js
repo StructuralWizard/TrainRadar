@@ -258,6 +258,30 @@ export function setBasemap(map, kind) {
   map.setLayoutProperty("satellite", "visibility", kind === "satellite" ? "visible" : "none");
 }
 
+/** The other countries TrainRadar shows, faintly outlined (Natural Earth,
+ * public domain: tools/outlines/build.py): tapping one offers to go there.
+ * `current` (the country shown) gets neither outline nor tap target. Drawn
+ * under the track; `url` is countries.geojson next to the page. */
+export function addCountries(map, current, url = "countries.geojson") {
+  if (map.getSource("countries")) return;
+  map.addSource("countries", { type: "geojson", data: url });
+  const other = ["!=", ["get", "code"], current];
+  const below = map.getLayer("track-md-casing") ? "track-md-casing" : undefined;
+  // An invisible fill: the tap target.
+  map.addLayer({ id: "countries-other", type: "fill", source: "countries", filter: other, paint: { "fill-color": "#000000", "fill-opacity": 0.01 } }, below);
+  map.addLayer(
+    {
+      id: "countries-line",
+      type: "line",
+      source: "countries",
+      filter: other,
+      layout: { "line-join": "round" },
+      paint: { "line-color": "#6b7280", "line-width": 1, "line-opacity": 0.45, "line-dasharray": [3, 2] },
+    },
+    below,
+  );
+}
+
 export function addLayers(map) {
   addIcons(map);
   // The rail network from OpenStreetMap, by kind of track: `av` high speed,

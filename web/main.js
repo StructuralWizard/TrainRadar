@@ -3,7 +3,7 @@
 // works out delays, positions and spacing.
 import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
-import { COUNTRY_KEY, applyCountry, areaKey, pickCountry, viewKey } from "./js/country.js";
+import { COUNTRY_KEY, applyCountry, areaKey, areaName, areasOf, pickCountry, viewKey } from "./js/country.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
@@ -19,6 +19,7 @@ import {
   ARROW_ZOOM,
   FLAG,
   SERVICE_COLORS,
+  addCountries,
   addLayers,
   createMap,
   emptyGeoJson,
@@ -181,7 +182,9 @@ const countryName = (c) => {
 };
 /** COUNTRY_LIST in the order shown: the offered ones, then the rest A–Z. */
 const countryChoices = () => {
-  const rank = (c) => (CONFIG.countries.includes(c) ? CONFIG.countries.indexOf(c) : 99);
+  // Spain and the UK first (as offered), then every other country A–Z.
+  const first = CONFIG.countries.slice(0, 2);
+  const rank = (c) => (first.includes(c) ? first.indexOf(c) : 99);
   return [...COUNTRY_LIST].sort((a, b) => rank(a) - rank(b) || countryName(a).localeCompare(countryName(b), lang));
 };
 /** Whose notices each country shows (the UK has its own panel). */
@@ -224,6 +227,14 @@ function restoreDetail(d) {
   return !!st;
 }
 const attribution = () => t(lang, COUNTRY_TEXT[country].credit);
+
+let countryPop = null;
+/** "Ir a Francia" where another country was tapped. */
+function offerCountry(code, lngLat) {
+  countryPop?.remove();
+  const go = el("button", { class: "btn btn-primary country-go", type: "button", "data-country": code, onclick: () => switchCountry(code) }, t(lang, "goToCountry", { country: countryName(code) }));
+  countryPop = new maplibregl.Popup({ closeButton: true, maxWidth: "260px", offset: 6, focusAfterOpen: false }).setLngLat(lngLat).setDOMContent(go).addTo(map);
+}
 
 /** Show the other country: remembered, then the page reloads with its data. */
 function switchCountry(code) {
@@ -642,7 +653,13 @@ function fillJump() {
         countryChoices().map((c) => el("option", { value: `country:${c}` }, countryName(c))),
       );
   if (!ES) {
-    sel.replaceChildren(el("option", { value: "" }, t(lang, "goTo")), el("option", { value: "es" }, t(lang, COUNTRY_TEXT[country].all)), countries);
+    const areas = countryAreas();
+    sel.replaceChildren(
+      el("option", { value: "" }, t(lang, "goTo")),
+      el("option", { value: "es" }, t(lang, COUNTRY_TEXT[country].all)),
+      areas.length ? el("optgroup", { label: t(lang, "area") }, areas.map((a) => el("option", { value: a.code }, a.name))) : null,
+      countries,
+    );
     return;
   }
   sel.replaceChildren(
@@ -2463,7 +2480,13 @@ function currentNetwork() {
   const c = map.getCenter();
   return (ref.regionsIn([c.lng, c.lat, c.lng, c.lat]) || []).find((r) => r.code !== "ld" && r.live !== false) || null;
 }
-const netName = () => currentNetwork()?.name || (ES ? t(lang, "netSpain") : countryName(country));
+const netName = () => {
+  const n = currentNetwork();
+  if (n) return n.code && ref?.region(n.code) ? areaName(n.name) : n.name;
+  return ES ? t(lang, "netSpain") : countryName(country);
+};
+/** This country's areas (country.js), for the drop-downs. */
+const countryAreas = () => areasOf(ref?.manifest, country, lang);
 
 function updateNetChip() {
   const l = $("net-chip-l");
@@ -2561,8 +2584,22 @@ function renderNetworks(keepInput = false) {
     near,
     spain: { trains, onPick: () => pick("es"), label: ES ? null : t(lang, COUNTRY_TEXT[country].all) },
     countries: !MULTI_COUNTRY ? null : countryChoices().map((c) => ({ code: c, name: countryName(c), current: c === country, onPick: () => switchCountry(c) })),
-    // Spain's núcleos, communities and provinces; the UK and Ireland are one network each (for now).
-    networks: !ES ? [] : [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
+    // The area drop-down: the country's areas (Spain: núcleos, then its
+    // communities and provinces).
+    areas: countryAreas(),
+    areaGroups: !ES
+      ? []
+      : [
+          { label: t(lang, "netCommunities"), items: byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name })) },
+          { label: t(lang, "netProvinces"), items: byName(PROVINCES).map((p) => ({ code: `prov:${p.code}`, name: p.name })) },
+        ],
+    area: netPinned && netPinned !== "es" ? netPinned : currentNetwork()?.code || null,
+    allLabel: ES ? t(lang, "allSpain") : t(lang, COUNTRY_TEXT[country].all),
+    // Spain's núcleos (with their medians), communities and provinces; other
+    // countries' areas.
+    networks: !ES
+      ? countryAreas().map((a) => ({ code: a.code, name: a.name, median: undefined }))
+      : [...nucleos].sort((a, b) => a.name.localeCompare(b.name, "es")).map((r) => ({ code: r.code, name: r.name, median: medians.get(r.code) })),
     communities: !ES ? [] : byName(COMMUNITIES).map((c) => ({ code: `ccaa:${c.code}`, name: c.name, alt: c.alt })),
     provinces: !ES ? [] : byName(PROVINCES).map((p) => ({ code: `prov:${p.code}`, name: p.name, alt: p.alt })),
     onPick: pick,
@@ -3375,6 +3412,7 @@ async function main() {
   await mapReady;
   setMapLanguage(map, lang);
   addLayers(map);
+  if (MULTI_COUNTRY) addCountries(map, country);
   if (window.innerWidth < 720) map.once("idle", foldCredits);
   if (store.get("basemap") === "satellite") {
     setBasemap(map, "satellite");
@@ -3435,6 +3473,11 @@ async function main() {
       );
       if (st.length) return showStation(st[0]);
       stationPop?.remove();
+      // Another country's outline: offer to go there (one tap more, so a
+      // stray tap near a border doesn't reload the page).
+      const other = map.getLayer("countries-other") && map.queryRenderedFeatures(e.point, { layers: ["countries-other"] })[0];
+      if (other && COUNTRY_LIST.includes(other.properties.code)) return offerCountry(other.properties.code, e.lngLat);
+      countryPop?.remove();
       if (isPhone()) $("detail").hidden = true;
       return clearSelection();
     }

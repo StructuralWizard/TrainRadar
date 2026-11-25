@@ -146,3 +146,11 @@ test("country: a country's areas are its manifest's regions that are a part of i
   assert.equal(areaName("Italy (Lombardy, Trenord)"), "Lombardy");
   assert.deepEqual(areasOf(null, "fr"), []);
 });
+
+test("country: every country has an outline to tap (countries.geojson)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { COUNTRIES } = await import("./country.js");
+  const g = JSON.parse(readFileSync(new URL("../countries.geojson", import.meta.url), "utf8"));
+  assert.deepEqual(g.features.map((f) => f.properties.code).sort(), [...COUNTRIES].sort());
+  for (const f of g.features) assert.ok(f.geometry.coordinates.length > 0, f.properties.code);
+});
