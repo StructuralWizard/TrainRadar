@@ -333,8 +333,8 @@ app, and update the "last updated" dates when they change.
 
 - **Turning it on:** **`NZ_WLG_ENABLED`** = `true` (Metlink, Wellington) and/or
   **`NZ_AKL_ENABLED`** = `true` (Auckland Transport) build their timetables (no key) into one
-  `data/nz/`; `?country=nz`, by timetable until the live parts (keys `NZ_METLINK_API_KEY`,
-  `NZ_AT_API_KEY`) are in. See [world/nz-wlg.md](world/nz-wlg.md) and
+  `data/nz/`; `?country=nz`. **`NZ_LIVE_ENABLED`** = `true` adds both regions' GPS, delays and
+  alerts in the `eu` Worker, with `NZ_METLINK_API_KEY` and `NZ_AT_API_KEY`. See [world/nz-wlg.md](world/nz-wlg.md) and
   [world/nz-akl.md](world/nz-akl.md).
 
 ## Slovakia and Estonia (M4)

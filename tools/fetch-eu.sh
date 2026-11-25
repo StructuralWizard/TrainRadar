@@ -340,7 +340,9 @@ except Exception as e:
     python3 -I tools/au/vic-fetch.py "$dir" "$dir/sources.tsv"
     parts=()
     for op in vline metro; do [ -s "$dir/$op.zip" ] && parts+=("$dir/$op.zip"); done
-    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents
+    # Metro Trains' routes aren't route type 2 (Nov 2026: none kept): its
+    # file is trains only, so the metro types are kept too.
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents --also=400,401,1
     rm -f "${parts[@]}"
     region=australia-oceania/australia ;;
   nz-wlg)

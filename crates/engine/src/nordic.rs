@@ -72,6 +72,19 @@ static AU: [FeedSpec; 3] = [
     feed("tu_au", FeedKind::TripUpdates, "trip_updates.pb", 30),
     feed("alerts", FeedKind::Alerts, "alerts.pb", 300),
 ];
+/// New Zealand: Metlink's (Wellington) and Auckland Transport's GPS, trip
+/// updates and alerts, kept to trains (backend-eu), trip ids the
+/// timetable's.
+static NZ: [FeedSpec; 3] = [
+    feed(
+        "vp_nz",
+        FeedKind::VehiclePositions,
+        "vehicle_positions.pb",
+        15,
+    ),
+    feed("tu_nz", FeedKind::TripUpdates, "trip_updates.pb", 30),
+    feed("alerts", FeedKind::Alerts, "alerts.pb", 300),
+];
 static DE: [FeedSpec; 1] = [feed("tu_de", FeedKind::TripUpdates, "trip_updates.pb", 60)];
 /// Czechia: PID's trains (Prague and Central Bohemia) from Golemio, GPS and
 /// delays, kept to trains by backend-eu; the rest of the country by
@@ -108,6 +121,8 @@ pub struct Germany;
 pub struct Belgium;
 #[derive(Debug)]
 pub struct Australia;
+#[derive(Debug)]
+pub struct NewZealand;
 
 macro_rules! adapter {
     ($t:ty, $id:literal, $feeds:ident) => {
@@ -133,6 +148,7 @@ adapter!(Denmark, "denmark", DK);
 adapter!(Germany, "germany", DE);
 adapter!(Belgium, "belgium", BE);
 adapter!(Australia, "australia", AU);
+adapter!(NewZealand, "new-zealand", NZ);
 
 impl SourceAdapter for Norway {
     fn id(&self) -> &'static str {
@@ -219,7 +235,7 @@ pub fn norwegian_number(trip_id: &str) -> String {
 pub fn mixed(region: &str) -> bool {
     matches!(
         region,
-        "fi" | "fi-l" | "no" | "cz" | "cz-r" | "au-nsw" | "au-vic"
+        "fi" | "fi-l" | "no" | "cz" | "cz-r" | "au-nsw" | "au-vic" | "nz-wlg" | "nz-akl"
     )
 }
 

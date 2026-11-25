@@ -14,6 +14,7 @@ prefixed or global). Standard library only.
 """
 
 import csv
+import os
 import io
 import sys
 import zipfile
@@ -92,13 +93,21 @@ def main(argv):
                     h, r = rows(z, "routes.txt")
                     routes = set()
                     agencies = set()
+                    dropped = {}
                     for row in r:
                         d = dict(zip(h, row))
-                        if d.get("route_type", "").strip() in rail:
+                        t = d.get("route_type", "").strip()
+                        if t in rail:
                             routes.add(d["route_id"])
                             agencies.add(d.get("agency_id", ""))
                             tables["routes.txt"].add(h, row)
+                        else:
+                            dropped[t] = dropped.get(t, 0) + 1
                     counts["routes"] += len(routes)
+                    # Which route types were left out, to spot a rail mode
+                    # under another type (Sydney Metro, Melbourne's Metro).
+                    print(f"{os.path.basename(path)}: {len(routes)} rail routes kept; dropped route types "
+                          + (", ".join(f"{t or '?'} ×{n}" for t, n in sorted(dropped.items())) or "none"))
                     h, r = rows(z, "agency.txt")
                     for row in r:
                         d = dict(zip(h, row))

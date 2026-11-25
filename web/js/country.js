@@ -34,9 +34,9 @@ export const COUNTRY_INFO = {
   // New South Wales (GPS, delays, alerts) and Victoria; both on the same
   // clock rules (Sydney's and Melbourne's).
   au: { zone: "Australia/Sydney", center: [147.5, -35.6], zoom: 5.6, live: true },
-  // Wellington (Metlink) and Auckland (Auckland Transport); by timetable
-  // until their live feeds are in.
-  nz: { zone: "Pacific/Auckland", center: [175.2, -39.0], zoom: 5.9, live: false },
+  // Wellington (Metlink) and Auckland (Auckland Transport): GPS, delays
+  // and alerts.
+  nz: { zone: "Pacific/Auckland", center: [175.2, -39.0], zoom: 5.9, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

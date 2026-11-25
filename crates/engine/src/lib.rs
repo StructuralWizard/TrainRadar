@@ -135,6 +135,7 @@ pub enum Country {
     Germany,
     Belgium,
     Australia,
+    NewZealand,
     /// No live feed yet: Luxembourg.
     TimetableOnly,
 }
@@ -157,6 +158,7 @@ impl Country {
             Country::Germany => &nordic::Germany,
             Country::Belgium => &nordic::Belgium,
             Country::Australia => &nordic::Australia,
+            Country::NewZealand => &nordic::NewZealand,
             Country::TimetableOnly => &timetable_only::TimetableOnly,
         }
     }
@@ -221,8 +223,9 @@ impl Engine {
             "uk" => Country::UnitedKingdom,
             "ie" => Country::Ireland,
             "fr" => Country::France,
-            "lu" | "sk" | "ee" | "at" | "it" | "hu" | "nz" => Country::TimetableOnly,
+            "lu" | "sk" | "ee" | "at" | "it" | "hu" => Country::TimetableOnly,
             "au" => Country::Australia,
+            "nz" => Country::NewZealand,
             "cz" => Country::Czechia,
             "dk" => Country::Denmark,
             "de" => Country::Germany,

@@ -407,6 +407,7 @@ jobs:
         continue-on-error: true # outside services: a report, not a gate
         env:
           NZ_AT_API_KEY: ${{ secrets.NZ_AT_API_KEY }}
+          NZ_METLINK_API_KEY: ${{ secrets.NZ_METLINK_API_KEY }}
         run: |
           set -o pipefail
           tools/fetch-eu.sh nz-akl --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
@@ -419,6 +420,9 @@ jobs:
           unzip -p gtfs/nz-akl/gtfs.zip routes.txt | head -12 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
           echo "### akl: live endpoints" >> "$GITHUB_STEP_SUMMARY"
           node tools/nz/rt-probe.mjs akl build/nz-akl-trips.txt samples/nz | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### nz: through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          cat build/nz-wlg-trips.txt build/nz-akl-trips.txt > build/nz-trips.txt || true
+          node tools/feed-check/eu-probe.mjs nz build/nz-trips.txt build/probe-nz | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

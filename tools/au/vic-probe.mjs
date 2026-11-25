@@ -53,3 +53,25 @@ for (const p of paths) {
     console.log(`vic ${p}: ${e.name} ${String(e.message).slice(0, 100)}`);
   }
 }
+
+// All refused (HTTP 401, Nov 2026)? Which header the gateway takes the key
+// in: one call per name on one address, status codes only.
+const p0 = base + paths[0];
+const codes = [];
+for (const [name, value] of [
+  ["KeyID", key],
+  ["KeyId", key],
+  ["Ocp-Apim-Subscription-Key", key],
+  ["apikey", key],
+  ["Authorization", `Bearer ${key}`],
+  ["Authorization", `apikey ${key}`],
+]) {
+  try {
+    const r = await fetch(p0, { headers: { [name]: value, accept: "application/x-protobuf", "user-agent": "Metranos-TrainRadar" } });
+    await r.arrayBuffer();
+    codes.push(`${name}${name === "Authorization" ? ` ${value.split(" ")[0]}` : ""}: ${r.status}`);
+  } catch (e) {
+    codes.push(`${name}: ${e.name}`);
+  }
+}
+console.log(`vic ${paths[0]} by header: ${codes.join(", ")}; key ${key.length} characters${key.trim() === key ? "" : ", with spaces or a newline around it"}`);

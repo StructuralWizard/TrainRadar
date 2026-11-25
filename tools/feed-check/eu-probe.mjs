@@ -122,6 +122,15 @@ if (cc === "ch") {
     process.exit(0);
   }
   await viaWorker(AU, [0, 1, 3, 5, 7, 9, 13, 31], 500);
+} else if (cc === "nz") {
+  // New Zealand: one turn of every feed (both regions) through the
+  // Worker's own code, kept to trains.
+  const { NZ } = await import("../../backend-eu/src/newzealand.js");
+  if (!process.env.NZ_METLINK_API_KEY || !process.env.NZ_AT_API_KEY) {
+    console.log("nz: NZ_METLINK_API_KEY or NZ_AT_API_KEY is not set");
+    process.exit(0);
+  }
+  await viaWorker(NZ, NZ.feeds.map((_, i) => i), 500);
 } else if (cc === "be") {
   // Belgium: trip updates (cycle 1) and alerts (cycle 10), through the
   // Worker's own code; trip ids should be the static GTFS's.
