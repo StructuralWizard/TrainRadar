@@ -106,13 +106,15 @@ left out. About 69,000 trips a week, 8,000 stations.
 **Live (2026-11-25):** DB's **OpenBoards** with `DE_DB_CLIENT_ID` and `DE_DB_API_KEY` (the keys
 open OpenBoards; the Timetables API answers 401 to them). `backend-eu/src/germany.js` asks for the
 departure boards of the 2,000 busiest stations (`data/de/boards.txt`, from the timetable by
-`tools/de/boards.py`), 15 stations a call (by DHID, DELFI's ids), six calls every 6 s, so each
-station about every 2 minutes, a call a second against the plan's ten. Each departure (scheduled and
-best-known time, `REAL`/`PREVIEW`/`SCHEDULE`, cancellation, platform) is merged into its journey
-(OpenBoards' journey id); journeys become trip updates keyed by train number ("#8230"), with a
-delay only where the time is a forecast or actual. The first probe's board began hours before the
-call and held only 25 departures per transport type: the Worker sends the window in German local
-time and asks for up to 200 per type (the Refdata probe checks which window is honoured).
+`tools/de/boards.py`), 3 stations a call (by DHID, DELFI's ids), six calls every 6 s: a call a
+second against the plan's ten, each station about every 11 minutes (a train passes many, so its
+delay is fresher). Each departure (scheduled and best-known time, `REAL`/`PREVIEW`/`SCHEDULE`,
+cancellation, platform) is merged into its journey (OpenBoards' journey id); journeys become trip
+updates keyed by train number ("#8230"), with a delay only where the time is a forecast or actual.
+What the probes found: at most 50 departures per transport type a call, for all its stations
+together (more is HTTP 400); `entryCount` "not yet supported"; one station's board honours the
+window (now to now + 30 min, in UTC or local time alike), several stations' boards spread wider.
+In CI, five cycles gave 860 trains, 97 % of them in DELFI's timetable by number.
 
 **Verdict:** feasible, and big. Open timetables and excellent open network data. For live data, the
 free **DB OpenBoards** covers every main-line train, including platforms, if its terms allow our
