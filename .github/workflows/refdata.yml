@@ -317,6 +317,8 @@ jobs:
           DE_DELFI_PASSWORD: ${{ secrets.DE_DELFI_PASSWORD }}
           DE_DB_CLIENT_ID: ${{ secrets.DE_DB_CLIENT_ID }}
           DE_DB_API_KEY: ${{ secrets.DE_DB_API_KEY }}
+          DE_MOBILITHEK_CERT_P12: ${{ secrets.DE_MOBILITHEK_CERT_P12 }}
+          DE_MOBILITHEK_CERT_PASSWORD: ${{ secrets.DE_MOBILITHEK_CERT_PASSWORD }}
         run: |
           set -o pipefail
           # Which of DB's APIs the keys open (Timetables, OpenBoards).
@@ -333,6 +335,10 @@ jobs:
           unzip -p gtfs/de/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print('#' + r['trip_short_name'].lstrip('0')) for r in csv.DictReader(sys.stdin) if r['trip_short_name'].strip('0')]" > build/de-numbers.txt
           echo "### de: live probe" >> "$GITHUB_STEP_SUMMARY"
           DE_BOARDS_FILE=build/de-boards.txt node tools/feed-check/eu-probe.mjs de build/de-numbers.txt build/probe-de | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          # DELFI's own GTFS-RT on Mobilithek (mutual TLS): size, and trains by trip id.
+          unzip -p gtfs/de/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/de-trips.txt
+          echo "### de: Mobilithek" >> "$GITHUB_STEP_SUMMARY"
+          tools/de/mobilithek-probe.sh build/de-trips.txt samples/de | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Belgium (SNCB GTFS and GTFS-RT; key BE_SNCB_KEY)
         continue-on-error: true # outside services: a report, not a gate
         env:
