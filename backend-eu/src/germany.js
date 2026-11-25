@@ -1,6 +1,6 @@
 // Germany: DB InfraGO's OpenBoards (DB API Marketplace, free plan) as trip
 // updates. OpenBoards gives station departure boards, not journeys: each
-// cycle asks for the boards of a few batches of up to 15 stations (DHIDs,
+// cycle asks for the boards of a few batches of a few stations (DHIDs,
 // the ids of DELFI's timetable), in turn through the list the deploy
 // publishes (data/de/boards.txt: the busiest rail stations first), and
 // merges every departure into its journey. Journeys become trip updates
@@ -15,8 +15,10 @@ import { tripUpdatesFeed } from "./encode.js";
 
 const API = "https://apis.deutschebahn.com/db-api-marketplace/apis/open-boards/v1/departures";
 const CLIENT = "Metranos-TrainRadar";
-/** Boards per call (the API's limit) and calls per cycle. */
-export const PER_CALL = 15;
+/** Stations per call and calls per cycle. A call returns at most 50
+ * departures per transport type (the API's maximum) for all its stations
+ * together, so a call takes few. */
+export const PER_CALL = 3;
 export const CALLS = 6;
 /** The board's window: departures from a few minutes ago to this ahead. */
 const BEHIND_MS = 5 * 60_000;
@@ -186,7 +188,7 @@ export async function fetchBoard(dhids, { env, fetchFn, now }) {
     body: JSON.stringify({
       stopPlaceOrStation: { dhids },
       timeWindow: { timeStart: berlinIso(now - BEHIND_MS), timeEnd: berlinIso(now + AHEAD_MS) },
-      maxEntriesPerTransportType: 200,
+      maxEntriesPerTransportType: 50,
       maxViaStops: 0,
       languages: ["deu"],
     }),
@@ -237,7 +239,7 @@ export const DE = {
   code: "de",
   prefix: "de/rt/",
   base: "https://apis.deutschebahn.com/db-api-marketplace/apis/",
-  // Six calls every 6 s: a call a second; 1,200 stations in about 80 s.
+  // Six calls every 6 s: a call a second; 2,000 stations in about 11 min.
   cycleMs: 6_000,
   feeds,
   source: "DB InfraGO AG, OpenBoards (DB API Marketplace), as GTFS-Realtime",

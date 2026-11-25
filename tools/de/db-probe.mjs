@@ -67,12 +67,16 @@ const local = (d) => {
 };
 const now = new Date();
 const later = new Date(+now + 3600e3);
+const m30 = new Date(+now + 1800e3);
+const MUC = { evaNumbers: ["8000261"] };
 const variants = [
-  ["utc-eva", { evaNumbers: ["8000105", "8000261", "8011160"] }, { timeStart: iso(now), timeEnd: iso(later) }, {}],
-  ["local-eva", { evaNumbers: ["8000105", "8000261", "8011160"] }, { timeStart: local(now), timeEnd: local(later) }, {}],
-  ["local-eva-200", { evaNumbers: ["8000105", "8000261", "8011160"] }, { timeStart: local(now), timeEnd: local(later) }, { maxEntriesPerTransportType: 200 }],
-  ["local-dhid-200", { dhids: ["de:06412:10", "de:09162:100", "de:11000:900003201"] }, { timeStart: local(now), timeEnd: local(later) }, { maxEntriesPerTransportType: 200 }],
-  ["nowindow-200", { evaNumbers: ["8000105"] }, null, { maxEntriesPerTransportType: 200 }],
+  ["muc-default", MUC, null, {}],
+  ["muc-start", MUC, { timeStart: local(now) }, { maxEntriesPerTransportType: 50 }],
+  ["muc-start-end", MUC, { timeStart: local(now), timeEnd: local(m30) }, { maxEntriesPerTransportType: 50 }],
+  ["muc-start-utc", MUC, { timeStart: iso(now), timeEnd: iso(m30) }, { maxEntriesPerTransportType: 50 }],
+  ["muc-count", MUC, { timeStart: local(now), entryCount: 40 }, {}],
+  ["muc-sched", MUC, { timeStart: local(now), timeEnd: local(m30) }, { maxEntriesPerTransportType: 50, sortBy: "TIME_SCHEDULE" }],
+  ["five-hubs", { evaNumbers: ["8000105", "8000261", "8011160", "8000207", "8002549"] }, { timeStart: local(now), timeEnd: local(m30) }, { maxEntriesPerTransportType: 50 }],
 ];
 let sample = null;
 for (const [name, where, timeWindow, extra] of variants) {
@@ -91,7 +95,11 @@ for (const [name, where, timeWindow, extra] of variants) {
   const types = {};
   for (const x of d) types[x.transport?.type] = (types[x.transport?.type] || 0) + 1;
   const late = d.filter((x) => x.time && x.timeSchedule && x.time !== x.timeSchedule).length;
-  console.log(`de: ${name}: ${d.length} departures (${late} not on time), scheduled ${times[0] || "-"} … ${times.at(-1) || "-"}; ${JSON.stringify(types)}; truncated ${JSON.stringify(j.meta?.truncatedTransportTypes || [])}; ${j.stopPlaces?.length ?? 0} stop places`);
+  const best = d.map((x) => x.time || x.timeSchedule).sort();
+  const before = d.filter((x) => Date.parse(x.time || x.timeSchedule) < +now - 600e3).length;
+  const kinds = {};
+  for (const x of d) kinds[x.timeType] = (kinds[x.timeType] || 0) + 1;
+  console.log(`de: ${name}: ${d.length} departures (${late} not on time), scheduled ${times[0] || "-"} … ${times.at(-1) || "-"}, best ${best[0] || "-"} … ${best.at(-1) || "-"}, ${before} more than 10 min before the call (${local(now)}); ${JSON.stringify(types)}; ${JSON.stringify(kinds)}; truncated ${JSON.stringify(j.meta?.truncatedTransportTypes || [])}; ${j.stopPlaces?.length ?? 0} stop places`);
   sample ||= d.find((x) => x.transport?.type === "REGIONAL_TRAIN") && { d: d.find((x) => x.transport?.type === "REGIONAL_TRAIN"), j };
 }
 if (sample) {

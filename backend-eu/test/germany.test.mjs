@@ -58,7 +58,8 @@ test("Germany: a cycle asks for the next stations with the keys in headers only"
   const cycle = await runCycle({ state, env, fetchFn, now: T("2026-11-25T08:31:00Z"), country: DE });
   assert.equal(state.feeds["trip_updates.pb"].ok, true, cycle.error);
   assert.equal(calls.length, 6);
-  assert.deepEqual(calls[0].body.stopPlaceOrStation.dhids.length, 15);
+  assert.deepEqual(calls[0].body.stopPlaceOrStation.dhids.length, 3);
+  assert.equal(calls[0].body.maxEntriesPerTransportType, 50);
   assert.equal(calls[0].body.timeWindow.timeStart, "2026-11-25T09:26:00+01:00");
   for (const c of calls) {
     assert.equal(c.init.headers["DB-Api-Key"], "key-y");
@@ -67,10 +68,10 @@ test("Germany: a cycle asks for the next stations with the keys in headers only"
   const pb = m.get("de/rt/trip_updates.pb");
   const ids = fields(pb).filter((f) => f.field === 2).map((f) => str(sub(sub(f.value, 3), 1), 1));
   assert.deepEqual(ids.sort(), ["#1104", "#4012"]);
-  // The next cycle goes on from station 90.
+  // The next cycle goes on from station 18.
   calls.length = 0;
   await runCycle({ state, env, fetchFn, now: T("2026-11-25T08:31:06Z"), country: DE });
-  assert.equal(calls[0].body.stopPlaceOrStation.dhids[0], "de:00000:90");
+  assert.equal(calls[0].body.stopPlaceOrStation.dhids[0], "de:00000:18");
 });
 
 test("Germany: refused keys stop the country until the longest backoff", async () => {
