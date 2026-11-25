@@ -217,7 +217,10 @@ pub fn norwegian_number(trip_id: &str) -> String {
 
 /// Regions with GPS for some trains and timetable plus delay for the rest.
 pub fn mixed(region: &str) -> bool {
-    matches!(region, "fi" | "fi-l" | "no" | "cz" | "cz-r" | "au-nsw" | "au-vic")
+    matches!(
+        region,
+        "fi" | "fi-l" | "no" | "cz" | "cz-r" | "au-nsw" | "au-vic"
+    )
 }
 
 /// Regions placed by timetable plus delay only.
