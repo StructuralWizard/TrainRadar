@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -41,6 +41,9 @@
 #                     de  DELFI's national GTFS (opendata-oepnv.de, CC BY 4.0,
 #                         weekly), cut to trains; needs DE_DELFI_USERNAME,
 #                         DE_DELFI_PASSWORD (tools/delfi-fetch.py logs in)
+#                     be  SNCB's GTFS through the Belgian Mobility Company's
+#                         gateway, cut to trains; needs BE_SNCB_KEY (sent in
+#                         the Ocp-Apim-Subscription-Key header only)
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -277,7 +280,24 @@ except Exception as e:
     rm -f "$dir/all.zip"
     echo "gtfs.zip (trains): $(du -h "$dir/gtfs.zip" | cut -f1)"
     region=germany ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de [--no-osm]" >&2; exit 2 ;;
+  be)
+    [ -n "${BE_SNCB_KEY:-}" ] || { echo "BE_SNCB_KEY is not set" >&2; exit 2; }
+    url=https://api-management-opendata-production.azure-api.net/api/gtfs/feed/nmbssncb/static
+    headers=$(mktemp)
+    # The key in a header, through curl's config on stdin.
+    printf 'header = "Ocp-Apim-Subscription-Key: %s"\n' "$BE_SNCB_KEY" |
+      curl -fsSL --retry 4 --retry-delay 15 -D "$headers" -A "$client (+https://mytrainradar.com)" \
+        -o "$dir/all.zip" -K - "$url" ||
+      { echo "SNCB GTFS: download refused or failed (HTTP 401 = the key)" >&2; rm -f "$headers"; exit 1; }
+    printf '%s\t%s\t%s\t%s\n' "SNCB/NMBS GTFS (Belgian Mobility Company)" "$url" \
+      "$(grep -i '^etag:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r"' || true)" \
+      "$(grep -i '^last-modified:' "$headers" | tail -1 | cut -d' ' -f2- | tr -d '\r' || true)" >>"$dir/sources.tsv"
+    rm -f "$headers"
+    echo "all.zip: $(du -h "$dir/all.zip" | cut -f1) ($(head -c 2 "$dir/all.zip" | od -An -c | tr -d ' '))"
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/all.zip" --parents
+    rm -f "$dir/all.zip"
+    region=belgium ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

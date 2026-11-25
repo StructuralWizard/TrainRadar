@@ -175,6 +175,14 @@ Wave 2, with France and Belgium.
 
 Europe/Brussels · Dutch, French, German · UIC 88.
 
+**Built 2026-11-25 (hidden):** with the access point's subscription key `BE_SNCB_KEY`, from the
+Belgian Mobility Company's gateway (`api-management-opendata-production.azure-api.net`, key in the
+`Ocp-Apim-Subscription-Key` header): the static GTFS (`/api/gtfs/feed/nmbssncb/static`), cut to
+trains, region `be`; live trip updates (`…/nmbssncb/rt/trip-update?format=protobuf`, every 30 s)
+and alerts (`…/rt/alert?format=protobuf`, every 5 minutes) in the Europe Worker (`be/rt/`), trip
+ids the static file's. **Stays hidden until SNCB allows commercial use in writing** (the terms
+below).
+
 **Verdict:** blocked on SNCB. Its GTFS and GTFS-Realtime need a key, and the national access point
 marks them **non-commercial**; SNCB's FAQ forbids redistributing the raw data. Ask SNCB for
 commercial use in writing. Eurostar's feeds and Infrabel's network data are open.

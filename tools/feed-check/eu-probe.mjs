@@ -114,6 +114,15 @@ if (cc === "ch") {
     process.exit(0);
   }
   await viaWorker(DK, DK.feeds.map((_, i) => i));
+} else if (cc === "be") {
+  // Belgium: trip updates (cycle 1) and alerts (cycle 10), through the
+  // Worker's own code; trip ids should be the static GTFS's.
+  const { BE } = await import("../../backend-eu/src/belgium.js");
+  if (!process.env.BE_SNCB_KEY) {
+    console.log("be: BE_SNCB_KEY is not set");
+    process.exit(0);
+  }
+  await viaWorker(BE, [1, 10]);
 } else if (cc === "de") {
   // Germany: a few cycles of OpenBoards through the Worker's own code (the
   // station list just built), and how many boards' trains the timetable has

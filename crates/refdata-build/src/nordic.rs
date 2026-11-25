@@ -63,6 +63,9 @@ const GERMAN_LANDS: [(&str, &str, &str); 16] = [
     ("15", "de-st", "Germany (Saxony-Anhalt)"),
     ("16", "de-th", "Germany (Thuringia)"),
 ];
+/// Belgium: SNCB's GTFS (the Belgian Mobility Company's gateway), cut to
+/// trains; live trip updates and alerts from its GTFS-Realtime.
+pub const BE: &str = "be";
 /// A German stop whose DHID names no Land (none seen in DELFI).
 pub const DE_OTHER: &str = "de-x";
 
@@ -91,6 +94,8 @@ pub const ATTRIBUTION_HU: &str = "Data: MÁV Csoport GTFS (mavcsoport.hu), MÁV-
 timetables. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DE: &str = "Data: DELFI e.V. (www.delfi.de), via opendata-oepnv.de, CC BY 4.0; \
 live: DB InfraGO AG, OpenBoards. Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_BE: &str = "Data: SNCB/NMBS, via the Belgian Mobility Company's open data \
+gateway (non-commercial use). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
 (Vejdirektoratet). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_NL: &str = "Data: OVapi (gtfs.ovapi.nl), from the NDOV national data, CC0; \
@@ -138,6 +143,7 @@ pub fn region_name(code: &str) -> &'static str {
         HU => "Hungary (long distance)",
         HU_REGIONAL => "Hungary (regional)",
         DE => "Germany (long distance)",
+        BE => "Belgium",
         DE_OTHER => "Germany (regional, cross-border)",
         c if c.starts_with("de-") => GERMAN_LANDS.iter().find(|l| l.1 == c).map_or("", |l| l.2),
         _ => "",

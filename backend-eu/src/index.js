@@ -17,6 +17,8 @@
 //   SIRI-ET from the national access point's Service Bus → dk/rt/.
 // - Germany (DE_ENABLED, Worker secrets DE_DB_CLIENT_ID, DE_DB_API_KEY):
 //   DB's OpenBoards station boards, merged into trip updates → de/rt/.
+// - Belgium (BE_ENABLED, Worker secret BE_SNCB_KEY): SNCB's GTFS-Realtime
+//   trip updates and alerts → be/rt/.
 // Each *_ENABLED variable is that country's kill switch.
 
 import { emptyState, runCycle } from "./cycle.js";
@@ -27,9 +29,10 @@ import { SE } from "./sweden.js";
 import { CZ } from "./czechia.js";
 import { DK } from "./denmark.js";
 import { DE } from "./germany.js";
+import { BE } from "./belgium.js";
 import { FI, NL, NO } from "./nordic.js";
 
-export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK, de: DE };
+export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK, de: DE, be: BE };
 
 export class FeedIngest {
   constructor(ctx, env) {

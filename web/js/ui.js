@@ -188,6 +188,7 @@ const TICKET_SITES = {
   MÁV: ["MÁV", "https://jegy.mav.hu/"],
   // bahn.de sells nearly every German operator's tickets.
   DB: ["bahn.de", "https://www.bahn.de/"],
+  SNCB: ["SNCB/NMBS", "https://www.belgiantrain.be/"],
   DSB: ["DSB", "https://www.dsb.dk/"],
   // Koleo sells most Polish operators' tickets.
   "PKP PLK": ["Koleo", "https://koleo.pl/"],

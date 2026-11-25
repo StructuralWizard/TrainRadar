@@ -79,7 +79,7 @@ usage:
                        Czechia: --cz-gtfs ZIP; Italy: --it-gtfs ZIP (Trenitalia),
                        --it-lom-gtfs ZIP (Trenord, Lombardy);
                        Denmark: --dk-gtfs ZIP; Hungary: --hu-gtfs ZIP;
-                       Germany: --de-gtfs ZIP)
+                       Germany: --de-gtfs ZIP; Belgium: --be-gtfs ZIP)
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -158,6 +158,8 @@ struct BuildArgs {
     hu_gtfs: Option<PathBuf>,
     /// DELFI's national GTFS cut to trains (tools/delfi-fetch.py): Germany.
     de_gtfs: Option<PathBuf>,
+    /// SNCB's GTFS cut to trains: Belgium.
+    be_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -198,6 +200,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         dk_gtfs: None,
         hu_gtfs: None,
         de_gtfs: None,
+        be_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -248,6 +251,7 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--dk-gtfs" => a.dk_gtfs = Some(val()?.into()),
             "--hu-gtfs" => a.hu_gtfs = Some(val()?.into()),
             "--de-gtfs" => a.de_gtfs = Some(val()?.into()),
+            "--be-gtfs" => a.be_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -288,10 +292,11 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.dk_gtfs.is_none()
         && a.hu_gtfs.is_none()
         && a.de_gtfs.is_none()
+        && a.be_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs, --it-gtfs, --dk-gtfs, --hu-gtfs or --de-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs, --it-gtfs, --dk-gtfs, --hu-gtfs, --de-gtfs or --be-gtfs"
                 .into(),
         );
     }
@@ -442,6 +447,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.dk_gtfs, "dk"),
         (&a.hu_gtfs, "hu"),
         (&a.de_gtfs, "de"),
+        (&a.be_gtfs, "be"),
     ] {
         let Some(path) = path else { continue };
         if matches!(
@@ -460,6 +466,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 | "dk"
                 | "hu"
                 | "de"
+                | "be"
         ) {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
@@ -483,6 +490,7 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 "dk" => (nordic::normalise_simple(&mut feed), "DSB"),
                 "hu" => (nordic::normalise_hungary(&mut feed), "MÁV"),
                 "de" => (nordic::normalise_germany(&mut feed), "DB"),
+                "be" => (nordic::normalise_sweden(&mut feed), "SNCB"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
@@ -999,6 +1007,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_HU
         } else if a.de_gtfs.is_some() {
             nordic::ATTRIBUTION_DE
+        } else if a.be_gtfs.is_some() {
+            nordic::ATTRIBUTION_BE
         } else {
             ATTRIBUTION
         },
