@@ -325,7 +325,9 @@ app, and update the "last updated" dates when they change.
 ## New South Wales (Australia)
 
 - **Turning it on:** **`AU_NSW_ENABLED`** = `true` (the timetable) and **`AU_NSW_LIVE_ENABLED`** =
-  `true` (GPS, delays and alerts in the `eu` Worker), with `AU_NSW_API_KEY`; `?country=au`. See [world/au-nsw.md](world/au-nsw.md).
+  `true` (GPS, delays and alerts in the `eu` Worker), with `AU_NSW_API_KEY`; `?country=au`.
+- **Victoria:** **`AU_VIC_ENABLED`** = `true` adds it to the same Australia build
+  ([world/au-vic.md](world/au-vic.md)); live data to follow. See [world/au-nsw.md](world/au-nsw.md).
 
 ## Slovakia and Estonia (M4)
 

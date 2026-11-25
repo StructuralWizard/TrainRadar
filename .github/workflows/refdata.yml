@@ -372,6 +372,21 @@ jobs:
           node tools/au/nsw-probe.mjs build/au-nsw-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
           echo "### au: through the Worker" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs au build/au-nsw-trips.txt build/probe-au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Victoria (Transport Victoria; key AU_VIC_API_KEY for live)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          AU_VIC_API_KEY: ${{ secrets.AU_VIC_API_KEY }}
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh au-vic --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/au-vic --au-vic-gtfs gtfs/au-vic/gtfs.zip \
+            --sources gtfs/au-vic/sources.tsv --report refdata-au-vic.md
+          target/release/refdata-build verify build/au-vic
+          { echo "## Victoria reference data"; echo; cat refdata-au-vic.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/au-vic/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/au-vic-trips.txt
+          unzip -p gtfs/au-vic/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### vic: live endpoints" >> "$GITHUB_STEP_SUMMARY"
+          node tools/au/vic-probe.mjs build/au-vic-trips.txt samples/au | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

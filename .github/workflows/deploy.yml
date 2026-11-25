@@ -45,7 +45,7 @@ jobs:
           FR_ENABLED: ${{ vars.FR_ENABLED }}
           LU_ENABLED: ${{ vars.LU_ENABLED }}
           M2_ENABLED: ${{ vars.FI_ENABLED == 'true' || vars.NO_ENABLED == 'true' || vars.NL_ENABLED == 'true' }}
-          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' || vars.BE_ENABLED == 'true' || vars.AU_NSW_ENABLED == 'true' }}
+          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' || vars.BE_ENABLED == 'true' || vars.AU_NSW_ENABLED == 'true' || vars.AU_VIC_ENABLED == 'true' }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -767,41 +767,52 @@ jobs:
             exit 1
           fi
 
-      # New South Wales, with AU_NSW_ENABLED: Transport for NSW's GTFS (key
-      # AU_NSW_API_KEY), trains, and OSM track (Geofabrik's Australia) →
-      # data/au/ (the app's country "au"). By timetable for now.
+      # Australia → data/au/ (the app's country "au"): New South Wales with
+      # AU_NSW_ENABLED (Transport for NSW, key AU_NSW_API_KEY) and Victoria
+      # with AU_VIC_ENABLED (Transport Victoria), one build; OSM track from
+      # Geofabrik's Australia extract.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: vars.AU_NSW_ENABLED == 'true'
-        id: osm_au_nsw
+        if: vars.AU_NSW_ENABLED == 'true' || vars.AU_VIC_ENABLED == 'true'
+        id: osm_au
         with:
-          path: gtfs/au-nsw/rail.geojsonseq
-          key: osm-rail-au-nsw-v1-${{ steps.week.outputs.week }}
-          restore-keys: osm-rail-au-nsw-v1-
-      - name: New South Wales reference data
-        if: vars.AU_NSW_ENABLED == 'true'
+          path: gtfs/au-osm/rail.geojsonseq
+          key: osm-rail-au-v1-${{ steps.week.outputs.week }}
+          restore-keys: osm-rail-au-v1-
+      - name: Australia reference data
+        if: vars.AU_NSW_ENABLED == 'true' || vars.AU_VIC_ENABLED == 'true'
         continue-on-error: true
         env:
-          OSM_CACHED: ${{ steps.osm_au_nsw.outputs.cache-hit }}
+          OSM_CACHED: ${{ steps.osm_au.outputs.cache-hit }}
+          NSW: ${{ vars.AU_NSW_ENABLED }}
+          VIC: ${{ vars.AU_VIC_ENABLED }}
           AU_NSW_API_KEY: ${{ secrets.AU_NSW_API_KEY }}
+          AU_VIC_API_KEY: ${{ secrets.AU_VIC_API_KEY }}
         run: |
           set -o pipefail
-          [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
-          tools/fetch-eu.sh au-nsw | tee -a "$GITHUB_STEP_SUMMARY"
-          if cargo run --release -q -p trainradar-refdata-build -- build --out build/au-data --gzip \
-              --au-nsw-gtfs gtfs/au-nsw/gtfs.zip --sources gtfs/au-nsw/sources.tsv \
-              $([ -s gtfs/au-nsw/rail.geojsonseq ] && echo --rail gtfs/au-nsw/rail.geojsonseq) --report refdata-au.md \
+          args=()
+          if [ "$NSW" = "true" ]; then tools/fetch-eu.sh au-nsw --no-osm | tee -a "$GITHUB_STEP_SUMMARY" && args+=(--au-nsw-gtfs gtfs/au-nsw/gtfs.zip); fi
+          if [ "$VIC" = "true" ]; then tools/fetch-eu.sh au-vic --no-osm | tee -a "$GITHUB_STEP_SUMMARY" && args+=(--au-vic-gtfs gtfs/au-vic/gtfs.zip); fi
+          [ ${#args[@]} -gt 0 ] || { echo "::warning::Australia: no state's timetable downloaded: deploying without Australia."; exit 1; }
+          cat gtfs/au-nsw/sources.tsv gtfs/au-vic/sources.tsv 2>/dev/null > gtfs/au-sources.tsv || true
+          # The track: Australia's OSM extract once, for both states.
+          if [ ! -s gtfs/au-osm/rail.geojsonseq ]; then
+            [ "$OSM_CACHED" = "true" ] || command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
+            tools/fetch-eu.sh au-osm | tee -a "$GITHUB_STEP_SUMMARY" || true
+          fi
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/au-data --gzip "${args[@]}" --sources gtfs/au-sources.tsv \
+              $([ -s gtfs/au-osm/rail.geojsonseq ] && echo --rail gtfs/au-osm/rail.geojsonseq) --report refdata-au.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/au-data; then
             mv build/au-data build/data/au
             if cargo run --release -q -p trainradar-refdata-build -- build --out build/au-plan --gzip --days 63 \
-                --au-nsw-gtfs gtfs/au-nsw/gtfs.zip --report au-plan.md \
+                "${args[@]}" --report au-plan.md \
               && cargo run --release -q -p trainradar-refdata-build -- verify build/au-plan; then
               mv build/au-plan build/data/au/plan
             else
-              echo "::warning::New South Wales' plan-ahead timetables failed: it has today's week only."
+              echo "::warning::Australia's plan-ahead timetables failed: it has today's week only."
             fi
-            { echo "## New South Wales reference data"; echo; cat refdata-au.md; } >> "$GITHUB_STEP_SUMMARY"
+            { echo "## Australia reference data"; echo; cat refdata-au.md; } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "::warning::New South Wales' reference data failed: deploying without it."
+            echo "::warning::Australia's reference data failed: deploying without Australia."
             exit 1
           fi
 

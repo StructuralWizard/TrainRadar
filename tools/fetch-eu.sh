@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -47,6 +47,8 @@
 #                     au-nsw  Transport for NSW's GTFS: Sydney Trains, NSW
 #                         TrainLink and Sydney Metro, merged and cut to
 #                         trains; needs AU_NSW_API_KEY ("apikey" header)
+#                     au-vic  Transport Victoria's GTFS Schedule: V/Line and
+#                         Metro Trains (tools/au/vic-fetch.py), merged
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -326,7 +328,17 @@ except Exception as e:
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents --also=401,1
     rm -f "${parts[@]}"
     region=australia-oceania/australia ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw [--no-osm]" >&2; exit 2 ;;
+  au-osm)
+    # Only the OSM track for Australia (shared by its states' builds).
+    region=australia-oceania/australia ;;
+  au-vic)
+    python3 -I tools/au/vic-fetch.py "$dir" "$dir/sources.tsv"
+    parts=()
+    for op in vline metro; do [ -s "$dir/$op.zip" ] && parts+=("$dir/$op.zip"); done
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents
+    rm -f "${parts[@]}"
+    region=australia-oceania/australia ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then
