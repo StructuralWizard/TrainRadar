@@ -74,7 +74,11 @@ async function tvQuery(env, fetchFn, query, what) {
     headers: { "content-type": "text/xml", accept: "application/json", "user-agent": CLIENT },
     body,
   });
-  if (!r.ok) throw new Error(`Trafikverket ${what}: HTTP ${r.status}`);
+  if (!r.ok) {
+    // Its error says what in the query it refused (never the key).
+    const why = await r.json().then((j) => j?.RESPONSE?.RESULT?.[0]?.ERROR?.MESSAGE, () => null);
+    throw new Error(`Trafikverket ${what}: HTTP ${r.status}${why ? ` (${String(why).slice(0, 160)})` : ""}`);
+  }
   const j = await r.json();
   const res = j?.RESPONSE?.RESULT?.[0] || {};
   if (res.ERROR) throw new Error(`Trafikverket ${what}: ${String(res.ERROR.MESSAGE || "error").slice(0, 120)}`);
