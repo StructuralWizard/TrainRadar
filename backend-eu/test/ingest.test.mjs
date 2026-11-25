@@ -389,7 +389,7 @@ test("Poland: PLK's disruptions become alerts on their stations, every 15th cycl
 });
 
 test("Sweden: Trafikverket's calls become delays by train number; its key only in the body", async () => {
-  const { SE, mergeAnnouncements, announcementUpdates, messageAlerts, resetTrafikverket } = await import("../src/sweden.js");
+  const { SE, mergeAnnouncements, announcementUpdates, resetTrafikverket } = await import("../src/sweden.js");
   const a = (n, sig, act, t, extra = {}) => ({
     AdvertisedTrainIdent: n, ScheduledDepartureDateTime: "2026-11-25T00:00:00.000+01:00", LocationSignature: sig, ActivityType: act,
     AdvertisedTimeAtLocation: t, ...extra,
@@ -410,15 +410,8 @@ test("Sweden: Trafikverket's calls become delays by train number; its key only i
   // A deleted call goes.
   mergeAnnouncements(calls, [a("8701", "U", "Avgang", "2026-11-25T08:10:00.000+01:00", { Deleted: true })]);
   assert.ok(!announcementUpdates(calls).some((x) => x.tripId === "#8701"));
-  // Messages: ended ones dropped.
-  const now = Date.parse("2026-11-25T08:00:00Z");
-  const m = messageAlerts([
-    { EventId: "1", Header: "Signalfel", ExternalDescription: "Signalfel vid Flemingsberg. Förseningar.", StartDateTime: "2026-11-25T07:00:00.000+01:00" },
-    { EventId: "2", Header: "Banarbete", EndDateTime: "2026-11-24T07:00:00.000+01:00" },
-  ], now);
-  assert.equal(m.length, 1);
-  assert.equal(m[0].header, "Signalfel");
   // Through the cycle: the first time every call (changeid 0), then the changes.
+  const now = Date.parse("2026-11-25T08:00:00Z");
   resetTrafikverket();
   const bodies = [];
   const fetchFn = async (url, init) => {
@@ -446,6 +439,4 @@ test("Sweden: Trafikverket's calls become delays by train number; its key only i
   assert.ok(!JSON.stringify(bad).includes("tv-key"));
   const noKey = await runCycle({ state: { ...emptyState(), minute: tvTurn }, env: { ...env, SE_TRAFIKVERKET_KEY: "" }, fetchFn: async () => new Response(new Uint8Array([10, 2, 49, 48])), now, country: SE });
   assert.equal(noKey.fetched, "tu_skane.pb");
-  // The messages' turn, every other turn.
-  assert.equal(SE.feeds.filter((f) => f.name === "alerts.pb").length, 1);
 });

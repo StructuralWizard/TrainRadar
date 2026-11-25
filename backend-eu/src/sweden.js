@@ -13,12 +13,13 @@
 // them), so every train's delay also comes from Trafikverket's open API
 // (TrainAnnouncement: each train's advertised and actual time at each
 // station), keyed by train number ("#1059", as the engine looks trains up
-// when a feed's trip ids aren't the timetable's), and its traffic messages
-// (TrainMessage) become alerts. Trafikverket takes its key only in the
-// query's body (SE_TRAFIKVERKET_KEY, AGENTS.md); errors never include it.
+// when a feed's trip ids aren't the timetable's). (Its traffic messages,
+// TrainMessage, no longer exist in the API: "ObjectType 'TrainMessage' does
+// not exists", Nov 2026.) Trafikverket takes its key only in the query's
+// body (SE_TRAFIKVERKET_KEY, AGENTS.md); errors never include it.
 
 import { entityTrip } from "./gtfsrt.js";
-import { alertsFeed, tripUpdatesFeed } from "./encode.js";
+import { tripUpdatesFeed } from "./encode.js";
 
 const CLIENT = "Metranos-TrainRadar";
 
@@ -178,39 +179,11 @@ async function trafikverketCycle({ env, fetchFn, now }) {
   return { bytes: tripUpdatesFeed(announcementUpdates(tv.calls), Math.floor(now / 1000)) };
 }
 
-/** Trafikverket's traffic messages (works, faults, disruptions) still on. */
-export const messageQuery = () =>
-  '<QUERY objecttype="TrainMessage" schemaversion="1.7"><FILTER><EQ name="Deleted" value="false"/></FILTER></QUERY>';
-
-export function messageAlerts(list, now) {
-  const out = [];
-  for (const m of list || []) {
-    const end = m.EndDateTime ? Date.parse(m.EndDateTime) : null;
-    if (end != null && end < now) continue;
-    const text = String(m.ExternalDescription || "").trim();
-    const header = String(m.Header || m.ReasonCodeText || text.split(/(?<=[.!])\s/)[0] || "").trim();
-    if (!header && !text) continue;
-    const start = m.StartDateTime ? Math.floor(Date.parse(m.StartDateTime) / 1000) : null;
-    out.push({ id: `tv-msg-${m.EventId || out.length}`, start, header: header.slice(0, 160), description: text || header, lang: "sv" });
-  }
-  return out;
-}
-
-async function messagesCycle({ env, fetchFn, now }) {
-  const res = await tvQuery(env, fetchFn, messageQuery(), "TrainMessage");
-  return { bytes: alertsFeed(messageAlerts(res.TrainMessage, now), Math.floor(now / 1000)) };
-}
-
 const TV = { name: "tu_trafikverket.pb", path: "TrainAnnouncement", part: "trip_updates.pb", trafikverket: true, produce: trafikverketCycle };
-const TM = { name: "alerts.pb", path: "TrainMessage", trafikverket: true, produce: messagesCycle };
 
 /** One turn: the regions in order, Trafikverket's delays after every other
- * region (about every 24 s); its messages in place of one of them on every
- * other turn (about every 6 minutes). */
-const TURN = SE_REGIONS.flatMap((op, i) => (i % 2 === 1 ? [regionFeeds[i], TV] : [regionFeeds[i]]));
-let swapped = false;
-const TURN2 = TURN.map((f) => (f === TV && !swapped ? ((swapped = true), TM) : f));
-const feeds = [...TURN, ...TURN2];
+ * region (about every 24 s). */
+const feeds = SE_REGIONS.flatMap((op, i) => (i % 2 === 1 ? [regionFeeds[i], TV] : [regionFeeds[i]]));
 
 export const SE = {
   code: "se",
@@ -231,8 +204,8 @@ export const SE = {
   url: (env, feed) => `${SE.base}${feed.path}?key=${encodeURIComponent(env.SE_TRAFIKLAB_RT_KEY)}`,
   headers: () => ({ "user-agent": CLIENT, accept: "application/x-protobuf", "accept-encoding": "gzip" }),
   keep: async (name, _bytes, { env, fetchFn, now }) => {
-    // Trafikverket's: every train (keyed by number) and every message.
-    if (name === TV.name || name === TM.name) return null;
+    // Trafikverket's: every train (keyed by number).
+    if (name === TV.name) return null;
     const set = await railTrips(env, fetchFn, now);
     return (entity) => set.has(entityTrip(entity).tripId);
   },

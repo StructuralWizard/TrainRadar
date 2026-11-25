@@ -109,36 +109,11 @@ if (cc === "ch") {
     console.log("se: SE_TRAFIKLAB_RT_KEY is not set");
     process.exit(0);
   }
-  // Each feed once: every region, Trafikverket's delays and its messages
+  // Each feed once: every region and Trafikverket's delays
   // (the trips file also lists the timetable's train numbers, "#1059").
   const names = [...new Set(SE.feeds.map((f) => f.name))];
   console.log(`se: Trafikverket key ${process.env.SE_TRAFIKVERKET_KEY ? "set" : "not set"}`);
   await viaWorker(SE, names.map((n) => SE.feeds.findIndex((f) => f.name === n)));
-  // Which traffic-message query Trafikverket takes: status and its error
-  // message only (the key is in the body, never printed).
-  if (process.env.SE_TRAFIKVERKET_KEY) {
-    const login = `<LOGIN authenticationkey="${process.env.SE_TRAFIKVERKET_KEY.replace(/[&"<]/g, "")}"/>`;
-    const variants = [];
-    for (const type of ["TrainMessage", "OperativeEvent", "RailwayEvent"]) {
-      for (const v of ["1.7", "1.6", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"]) {
-        variants.push([`${type} ${v}`, `<QUERY objecttype="${type}" schemaversion="${v}" limit="2"/>`]);
-      }
-    }
-    variants.push(["TrainMessage 1.7 Deleted=false", '<QUERY objecttype="TrainMessage" schemaversion="1.7" limit="2"><FILTER><EQ name="Deleted" value="false"/></FILTER></QUERY>']);
-    for (const [label, q] of variants) {
-      const r = await fetch("https://api.trafikinfo.trafikverket.se/v2/data.json", {
-        method: "POST",
-        headers: { "content-type": "text/xml", accept: "application/json", "user-agent": "Metranos-TrainRadar" },
-        body: `<REQUEST>${login}${q}</REQUEST>`,
-      });
-      const j = await r.json().catch(() => null);
-      const res = j?.RESPONSE?.RESULT?.[0] || {};
-      const items = Object.entries(res).find(([k, v]) => k !== "INFO" && k !== "ERROR" && Array.isArray(v));
-      const sample = items?.[1]?.[0] ? Object.keys(items[1][0]).join(",").slice(0, 300) : "";
-      const line = `se ${label}: HTTP ${r.status}${res.ERROR ? ` ${String(res.ERROR.MESSAGE).slice(0, 160)}` : ""}${items ? ` ${items[1].length} objects; fields ${sample}` : ""}`;
-      console.log(line.replaceAll(process.env.SE_TRAFIKVERKET_KEY, "***"));
-    }
-  }
 } else if (cc === "dk") {
   // Denmark: every topic once, through the Worker's own code (login, HTTPS
   // receive, SIRI-ET parse, journey state); messages are acknowledged.
