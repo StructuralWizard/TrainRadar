@@ -201,11 +201,24 @@ jobs:
             echo "### ch: live probe" >> "$GITHUB_STEP_SUMMARY"
             node tools/feed-check/eu-probe.mjs ch build/ch-trips.txt build/probe-ch | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
           fi
+      # GTFS Sweden 3's key allows 50 downloads a month: the deploy's copy
+      # (one a day, cached) is used when there is one; tools/fetch-eu.sh.
+      - name: Today's date
+        id: day
+        run: echo "day=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: se_gtfs
+        with:
+          path: gtfs/se/sweden.zip
+          key: se-gtfs-v1-${{ steps.day.outputs.day }}
+          restore-keys: se-gtfs-v1-
       - name: Sweden (Trafiklab; SE_TRAFIKLAB_* keys, the key in its URL as Trafiklab requires)
         continue-on-error: true # outside services: a report, not a gate
         env:
+          SE_GTFS_REUSE: ${{ steps.se_gtfs.outputs.cache-matched-key != '' && '1' || '' }}
           SE_TRAFIKLAB_STATIC_KEY: ${{ secrets.SE_TRAFIKLAB_STATIC_KEY }}
           SE_TRAFIKLAB_RT_KEY: ${{ secrets.SE_TRAFIKLAB_RT_KEY }}
+          SE_TRAFIKVERKET_KEY: ${{ secrets.SE_TRAFIKVERKET_KEY }}
         run: |
           set -o pipefail
           if [ -z "$SE_TRAFIKLAB_STATIC_KEY" ]; then echo "Sweden (Trafiklab; SE_TRAFIKLAB_* keys, the key in its URL as Trafiklab requires): no SE_TRAFIKLAB_STATIC_KEY (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
@@ -214,7 +227,10 @@ jobs:
             --sources gtfs/se/sources.tsv --report refdata-se.md
           target/release/refdata-build verify build/se
           { echo "## Sweden reference data"; echo; cat refdata-se.md; } >> "$GITHUB_STEP_SUMMARY"
-          unzip -p gtfs/se/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/se-trips.txt
+          # Trip ids, and train numbers ("#1059") for Trafikverket's delays.
+          unzip -p gtfs/se/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) or (r.get('trip_short_name','').lstrip('0') and print('#'+r['trip_short_name'].lstrip('0'))) for r in csv.DictReader(sys.stdin)]" > build/se-trips.txt
+          unzip -p gtfs/se/gtfs.zip trips.txt | head -3 | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "se: $(grep -c '^#' build/se-trips.txt) trips with a train number" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "### se: live probe" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs se build/se-trips.txt build/probe-se | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Poland (PKP PLK's API; PL_PLK_API_KEY in a header)

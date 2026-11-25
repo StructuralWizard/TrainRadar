@@ -78,6 +78,7 @@ export async function runCycle({ state, env, fetchFn = fetch, now = Date.now(), 
       cycle.ok = false;
       cycle.error = String(e?.message || e)
         .replaceAll(env.SE_TRAFIKLAB_RT_KEY || "\u0000", "***")
+        .replaceAll(env.SE_TRAFIKVERKET_KEY || "\u0000", "***")
         .replaceAll(env.DK_NAP_CLIENT_SECRET || "\u0000", "***")
         .replaceAll(env.DE_DB_API_KEY || "\u0000", "***")
         .replaceAll(env.DE_DB_CLIENT_ID || "\u0000", "***")

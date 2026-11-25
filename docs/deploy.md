@@ -262,10 +262,17 @@ app, and update the "last updated" dates when they change.
 - **Live data:** Switzerland's trip updates and alerts (`ch/rt/`) and Poland's live running
   (`pl/rt/`, PKP PLK's JSON turned into GTFS-Realtime by the Worker) come from the `eu` job's
   Worker, which gets the keys as Worker secrets. Sweden's live delays (`se/rt/`) come from
-  Trafiklab's regional feeds, one region every 8 s, kept to the trains in our timetable (the
-  deploy publishes their trip ids as `data/se/rail-trips.txt`); needs `SE_TRAFIKLAB_RT_KEY`
-  at the Silver level (about 10,000 calls a day) and its own switch, **`SE_LIVE_ENABLED`** =
-  `true`; `SE_ENABLED` alone gives Sweden by timetable.
+  Trafiklab's regional feeds, one call every 8 s, kept to the trains in our timetable (the
+  deploy publishes their trip ids as `data/se/rail-trips.txt`), and from Trafikverket's open
+  API (`SE_TRAFIKVERKET_KEY`, optional: every train's delay by train number, every 24 s, and
+  its traffic messages as alerts, every 6 minutes); needs `SE_TRAFIKLAB_RT_KEY` at the Silver
+  level (about 7,700 calls a day) and its own switch, **`SE_LIVE_ENABLED`** = `true`;
+  `SE_ENABLED` alone gives Sweden by timetable. Poland's disruptions become alerts every
+  30 minutes (`pl/rt/alerts.pb`).
+- **GTFS Sweden 3's quota:** its key allows 50 downloads a month. The deploy downloads it at
+  most once a day and keeps it in the Actions cache (`se-gtfs-v1-<date>`); a failed download
+  uses the latest earlier copy, and the Refdata workflow uses the cached copy whenever there
+  is one. No retries: a refusal (HTTP 429) is the month's quota.
 - **Tested on pull requests:** the Refdata workflow builds the three countries and calls each
   live source once through the Worker's own code (`tools/feed-check/eu-probe.mjs`), reporting
   how many live trips match the timetable. Approved by the maintainer (AGENTS.md).

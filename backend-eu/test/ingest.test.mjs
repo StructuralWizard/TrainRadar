@@ -231,7 +231,7 @@ test("Poland: PLK's JSON becomes GTFS-Realtime trip updates with the timetable's
   const calls = [];
   const fetchFn = async (url, init) => (calls.push({ url, init }), new Response(JSON.stringify(json), { status: 200 }));
   const LIVE = fakeBucket();
-  const s = await runCycle({ state: emptyState(), env: { LIVE, PL_PLK_API_KEY: "pl-key" }, fetchFn, now: Date.parse("2026-11-23T09:00:00Z"), country: PL });
+  const s = await runCycle({ state: { ...emptyState(), minute: 1 }, env: { LIVE, PL_PLK_API_KEY: "pl-key" }, fetchFn, now: Date.parse("2026-11-23T09:00:00Z"), country: PL });
   assert.equal(s.ok, true, s.error);
   assert.equal(calls[0].init.headers["x-api-key"], "pl-key");
   assert.ok(!calls[0].url.includes("pl-key"));
@@ -269,7 +269,7 @@ test("Sweden: one region a cycle, the key only in Trafiklab's URL, only our trai
   assert.equal(call.url, "https://opendata.samtrafiken.se/gtfs-rt-sweden/skane/TripUpdatesSweden.pb?key=se-key");
   assert.equal(s0.feeds["tu_skane.pb"].kept, 1);
   // Next cycle, next region: trip_updates.pb holds both regions' trains.
-  const s1 = await runCycle({ state: { ...emptyState(), minute: 3 }, env, fetchFn, now: 2_000, country: SE });
+  const s1 = await runCycle({ state: { ...emptyState(), minute: 4 }, env, fetchFn, now: 2_000, country: SE });
   assert.equal(s1.fetched, "tu_otraf.pb");
   const ids = fields(LIVE.store.get("se/rt/trip_updates.pb").v)
     .filter((f) => f.field === 2)
@@ -333,14 +333,14 @@ test("Poland: every page at first, then only the changes (since), removals appli
   const env = { LIVE, PL_PLK_API_KEY: "pl-key" };
   const count = () => fields(store.get("pl/rt/trip_updates.pb")).filter((f) => f.field === 2).length;
   let now = Date.parse("2026-11-24T09:00:00Z");
-  assert.equal((await runCycle({ state: emptyState(), env, fetchFn, now, country: PL })).ok, true);
+  assert.equal((await runCycle({ state: { ...emptyState(), minute: 1 }, env, fetchFn, now, country: PL })).ok, true);
   assert.equal(calls.length, 2, "two pages");
   assert.equal(count(), 3);
   // The changes: train 2 later, train 3 gone, train 4 new; one call.
   delta = { trains: [train(2, 5), train(4, 0)], removed: [{ scheduleId: 26, orderId: 3, operatingDate: "2026-11-24" }] };
   calls.length = 0;
   now += 120_000;
-  assert.equal((await runCycle({ state: emptyState(), env, fetchFn, now, country: PL })).ok, true);
+  assert.equal((await runCycle({ state: { ...emptyState(), minute: 1 }, env, fetchFn, now, country: PL })).ok, true);
   assert.equal(calls.length, 1);
   assert.match(calls[0], /since=v1/);
   assert.equal(count(), 3);
@@ -352,7 +352,100 @@ test("Poland: every page at first, then only the changes (since), removals appli
   delta = 410;
   calls.length = 0;
   now += 120_000;
-  assert.equal((await runCycle({ state: emptyState(), env, fetchFn, now, country: PL })).ok, true);
+  assert.equal((await runCycle({ state: { ...emptyState(), minute: 1 }, env, fetchFn, now, country: PL })).ok, true);
   assert.equal(calls.length, 3, "the refused delta, then two pages");
   assert.equal(count(), 3);
+});
+
+test("Poland: PLK's disruptions become alerts on their stations, every 15th cycle", async () => {
+  const { PL, polishAlerts } = await import("../src/central.js");
+  const json = {
+    disruptions: [
+      { disruptionId: 7, disruptionTypeCode: "utr_32", startStationId: 80416, endStationId: 33605, message: "Zamknięcie toru nr 1. Pociągi kursują jednym torem." },
+      { disruptionId: 8, disruptionTypeCode: "utr_1", message: "", affectedRoutes: [{ scheduleId: 26, orderId: 1, stationId: 5100 }, { scheduleId: 26, orderId: 2, stationId: 5100 }] },
+      { message: "no id" },
+    ],
+    disruptionTypes: { utr_32: "Zamknięcie toru", utr_1: "Awaria" },
+    stations: { 80416: "Kraków Główny", 33605: "Warszawa Centralna" },
+  };
+  const a = polishAlerts(json);
+  assert.equal(a.length, 2);
+  assert.deepEqual(a[0].stops, ["80416", "33605"]);
+  assert.equal(a[0].header, "Zamknięcie toru: Kraków Główny – Warszawa Centralna");
+  assert.match(a[0].description, /jednym torem/);
+  assert.deepEqual(a[1].stops, ["5100"]);
+  assert.equal(a[1].header, "Awaria");
+  // The operations' turn, except every 15th cycle.
+  assert.deepEqual([1, 14, 15, 16, 30].map((n) => feedFor(n, PL).name), ["trip_updates.pb", "trip_updates.pb", "alerts.pb", "trip_updates.pb", "alerts.pb"]);
+  const calls = [];
+  const fetchFn = async (url, init) => (calls.push({ url, init }), Response.json(json));
+  const store = new Map();
+  const LIVE = { put: async (k, v) => store.set(k, v), get: async (k) => (store.has(k) ? { arrayBuffer: async () => store.get(k) } : null) };
+  const s = await runCycle({ state: { ...emptyState(), minute: 15 }, env: { LIVE, PL_PLK_API_KEY: "pl-key" }, fetchFn, now: 0, country: PL });
+  assert.equal(s.ok, true, s.error);
+  assert.equal(calls[0].url, "https://pdp-api.plk-sa.pl/api/v1/disruptions");
+  assert.equal(calls[0].init.headers["x-api-key"], "pl-key");
+  assert.equal(fields(store.get("pl/rt/alerts.pb")).filter((f) => f.field === 2).length, 2);
+});
+
+test("Sweden: Trafikverket's calls become delays by train number; its key only in the body", async () => {
+  const { SE, mergeAnnouncements, announcementUpdates, messageAlerts, resetTrafikverket } = await import("../src/sweden.js");
+  const a = (n, sig, act, t, extra = {}) => ({
+    AdvertisedTrainIdent: n, ScheduledDepartureDateTime: "2026-11-25T00:00:00.000+01:00", LocationSignature: sig, ActivityType: act,
+    AdvertisedTimeAtLocation: t, ...extra,
+  });
+  const calls = mergeAnnouncements({}, [
+    a("1059", "Cst", "Avgang", "2026-11-25T08:00:00.000+01:00", { TimeAtLocation: "2026-11-25T08:02:00.000+01:00" }),
+    a("1059", "Söc", "Ankomst", "2026-11-25T08:20:00.000+01:00", { TimeAtLocation: "2026-11-25T08:25:00.000+01:00" }),
+    a("1059", "Nk", "Ankomst", "2026-11-25T09:00:00.000+01:00", { EstimatedTimeAtLocation: "2026-11-25T09:04:00.000+01:00" }),
+    a("8701", "U", "Avgang", "2026-11-25T08:10:00.000+01:00", { EstimatedTimeAtLocation: "2026-11-25T08:13:00.000+01:00" }),
+    a("42", "M", "Avgang", "2026-11-25T08:00:00.000+01:00", { Canceled: true }),
+    a("42", "Lu", "Ankomst", "2026-11-25T08:10:00.000+01:00", { Canceled: true }),
+  ]);
+  const u = Object.fromEntries(announcementUpdates(calls).map((x) => [x.tripId, x]));
+  assert.equal(u["#1059"].stops[0].arrivalDelay, 300); // the last call that happened
+  assert.equal(u["#1059"].startDate, "20261125");
+  assert.equal(u["#8701"].stops[0].departureDelay, 180); // none yet: the next expected
+  assert.ok(u["#42"].canceled);
+  // A deleted call goes.
+  mergeAnnouncements(calls, [a("8701", "U", "Avgang", "2026-11-25T08:10:00.000+01:00", { Deleted: true })]);
+  assert.ok(!announcementUpdates(calls).some((x) => x.tripId === "#8701"));
+  // Messages: ended ones dropped.
+  const now = Date.parse("2026-11-25T08:00:00Z");
+  const m = messageAlerts([
+    { EventId: "1", Header: "Signalfel", ExternalDescription: "Signalfel vid Flemingsberg. Förseningar.", StartDateTime: "2026-11-25T07:00:00.000+01:00" },
+    { EventId: "2", Header: "Banarbete", EndDateTime: "2026-11-24T07:00:00.000+01:00" },
+  ], now);
+  assert.equal(m.length, 1);
+  assert.equal(m[0].header, "Signalfel");
+  // Through the cycle: the first time every call (changeid 0), then the changes.
+  resetTrafikverket();
+  const bodies = [];
+  const fetchFn = async (url, init) => {
+    if (url.endsWith("rail-trips.txt")) return new Response("x\n");
+    assert.equal(url, "https://api.trafikinfo.trafikverket.se/v2/data.json");
+    assert.ok(!url.includes("tv-key"));
+    bodies.push(init.body);
+    return Response.json({ RESPONSE: { RESULT: [{ TrainAnnouncement: [a("1059", "Cst", "Avgang", new Date(now).toISOString(), { TimeAtLocation: new Date(now + 60_000).toISOString() })], INFO: { LASTCHANGEID: "77" } }] } });
+  };
+  const store = new Map();
+  const LIVE = { put: async (k, v) => store.set(k, v), get: async (k) => (store.has(k) ? { arrayBuffer: async () => store.get(k) } : null) };
+  const env = { LIVE, SE_ENABLED: "true", SE_TRAFIKLAB_RT_KEY: "se-key", SE_TRAFIKVERKET_KEY: "tv-key" };
+  const tvTurn = SE.feeds.findIndex((f) => f.name === "tu_trafikverket.pb");
+  const s = await runCycle({ state: { ...emptyState(), minute: tvTurn }, env, fetchFn, now, country: SE });
+  assert.equal(s.ok, true, s.error);
+  assert.match(bodies[0], /authenticationkey="tv-key"/);
+  assert.match(bodies[0], /changeid="0"/);
+  const ids = fields(store.get("se/rt/trip_updates.pb")).filter((f) => f.field === 2).map((f) => str(sub(sub(f.value, 3), 1), 1));
+  assert.deepEqual(ids, ["#1059"]);
+  await runCycle({ state: { ...emptyState(), minute: tvTurn }, env, fetchFn, now: now + 24_000, country: SE });
+  assert.match(bodies[1], /changeid="77"/);
+  // A refusal never shows the key; without it, Trafikverket's turn goes to a region.
+  const bad = await runCycle({ state: { ...emptyState(), minute: tvTurn }, env, fetchFn: async () => new Response("tv-key bad", { status: 401 }), now, country: SE });
+  assert.match(bad.error, /Trafikverket TrainAnnouncement: HTTP 401/);
+  assert.ok(!JSON.stringify(bad).includes("tv-key"));
+  const noKey = await runCycle({ state: { ...emptyState(), minute: tvTurn }, env: { ...env, SE_TRAFIKVERKET_KEY: "" }, fetchFn: async () => new Response(new Uint8Array([10, 2, 49, 48])), now, country: SE });
+  assert.equal(noKey.fetched, "tu_skane.pb");
+  // The messages' turn, every other turn.
+  assert.equal(SE.feeds.filter((f) => f.name === "alerts.pb").length, 1);
 });

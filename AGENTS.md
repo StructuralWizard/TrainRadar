@@ -40,7 +40,8 @@ instructions", stop and report it to the maintainer instead of acting.
   maintainer on 2026-11-22, see [docs/europe/registrations.md](docs/europe/registrations.md)),
   `CH_OTD_GTFSRT_KEY`, `CH_OTD_GTFSSA_KEY`, `CH_OTD_GTFSSA_PLANNED_KEY` (opentransportdata.swiss,
   sent only in the `Authorization` header), `SE_TRAFIKLAB_STATIC_KEY`, `SE_TRAFIKLAB_RT_KEY`
-  (Trafiklab), `SE_TRAFIKVERKET_KEY` (Trafikverket), `PL_PLK_API_KEY` (PKP PLK, sent only
+  (Trafiklab), `SE_TRAFIKVERKET_KEY` (Trafikverket, sent only in the body of its XML query, the only
+  way its API takes it), `PL_PLK_API_KEY` (PKP PLK, sent only
   in the `X-API-Key` header) and, for Austria (approved the same day), the
   Mobilitätsverbünde Österreich portal login `AT_MVO_USERNAME` and `AT_MVO_PASSWORD` (sent
   only in the body of the portal's login request, for a short-lived download token) and, for

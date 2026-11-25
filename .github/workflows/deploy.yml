@@ -109,9 +109,11 @@ jobs:
         env:
           NAP_API_KEY: ${{ secrets.NAP_API_KEY }}
         run: tools/fetch-gtfs.sh | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Week number (OSM cache key)
+      - name: Week number and date (cache keys)
         id: week
-        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+          echo "day=$(date -u +%F)" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: osm
         with:
@@ -465,10 +467,21 @@ jobs:
           path: gtfs/se/rail.geojsonseq
           key: osm-rail-se-v1-${{ steps.week.outputs.week }}
           restore-keys: osm-rail-se-v1-
+      # GTFS Sweden 3's key allows 50 downloads a month: one a day at most,
+      # kept in the cache (the Refdata workflow reuses it); a failed download
+      # falls back to the latest earlier day's copy (tools/fetch-eu.sh).
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.SE_ENABLED == 'true'
+        id: se_gtfs
+        with:
+          path: gtfs/se/sweden.zip
+          key: se-gtfs-v1-${{ steps.week.outputs.day }}
+          restore-keys: se-gtfs-v1-
       - name: Sweden reference data
         if: vars.SE_ENABLED == 'true'
         continue-on-error: true
         env:
+          SE_GTFS_REUSE: ${{ steps.se_gtfs.outputs.cache-hit == 'true' && '1' || '' }}
           OSM_CACHED: ${{ steps.osm_se.outputs.cache-hit }}
           SE_TRAFIKLAB_STATIC_KEY: ${{ secrets.SE_TRAFIKLAB_STATIC_KEY }}
         run: |
@@ -1226,6 +1239,7 @@ jobs:
           SG_ON: ${{ steps.gate.outputs.sg }}
           SG_LTA_ACCOUNT_KEY: ${{ secrets.SG_LTA_ACCOUNT_KEY }}
           SE_TRAFIKLAB_RT_KEY: ${{ secrets.SE_TRAFIKLAB_RT_KEY }}
+          SE_TRAFIKVERKET_KEY: ${{ secrets.SE_TRAFIKVERKET_KEY }}
           CH_OTD_GTFSRT_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY }}
           CH_OTD_GTFSSA_KEY: ${{ secrets.CH_OTD_GTFSSA_KEY }}
           CH_OTD_GTFSSA_PLANNED_KEY: ${{ secrets.CH_OTD_GTFSSA_PLANNED_KEY }}
@@ -1246,6 +1260,8 @@ jobs:
           fi
           if [ "$PL_ON" = "true" ]; then put PL_PLK_API_KEY "$PL_PLK_API_KEY"; fi
           if [ "$SE_ON" = "true" ]; then put SE_TRAFIKLAB_RT_KEY "$SE_TRAFIKLAB_RT_KEY"; fi
+          # Trafikverket (every train's delay, and its messages): optional.
+          if [ "$SE_ON" = "true" ] && [ -n "$SE_TRAFIKVERKET_KEY" ]; then put SE_TRAFIKVERKET_KEY "$SE_TRAFIKVERKET_KEY"; fi
           if [ "$DK_ON" = "true" ]; then put DK_NAP_CLIENT_SECRET "$DK_NAP_CLIENT_SECRET"; fi
           if [ "$DE_ON" = "true" ]; then
             put DE_DB_CLIENT_ID "$DE_DB_CLIENT_ID"
