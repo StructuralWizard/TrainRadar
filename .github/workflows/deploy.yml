@@ -45,7 +45,7 @@ jobs:
           FR_ENABLED: ${{ vars.FR_ENABLED }}
           LU_ENABLED: ${{ vars.LU_ENABLED }}
           M2_ENABLED: ${{ vars.FI_ENABLED == 'true' || vars.NO_ENABLED == 'true' || vars.NL_ENABLED == 'true' }}
-          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' }}
+          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -715,6 +715,8 @@ jobs:
               $([ -s gtfs/de/rail.geojsonseq ] && echo --rail gtfs/de/rail.geojsonseq) --report refdata-de.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/de-data; then
             mv build/de-data build/data/de
+            # The stations whose boards the live Worker asks for.
+            python3 -I tools/de/boards.py gtfs/de/gtfs.zip build/data/de/boards.txt | tee -a "$GITHUB_STEP_SUMMARY"
             if cargo run --release -q -p trainradar-refdata-build -- build --out build/de-plan --gzip --days 63 \
                 --de-gtfs gtfs/de/gtfs.zip --report de-plan.md \
               && cargo run --release -q -p trainradar-refdata-build -- verify build/de-plan; then
@@ -968,6 +970,9 @@ jobs:
           # only for now, with its service account's secret.
           DK_LIVE_ENABLED: ${{ vars.DK_LIVE_ENABLED }}
           HAS_DK_KEY: ${{ secrets.DK_NAP_CLIENT_SECRET != '' }}
+          # Germany (DB's OpenBoards): live, its own switch, with DB's keys.
+          DE_LIVE_ENABLED: ${{ vars.DE_LIVE_ENABLED }}
+          HAS_DE_KEY: ${{ secrets.DE_DB_CLIENT_ID != '' && secrets.DE_DB_API_KEY != '' }}
           HAS_KEY: ${{ secrets.IE_NTA_API_KEY != '' }}
           HAS_CH_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY != '' }}
           HAS_PL_KEY: ${{ secrets.PL_PLK_API_KEY != '' }}
@@ -988,9 +993,11 @@ jobs:
           cz=$(on "$CZ_LIVE_ENABLED")
           dk=false
           if [ "$(on "$DK_LIVE_ENABLED")" = "true" ] && [ "$HAS_DK_KEY" = "true" ]; then dk=true; fi
-          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; echo "cz=$cz"; echo "dk=$dk"; } >> "$GITHUB_OUTPUT"
-          if [ "$ie$fr$fi_$no$nl$ch$pl$se$cz$dk" = "falsefalsefalsefalsefalsefalsefalsefalsefalsefalse" ]; then
-            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys, CZ_LIVE_ENABLED, DK_LIVE_ENABLED with DK_NAP_CLIENT_SECRET): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
+          de=false
+          if [ "$(on "$DE_LIVE_ENABLED")" = "true" ] && [ "$HAS_DE_KEY" = "true" ]; then de=true; fi
+          { echo "ie=$ie"; echo "fr=$fr"; echo "fi=$fi_"; echo "no=$no"; echo "nl=$nl"; echo "ch=$ch"; echo "pl=$pl"; echo "se=$se"; echo "cz=$cz"; echo "dk=$dk"; echo "de=$de"; } >> "$GITHUB_OUTPUT"
+          if [ "$ie$fr$fi_$no$nl$ch$pl$se$cz$dk$de" = "falsefalsefalsefalsefalsefalsefalsefalsefalsefalsefalse" ]; then
+            echo "No Europe country is on (IE_ENABLED with IE_NTA_API_KEY, FR_, FI_, NO_, NL_ENABLED, CH_, PL_ENABLED or SE_LIVE_ENABLED with their keys, CZ_LIVE_ENABLED, DK_LIVE_ENABLED with DK_NAP_CLIENT_SECRET, DE_LIVE_ENABLED with DE_DB_*): skipping the Europe ingest." | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "push" ] && git diff --quiet HEAD^ HEAD -- backend-eu/; then
             echo "backend-eu/ unchanged: the Europe ingest keeps running as it is." | tee -a "$GITHUB_STEP_SUMMARY"
           else
@@ -1017,6 +1024,9 @@ jobs:
           CZ_ON: ${{ steps.gate.outputs.cz }}
           DK_ON: ${{ steps.gate.outputs.dk }}
           DK_NAP_CLIENT_SECRET: ${{ secrets.DK_NAP_CLIENT_SECRET }}
+          DE_ON: ${{ steps.gate.outputs.de }}
+          DE_DB_CLIENT_ID: ${{ secrets.DE_DB_CLIENT_ID }}
+          DE_DB_API_KEY: ${{ secrets.DE_DB_API_KEY }}
           SE_TRAFIKLAB_RT_KEY: ${{ secrets.SE_TRAFIKLAB_RT_KEY }}
           CH_OTD_GTFSRT_KEY: ${{ secrets.CH_OTD_GTFSRT_KEY }}
           CH_OTD_GTFSSA_KEY: ${{ secrets.CH_OTD_GTFSSA_KEY }}
@@ -1026,7 +1036,7 @@ jobs:
           npx --yes "$WRANGLER" deploy --config backend-eu/wrangler.toml --var "IE_ENABLED:$IE_ON" --var "FR_ENABLED:$FR_ON" \
             --var "FI_ENABLED:$FI_ON" --var "NO_ENABLED:$NO_ON" --var "NL_ENABLED:$NL_ON" \
             --var "CH_ENABLED:$CH_ON" --var "PL_ENABLED:$PL_ON" --var "SE_ENABLED:$SE_ON" \
-            --var "CZ_ENABLED:$CZ_ON" --var "DK_ENABLED:$DK_ON"
+            --var "CZ_ENABLED:$CZ_ON" --var "DK_ENABLED:$DK_ON" --var "DE_ENABLED:$DE_ON"
           # Keys on stdin, never on the command line.
           put() { [ -n "$2" ] && printf '%s' "$2" | npx --yes "$WRANGLER" secret put "$1" --config backend-eu/wrangler.toml; }
           if [ "$IE_ON" = "true" ]; then put IE_NTA_API_KEY "$IE_NTA_API_KEY"; fi
@@ -1038,7 +1048,11 @@ jobs:
           if [ "$PL_ON" = "true" ]; then put PL_PLK_API_KEY "$PL_PLK_API_KEY"; fi
           if [ "$SE_ON" = "true" ]; then put SE_TRAFIKLAB_RT_KEY "$SE_TRAFIKLAB_RT_KEY"; fi
           if [ "$DK_ON" = "true" ]; then put DK_NAP_CLIENT_SECRET "$DK_NAP_CLIENT_SECRET"; fi
-          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON, Sweden: $SE_ON, Czechia: $CZ_ON, Denmark: $DK_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$DE_ON" = "true" ]; then
+            put DE_DB_CLIENT_ID "$DE_DB_CLIENT_ID"
+            put DE_DB_API_KEY "$DE_DB_API_KEY"
+          fi
+          echo "Europe ingest deployed (Ireland: $IE_ON, France: $FR_ON, Finland: $FI_ON, Norway: $NO_ON, Netherlands: $NL_ON, Switzerland: $CH_ON, Poland: $PL_ON, Sweden: $SE_ON, Czechia: $CZ_ON, Denmark: $DK_ON, Germany: $DE_ON); each country's status is <country>/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 
   live:
     # Central poller and history recorder (backend/): Renfe fetched once for

@@ -307,7 +307,10 @@ app, and update the "last updated" dates when they change.
 ## Germany
 
 - **Turning it on:** **`DE_ENABLED`** = `true`. No key: DELFI's national GTFS downloads without a
-  login. By timetable for now; `?country=de`.
+  login; `?country=de`.
+- **Live data:** **`DE_LIVE_ENABLED`** = `true`, with `DE_DB_CLIENT_ID` and `DE_DB_API_KEY`, deploys
+  DB's OpenBoards to the `eu` Worker (`de/rt/`): the 2,000 busiest stations' departure boards
+  (`data/de/boards.txt`, published by the Germany step) merged into trip updates by train number.
 - **What the deploy builds:** `data/de/` (`de` long distance; one region per Land, some joined) and
   its `plan/`. The OpenStreetMap extract for the track is Geofabrik's Germany (about 4.5 GB),
   cached for the week; the first run takes longer.

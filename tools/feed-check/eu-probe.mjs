@@ -2,7 +2,7 @@
 // (the same fetch, filter and conversion the Worker does), and how many of
 // its trips the timetable just built has:
 //
-//   node tools/feed-check/eu-probe.mjs ch|pl|se|cz GTFS_ZIP_TRIP_IDS_FILE OUT_DIR
+//   node tools/feed-check/eu-probe.mjs ch|pl|se|cz|dk|de GTFS_ZIP_TRIP_IDS_FILE OUT_DIR
 //
 // (For cz the file lists train numbers: Golemio's trips are PID's own and
 // match ours by the number in the vehicle id, "train-9504".)
@@ -55,12 +55,17 @@ function bucket() {
 
 /** fetch, but the Swedish train list from the file just built. */
 const fetchFn = async (url, init) =>
-  url.endsWith("rail-trips.txt") ? new Response(readFileSync(tripsFile, "utf8")) : fetch(url, init);
+  url.endsWith("rail-trips.txt")
+    ? new Response(readFileSync(tripsFile, "utf8"))
+    : url.endsWith("boards.txt") && process.env.DE_BOARDS_FILE
+      ? new Response(readFileSync(process.env.DE_BOARDS_FILE, "utf8"))
+      : fetch(url, init);
 
-async function viaWorker(country, minutes) {
+async function viaWorker(country, minutes, pauseMs = 0) {
   const LIVE = bucket();
   const env = { ...process.env, LIVE };
   for (const minute of minutes) {
+    if (pauseMs) await new Promise((r) => setTimeout(r, pauseMs));
     const s = await runCycle({ state: { ...emptyState(), minute }, env, fetchFn, now: Date.now(), country });
     const f = s.feeds[s.fetched] || {};
     console.log(`${cc} cycle ${minute}: ${s.fetched} ok=${s.ok} ${s.error || ""} entities=${f.entities ?? "-"} kept=${f.kept ?? "-"}`);
@@ -109,6 +114,17 @@ if (cc === "ch") {
     process.exit(0);
   }
   await viaWorker(DK, DK.feeds.map((_, i) => i));
+} else if (cc === "de") {
+  // Germany: a few cycles of OpenBoards through the Worker's own code (the
+  // station list just built), and how many boards' trains the timetable has
+  // by number (the file lists "#8230").
+  const { DE } = await import("../../backend-eu/src/germany.js");
+  if (!process.env.DE_DB_CLIENT_ID || !process.env.DE_DB_API_KEY) {
+    console.log("de: DE_DB_CLIENT_ID or DE_DB_API_KEY is not set");
+    process.exit(0);
+  }
+  // A cycle every 2 s here: three calls a second, within the plan's ten.
+  await viaWorker(DE, [0, 1, 2, 3, 4], 2000);
 } else if (cc === "cz") {
   const { CZ } = await import("../../backend-eu/src/czechia.js");
   await viaWorker(CZ, [0, 1, 2]);

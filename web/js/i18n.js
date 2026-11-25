@@ -61,6 +61,8 @@ export const STRINGS = {
     srcCzTimetable: "Horario y paradas: Ministerio de Transporte checo (CIS JŘ).",
     srcDkDelay: "Retraso: Rejsekort & Rejseplan, vía el punto de acceso nacional danés (en directo).",
     srcDkTimetable: "Horario y paradas: Rejsekort & Rejseplan (NeTEx), vía el punto de acceso nacional danés.",
+    srcDeDelay: "Retraso: DB InfraGO, paneles de salidas de las estaciones (OpenBoards), en directo.",
+    srcDeTimetable: "Horario y paradas: DELFI e.V. (opendata-oepnv.de, CC BY 4.0).",
     srcPlDelay: "Retraso: PKP PLK, Otwarte Dane Kolejowe (en directo).",
     srcPlTimetable: "Horario y paradas: PKP PLK, Otwarte Dane Kolejowe.",
     sourceEstimated: "estimado",
@@ -622,7 +624,7 @@ export const STRINGS = {
     attributionPl:
       'Datos: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con PKP PLK ni los operadores',
     attributionDe:
-      'Datos: horario nacional de DELFI e.V. (<a href="https://www.delfi.de/" target="_blank" rel="noopener">delfi.de</a>), vía <a href="https://www.opendata-oepnv.de/" target="_blank" rel="noopener">opendata-oepnv.de</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con DB ni los operadores',
+      'Datos: horario nacional de DELFI e.V. (<a href="https://www.delfi.de/" target="_blank" rel="noopener">delfi.de</a>), vía <a href="https://www.opendata-oepnv.de/" target="_blank" rel="noopener">opendata-oepnv.de</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · retrasos en directo de OpenBoards de DB InfraGO AG · Sin relación con DB ni los operadores',
     attributionHu:
       'Datos: horarios de MÁV-START y GYSEV, GTFS de <a href="https://www.mavcsoport.hu/" target="_blank" rel="noopener">MÁV Csoport</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con MÁV ni GYSEV',
     attributionDk:
@@ -698,6 +700,8 @@ export const STRINGS = {
     srcCzTimetable: "Timetable and stops: Czech Ministry of Transport (CIS JŘ).",
     srcDkDelay: "Delay: Rejsekort & Rejseplan, via Denmark's national access point (live).",
     srcDkTimetable: "Timetable and stops: Rejsekort & Rejseplan (NeTEx), via Denmark's national access point.",
+    srcDeDelay: "Delay: DB InfraGO's station departure boards (OpenBoards), live.",
+    srcDeTimetable: "Timetable and stops: DELFI e.V. (opendata-oepnv.de, CC BY 4.0).",
     srcPlDelay: "Delay: PKP PLK, Otwarte Dane Kolejowe (live).",
     srcPlTimetable: "Timetable and stops: PKP PLK, Otwarte Dane Kolejowe.",
     sourceEstimated: "estimated",
@@ -1259,7 +1263,7 @@ export const STRINGS = {
     attributionPl:
       'Data: PKP Polskie Linie Kolejowe S.A., <a href="https://pdp-api.plk-sa.pl/" target="_blank" rel="noopener">Otwarte Dane Kolejowe</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with PKP PLK or the operators',
     attributionDe:
-      'Data: national timetable from DELFI e.V. (<a href="https://www.delfi.de/" target="_blank" rel="noopener">delfi.de</a>), via <a href="https://www.opendata-oepnv.de/" target="_blank" rel="noopener">opendata-oepnv.de</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with DB or the operators',
+      'Data: national timetable from DELFI e.V. (<a href="https://www.delfi.de/" target="_blank" rel="noopener">delfi.de</a>), via <a href="https://www.opendata-oepnv.de/" target="_blank" rel="noopener">opendata-oepnv.de</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · live delays from DB InfraGO AG\'s OpenBoards · Not affiliated with DB or the operators',
     attributionHu:
       'Data: MÁV-START\'s and GYSEV\'s timetables, <a href="https://www.mavcsoport.hu/" target="_blank" rel="noopener">MÁV Group</a> GTFS · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with MÁV or GYSEV',
     attributionDk:

@@ -1,0 +1,31 @@
+{
+  "_note": "Made up for the tests, in the shape of OpenBoards 1.0.3's DepartureBoardResponse (not a real board).",
+  "meta": { "consideredStopPlaces": ["8000261", "8000105"] },
+  "administrations": [{ "administrationId": "80", "operatorCode": "DB", "operatorName": "DB Fernverkehr AG" }],
+  "stopPlaces": [
+    { "evaNumber": "8000261", "ifopt": "de:09162:100", "stada": "4234" },
+    { "evaNumber": "8000105", "ifopt": "de:06412:10", "stada": "1866" }
+  ],
+  "departures": [
+    {
+      "departureId": "1", "journeyId": "j-ice-1104", "evaNumber": "8000261",
+      "timeSchedule": "2026-11-25T09:30:00+01:00", "time": "2026-11-25T09:34:00+01:00", "timeType": "REAL",
+      "platform": { "name": "23" },
+      "transport": { "administrationId": "80", "category": "ICE", "categoryInternal": "ICE", "journeyDescription": "ICE 1104", "journeyNumber": 1104, "operationalJourneyNumber": "1104", "type": "HIGH_SPEED_TRAIN" },
+      "journeyInfo": { "type": "REGULAR", "scheduledStartTime": "2026-11-25T09:30:00+01:00", "headerAdministrationId": "80", "headerJourneyNumber": 1104, "origin": { "evaNumber": "8000261" }, "destination": { "evaNumber": "8000105" }, "transportAtStart": { "administrationId": "80", "category": "ICE", "categoryInternal": "ICE", "journeyDescription": "ICE 1104", "journeyNumber": 1104, "operationalJourneyNumber": "1104", "type": "HIGH_SPEED_TRAIN" } }
+    },
+    {
+      "departureId": "2", "journeyId": "j-re-4012", "evaNumber": "8000105",
+      "timeSchedule": "2026-11-25T09:40:00+01:00", "time": "2026-11-25T09:40:00+01:00", "timeType": "SCHEDULE",
+      "cancelled": true,
+      "transport": { "administrationId": "800", "category": "RE", "categoryInternal": "RE", "journeyDescription": "RE 4012", "journeyNumber": 4012, "operationalJourneyNumber": "4012", "type": "REGIONAL_TRAIN", "line": { "name": "RE30" } },
+      "journeyInfo": { "type": "REGULAR", "scheduledStartTime": "2026-11-25T08:55:00+01:00", "headerAdministrationId": "800", "headerJourneyNumber": 4012, "origin": { "evaNumber": "8000105" }, "destination": { "evaNumber": "8000105" }, "transportAtStart": { "administrationId": "800", "category": "RE", "categoryInternal": "RE", "journeyDescription": "RE 4012", "journeyNumber": 4012, "operationalJourneyNumber": "4012", "type": "REGIONAL_TRAIN" } }
+    },
+    {
+      "departureId": "3", "journeyId": "j-unknown-stop", "evaNumber": "9999999",
+      "timeSchedule": "2026-11-25T09:45:00+01:00", "timeType": "SCHEDULE",
+      "transport": { "administrationId": "80", "category": "IC", "categoryInternal": "IC", "journeyDescription": "IC 2000", "journeyNumber": 2000, "operationalJourneyNumber": "2000", "type": "INTERCITY_TRAIN" },
+      "journeyInfo": { "type": "REGULAR", "scheduledStartTime": "2026-11-25T09:00:00+01:00", "headerAdministrationId": "80", "headerJourneyNumber": 2000, "origin": { "evaNumber": "9999999" }, "destination": { "evaNumber": "8000105" }, "transportAtStart": { "administrationId": "80", "category": "IC", "categoryInternal": "IC", "journeyDescription": "IC 2000", "journeyNumber": 2000, "operationalJourneyNumber": "2000", "type": "INTERCITY_TRAIN" } }
+    }
+  ]
+}

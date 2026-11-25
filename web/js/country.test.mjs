@@ -82,7 +82,7 @@ test("country: France points CONFIG at data/fr/ and fr/rt/; Luxembourg has no fe
 
 test("country: Finland, Norway and the Netherlands (M2): their data, feeds and time zones", () => {
   const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
-  for (const [cc, zone] of [["fi", "Europe/Helsinki"], ["no", "Europe/Oslo"], ["nl", "Europe/Amsterdam"], ["ch", "Europe/Zurich"], ["pl", "Europe/Warsaw"], ["se", "Europe/Stockholm"], ["cz", "Europe/Prague"], ["dk", "Europe/Copenhagen"]]) {
+  for (const [cc, zone] of [["fi", "Europe/Helsinki"], ["no", "Europe/Oslo"], ["nl", "Europe/Amsterdam"], ["ch", "Europe/Zurich"], ["pl", "Europe/Warsaw"], ["se", "Europe/Stockholm"], ["cz", "Europe/Prague"], ["dk", "Europe/Copenhagen"], ["de", "Europe/Berlin"]]) {
     const c = applyCountry(base(), cc);
     assert.equal(c.dataBase, `data/${cc}/`);
     assert.equal(c.liveBase, `https://live.example/${cc}/rt/`);
@@ -92,7 +92,7 @@ test("country: Finland, Norway and the Netherlands (M2): their data, feeds and t
 
 test("country: Slovakia and Estonia (M4) go by timetable: no feeds", () => {
   const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
-  for (const [cc, zone] of [["sk", "Europe/Bratislava"], ["ee", "Europe/Tallinn"], ["at", "Europe/Vienna"], ["it", "Europe/Rome"], ["hu", "Europe/Budapest"], ["de", "Europe/Berlin"]]) {
+  for (const [cc, zone] of [["sk", "Europe/Bratislava"], ["ee", "Europe/Tallinn"], ["at", "Europe/Vienna"], ["it", "Europe/Rome"], ["hu", "Europe/Budapest"]]) {
     const c = applyCountry(base(), cc);
     assert.equal(c.dataBase, `data/${cc}/`);
     assert.equal(c.liveBase, "");

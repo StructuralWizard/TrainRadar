@@ -29,8 +29,7 @@ export const COUNTRY_INFO = {
   it: { zone: "Europe/Rome", center: [12.5, 42.3], zoom: 5.2, live: false },
   dk: { zone: "Europe/Copenhagen", center: [10.6, 56.0], zoom: 6.3, live: true },
   hu: { zone: "Europe/Budapest", center: [19.4, 47.2], zoom: 6.4, live: false },
-  // By timetable until DB's live boards are in (docs/europe/west-central.md).
-  de: { zone: "Europe/Berlin", center: [10.4, 51.2], zoom: 5.4, live: false },
+  de: { zone: "Europe/Berlin", center: [10.4, 51.2], zoom: 5.4, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

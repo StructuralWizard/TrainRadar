@@ -103,12 +103,16 @@ Bremen, `de-sh` with Hamburg, `de-rp` with Saarland, `de-nw`, `de-he`, `de-mv`, 
 `de-th`). DELFI also holds trains that never enter Germany (Swiss, Czech, Austrian local trains):
 left out. About 69,000 trips a week, 8,000 stations.
 
-**Live, next:** DB's boards with `DE_DB_CLIENT_ID` and `DE_DB_API_KEY`, once their use is approved
-in AGENTS.md. Two candidates, to be probed with the keys: the Timetables API (XML; `/plan`, `/fchg`,
-`/rchg` per station; 60 calls a minute on the free plan; CC BY 4.0; an earlier note said it closed on
-22 Nov 2026, which the probe will settle) and OpenBoards (JSON `POST /departures`, up to 15 stations
-a call, with DHIDs and train numbers; its OpenAPI 1.0.3 is in the portal page). Either way, updates
-keyed by train number ("#8230"), as Denmark's.
+**Live (2026-11-25):** DB's **OpenBoards** with `DE_DB_CLIENT_ID` and `DE_DB_API_KEY` (the keys
+open OpenBoards; the Timetables API answers 401 to them). `backend-eu/src/germany.js` asks for the
+departure boards of the 2,000 busiest stations (`data/de/boards.txt`, from the timetable by
+`tools/de/boards.py`), 15 stations a call (by DHID, DELFI's ids), six calls every 6 s, so each
+station about every 2 minutes, a call a second against the plan's ten. Each departure (scheduled and
+best-known time, `REAL`/`PREVIEW`/`SCHEDULE`, cancellation, platform) is merged into its journey
+(OpenBoards' journey id); journeys become trip updates keyed by train number ("#8230"), with a
+delay only where the time is a forecast or actual. The first probe's board began hours before the
+call and held only 25 departures per transport type: the Worker sends the window in German local
+time and asks for up to 200 per type (the Refdata probe checks which window is honoured).
 
 **Verdict:** feasible, and big. Open timetables and excellent open network data. For live data, the
 free **DB OpenBoards** covers every main-line train, including platforms, if its terms allow our

@@ -109,6 +109,7 @@ const PLACED_SOURCES = {
   // Czechia: PID's trains from Golemio (GPS), the rest by CIS JŘ's timetable.
   ČD: { by: "PID", delay: "srcCzDelay", timetable: "srcCzTimetable", link: null },
   DSB: { by: "Rejseplanen", delay: "srcDkDelay", timetable: "srcDkTimetable", link: null },
+  DB: { by: "DB", delay: "srcDeDelay", timetable: "srcDeTimetable", link: null },
 };
 const placedSource = (info) => PLACED_SOURCES[info.operator] || PLACED_SOURCES["National Rail"];
 
