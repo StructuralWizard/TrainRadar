@@ -1,11 +1,12 @@
 // Run with: node --test web/js/i18n.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { STRINGS, locale, nextLang, pickLang, t } from "./i18n.js";
+import { LANGS, STRINGS, locale, nextLang, pickLang, t } from "./i18n.js";
 
 test("Spanish by default", () => {
   assert.equal(pickLang(null), "es");
-  assert.equal(pickLang("fr"), "es");
+  assert.equal(pickLang("xx"), "es");
+  assert.equal(pickLang("fr"), "fr");
   assert.equal(pickLang("en"), "en");
 });
 
@@ -18,10 +19,10 @@ test("both languages have the same keys", () => {
   assert.deepEqual(Object.keys(STRINGS.en).sort(), Object.keys(STRINGS.es).sort());
 });
 
-test("Portuguese and Japanese: every key, the same placeholders and tags as English", () => {
+test("every other language: every key, the same placeholders and tags as English", () => {
   const ph = (s) => (String(s).match(/\{\w+\}/g) || []).sort().join();
   const tags = (s) => (String(s).match(/<[^>]+>/g) || []).length;
-  for (const l of ["pt", "ja"]) {
+  for (const l of LANGS.filter((l) => l !== "es" && l !== "en")) {
     assert.deepEqual(Object.keys(STRINGS[l]).sort(), Object.keys(STRINGS.en).sort(), l);
     for (const k of Object.keys(STRINGS.en)) {
       assert.equal(ph(STRINGS[l][k]), ph(STRINGS.en[k]), `${l}.${k} placeholders`);
@@ -30,14 +31,25 @@ test("Portuguese and Japanese: every key, the same placeholders and tags as Engl
   }
   assert.equal(t("pt", "moreLanguageValue"), "Português");
   assert.equal(t("ja", "moreLanguageValue"), "日本語");
+  assert.equal(t("fr", "moreLanguageValue"), "Français");
+  assert.equal(t("de", "moreLanguageValue"), "Deutsch");
+  // Each language's name is its own.
+  const names = LANGS.map((l) => t(l, "moreLanguageValue"));
+  assert.equal(new Set(names).size, LANGS.length);
 });
 
-test("the browser's language picks Portuguese or Japanese the first time; a choice made wins", () => {
+test("the browser's language picks the app's language the first time; a choice made wins", () => {
   assert.equal(pickLang(null, ["pt-PT", "en"]), "pt");
   assert.equal(pickLang(null, ["ja"]), "ja");
   assert.equal(pickLang(null, ["en-GB"]), "es");
   assert.equal(pickLang("en", ["ja-JP"]), "en");
+  assert.equal(pickLang(null, ["en-GB", "de-CH"]), "de");
+  assert.equal(pickLang(null, ["no"]), "nb");
+  assert.equal(pickLang(null, ["nn-NO"]), "nb");
+  assert.equal(pickLang(null, ["zh-SG"]), "zh");
+  assert.equal(pickLang(null, ["ru"]), "es");
   assert.equal(nextLang("es"), "en");
-  assert.equal(nextLang("ja"), "es");
+  assert.equal(nextLang(LANGS.at(-1)), "es");
+  assert.equal(locale("nb"), "nb-NO");
   assert.equal(locale("pt"), "pt-PT");
 });

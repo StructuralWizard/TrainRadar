@@ -14,7 +14,7 @@ import { PLACE_ICON, journeyResults, layersSheet, networksSheet, pickField, plac
 import { endStations } from "./js/route.js";
 import { Planner } from "./js/planner.js";
 import { Locator, circlePolygon } from "./js/location.js";
-import { nextLang, pickLang, t } from "./js/i18n.js";
+import { LANGS, pickLang, t } from "./js/i18n.js";
 import {
   ARROW_ZOOM,
   FLAG,
@@ -329,7 +329,7 @@ let locMessage = null; // i18n key of the current location problem
 let lastNear = 0;
 let incidents = [];
 let incFilter = null; // { label, test }
-const SHEETS = ["delayed", "near", "incidents", "about", "favs", "settings", "trips", "history", "commute", "more", "detail", "networks", "layers-panel", "route"];
+const SHEETS = ["delayed", "near", "incidents", "about", "langs", "favs", "settings", "trips", "history", "commute", "more", "detail", "networks", "layers-panel", "route"];
 const histApi = new HistoryApi(CONFIG.apiBase);
 let historyView = null; // {kind: "train"|"station", ...} shown in the history sheet
 let commutes = emptyCommutes(); // commute mode (Pro): saved commutes, one active
@@ -379,11 +379,13 @@ function applyLang() {
   document.documentElement.lang = lang;
   document.title = t(lang, "title");
   const btn = $("lang");
-  // The button shows the next language (ES → EN → PT → JA → ES).
-  const next = nextLang(lang);
-  btn.textContent = next.toUpperCase();
-  btn.setAttribute("aria-label", `${t(lang, "changeLanguage")}: ${t(next, "moreLanguageValue")}`);
-  btn.title = t(next, "moreLanguageValue");
+  // The button shows the language in use and opens the list of languages.
+  btn.textContent = lang.toUpperCase();
+  btn.setAttribute("aria-label", `${t(lang, "changeLanguage")} (${t(lang, "moreLanguageValue")})`);
+  btn.title = t(lang, "changeLanguage");
+  $("langs-title").textContent = t(lang, "moreLanguage");
+  $("langs-close").setAttribute("aria-label", t(lang, "close"));
+  if (!$("langs").hidden) renderLangs();
   $("legend").replaceChildren(...legend(lang), el("span", { class: "legend-sep" }), ...serviceLegend(lang, true));
   $("delayed-btn").textContent = t(lang, "delayedList");
   $("delayed-title").textContent = t(lang, "delayedTitle");
@@ -2393,7 +2395,7 @@ const TABS = [
 /** Which tab a sheet belongs to. */
 function tabFor(sheet) {
   if (["near", "incidents", "favs"].includes(sheet)) return sheet;
-  if (["more", "about", "settings", "trips", "history", "commute"].includes(sheet)) return "more";
+  if (["more", "about", "langs", "settings", "trips", "history", "commute"].includes(sheet)) return "more";
   return "map";
 }
 
@@ -2521,7 +2523,7 @@ function renderMore() {
   const general = el(
       "ul",
       { class: "menu-list" },
-      row("globe", t(lang, "moreLanguage"), t(lang, "moreLanguageValue"), () => $("lang").click(), "more-lang"),
+      row("globe", t(lang, "moreLanguage"), t(lang, "moreLanguageValue"), openLangs, "more-lang"),
       row("settings", t(lang, CONFIG.platform === "android" ? "moreSettingsPro" : "moreSettings"), "", toSettings, "more-settings"),
       row("swap", t(lang, "moreLefty"), t(lang, lefty() ? "moreLeftyOn" : "moreLeftyOff"), () => setLefty(!lefty()), "more-lefty", { "aria-pressed": String(lefty()) }),
       row("info", t(lang, "moreAbout"), "", () => {
@@ -3771,14 +3773,39 @@ onBackButton(goBack);
 styleStatusBar();
 // One banner at a time: a country's note first.
 if (!setupCountryNote()) setupAppBanner();
-$("lang").addEventListener("click", () => {
-  lang = nextLang(lang);
+/** The languages, each in its own name, the one in use marked. */
+function renderLangs() {
+  $("langs-list").replaceChildren(
+    ...LANGS.map((code) =>
+      el(
+        "li",
+        {},
+        el(
+          "button",
+          { type: "button", class: "menu-row", id: `lang-${code}`, lang: code, "aria-current": code === lang ? "true" : "false", onclick: () => setLang(code) },
+          el("span", { class: "menu-label" }, t(code, "moreLanguageValue")),
+          code === lang ? el("span", { class: "menu-value" }, "✓") : null,
+        ),
+      ),
+    ),
+  );
+}
+function openLangs() {
+  renderLangs();
+  openSheet("langs");
+}
+function setLang(code) {
+  $("langs").hidden = true;
+  if (code === lang) return;
+  lang = code;
   store.set("lang", lang);
   applyLang();
   sheets.apply();
   if (alertsOn) writeAlertConfig();
   writeWidgetConfig();
-});
+}
+$("lang").addEventListener("click", () => ($("langs").hidden ? openLangs() : ($("langs").hidden = true)));
+$("langs-close").addEventListener("click", () => ($("langs").hidden = true));
 $("delayed-btn").addEventListener("click", () => {
   const panel = $("delayed");
   if (panel.hidden) {
