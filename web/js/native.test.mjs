@@ -13,6 +13,15 @@ test("app links and web links", () => {
   assert.equal(parseLink("trainradar://other/1"), null);
   assert.equal(parseLink("https://trainradar.pages.dev/"), null);
   assert.equal(parseLink("not a url"), null);
+  // Home-screen shortcuts carry the country; Germany's station ids have colons.
+  assert.deepEqual(parseLink("trainradar://station/de/de%3A11000%3A900003201"), { type: "station", id: "de:11000:900003201", country: "de" });
+  assert.deepEqual(parseLink("trainradar://train/fr/6611"), { type: "train", number: "6611", country: "fr" });
+  assert.deepEqual(parseLink("trainradar://commute/es/1"), { type: "commute", index: 1, country: "es" });
+  assert.equal(parseLink("trainradar://station/DEU/1"), null);
+  assert.equal(parseLink("trainradar://commute/es/x"), null);
+  assert.deepEqual(parseLink("https://mytrainradar.com/?country=de&station=de:1:2"), { type: "station", id: "de:1:2", country: "de" });
+  assert.deepEqual(parseLink("https://mytrainradar.com/?commute=0"), { type: "commute", index: 0 });
+  assert.equal(parseLink("https://mytrainradar.com/?country=ie"), null);
 });
 
 test("favourites: free limit, toggle, no duplicates, bad data dropped", () => {

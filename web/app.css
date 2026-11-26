@@ -730,9 +730,19 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .notices-history-bar input[type="date"] { background: #1f2937; color: #f3f4f6; border-color: #374151; color-scheme: dark; }
 }
 
-/* Country (plan 3): España / Reino Unido at the top of the network picker. */
-.net-countries { display: flex; gap: 8px; margin: 2px 0 10px; }
-.net-countries .chip-btn { flex: 1; }
+/* The network picker's two drop-downs: the country, then its area. */
+.net-pickers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 2px 0 10px; }
+.net-pick { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.net-pick-k { font-size: 12px; font-weight: 600; color: var(--muted, #6b7280); }
+.net-pick select {
+  min-height: 44px; width: 100%; padding: 0 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 12px;
+  background: var(--bg, #fff); color: inherit; font: inherit; font-size: 15px;
+}
+/* "Ir a Francia" where another country was tapped on the map. */
+.country-go {
+  min-height: 40px; padding: 0 14px; border: 0; border-radius: 20px; background: #166534; color: #fff;
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 18px;
+}
 .uk-text { white-space: pre-line; }
 .upcoming-filter { font: inherit; font-size: 14px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); margin: 4px 0 8px; max-width: 100%; }
 #upcoming-all { margin: 4px 0 12px; }
@@ -758,3 +768,10 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .when-pick input { border-color: #374151; color-scheme: dark; }
   .trainday-stops li { border-color: #1f2937; }
 }
+
+/* A short message ("couldn't add the icon"), above the tab bar. */
+.toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px);
+  padding: 10px 16px; border-radius: 12px; background: #111827; color: #fff; font-size: 14px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.shortcut-btn { display: inline-flex; align-items: center; gap: 4px; }

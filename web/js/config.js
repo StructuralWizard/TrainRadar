@@ -13,13 +13,14 @@ export const CONFIG = {
   apiBase: "/",
   // Reference data built by refdata-build.
   dataBase: "data/",
-  // Countries offered (plan 3), in the app too (tools/build-web.sh:
-  // UK_APP=false builds one with Spain only).
-  countries: ["es", "uk"],
+  // Countries offered, in the app too (tools/build-web.sh: UK_APP=false
+  // builds one with Spain only): Spain and the UK first, the others A–Z by
+  // name where they're listed.
+  countries: ["es", "uk", "ie", "fr", "lu", "fi", "no", "nl", "sk", "ee", "ch", "se", "pl", "at", "cz", "it", "dk", "hu", "de", "be", "au", "nz", "sg"],
   // Countries still being built (docs/europe/): not offered, but a link with
-  // ?country=ie opens them, for testing. The Android app has none
+  // ?country=xx opens them, for testing. The Android app has none
   // (tools/build-web.sh).
-  hiddenCountries: ["ie", "fr", "lu", "fi", "no", "nl", "sk", "ee", "ch", "se", "pl", "at", "cz", "it", "dk", "hu", "de", "be", "au", "nz", "sg"],
+  hiddenCountries: [],
   // Android app: the site's data/ (absolute URL), newer than the copy in the
   // app once the app is a few days old; "" = only dataBase.
   remoteDataBase: "",

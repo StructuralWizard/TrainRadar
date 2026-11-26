@@ -93,3 +93,45 @@ test("data: the app starts on the site's data when newer than its own copy, offl
   assert.equal(await ref2.refresh(), true);
   assert.equal(ref2.base, R);
 });
+
+test("data: another origin's files are kept for offline use; the manifest is asked for first", async () => {
+  const { fetchBytes, fetchManifest, pruneOffline } = await import("./data.js");
+  const store = new Map();
+  const cache = {
+    match: async (u) => (store.has(u) ? store.get(u).clone() : undefined),
+    put: async (u, r) => void store.set(u, r),
+    keys: async () => [...store.keys()].map((url) => ({ url })),
+    delete: async (req) => store.delete(req.url),
+  };
+  globalThis.caches = { open: async () => cache };
+  globalThis.location = { href: "https://localhost/index.html", origin: "https://localhost" };
+  try {
+    const far = "https://site.example/data/fr/";
+    const calls = site({ [`${far}manifest.json`]: manifest("2026-11-25", 1, "a"), [`${far}tt-fr.a.bin`]: "abc", "data/tt.bin": "local" });
+    assert.equal((await fetchManifest(far)).window_start, "2026-11-25");
+    assert.equal(new TextDecoder().decode(await fetchBytes(`${far}tt-fr.a.bin`)), "abc");
+    // A content-hashed file: from the copy, without the network.
+    calls.length = 0;
+    await fetchBytes(`${far}tt-fr.a.bin`);
+    assert.deepEqual(calls, []);
+    // The page's own files aren't copied.
+    await fetchBytes("data/tt.bin");
+    assert.ok(![...store.keys()].some((u) => u.includes("localhost")));
+    // Offline: the manifest from the copy.
+    globalThis.fetch = async () => {
+      throw new TypeError("offline");
+    };
+    assert.equal((await fetchManifest(far)).window_start, "2026-11-25");
+    await assert.rejects(fetchManifest("https://site.example/data/de/"));
+    // Files the manifest no longer names go; other countries' stay.
+    store.set("https://site.example/data/fr/tt-fr.old.bin", new Response("x"));
+    store.set("https://site.example/data/de/tt-de.x.bin", new Response("x"));
+    await pruneOffline(far, { stations: { file: "stations.a.bin" }, regions: [{ file: "tt-fr.a.bin" }] });
+    assert.ok(!store.has("https://site.example/data/fr/tt-fr.old.bin"));
+    assert.ok(store.has(`${far}tt-fr.a.bin`) && store.has(`${far}manifest.json`));
+    assert.ok(store.has("https://site.example/data/de/tt-de.x.bin"));
+  } finally {
+    delete globalThis.caches;
+    delete globalThis.location;
+  }
+});

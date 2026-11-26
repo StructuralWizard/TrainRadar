@@ -42,7 +42,8 @@ export function createMap(container, config, attribution) {
     style: config.style,
     center: config.center,
     zoom: config.zoom,
-    minZoom: 4,
+    // The website zooms out to every country (its overview); the app doesn't.
+    minZoom: config.minZoom ?? 4,
     maxZoom: 17,
     attributionControl: false,
     dragRotate: false,
@@ -256,6 +257,50 @@ export function setBasemap(map, kind) {
     map.addLayer({ id: "satellite", type: "raster", source: "satellite", layout: { visibility: "none" } }, "track-md-casing");
   }
   map.setLayoutProperty("satellite", "visibility", kind === "satellite" ? "visible" : "none");
+}
+
+/** The other countries TrainRadar shows, faintly outlined (Natural Earth,
+ * public domain: tools/outlines/build.py): tapping one offers to go there.
+ * `current` (the country shown) gets neither outline nor tap target. Drawn
+ * under the track; `url` is countries.geojson next to the page. */
+export function addCountries(map, current, url = "countries.geojson") {
+  if (map.getSource("countries")) return;
+  map.addSource("countries", { type: "geojson", data: url });
+  const other = ["!=", ["get", "code"], current];
+  const below = map.getLayer("track-md-casing") ? "track-md-casing" : undefined;
+  // An invisible fill: the tap target.
+  map.addLayer({ id: "countries-other", type: "fill", source: "countries", filter: other, paint: { "fill-color": "#000000", "fill-opacity": 0.01 } }, below);
+  map.addLayer(
+    {
+      id: "countries-line",
+      type: "line",
+      source: "countries",
+      filter: other,
+      layout: { "line-join": "round" },
+      paint: { "line-color": "#6b7280", "line-width": 1, "line-opacity": 0.45, "line-dasharray": [3, 2] },
+    },
+    below,
+  );
+}
+
+/** The overview of every country (the website, zoomed out below
+ * OVERVIEW_ZOOM): each country outlined, with its name and how many of its
+ * trains have live data; a click goes there. Points: `overview` source,
+ * features with `code` and `label`. */
+export const OVERVIEW_ZOOM = 3.5;
+export function addOverview(map) {
+  if (map.getSource("overview")) return;
+  map.addSource("overview", { type: "geojson", data: empty() });
+  map.addLayer({ id: "countries-all", type: "fill", source: "countries", maxzoom: OVERVIEW_ZOOM, paint: { "fill-color": "#166534", "fill-opacity": 0.08 } });
+  map.addLayer({ id: "countries-all-line", type: "line", source: "countries", maxzoom: OVERVIEW_ZOOM, paint: { "line-color": "#166534", "line-width": 1, "line-opacity": 0.6 } });
+  map.addLayer({
+    id: "overview-labels",
+    type: "symbol",
+    source: "overview",
+    maxzoom: OVERVIEW_ZOOM,
+    layout: { "text-field": ["get", "label"], "text-size": 12, "text-anchor": "center", "text-allow-overlap": false, "text-optional": true },
+    paint: { "text-color": "#14532d", "text-halo-color": "#fff", "text-halo-width": 1.6 },
+  });
 }
 
 export function addLayers(map) {

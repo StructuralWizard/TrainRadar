@@ -393,7 +393,10 @@ export function stationSheet(lang, station, o = {}) {
 /**
  * The network picker. `o`: { query, near: { name, onPick } | { onLocate }
  * | null, spain: { trains, onPick }, networks: [{ code, name, median }],
- * onPick(code), onQuery(q), onClose }. `median` in seconds or null.
+ * countries: [{ code, name, current, onPick }], areas: [{ code, name }],
+ * areaGroups: [{ label, items }], area (the one shown), allCode, allLabel,
+ * onPick(code), onQuery(q), onClose }. `median` in seconds or null
+ * (undefined: none to show).
  */
 export function networksSheet(lang, o) {
   const q = o.query || "";
@@ -413,16 +416,36 @@ export function networksSheet(lang, o) {
     el("span", { class: "net-card-k" }, t(lang, "netTrains", { n: formatCount(lang, o.spain?.trains || 0) })),
     el("span", { class: "net-card-v" }, o.spain?.label || t(lang, "allSpain")),
   );
-  // The country (plan 3): España or Reino Unido, one at a time.
-  const countries = o.countries
+  // Two drop-downs: the country (one at a time: another reloads the page
+  // with its data), then its area (a núcleo, region, state…).
+  const countrySel = o.countries
     ? el(
-        "div",
-        { class: "net-countries", role: "group", "aria-label": t(lang, "country") },
-        o.countries.map((c) =>
-          el("button", { class: "chip-btn", type: "button", "data-country": c.code, "aria-pressed": String(!!c.current), onclick: c.onPick }, c.name),
-        ),
+        "select",
+        { id: "net-country", "aria-label": t(lang, "country"), onchange: (e) => o.countries.find((c) => c.code === e.target.value)?.onPick() },
+        o.countries.map((c) => el("option", { value: c.code, selected: c.current ? "" : null }, c.name)),
       )
     : null;
+  const opt = (a) => el("option", { value: a.code, selected: a.code === o.area ? "" : null }, a.name);
+  const areaGroups = (o.areaGroups || []).filter((g) => g.items.length);
+  const areaSel =
+    o.areas?.length || areaGroups.length
+      ? el(
+          "select",
+          { id: "net-area", "aria-label": t(lang, "area"), onchange: (e) => e.target.value && o.onPick?.(e.target.value) },
+          el("option", { value: o.allCode || "es", selected: o.area ? null : "" }, o.allLabel || t(lang, "allAreas")),
+          ...(o.areas || []).map(opt),
+          ...areaGroups.map((g) => el("optgroup", { label: g.label }, g.items.map(opt))),
+        )
+      : null;
+  const countries =
+    countrySel || areaSel
+      ? el(
+          "div",
+          { class: "net-pickers" },
+          countrySel ? el("label", { class: "net-pick" }, el("span", { class: "net-pick-k" }, t(lang, "country")), countrySel) : null,
+          areaSel ? el("label", { class: "net-pick" }, el("span", { class: "net-pick-k" }, t(lang, "area")), areaSel) : null,
+        )
+      : null;
   const median = (m) => {
     if (m === null || m === undefined) return el("span", { class: "net-median muted" }, t(lang, "netNoData"));
     const tone = delayTone(m);
@@ -438,6 +461,8 @@ export function networksSheet(lang, o) {
     value: q,
     oninput: (e) => o.onQuery?.(e.target.value),
   });
+  // Areas without a median (other countries'): just the chevron.
+  const right = (n) => (n.median === undefined ? icon("chevronRight", 16) : median(n.median));
   const row = (n, right) =>
     el("li", {}, el("button", { class: "net-row", type: "button", "data-code": n.code, onclick: () => o.onPick?.(n.code) }, el("span", { class: "net-name" }, n.name), right));
   // Communities and provinces: no median (their trains aren't told apart).
@@ -455,7 +480,7 @@ export function networksSheet(lang, o) {
     ...(o.networks?.length || o.communities?.length || o.provinces?.length
       ? [
           ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, t(lang, "netGroup"))] : []),
-          list.length ? el("ul", { class: "net-list" }, list.map((n) => row(n, median(n.median)))) : extra.length ? null : el("p", { class: "muted small" }, t(lang, "netNone")),
+          list.length ? el("ul", { class: "net-list" }, list.map((n) => row(n, right(n)))) : extra.length ? null : el("p", { class: "muted small" }, t(lang, "netNone")),
         ]
       : []),
     ...extra,

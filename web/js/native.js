@@ -171,20 +171,37 @@ export function parseLink(href) {
     return null;
   }
   const ok = (s) => (/^[A-Za-z0-9._-]{1,40}$/.test(s || "") ? s : null);
+  // Station ids: some countries' have colons (Germany's "de:11000:900003201").
+  const okStation = (s) => (/^[A-Za-z0-9._:-]{1,60}$/.test(s || "") ? s : null);
+  const okCountry = (s) => (/^[a-z]{2}$/.test(s || "") ? s : null);
+  const okIndex = (s) => (/^\d{1,2}$/.test(s || "") ? Number(s) : null);
   if (u.protocol === "trainradar:") {
-    // trainradar://train/03020 → host "train", path "/03020"
-    const parts = [u.host, ...u.pathname.split("/")].filter(Boolean);
-    const [kind, id] = parts;
-    if (kind === "train" && ok(id)) return { type: "train", number: id };
-    if (kind === "station" && ok(id)) return { type: "station", id };
+    // trainradar://train/03020 → host "train", path "/03020"; with the
+    // country (home-screen shortcuts): trainradar://station/de/<id>.
+    const parts = [u.host, ...u.pathname.split("/")].filter(Boolean).map((x) => decodeURIComponent(x));
+    const [kind, a, b] = parts;
+    const country = b !== undefined ? okCountry(a) : null;
+    if (b !== undefined && !country) return null;
+    const id = b !== undefined ? b : a;
+    const where = country ? { country } : {};
+    if (kind === "train" && ok(id)) return { type: "train", number: id, ...where };
+    if (kind === "station" && okStation(id)) return { type: "station", id, ...where };
+    if (kind === "commute" && okIndex(id) !== null) return { type: "commute", index: okIndex(id), ...where };
     return null;
   }
+  const country = okCountry(u.searchParams.get("country"));
+  const where = country ? { country } : {};
   const train = ok(u.searchParams.get("train"));
-  if (train) return { type: "train", number: train };
-  const station = ok(u.searchParams.get("station"));
-  if (station) return { type: "station", id: station };
+  if (train) return { type: "train", number: train, ...where };
+  const station = okStation(u.searchParams.get("station"));
+  if (station) return { type: "station", id: station, ...where };
+  const commute = okIndex(u.searchParams.get("commute"));
+  if (commute !== null) return { type: "commute", index: commute, ...where };
   return null;
 }
+
+/** The app link a home-screen shortcut opens: `trainradar://<kind>/<country>/<id>`. */
+export const shortcutLink = (kind, country, id) => `trainradar://${kind}/${country}/${encodeURIComponent(id)}`;
 
 /** The app's own native plugin (app/android/…/TrainRadarPlugin.java):
  * background delay alerts, notifications and the widget. No-ops on the web. */
@@ -203,5 +220,16 @@ export const appNative = {
   },
   async refreshWidget() {
     await plugin("TrainRadar")?.refreshWidget();
+  },
+  /** An icon on the home screen that opens `url` (TrainRadar Pro). Resolves
+   * {pinned}: false when the launcher can't take one. */
+  async pinShortcut({ id, label, url, kind }) {
+    const p = plugin("TrainRadar");
+    if (!p?.pinShortcut) return false;
+    return !!(await p.pinShortcut({ id, label, url, kind })).pinned;
+  },
+  /** The app icon's long-press menu: up to four favourites (Pro), [] to clear. */
+  async setShortcuts(items) {
+    await plugin("TrainRadar")?.setShortcuts?.({ items });
   },
 };

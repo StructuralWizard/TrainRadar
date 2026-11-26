@@ -27,13 +27,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- trainradar://train/<number>, trainradar://station/<id> -->
+            <!-- trainradar://train/<number>, trainradar://station/<id>; home-screen
+                 shortcuts add the country: trainradar://station/<cc>/<id>,
+                 trainradar://commute/<cc>/<index>. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="trainradar" android:host="train" />
                 <data android:scheme="trainradar" android:host="station" />
+                <data android:scheme="trainradar" android:host="commute" />
             </intent-filter>
 
         </activity>

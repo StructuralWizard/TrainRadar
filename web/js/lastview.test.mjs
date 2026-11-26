@@ -20,19 +20,19 @@ test("last view: map always, the open train or station only when recent", () => 
   assert.equal(decodeView(JSON.stringify(bad), { country: "es", now: NOW }).detail, null);
 });
 
-test("favourites: trains then stations, each sorted on its own; neighbours", () => {
+test("favourites: stations then trains, each sorted on its own; neighbours", () => {
   const t = (n) => ({ type: "train", number: n, label: n });
   const s = (id) => ({ type: "station", id, name: id, lon: 0, lat: 40 });
   const list = [t("1"), s("A"), t("2"), s("B"), t("3")];
-  assert.deepEqual(favouritesInOrder(list).map((f) => f.number || f.id), ["1", "2", "3", "A", "B"]);
-  // Move train 3 to the top: stations untouched.
-  assert.deepEqual(moveFavourite(list, t("3"), 0).map((f) => f.number || f.id), ["3", "1", "2", "A", "B"]);
+  assert.deepEqual(favouritesInOrder(list).map((f) => f.number || f.id), ["A", "B", "1", "2", "3"]);
+  // Move train 3 to the top of the trains: stations untouched.
+  assert.deepEqual(moveFavourite(list, t("3"), 0).map((f) => f.number || f.id), ["A", "B", "3", "1", "2"]);
   // Move station A down: trains untouched; past the end clamps.
-  assert.deepEqual(moveFavourite(list, s("A"), 9).map((f) => f.number || f.id), ["1", "2", "3", "B", "A"]);
-  assert.deepEqual(moveFavourite(list, t("9"), 0).map((f) => f.number || f.id), ["1", "2", "3", "A", "B"], "unknown: order only");
+  assert.deepEqual(moveFavourite(list, s("A"), 9).map((f) => f.number || f.id), ["B", "A", "1", "2", "3"]);
+  assert.deepEqual(moveFavourite(list, t("9"), 0).map((f) => f.number || f.id), ["A", "B", "1", "2", "3"], "unknown: order only");
   // Swiping: next and previous in Favoritos' order, across the two groups.
-  assert.equal(neighbourFavourite(list, t("3"), 1).id, "A");
-  assert.equal(neighbourFavourite(list, s("A"), -1).number, "3");
-  assert.equal(neighbourFavourite(list, t("1"), -1), null);
-  assert.equal(neighbourFavourite(list, s("B"), 1), null);
+  assert.equal(neighbourFavourite(list, s("B"), 1).number, "1");
+  assert.equal(neighbourFavourite(list, t("1"), -1).id, "B");
+  assert.equal(neighbourFavourite(list, s("A"), -1), null);
+  assert.equal(neighbourFavourite(list, t("3"), 1), null);
 });

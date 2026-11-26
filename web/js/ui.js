@@ -904,15 +904,17 @@ export function claimBox(lang, text, url, onCopy) {
   ];
 }
 
-/** The favourites sheet: each train with its live state, each station. */
-export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onRemove, onMove, limit }) {
-  if (!list.length) return [el("p", { class: "muted" }, t(lang, "favEmpty"))];
+/** The favourites sheet: each station, then `middle` (the usual commutes,
+ * on Android), then each train with its live state. `shortcut(f)` (Android):
+ * a button that puts the favourite on the home screen, or null. */
+export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onRemove, onMove, limit, middle = [], shortcut = () => null }) {
+  if (!list.length) return [...middle, el("p", { class: "muted" }, t(lang, "favEmpty"))];
   const item = (f, i) => {
     const remove = el("button", { class: "pill small", type: "button", "aria-label": t(lang, "favRemove"), onclick: () => onRemove(f) }, "✕");
     const label = f.type === "station" ? f.name : f.label;
     const handle = onMove ? dragHandle(t(lang, "favMove", { name: label }), i, (to) => onMove(f, to)) : null;
     if (f.type === "station") {
-      return el("li", { class: "fav-row" }, handle, el("button", { class: "link", onclick: () => onStation(f) }, el("strong", {}, `■ ${f.name}`)), " ", remove);
+      return el("li", { class: "fav-row" }, handle, el("button", { class: "link", onclick: () => onStation(f) }, el("strong", {}, `■ ${f.name}`)), " ", shortcut(f), remove);
     }
     const info = trainInfo(f);
     const state = info
@@ -928,6 +930,7 @@ export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onR
       " ",
       state,
       " ",
+      shortcut(f),
       remove,
     );
   };
@@ -937,8 +940,9 @@ export function favouritesPanel(lang, list, { trainInfo, onTrain, onStation, onR
     return [el("h3", { class: "group-h", id: `favs-${type}s-h` }, title), el("ul", { class: "board fav-list", id: `favs-${type}s` }, items.map(item))];
   };
   return [
-    ...group("train", t(lang, "favTrains")),
     ...group("station", t(lang, "favStations")),
+    ...middle,
+    ...group("train", t(lang, "favTrains")),
     el("p", { class: "small muted" }, Number.isFinite(limit) ? t(lang, "favNote", { n: limit }) : t(lang, "favNotePro")),
   ];
 }
@@ -996,7 +1000,7 @@ function dragHandle(label, index, onMove) {
  * "Trayecto habitual" in Favoritos (Android): each saved commute opens its
  * next trains; with none, a button to add one; without Pro, the offer.
  */
-export function favCommutes(lang, { list, active, pro, onOpen, onAdd, onPro }) {
+export function favCommutes(lang, { list, active, pro, onOpen, onAdd, onPro, shortcut = () => null }) {
   const head = el("h3", { class: "group-h", id: "favs-commutes-h" }, t(lang, "commuteTitle"), pro ? null : el("span", { class: "pro-tag" }, "Pro"));
   if (!pro) return [head, el("button", { class: "link small", type: "button", id: "favs-commute-pro", onclick: onPro }, t(lang, "favCommutePro"))];
   if (!list.length) return [head, el("button", { class: "pill small", type: "button", id: "favs-commute-add", onclick: onAdd }, `+ ${t(lang, "commuteAddBtn")}`)];
@@ -1006,7 +1010,13 @@ export function favCommutes(lang, { list, active, pro, onOpen, onAdd, onPro }) {
       "ul",
       { class: "board", id: "favs-commutes" },
       list.map((c, i) =>
-        el("li", {}, el("button", { class: "link", type: "button", onclick: () => onOpen(i), "aria-current": i === active ? "true" : null }, el("strong", {}, `${c.from.name} → ${c.to.name}`))),
+        el(
+          "li",
+          { class: "fav-row" },
+          el("button", { class: "link", type: "button", onclick: () => onOpen(i), "aria-current": i === active ? "true" : null }, el("strong", {}, `${c.from.name} → ${c.to.name}`)),
+          " ",
+          shortcut(c, i),
+        ),
       ),
     ),
   ];

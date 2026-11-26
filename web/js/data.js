@@ -7,9 +7,67 @@
 // bundles a copy (offline start) and also knows the site's data/ (`remote`):
 // it uses whichever is newer.
 
+// A copy for offline use (the Android app, which downloads each country's
+// data from the site the first time it's opened): files from another
+// origin than the page's go into the Cache API, and come from there when
+// the network fails. Data files are content-hashed, so a cached one never
+// goes stale: it's used without asking the network; the manifest is asked
+// for first, and the copy used only offline. The website's own files (same
+// origin) are left to the browser's cache.
+const CACHE = "trainradar-data-v1";
+const cacheApi = () => (typeof caches !== "undefined" ? caches : null);
+const isFar = (url) => {
+  try {
+    return typeof location !== "undefined" && new URL(url, location.href).origin !== location.origin;
+  } catch {
+    return false;
+  }
+};
+async function cached(url) {
+  if (!cacheApi() || !isFar(url)) return null;
+  try {
+    return (await (await caches.open(CACHE)).match(url)) || null;
+  } catch {
+    return null;
+  }
+}
+async function keep(url, r) {
+  if (!cacheApi() || !isFar(url)) return;
+  try {
+    await (await caches.open(CACHE)).put(url, r);
+  } catch (e) {
+    console.warn("offline copy", e?.message); // full storage: the app still works online
+  }
+}
+
+/** Drop the offline copies under `base` that `manifest` no longer names
+ * (yesterday's timetables), so each country keeps one copy. */
+export async function pruneOffline(base, manifest) {
+  if (!cacheApi() || !isFar(base) || !manifest) return;
+  try {
+    const c = await caches.open(CACHE);
+    const named = new Set(
+      [manifest.stations?.file, manifest.network?.file, ...(manifest.regions || []).flatMap((r) => [r.file, r.geometry?.file])]
+        .filter(Boolean)
+        .map((f) => new URL(base + f, location.href).href),
+    );
+    named.add(new URL(`${base}manifest.json`, location.href).href);
+    for (const req of await c.keys()) {
+      const u = req.url;
+      if (u.startsWith(new URL(base, location.href).href) && !u.slice(new URL(base, location.href).href.length).includes("/") && !named.has(u)) await c.delete(req);
+    }
+  } catch (e) {
+    console.warn("offline prune", e?.message);
+  }
+}
+
 export async function fetchBytes(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+  let r = await cached(url);
+  if (!r) {
+    r = await fetch(url);
+    if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+    await keep(url, r.clone());
+  }
   const bytes = new Uint8Array(await r.arrayBuffer());
   // Deployed files are pre-gzipped (.bin.gz). Decompress unless the host
   // already did (then the gzip magic bytes 1f 8b are gone).
@@ -21,8 +79,18 @@ export async function fetchBytes(url) {
 }
 
 export async function fetchManifest(base, timeoutMs = 10_000) {
-  const r = await fetch(`${base}manifest.json`, { cache: "no-cache", signal: AbortSignal.timeout(timeoutMs) });
-  if (!r.ok) throw new Error(`manifest: HTTP ${r.status}`);
+  const url = `${base}manifest.json`;
+  let r;
+  try {
+    r = await fetch(url, { cache: "no-cache", signal: AbortSignal.timeout(timeoutMs) });
+    if (!r.ok) throw new Error(`manifest: HTTP ${r.status}`);
+  } catch (e) {
+    // Offline: the copy kept the last time, if any.
+    const copy = await cached(url);
+    if (!copy) throw e;
+    return copy.json();
+  }
+  await keep(url, r.clone());
   return r.json();
 }
 
@@ -72,6 +140,7 @@ export class RefData {
     if (!own && !far) throw new Error("manifest: no data");
     if (newerData(far, own)) this.base = this.remote;
     this.manifest = newerData(far, own) ? far : own;
+    if (this.base === this.remote) pruneOffline(this.base, this.manifest);
     this.checkedAt = Date.now();
     this.engine.loadStations(await fetchBytes(this.base + this.manifest.stations.file));
     // Spain's AV/LD/MD up front; the UK and Ireland are one region each,
@@ -123,6 +192,7 @@ export class RefData {
     await Promise.allSettled([...this.loading.values()]);
     this.base = base;
     this.manifest = m;
+    if (base === this.remote) pruneOffline(base, m);
     if (m.stations.file !== old.stations.file) this.engine.loadStations(await fetchBytes(base + m.stations.file));
     const file = (man, code) => man.regions.find((r) => r.code === code)?.file;
     for (const code of [...this.loaded]) {

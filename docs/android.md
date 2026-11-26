@@ -283,6 +283,50 @@ stay with Spain in either country: they read Spain's keys and servers (`widget-c
 says so. The emulator test switches to the UK through the picker (`tools/demo-uk.sh` data
 and feeds in the test APK).
 
+### Every country (next version)
+
+Every country is offered, in the app and on the site (`CONFIG.countries`; Singapore says
+"estimated"). Only Spain's data is bundled; any other country's comes from the site's
+`data/<code>/` the first time it's opened and is kept on the phone (the Cache API,
+`trainradar-data-v1`: content-hashed files are used from the copy without asking the
+network, the manifest is asked for first and the copy used only offline, and a newer
+manifest drops the files it no longer names). Opening a country for the first time without
+a connection says so. The app opens on the last country used; the very first time, on the
+phone's time zone's country (else its language's region, else Spain), without sending
+anything anywhere. Each country remembers its own map view (`lastView-<code>`; Spain's
+stays `lastView`) and its last area (`area-<code>`: a núcleo, region, state…;
+`areasOf()` in `web/js/country.js` lists a country's areas from its manifest).
+
+The network picker (the chip at the top) starts with two drop-downs: **País** (every
+country: Spain and the UK first, the others A–Z; choosing one reloads with its data) and
+**Zona** (the whole country, then its areas; Spain adds its communities and provinces). Other
+countries' areas are also listed below, searchable. On the map, the other countries are faintly
+outlined (`web/countries.geojson`: Natural Earth, public domain, cut and simplified by
+`tools/outlines/build.py`, 27 KB gzipped); tapping one shows "Ir a Francia", and that button
+switches. A stray tap near a border doesn't reload anything.
+
+**Daily trips first.** With favourites saved (or, with Pro, a usual commute), the app opens on
+Favoritos instead of the map (unless it reopens a train or station left open, or the active
+commute's next trains, Pro); the map is one tap away. The website keeps opening on the map.
+Favoritos lists the stations first, then the usual commutes, then the trains (storage order
+too: `favouritesInOrder()`; the pager and the swipe follow it).
+
+**Home-screen icons (TrainRadar Pro).** Each favourite station, train and commute in Favoritos
+has a ⌂ button: it asks the launcher (`ShortcutManagerCompat.requestPinShortcut`) for an icon
+that opens `trainradar://<station|train|commute>/<country>/<id>` (a commute by its position in
+the list). The icon carries no data and updates nothing in the background. The app icon's
+long-press menu shows the current country's first four favourites in the same order
+(`setDynamicShortcuts`, refreshed when favourites, commutes or Pro change). A link for another
+country reloads the app in that country (`?country=de&station=…`). Without Pro the ⌂ button
+opens the Pro offer, and the long-press menu is empty.
+
+### The website's overview of every country
+
+Zoomed out below 3.5 (or "Todos los países" in the country drop-down and "Ir a…"), the website
+shows every country outlined, each with its name and how many of its trains have live data
+(from its `status.json`, read at most once a minute; timetable-only countries say so). A click
+on a country goes there. The app doesn't offer it (its map stops at zoom 4).
+
 ## Saved journeys' alerts (plan journeys, J4)
 
 A commute (Trayecto habitual, Pro) can hold a journey's trains (`docs/plan-journeys.md`). The
