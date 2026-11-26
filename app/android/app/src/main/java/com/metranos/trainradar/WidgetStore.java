@@ -83,7 +83,7 @@ final class WidgetStore {
         return "en".equals(lang(ctx));
     }
 
-    /** The app's language: es, en, pt or ja (Tr.pick). */
+    /** The app's language, one of web/js/i18n.js LANGS (Tr.pick). */
     static String lang(Context ctx) {
         return appConfig(ctx).optString("lang", "es");
     }
