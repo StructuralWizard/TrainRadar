@@ -166,3 +166,26 @@ test("country: every country has an outline to tap (countries.geojson)", async (
   assert.deepEqual(g.features.map((f) => f.properties.code).sort(), [...COUNTRIES].sort());
   for (const f of g.features) assert.ok(f.geometry.coordinates.length > 0, f.properties.code);
 });
+
+test("country: where the timetable has fewer than two areas, the regions of areas.json that have stations", async () => {
+  const { withPlaces } = await import("./country.js");
+  const doc = {
+    uk: [
+      { code: "adm:uk:greater-london", names: { es: "Londres", en: "London", pt: "Londres", ja: "ロンドン" }, bbox: [51.28, -0.51, 51.69, 0.33] },
+      { code: "adm:uk:scotland", names: { es: "Escocia", en: "Scotland", pt: "Escócia", ja: "スコットランド" }, bbox: [54.6, -8.6, 60.9, -0.7] },
+      { code: "adm:uk:northern-ireland", names: { es: "Irlanda del Norte", en: "Northern Ireland", pt: "Irlanda do Norte", ja: "北アイルランド" }, bbox: [54.0, -8.2, 55.3, -5.4] },
+      { code: "adm:uk:wales", names: { es: "Gales", en: "Wales", pt: "País de Gales", ja: "ウェールズ" }, bbox: [51.3, -5.4, 53.5, -2.6] },
+    ],
+  };
+  const stations = [{ lat: 51.5, lon: -0.1 }, { lat: 51.53, lon: -0.12 }, { lat: 55.86, lon: -4.25 }, { lat: 55.95, lon: -3.19 }, { lat: 54.6, lon: -5.9 }, { lat: 54.5, lon: -6.0 }];
+  // The timetable's one area (Northern Ireland) stays; no second one of it.
+  const ni = [{ code: "ni", name: "Northern Ireland", bbox: [54, -8.2, 55.3, -5.4] }];
+  const a = withPlaces(ni, doc, "uk", "es", stations);
+  assert.deepEqual(a.map((x) => x.code), ["adm:uk:scotland", "ni", "adm:uk:greater-london"]);
+  assert.equal(a[2].name, "Londres");
+  assert.equal(a[1].name, "Irlanda del Norte");
+  // Wales has no station here: left out. A country with areas keeps its own.
+  const two = [{ code: "a", name: "A", bbox: [0, 0, 1, 1] }, { code: "b", name: "B", bbox: [0, 0, 1, 1] }];
+  assert.deepEqual(withPlaces(two, doc, "uk", "en", stations), two);
+  assert.deepEqual(withPlaces([], null, "uk", "en", stations), []);
+});

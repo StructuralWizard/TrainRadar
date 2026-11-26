@@ -121,12 +121,14 @@ console.log("UK route:", ukRoute.slice(0, 160));
 if (!/formas de llegar/.test(ukRoute) || !(await page.$('#route .journey-row[data-changes="0"]'))) await fail("UK route: no direct journey");
 await page.click("#route-close");
 
-// The picker: the country drop-down, España and Reino Unido first, then
-// every other country; the choice is remembered.
+// The picker: the country drop-down, the country shown (the UK) first,
+// then every other country A–Z; the choice is remembered.
 await page.click("#net-chip");
 await page.waitForSelector("#networks:not([hidden]) #net-country");
-const countries = await page.$$eval("#net-country option", (o) => o.map((x) => [x.value, String(x.selected)]));
-if (JSON.stringify(countries.slice(0, 2)) !== JSON.stringify([["es", "false"], ["uk", "true"]]) || countries.length < 20) await fail(`countries: ${JSON.stringify(countries)}`);
+const countries = await page.$$eval("#net-country option", (o) => o.map((x) => [x.value, String(x.selected), x.textContent]));
+const rest = countries.slice(1).filter(([v]) => v !== "overview").map(([, , name]) => name);
+const sorted = [...rest].sort((a, b) => a.localeCompare(b, "es"));
+if (JSON.stringify(countries[0].slice(0, 2)) !== JSON.stringify(["uk", "true"]) || JSON.stringify(rest) !== JSON.stringify(sorted) || countries.length < 20) await fail(`countries: ${JSON.stringify(countries)}`);
 await page.screenshot({ path: `${out}/uk-networks.png` });
 await Promise.all([page.waitForNavigation(), page.selectOption("#net-country", "es")]);
 await page.waitForFunction(() => window.__trainradar?.engine?.positions(Date.now()).length > 0, null, { timeout: 30000 }).catch(() => fail("Spain didn't load"));
