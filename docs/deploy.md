@@ -352,14 +352,16 @@ app, and update the "last updated" dates when they change.
   **`SG_LIVE_ENABLED`** = `true` adds LTA DataMall's train service alerts in the `eu` Worker, with
   `SG_LTA_ACCOUNT_KEY`. See [world/sg.md](world/sg.md).
 
-## Portugal (Lisbon)
+## Portugal
 
-- **Turning it on:** **`PT_ENABLED`** = `true` builds Lisbon (Fertagus, CC BY 4.0, and Lisbon
-  Metro from dados.gov.pt, CC BY) into `data/pt/`, by timetable: Portugal publishes no live data.
-  No key.
-- **CP:** **`PT_CP_ENABLED`** = `true` adds CP's national timetable, **only once CP has given
-  written permission** to reuse it (its file says "No licence"; [europe/pt.md](europe/pt.md)).
-- Still hidden in the app (`hiddenCountries`); `?country=pt` opens it.
+- **Turning it on:** **`PT_ENABLED`** = `true` builds Portugal into `data/pt/`, by timetable
+  (Portugal publishes no live data), no key: Lisbon (Fertagus, CC BY 4.0, and Lisbon Metro from
+  dados.gov.pt, CC BY) and CP's national timetable.
+- **CP:** built by default since 2026-11-26. CP publishes its GTFS for anyone at
+  publico.cp.pt but states no licence; it is credited ("CP – Comboios de Portugal"), without
+  CP's logo or any suggestion of endorsement, while CP's reply to our letter is pending
+  ([europe/pt.md](europe/pt.md)). **`PT_CP_ENABLED`** = `false` leaves CP out at the next
+  deploy (Lisbon only), if CP objects.
 
 ## Japan (Tokyo, Kōchi)
 

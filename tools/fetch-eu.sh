@@ -429,10 +429,10 @@ except Exception as e:
     rm -f "$dir/fertagus.zip" "$dir/ml.zip" "$dir/ft.zip" "$dir/mlx.zip"
     region=portugal ;;
   pt)
-    # CP's timetable has no reuse licence yet ("No licence", and its legal
-    # notice forbids reproduction without written permission): built only
-    # once the maintainer sets PT_CP=1 with CP's permission in hand.
-    [ "${PT_CP:-}" = "1" ] || { echo "CP: not built (PT_CP is not 1; CP's permission is pending, docs/europe/pt.md)" >&2; exit 3; }
+    # CP's timetable, published for anyone at publico.cp.pt but with no
+    # licence stated (CP's reply to our letter is pending): built with PT_CP=1,
+    # which the deploy sets unless PT_CP_ENABLED is "false" (docs/europe/pt.md).
+    [ "${PT_CP:-}" = "1" ] || { echo "CP: not built (PT_CP is not 1: PT_CP_ENABLED is false, docs/europe/pt.md)" >&2; exit 3; }
     get "CP – Comboios de Portugal GTFS" https://publico.cp.pt/gtfs/gtfs.zip "$dir/cp.zip"
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/cp.zip"
     rm -f "$dir/cp.zip"
