@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Dine favorittog og deres forsinkelse (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Næste afgange fra en station (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Næste ankomster til en station (TrainRadar Pro)</string>
+    <string name="widget_train_description">Ét tog: forsinkelse, næste stop og destination (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Renfes gældende driftsmeddelelser (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Afgange</string>
+    <string name="widget_arrivals_label">Ankomster</string>
+    <string name="widget_train_label">Tog</string>
+    <string name="widget_notices_label">Renfes driftsinfo</string>
+    <string name="widget_refresh">Opdater</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Opdatering klar</string>
+    <string name="update_ready_message">En ny version af TrainRadar er hentet. Genstart for at bruge den.</string>
+    <string name="update_restart">Genstart</string>
+    <string name="update_later">Senere</string>
+</resources>

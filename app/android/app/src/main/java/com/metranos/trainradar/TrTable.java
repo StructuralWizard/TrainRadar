@@ -26,6 +26,49 @@ final class TrTable {
         BY.put(lang, m);
     }
 
+    private static void da() {
+        put("da",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s afgår nu fra spor %2$s (før %3$s)",
+                "%d min late", "%d min. forsinket",
+                "Arrivals · ", "Ankomster · ",
+                "Cancelled", "Aflyst",
+                "Change at %s at risk: %d min left for the %s", "Skift på %s i fare: %d min. tilbage til %s",
+                "Delays of your trains", "Forsinkelser på dine tog",
+                "Departures · ", "Afgange · ",
+                "From ", "Fra ",
+                "From your favourites:", "Fra dine favoritter:",
+                "Next stop: ", "Næste stop: ",
+                "No data yet.", "Endnu ingen data.",
+                "No notices in force.", "Ingen gældende meddelelser.",
+                "No trains in the next 3 hours.", "Ingen tog de næste 3 timer.",
+                "Not running now.", "Kører ikke nu.",
+                "Open TrainRadar", "Åbn TrainRadar",
+                "Renfe notices", "Renfes driftsinfo",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Gem først en station med ☆ Gem i TrainRadar, og tilføj så widgetten igen.",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Gem først et tog med ☆ Gem i TrainRadar, og tilføj så widgetten igen.",
+                "Save trains with ☆ to see them here.", "Gem tog med ☆ for at se dem her.",
+                "Tap to choose a station or train.", "Tryk for at vælge en station eller et tog.",
+                "The widget is part of TrainRadar Pro.", "Widgetten er en del af TrainRadar Pro.",
+                "This widget is part of TrainRadar Pro.", "Denne widget er en del af TrainRadar Pro.",
+                "Train", "Tog",
+                "Updated ", "Opdateret ",
+                "Updating…", "Opdaterer…",
+                "Which station?", "Hvilken station?",
+                "Which train?", "Hvilket tog?",
+                "You leave at %s: %s %s", "Du tager af sted kl. %s: %s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "Du når ikke skiftet på %1$s til %2$s: se andre muligheder",
+                "cancelled", "aflyst",
+                "cancelled — see other options", "aflyst — se andre muligheder",
+                "disruption", "driftsforstyrrelse",
+                "lifts and access", "elevatorer og adgang",
+                "no live delay", "ingen live forsinkelse",
+                "not running", "kører ikke",
+                "notice", "meddelelse",
+                "on time", "til tiden",
+                "strike", "strejke",
+                "works", "sporarbejde");
+    }
+
     private static void de() {
         put("de",
                 "%1$s now leaves from platform %2$s (was %3$s)", "%1$s fährt jetzt von Gleis %2$s ab (statt %3$s)",
@@ -67,6 +110,49 @@ final class TrTable {
                 "on time", "pünktlich",
                 "strike", "Streik",
                 "works", "Bauarbeiten");
+    }
+
+    private static void et() {
+        put("et",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s väljub nüüd perroonilt %2$s (oli %3$s)",
+                "%d min late", "%d min hilinemist",
+                "Arrivals · ", "Saabumised · ",
+                "Cancelled", "Tühistatud",
+                "Change at %s at risk: %d min left for the %s", "Ümberistumine ohus (%1$s): rongini %3$s on jäänud %2$d min",
+                "Delays of your trains", "Sinu rongide hilinemised",
+                "Departures · ", "Väljumised · ",
+                "From ", "Kust: ",
+                "From your favourites:", "Sinu lemmikutest:",
+                "Next stop: ", "Järgmine peatus: ",
+                "No data yet.", "Andmeid veel pole.",
+                "No notices in force.", "Kehtivaid teateid pole.",
+                "No trains in the next 3 hours.", "Järgmise 3 tunni jooksul ronge pole.",
+                "Not running now.", "Praegu ei sõida.",
+                "Open TrainRadar", "Ava TrainRadar",
+                "Renfe notices", "Renfe teated",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Salvesta esmalt TrainRadaris jaam nupuga ☆ Salvesta, seejärel lisa vidin uuesti.",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Salvesta esmalt TrainRadaris rong nupuga ☆ Salvesta, seejärel lisa vidin uuesti.",
+                "Save trains with ☆ to see them here.", "Salvesta rongid nupuga ☆, et neid siin näha.",
+                "Tap to choose a station or train.", "Puuduta, et valida jaam või rong.",
+                "The widget is part of TrainRadar Pro.", "Vidin kuulub TrainRadar Pro juurde.",
+                "This widget is part of TrainRadar Pro.", "See vidin kuulub TrainRadar Pro juurde.",
+                "Train", "Rong",
+                "Updated ", "Uuendatud ",
+                "Updating…", "Uuendamine…",
+                "Which station?", "Milline jaam?",
+                "Which train?", "Milline rong?",
+                "You leave at %s: %s %s", "Väljud kell %s: %s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "Jääd ümberistumisest maha (%1$s, rong %2$s): vaata muid võimalusi",
+                "cancelled", "tühistatud",
+                "cancelled — see other options", "tühistatud — vaata muid võimalusi",
+                "disruption", "häire",
+                "lifts and access", "liftid ja ligipääs",
+                "no live delay", "reaalajas hilinemine puudub",
+                "not running", "ei sõida",
+                "notice", "teade",
+                "on time", "graafikus",
+                "strike", "streik",
+                "works", "tööd");
     }
 
     private static void fi() {
@@ -414,7 +500,9 @@ final class TrTable {
     }
 
     static {
+        da();
         de();
+        et();
         fi();
         fr();
         it();
