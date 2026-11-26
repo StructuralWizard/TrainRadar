@@ -112,8 +112,52 @@ final class TrTable {
                 "works", "lavori");
     }
 
+    private static void zh() {
+        put("zh",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s 现改为从 %2$s 号站台出发（原为 %3$s）",
+                "%d min late", "误点 %d 分钟",
+                "Arrivals · ", "到站 · ",
+                "Cancelled", "已取消",
+                "Change at %s at risk: %d min left for the %s", "%1$s 换乘可能赶不上：距 %3$s 仅剩 %2$d 分钟",
+                "Delays of your trains", "您的列车误点",
+                "Departures · ", "出发 · ",
+                "From ", "出发站 ",
+                "From your favourites:", "来自您的收藏：",
+                "Next stop: ", "下一站： ",
+                "No data yet.", "暂无数据。",
+                "No notices in force.", "没有生效中的通告。",
+                "No trains in the next 3 hours.", "未来 3 小时内没有列车。",
+                "Not running now.", "目前不运行。",
+                "Open TrainRadar", "打开 TrainRadar",
+                "Renfe notices", "Renfe 通告",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "请先在 TrainRadar 中用 ☆ 收藏保存一个车站，然后重新添加小组件。",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "请先在 TrainRadar 中用 ☆ 收藏保存一趟列车，然后重新添加小组件。",
+                "Save trains with ☆ to see them here.", "用 ☆ 收藏列车，即可在这里查看。",
+                "Tap to choose a station or train.", "点按选择车站或列车。",
+                "The widget is part of TrainRadar Pro.", "小组件是 TrainRadar Pro 功能。",
+                "This widget is part of TrainRadar Pro.", "此小组件是 TrainRadar Pro 功能。",
+                "Train", "列车",
+                "Updated ", "更新于 ",
+                "Updating…", "正在更新…",
+                "Which station?", "哪个车站？",
+                "Which train?", "哪趟列车？",
+                "You leave at %s: %s %s", "您在 %s 出发：%s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "您将赶不上在 %1$s 换乘开往 %2$s 的列车：查看其他选择",
+                "cancelled", "已取消",
+                "cancelled — see other options", "已取消——查看其他选择",
+                "disruption", "服务中断",
+                "lifts and access", "电梯和出入口",
+                "no live delay", "无实时误点",
+                "not running", "不运行",
+                "notice", "通告",
+                "on time", "准点",
+                "strike", "罢工",
+                "works", "工程");
+    }
+
     static {
         fr();
         it();
+        zh();
     }
 }
