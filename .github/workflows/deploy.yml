@@ -88,7 +88,9 @@ jobs:
     needs: check
     if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 25 countries take 45-60 minutes, more when a provider is slow (Poland's
+    # API took 15 minutes on 2026-11-26): room for the live-site smoke test.
+    timeout-minutes: 90
     environment:
       name: production
       url: ${{ steps.urls.outputs.site }}
