@@ -413,6 +413,49 @@ final class TrTable {
                 "works", "werkzaamheden");
     }
 
+    private static void pl() {
+        put("pl",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s odjeżdża teraz z peronu %2$s (wcześniej %3$s)",
+                "%d min late", "%d min opóźnienia",
+                "Arrivals · ", "Przyjazdy · ",
+                "Cancelled", "Odwołany",
+                "Change at %s at risk: %d min left for the %s", "Przesiadka na stacji %s zagrożona: zostało %d min na pociąg %s",
+                "Delays of your trains", "Opóźnienia Twoich pociągów",
+                "Departures · ", "Odjazdy · ",
+                "From ", "Z ",
+                "From your favourites:", "Z Twoich ulubionych:",
+                "Next stop: ", "Następna stacja: ",
+                "No data yet.", "Brak jeszcze danych.",
+                "No notices in force.", "Brak obowiązujących komunikatów.",
+                "No trains in the next 3 hours.", "Brak pociągów w ciągu najbliższych 3 godzin.",
+                "Not running now.", "Teraz nie kursuje.",
+                "Open TrainRadar", "Otwórz TrainRadar",
+                "Renfe notices", "Komunikaty Renfe",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Najpierw zapisz stację przez ☆ Zapisz w TrainRadar, a potem dodaj widżet ponownie.",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Najpierw zapisz pociąg przez ☆ Zapisz w TrainRadar, a potem dodaj widżet ponownie.",
+                "Save trains with ☆ to see them here.", "Zapisz pociągi przez ☆, aby widzieć je tutaj.",
+                "Tap to choose a station or train.", "Dotknij, aby wybrać stację lub pociąg.",
+                "The widget is part of TrainRadar Pro.", "Widżet jest częścią TrainRadar Pro.",
+                "This widget is part of TrainRadar Pro.", "Ten widżet jest częścią TrainRadar Pro.",
+                "Train", "Pociąg",
+                "Updated ", "Zaktualizowano ",
+                "Updating…", "Aktualizowanie…",
+                "Which station?", "Która stacja?",
+                "Which train?", "Który pociąg?",
+                "You leave at %s: %s %s", "Wyjazd o %s: %s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "Nie zdążysz na przesiadkę na stacji %1$s do %2$s: zobacz inne opcje",
+                "cancelled", "odwołany",
+                "cancelled — see other options", "odwołany — zobacz inne opcje",
+                "disruption", "utrudnienia",
+                "lifts and access", "windy i dostęp",
+                "no live delay", "brak opóźnienia na żywo",
+                "not running", "nie kursuje",
+                "notice", "komunikat",
+                "on time", "punktualnie",
+                "strike", "strajk",
+                "works", "prace");
+    }
+
     private static void sk() {
         put("sk",
                 "%1$s now leaves from platform %2$s (was %3$s)", "%1$s teraz odchádza z nástupišťa %2$s (predtým %3$s)",
@@ -552,6 +595,7 @@ final class TrTable {
         it();
         nb();
         nl();
+        pl();
         sk();
         sv();
         zh();
