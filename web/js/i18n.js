@@ -1,6 +1,11 @@
-// Interface strings. Spanish is the default; English on request.
+// Interface strings. Spanish is the default; English, European Portuguese
+// (i18n-pt.js) and Japanese (i18n-ja.js) on request, or from the browser's
+// language the first time.
 
-export const LANGS = ["es", "en"];
+import { PT } from "./i18n-pt.js";
+import { JA } from "./i18n-ja.js";
+
+export const LANGS = ["es", "en", "pt", "ja"];
 
 export const STRINGS = {
   es: {
@@ -12,6 +17,9 @@ export const STRINGS = {
     overviewLive: "{n} trenes en directo",
     overviewTimetable: "según horario",
     overviewNoLive: "sin datos en directo ahora",
+    overviewRunning: "{n} trenes circulando",
+    overviewNetwork: "{lines} líneas · {stations} estaciones",
+    overviewUpdated: "Resumen de hace {ago}",
     shortcutAdd: "Añadir a la pantalla de inicio",
     shortcutNo: "Este lanzador no admite añadir iconos.",
     area: "Zona",
@@ -43,6 +51,8 @@ export const STRINGS = {
     close: "Cerrar",
     language: "English",
     languageLabel: "Change language to English",
+    changeLanguage: "Cambiar el idioma",
+    daysCount: "{n} días",
     from: "Origen",
     to: "Destino",
     nextStop: "Próxima parada",
@@ -585,6 +595,8 @@ export const STRINGS = {
     countryAu: "Australia (Nueva Gales del Sur, Victoria)",
     countryNz: "Nueva Zelanda (Wellington, Auckland)",
     countrySg: "Singapur (estimado)",
+    countryPt: "Portugal (Lisboa)",
+    countryJp: "Japón (Tokio, Kōchi)",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
@@ -601,6 +613,8 @@ export const STRINGS = {
     allAu: "Nueva Gales del Sur y Victoria",
     allNz: "Wellington y Auckland",
     allSg: "Todo Singapur",
+    allPt: "Todo Portugal",
+    allJp: "Tokio y Kōchi",
     scheduledAllSg: "{n} trenes estimados",
     estimatedPosition: "Posición estimada: LTA no publica horarios ni posiciones de los trenes; este tren se dibuja según la frecuencia habitual de la línea.",
     noticesTitle: "Avisos",
@@ -647,6 +661,10 @@ export const STRINGS = {
       'Datos: Transport for NSW (<a href="https://opendata.transport.nsw.gov.au/" target="_blank" rel="noopener">opendata.transport.nsw.gov.au</a>) y Transport Victoria (<a href="https://opendata.transport.vic.gov.au/" target="_blank" rel="noopener">opendata.transport.vic.gov.au</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Transport for NSW ni Transport Victoria',
     attributionNz:
       'Datos: Metlink, Greater Wellington Regional Council (<a href="https://opendata.metlink.org.nz/" target="_blank" rel="noopener">opendata.metlink.org.nz</a>) y Auckland Transport (<a href="https://at.govt.nz/about-us/at-data-sources/" target="_blank" rel="noopener">at.govt.nz</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Metlink, Greater Wellington ni Auckland Transport',
+    attributionPt:
+      'Datos: Fertagus (<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) y Metropolitano de Lisboa (<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>, CC BY) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Fertagus, Metropolitano de Lisboa ni CP',
+    attributionJp:
+      'Datos: Oficina de Transporte del Gobierno Metropolitano de Tokio (Toei) y Tosaden Kotsu / 公共交通オープンデータセンター (<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Sin relación con Toei, Tosaden ni ODPT',
     attributionSg:
       'Trenes estimados a partir de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) y las frecuencias publicadas · Avisos: <a href="https://datamall.lta.gov.sg/" target="_blank" rel="noopener">LTA DataMall</a> (Singapore Open Data Licence) · Sin relación con LTA, SMRT ni SBS Transit',
     attributionBe:
@@ -679,6 +697,9 @@ export const STRINGS = {
     overviewLive: "{n} trains live",
     overviewTimetable: "by timetable",
     overviewNoLive: "no live data now",
+    overviewRunning: "{n} trains running",
+    overviewNetwork: "{lines} lines · {stations} stations",
+    overviewUpdated: "Summary from {ago} ago",
     shortcutAdd: "Add to the home screen",
     shortcutNo: "This launcher can't add icons.",
     area: "Area",
@@ -710,6 +731,8 @@ export const STRINGS = {
     close: "Close",
     language: "Español",
     languageLabel: "Cambiar el idioma a español",
+    changeLanguage: "Change language",
+    daysCount: "{n} days",
     from: "From",
     to: "To",
     nextStop: "Next stop",
@@ -1252,6 +1275,8 @@ export const STRINGS = {
     countryAu: "Australia (New South Wales, Victoria)",
     countryNz: "New Zealand (Wellington, Auckland)",
     countrySg: "Singapore (estimated)",
+    countryPt: "Portugal (Lisbon)",
+    countryJp: "Japan (Tokyo, Kōchi)",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
@@ -1268,6 +1293,8 @@ export const STRINGS = {
     allAu: "New South Wales and Victoria",
     allNz: "Wellington and Auckland",
     allSg: "All of Singapore",
+    allPt: "All of Portugal",
+    allJp: "Tokyo and Kōchi",
     scheduledAllSg: "{n} estimated trains",
     estimatedPosition: "Estimated position: LTA publishes no train timetable or positions; this train is drawn from the line\'s usual frequency.",
     noticesTitle: "Notices",
@@ -1314,6 +1341,10 @@ export const STRINGS = {
       'Data: Transport for NSW (<a href="https://opendata.transport.nsw.gov.au/" target="_blank" rel="noopener">opendata.transport.nsw.gov.au</a>) and Transport Victoria (<a href="https://opendata.transport.vic.gov.au/" target="_blank" rel="noopener">opendata.transport.vic.gov.au</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Transport for NSW or Transport Victoria',
     attributionNz:
       'Data: Metlink, Greater Wellington Regional Council (<a href="https://opendata.metlink.org.nz/" target="_blank" rel="noopener">opendata.metlink.org.nz</a>) and Auckland Transport (<a href="https://at.govt.nz/about-us/at-data-sources/" target="_blank" rel="noopener">at.govt.nz</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Metlink, Greater Wellington or Auckland Transport',
+    attributionPt:
+      'Data: Fertagus (<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) and Metropolitano de Lisboa (<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>, CC BY) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Fertagus, Metropolitano de Lisboa or CP',
+    attributionJp:
+      'Data: Tokyo Metropolitan Bureau of Transportation (Toei) and Tosaden Traffic / 公共交通オープンデータセンター (<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Not affiliated with Toei, Tosaden or ODPT',
     attributionSg:
       'Estimated trains from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) and published frequencies · Alerts: <a href="https://datamall.lta.gov.sg/" target="_blank" rel="noopener">LTA DataMall</a> (Singapore Open Data Licence) · Not affiliated with LTA, SMRT or SBS Transit',
     attributionBe:
@@ -1339,13 +1370,31 @@ export const STRINGS = {
   },
 };
 
-/** Translate `key`, filling `{name}` placeholders from `vars`. */
+STRINGS.pt = { ...PT, changeLanguage: "Mudar de idioma", daysCount: "{n} dias" };
+STRINGS.ja = { ...JA, changeLanguage: "言語を切り替え", daysCount: "{n}日" };
+
+/** Each language's locale for numbers and dates. */
+export const LOCALES = { es: "es-ES", en: "en-GB", pt: "pt-PT", ja: "ja-JP" };
+export const locale = (lang) => LOCALES[lang] || "es-ES";
+
+/** The language after `lang` on the language button. */
+export const nextLang = (lang) => LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
+
+/** Translate `key`, filling `{name}` placeholders from `vars`. Portuguese
+ * and Japanese fall back to English, the others to Spanish. */
 export function t(lang, key, vars = {}) {
-  const s = (STRINGS[lang] || STRINGS.es)[key] ?? STRINGS.es[key] ?? key;
+  const fallback = lang === "pt" || lang === "ja" ? STRINGS.en : STRINGS.es;
+  const s = (STRINGS[lang] || STRINGS.es)[key] ?? fallback[key] ?? STRINGS.es[key] ?? key;
   return s.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
-/** Spanish unless the user picked English before. */
-export function pickLang(stored) {
-  return LANGS.includes(stored) ? stored : "es";
+/** The language picked before; else Portuguese or Japanese for a browser
+ * (or phone) in that language; else Spanish. */
+export function pickLang(stored, languages = []) {
+  if (LANGS.includes(stored)) return stored;
+  for (const l of languages) {
+    const base = String(l).toLowerCase().split("-")[0];
+    if (base === "pt" || base === "ja") return base;
+  }
+  return "es";
 }

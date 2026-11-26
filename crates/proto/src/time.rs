@@ -149,6 +149,7 @@ impl Zone {
             "Australia/Brisbane" | "Australia/Queensland" => Zone::Fixed(10 * 3_600),
             "Pacific/Auckland" | "NZ" => Zone::NewZealand,
             "Asia/Singapore" | "Singapore" => Zone::Fixed(8 * 3_600),
+            "Asia/Tokyo" | "Japan" => Zone::Fixed(9 * 3_600),
             _ => return None,
         })
     }
@@ -228,6 +229,9 @@ mod zone_tests {
         assert_eq!(nz.utc_offset(at(2026, 9, 26, 15)), 13 * 3_600);
         let sg = Zone::from_iana("Asia/Singapore").unwrap();
         assert_eq!(sg.utc_offset(at(2026, 7, 1, 0)), 8 * 3_600);
+        let jp = Zone::from_iana("Asia/Tokyo").unwrap();
+        assert_eq!(jp.utc_offset(at(2026, 1, 1, 0)), 9 * 3_600);
+        assert_eq!(jp.utc_offset(at(2026, 7, 1, 0)), 9 * 3_600);
         assert_eq!(Zone::Eu(3_600).behind_madrid(0), 3_600);
         assert_eq!(Zone::from_iana("America/New_York"), None);
     }

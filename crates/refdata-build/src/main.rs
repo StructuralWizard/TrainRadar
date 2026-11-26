@@ -16,6 +16,7 @@ mod nrsched;
 mod osm;
 mod profile;
 mod railnet;
+mod summary;
 mod txc;
 mod verify;
 
@@ -82,7 +83,9 @@ usage:
                        Germany: --de-gtfs ZIP; Belgium: --be-gtfs ZIP;
                        New South Wales: --au-nsw-gtfs ZIP; Victoria: --au-vic-gtfs ZIP;
                        Wellington: --nz-wlg-gtfs ZIP; Auckland: --nz-akl-gtfs ZIP;
-                       Singapore: --sg-gtfs ZIP, estimated by tools/sg/osm-gtfs.py)
+                       Singapore: --sg-gtfs ZIP, estimated by tools/sg/osm-gtfs.py;
+                       Portugal: --pt-gtfs ZIP (CP), --pt-lis-gtfs ZIP (Lisbon);
+                       Japan: --jp-tyo-gtfs ZIP (Tokyo, Toei), --jp-kch-gtfs ZIP (Kōchi))
   refdata-build validate-net --rail FILE.geojsonseq --stations FILE.geojson
                       [--pairs FILE.tsv]... [--ld ZIP] [--date YYYY-MM-DD]
                       [--report FILE.md] [--csv FILE.csv]
@@ -173,6 +176,14 @@ struct BuildArgs {
     nz_akl_gtfs: Option<PathBuf>,
     /// Singapore's MRT and LRT, an estimated timetable (tools/sg/osm-gtfs.py).
     sg_gtfs: Option<PathBuf>,
+    /// CP's national timetable (only with CP's permission: PT_CP=1).
+    pt_gtfs: Option<PathBuf>,
+    /// Lisbon: Fertagus and Lisbon Metro, merged (fetch-eu.sh pt-lis).
+    pt_lis_gtfs: Option<PathBuf>,
+    /// Tokyo: Toei's subway, tram and Nippori-Toneri Liner (ODPT).
+    jp_tyo_gtfs: Option<PathBuf>,
+    /// Kōchi: Tosaden's trams (ODPT).
+    jp_kch_gtfs: Option<PathBuf>,
     rail: Option<PathBuf>,
     rail_heights: Option<PathBuf>,
     rail_attrs: Option<PathBuf>,
@@ -219,6 +230,10 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         nz_wlg_gtfs: None,
         nz_akl_gtfs: None,
         sg_gtfs: None,
+        pt_gtfs: None,
+        pt_lis_gtfs: None,
+        jp_tyo_gtfs: None,
+        jp_kch_gtfs: None,
         rail: None,
         rail_heights: None,
         rail_attrs: None,
@@ -275,6 +290,10 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
             "--nz-wlg-gtfs" => a.nz_wlg_gtfs = Some(val()?.into()),
             "--nz-akl-gtfs" => a.nz_akl_gtfs = Some(val()?.into()),
             "--sg-gtfs" => a.sg_gtfs = Some(val()?.into()),
+            "--pt-gtfs" => a.pt_gtfs = Some(val()?.into()),
+            "--pt-lis-gtfs" => a.pt_lis_gtfs = Some(val()?.into()),
+            "--jp-tyo-gtfs" => a.jp_tyo_gtfs = Some(val()?.into()),
+            "--jp-kch-gtfs" => a.jp_kch_gtfs = Some(val()?.into()),
             "--date" => a.date = Some(val()?),
             "--days" => {
                 a.days = val()?
@@ -321,10 +340,14 @@ fn parse_build_args(args: &[String]) -> std::result::Result<BuildArgs, String> {
         && a.nz_wlg_gtfs.is_none()
         && a.nz_akl_gtfs.is_none()
         && a.sg_gtfs.is_none()
+        && a.pt_gtfs.is_none()
+        && a.pt_lis_gtfs.is_none()
+        && a.jp_tyo_gtfs.is_none()
+        && a.jp_kch_gtfs.is_none()
     {
         return Err(
             "give --ld, --cercanias and/or --ouigo, or --uk-schedule and/or --ni-txc, or --ie-gtfs, \
-             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs, --it-gtfs, --dk-gtfs, --hu-gtfs, --de-gtfs, --be-gtfs, --au-nsw-gtfs, --au-vic-gtfs, --nz-wlg-gtfs, --nz-akl-gtfs or --sg-gtfs"
+             --fr-gtfs, --lu-gtfs, --fi-gtfs, --no-gtfs, --nl-gtfs, --sk-gtfs, --ee-gtfs, --ch-gtfs, --se-gtfs, --pl-gtfs, --at-gtfs, --cz-gtfs, --it-gtfs, --dk-gtfs, --hu-gtfs, --de-gtfs, --be-gtfs, --au-nsw-gtfs, --au-vic-gtfs, --nz-wlg-gtfs, --nz-akl-gtfs, --sg-gtfs, --pt-gtfs, --pt-lis-gtfs, --jp-tyo-gtfs or --jp-kch-gtfs"
                 .into(),
         );
     }
@@ -481,6 +504,10 @@ fn run_build(a: BuildArgs) -> Result<()> {
         (&a.nz_wlg_gtfs, "nz-wlg"),
         (&a.nz_akl_gtfs, "nz-akl"),
         (&a.sg_gtfs, "sg"),
+        (&a.pt_gtfs, "pt"),
+        (&a.pt_lis_gtfs, "pt-lis"),
+        (&a.jp_tyo_gtfs, "jp-tyo"),
+        (&a.jp_kch_gtfs, "jp-kch"),
     ] {
         let Some(path) = path else { continue };
         if matches!(
@@ -505,6 +532,10 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 | "nz-wlg"
                 | "nz-akl"
                 | "sg"
+                | "pt"
+                | "pt-lis"
+                | "jp-tyo"
+                | "jp-kch"
         ) {
             // M2 (docs/europe/registrations.md): Finland and Norway with GPS,
             // the Netherlands placed by timetable plus delay.
@@ -513,7 +544,11 @@ fn run_build(a: BuildArgs) -> Result<()> {
             // Already cut to trains (fetch-eu.sh); New South Wales and
             // Victoria keep their metro route types (Sydney Metro, Metro
             // Trains Melbourne) too.
-            if !matches!(kind, "fi" | "au-nsw" | "au-vic" | "sg") {
+            // Lisbon and Japan keep their metros and trams too.
+            if !matches!(
+                kind,
+                "fi" | "au-nsw" | "au-vic" | "sg" | "pt-lis" | "jp-tyo" | "jp-kch"
+            ) {
                 build::keep_rail(&mut feed);
             }
             let (st, operator) = match kind {
@@ -537,12 +572,21 @@ fn run_build(a: BuildArgs) -> Result<()> {
                 "nz-wlg" => (nordic::normalise_sweden(&mut feed), "Metlink"),
                 "nz-akl" => (nordic::normalise_sweden(&mut feed), "AT"),
                 "sg" => (nordic::normalise_simple(&mut feed), "SMRT / SBS Transit"),
+                "pt" => (nordic::normalise_simple(&mut feed), "CP"),
+                "pt-lis" => (nordic::normalise_sweden(&mut feed), "Fertagus / Metro"),
+                "jp-tyo" => (nordic::normalise_sweden(&mut feed), "Toei"),
+                "jp-kch" => (nordic::normalise_sweden(&mut feed), "Tosaden"),
                 _ => (nordic::normalise_netherlands(&mut feed), "NS"),
             };
             // M4 countries have no open live data yet: by timetable.
             // Singapore: every train estimated from frequencies (no live
             // positions or delays; its alerts are notices only).
-            let live = !matches!(kind, "sk" | "ee" | "at" | "it" | "it-lom" | "hu" | "sg");
+            // Portugal: no live data published (docs/europe/pt.md); Kōchi:
+            // Tosaden's timetable only. Tokyo: Toei's GTFS-Realtime.
+            let live = !matches!(
+                kind,
+                "sk" | "ee" | "at" | "it" | "it-lom" | "hu" | "sg" | "pt" | "pt-lis" | "jp-kch"
+            );
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
                  window, {} too short; {} stop_times rows\n",
@@ -898,6 +942,14 @@ fn run_build(a: BuildArgs) -> Result<()> {
     let pairs: Vec<(RegionRec, &TimetableFile)> =
         built.iter().map(|(r, t, _, _)| (r.clone(), t)).collect();
     let stations = build_stations(&pairs, header);
+    // The world view's figures for this country (tools/world/build.mjs).
+    let world = summary::summarise(
+        &pairs.iter().map(|(_, t)| *t).collect::<Vec<_>>(),
+        stations.stations.len(),
+        format_date(window.start),
+        usize::from(window.days),
+    );
+    std::fs::write(a.out.join("summary.json"), serde_json::to_string(&world)?)?;
     let st_bytes = encode(&stations)?;
     let st_file = write_hashed(&a.out, "stations", &st_bytes, a.gzip)?;
 
@@ -1071,6 +1123,10 @@ fn run_build(a: BuildArgs) -> Result<()> {
             nordic::ATTRIBUTION_NZ_AKL
         } else if a.sg_gtfs.is_some() {
             nordic::ATTRIBUTION_SG
+        } else if a.pt_gtfs.is_some() || a.pt_lis_gtfs.is_some() {
+            nordic::ATTRIBUTION_PT
+        } else if a.jp_tyo_gtfs.is_some() || a.jp_kch_gtfs.is_some() {
+            nordic::ATTRIBUTION_JP
         } else {
             ATTRIBUTION
         },

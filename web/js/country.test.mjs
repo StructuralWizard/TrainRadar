@@ -15,6 +15,18 @@ test("country: the address, then the saved choice, then the browser", () => {
   assert.equal(pickCountry({}), "es");
 });
 
+test("country: the app's first start takes the phone's country (SIM, network, language region)", () => {
+  const allowed = ["es", "uk", "pt", "jp", "fr"];
+  assert.equal(pickCountry({ device: "pt", zone: "Europe/Madrid", allowed }), "pt");
+  assert.equal(pickCountry({ device: "GB", allowed }), "uk");
+  // A choice made already, or a link, wins.
+  assert.equal(pickCountry({ device: "pt", saved: "fr", allowed }), "fr");
+  assert.equal(pickCountry({ device: "pt", search: "?country=jp", allowed }), "jp");
+  // A country the app doesn't cover: the time zone, then the language.
+  assert.equal(pickCountry({ device: "us", zone: "Asia/Tokyo", allowed }), "jp");
+  assert.equal(pickCountry({ device: "", languages: ["en-GB"], allowed }), "uk");
+});
+
 test("country: the UK points CONFIG at data/uk/ and uk/rt/, London time, no history or replay", () => {
   const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
   const es = applyCountry(base(), "es");
@@ -82,7 +94,7 @@ test("country: France points CONFIG at data/fr/ and fr/rt/; Luxembourg has no fe
 
 test("country: Finland, Norway and the Netherlands (M2): their data, feeds and time zones", () => {
   const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
-  for (const [cc, zone] of [["fi", "Europe/Helsinki"], ["no", "Europe/Oslo"], ["nl", "Europe/Amsterdam"], ["ch", "Europe/Zurich"], ["pl", "Europe/Warsaw"], ["se", "Europe/Stockholm"], ["cz", "Europe/Prague"], ["dk", "Europe/Copenhagen"], ["de", "Europe/Berlin"], ["be", "Europe/Brussels"], ["au", "Australia/Sydney"], ["nz", "Pacific/Auckland"], ["sg", "Asia/Singapore"]]) {
+  for (const [cc, zone] of [["fi", "Europe/Helsinki"], ["no", "Europe/Oslo"], ["nl", "Europe/Amsterdam"], ["ch", "Europe/Zurich"], ["pl", "Europe/Warsaw"], ["se", "Europe/Stockholm"], ["cz", "Europe/Prague"], ["dk", "Europe/Copenhagen"], ["de", "Europe/Berlin"], ["be", "Europe/Brussels"], ["au", "Australia/Sydney"], ["nz", "Pacific/Auckland"], ["sg", "Asia/Singapore"], ["jp", "Asia/Tokyo"]]) {
     const c = applyCountry(base(), cc);
     assert.equal(c.dataBase, `data/${cc}/`);
     assert.equal(c.liveBase, `https://live.example/${cc}/rt/`);
@@ -92,7 +104,7 @@ test("country: Finland, Norway and the Netherlands (M2): their data, feeds and t
 
 test("country: Slovakia and Estonia (M4) go by timetable: no feeds", () => {
   const base = () => ({ dataBase: "data/", liveBase: "https://live.example/rt/", rtBase: "/rt/", apiBase: "/", center: [-3.7, 40.2], zoom: 5.2 });
-  for (const [cc, zone] of [["sk", "Europe/Bratislava"], ["ee", "Europe/Tallinn"], ["at", "Europe/Vienna"], ["it", "Europe/Rome"], ["hu", "Europe/Budapest"]]) {
+  for (const [cc, zone] of [["sk", "Europe/Bratislava"], ["ee", "Europe/Tallinn"], ["at", "Europe/Vienna"], ["it", "Europe/Rome"], ["hu", "Europe/Budapest"], ["pt", "Europe/Lisbon"]]) {
     const c = applyCountry(base(), cc);
     assert.equal(c.dataBase, `data/${cc}/`);
     assert.equal(c.liveBase, "");

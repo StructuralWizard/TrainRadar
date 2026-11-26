@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">お気に入りの列車とその遅延（TrainRadar Pro）</string>
+    <string name="widget_departures_description">駅の次の発車（TrainRadar Pro）</string>
+    <string name="widget_arrivals_description">駅の次の到着（TrainRadar Pro）</string>
+    <string name="widget_train_description">1本の列車：遅延、次の停車駅、行き先（TrainRadar Pro）</string>
+    <string name="widget_notices_description">有効なRenfeのお知らせ（TrainRadar Pro）</string>
+    <string name="widget_departures_label">出発</string>
+    <string name="widget_arrivals_label">到着</string>
+    <string name="widget_train_label">列車</string>
+    <string name="widget_notices_label">Renfeのお知らせ</string>
+    <string name="widget_refresh">更新</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">アップデートの準備完了</string>
+    <string name="update_ready_message">TrainRadarの新しいバージョンをダウンロードしました。再起動すると使えます。</string>
+    <string name="update_restart">再起動</string>
+    <string name="update_later">後で</string>
+</resources>

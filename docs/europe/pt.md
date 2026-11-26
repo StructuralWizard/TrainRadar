@@ -1,6 +1,12 @@
 # Portugal (pt)
 
-Part of [the Europe plan](README.md), wave 1. Proposed 2026-11-22; nothing built.
+Part of [the Europe plan](README.md), wave 1. Proposed 2026-11-22.
+
+**Built 2026-11-26 (hidden): Lisbon only.** Fertagus (CC BY 4.0) and Lisbon Metro (dados.gov.pt,
+CC BY), merged as region `pt-lis`, by timetable (`tools/fetch-eu.sh pt-lis`, `PT_ENABLED`). CP's
+national timetable is wired (`tools/fetch-eu.sh pt`, region `pt`) but only built with
+`PT_CP_ENABLED`, which stays off until CP gives written permission: its licence was still "No
+licence" on 2026-11-26.
 
 Checked 2026-11-22: the CP and Fertagus GTFS files were downloaded and inspected, and the pages
 below were read at source.

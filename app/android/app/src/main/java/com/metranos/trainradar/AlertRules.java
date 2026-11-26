@@ -89,10 +89,8 @@ public final class AlertRules {
     }
 
     static String text(String lang, int level, int delayMin) {
-        boolean en = "en".equals(lang);
-        if (level == 3) return en ? "Cancelled" : "Cancelado";
-        return en ? String.format(Locale.ROOT, "%d min late", delayMin)
-                : String.format(Locale.ROOT, "%d min de retraso", delayMin);
+        if (level == 3) return Tr.pick(lang, "Cancelado", "Cancelled", "Suprimido", "運休");
+        return String.format(Locale.ROOT, Tr.pick(lang, "%d min de retraso", "%d min late", "%d min de atraso", "%d分遅れ"), delayMin);
     }
 
     /** Pro from the app's cached entitlement (see web/js/entitlement.js): a

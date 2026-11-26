@@ -23,7 +23,7 @@ final class Notifier {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationManager nm = ctx.getSystemService(NotificationManager.class);
         if (nm.getNotificationChannel(CHANNEL) != null) return;
-        String name = "en".equals(lang) ? "Delays of your trains" : "Retrasos de tus trenes";
+        String name = Tr.pick(lang, "Retrasos de tus trenes", "Delays of your trains", "Atrasos dos seus comboios", "列車の遅延");
         nm.createNotificationChannel(new NotificationChannel(CHANNEL, name, NotificationManager.IMPORTANCE_DEFAULT));
     }
 

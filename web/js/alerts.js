@@ -19,8 +19,8 @@ export function alertLevel(t, minor = MINOR, major = MAJOR) {
 }
 
 export function alertText(lang, level, delayMin) {
-  if (level === 3) return lang === "en" ? "Cancelled" : "Cancelado";
-  return lang === "en" ? `${delayMin} min late` : `${delayMin} min de retraso`;
+  if (level === 3) return { en: "Cancelled", pt: "Suprimido", ja: "運休" }[lang] || "Cancelado";
+  return { en: `${delayMin} min late`, pt: `${delayMin} min de atraso`, ja: `${delayMin}分遅れ` }[lang] || `${delayMin} min de retraso`;
 }
 
 /**

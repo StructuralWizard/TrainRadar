@@ -33,7 +33,7 @@ public class WidgetConfigActivity extends Activity {
         }
         AppWidgetManager mgr = AppWidgetManager.getInstance(this);
         String kind = ListWidget.kindOf(mgr.getAppWidgetInfo(widgetId));
-        boolean en = WidgetStore.english(this);
+        String lang = WidgetStore.lang(this);
         boolean trains = WidgetStore.TRAIN.equals(kind);
         JSONArray favs = WidgetStore.favourites(this, trains ? "train" : "station");
 
@@ -43,26 +43,24 @@ public class WidgetConfigActivity extends Activity {
         box.setPadding(pad, pad, pad, pad);
         TextView title = new TextView(this);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        title.setText(trains ? (en ? "Which train?" : "¿Qué tren?") : (en ? "Which station?" : "¿Qué estación?"));
+        title.setText(trains ? Tr.pick(lang, "¿Qué tren?", "Which train?", "Que comboio?", "どの列車？") : Tr.pick(lang, "¿Qué estación?", "Which station?", "Que estação?", "どの駅？"));
         box.addView(title);
         TextView hint = new TextView(this);
         hint.setPadding(0, dp(6), 0, dp(10));
         box.addView(hint);
         if (favs.length() == 0) {
             hint.setText(trains
-                    ? (en ? "Save a train with ☆ Save in TrainRadar first, then add the widget again."
-                          : "Guarda antes un tren con ☆ Guardar en TrainRadar y vuelve a añadir el widget.")
-                    : (en ? "Save a station with ☆ Save in TrainRadar first, then add the widget again."
-                          : "Guarda antes una estación con ☆ Guardar en TrainRadar y vuelve a añadir el widget."));
+                    ? Tr.pick(lang, "Guarda antes un tren con ☆ Guardar en TrainRadar y vuelve a añadir el widget.", "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Guarde primeiro um comboio com ☆ Guardar no TrainRadar e volte a adicionar o widget.", "先に TrainRadar で ☆保存 から列車を保存し、もう一度ウィジェットを追加してください。")
+                    : Tr.pick(lang, "Guarda antes una estación con ☆ Guardar en TrainRadar y vuelve a añadir el widget.", "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Guarde primeiro uma estação com ☆ Guardar no TrainRadar e volte a adicionar o widget.", "先に TrainRadar で ☆保存 から駅を保存し、もう一度ウィジェットを追加してください。"));
             Button open = new Button(this);
-            open.setText(en ? "Open TrainRadar" : "Abrir TrainRadar");
+            open.setTextTr.pick(lang, "Abrir TrainRadar", "Open TrainRadar", "Abrir o TrainRadar", "TrainRadar を開く");
             open.setOnClickListener(x -> {
                 startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 finish();
             });
             box.addView(open);
         } else {
-            hint.setText(en ? "From your favourites:" : "De tus favoritos:");
+            hint.setTextTr.pick(lang, "De tus favoritos:", "From your favourites:", "Dos seus favoritos:", "お気に入りから:");
             for (int i = 0; i < favs.length(); i++) {
                 JSONObject f = favs.optJSONObject(i);
                 if (f == null) continue;

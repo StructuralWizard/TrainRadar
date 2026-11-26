@@ -1,5 +1,5 @@
 // Display formatting. Pure functions, unit tested in format.test.mjs.
-import { t } from "./i18n.js";
+import { LOCALES, locale, t } from "./i18n.js";
 
 const MINUTE = 60;
 
@@ -28,7 +28,7 @@ export function formatDuration(lang, secs) {
   const h = Math.floor(m / 60);
   if (h >= 48) {
     const d = Math.round(h / 24);
-    return lang === "en" ? `${d} days` : `${d} días`;
+    return t(lang, "daysCount", { n: d });
   }
   return m % 60 ? `${h} h ${m % 60} min` : `${h} h`;
 }
@@ -42,7 +42,7 @@ export function formatAgo(lang, secs) {
 export function formatDistance(lang, metres) {
   if (metres < 1000) return `${Math.round(metres / 10) * 10} m`;
   const km = metres / 1000;
-  const n = new Intl.NumberFormat(lang === "en" ? "en-GB" : "es-ES", {
+  const n = new Intl.NumberFormat(locale(lang), {
     maximumFractionDigits: km < 10 ? 1 : 0,
   }).format(km);
   return `${n} km`;
@@ -54,10 +54,7 @@ let clock = null;
 let dayFmt = null;
 export function setTimeZone(timeZone = "Europe/Madrid") {
   clock = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", timeZone });
-  dayFmt = {
-    es: new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone }),
-    en: new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone }),
-  };
+  dayFmt = Object.fromEntries(Object.entries(LOCALES).map(([l, loc]) => [l, new Intl.DateTimeFormat(loc, { day: "numeric", month: "short", timeZone })]));
 }
 setTimeZone();
 
@@ -68,7 +65,7 @@ export function formatClock(unixSecs) {
 
 /** Integer with thousands separators for the stats bar. */
 export function formatCount(lang, n) {
-  return new Intl.NumberFormat(lang === "en" ? "en-GB" : "es-ES").format(n);
+  return new Intl.NumberFormat(locale(lang)).format(n);
 }
 
 /** "7 oct" / "7 Oct" for a unix timestamp in seconds (local date). */

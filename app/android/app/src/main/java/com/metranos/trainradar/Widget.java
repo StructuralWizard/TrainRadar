@@ -111,7 +111,7 @@ public class Widget extends AppWidgetProvider {
                 PendingIntent.getActivity(ctx, 0, open, PendingIntent.FLAG_IMMUTABLE));
         for (int r : ROWS) v.setTextViewText(r, "");
         if (!pro) {
-            v.setTextViewText(R.id.row0, en ? "The widget is part of TrainRadar Pro." : "El widget es parte de TrainRadar Pro.");
+            v.setTextViewText(R.id.row0, Tr.pick(lang, "El widget es parte de TrainRadar Pro.", "The widget is part of TrainRadar Pro.", "O widget faz parte do TrainRadar Pro.", "ウィジェットは TrainRadar Pro の機能です。"));
             v.setTextColor(R.id.row0, GREY);
         } else {
             int row = 0;
@@ -125,17 +125,17 @@ public class Widget extends AppWidgetProvider {
                     String state;
                     int color;
                     if (t == null) {
-                        state = en ? "not running" : "no circula";
+                        state = Tr.pick(lang, "no circula", "not running", "não circula", "運行なし");
                         color = GREY;
                     } else if ("cancelled".equals(t.optString("status"))) {
-                        state = en ? "cancelled" : "cancelado";
+                        state = Tr.pick(lang, "cancelado", "cancelled", "suprimido", "運休");
                         color = RED;
                     } else if (t.isNull("delayMin")) {
                         state = "—";
                         color = GREY;
                     } else {
                         int d = t.optInt("delayMin");
-                        state = d <= 0 ? (en ? "on time" : "a su hora") : "+" + d + " min";
+                        state = d <= 0 ? Tr.pick(lang, "a su hora", "on time", "à hora", "定刻") : "+" + d + " min";
                         color = d < 5 ? GREEN : d < 15 ? AMBER : RED;
                     }
                     v.setTextViewText(ROWS[row], f.optString("label", no) + "  " + state);
@@ -146,7 +146,7 @@ public class Widget extends AppWidgetProvider {
                 // leave the rows empty
             }
             if (row == 0) {
-                v.setTextViewText(R.id.row0, en ? "Save trains with ☆ to see them here." : "Guarda trenes con ☆ para verlos aquí.");
+                v.setTextViewText(R.id.row0, Tr.pick(lang, "Guarda trenes con ☆ para verlos aquí.", "Save trains with ☆ to see them here.", "Guarde comboios com ☆ para os ver aqui.", "☆で列車を保存するとここに表示されます。"));
                 v.setTextColor(R.id.row0, GREY);
             }
         }

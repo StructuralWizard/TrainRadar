@@ -1,6 +1,6 @@
 // DOM for the stats bar, legend, delayed list and train popup. Feed text is
 // untrusted: it only ever goes into textContent, never innerHTML.
-import { t } from "./i18n.js";
+import { locale, t } from "./i18n.js";
 import {
   formatAgo,
   formatClock,
@@ -1024,7 +1024,7 @@ export function favCommutes(lang, { list, active, pro, onOpen, onAdd, onPro, sho
 
 /** The line's last 7 days (phase C2b), from the history API's summary. */
 export function historyBox(lang, h, proUrl, onPro = null, onHistory = null) {
-  const n = (x) => x.toLocaleString(lang === "en" ? "en-GB" : "es-ES");
+  const n = (x) => x.toLocaleString(locale(lang));
   const parts = [t(lang, "histLine", { p: h.onTimePct, l: h.late5Pct })];
   if (h.medianMin !== null && h.medianMin > 0) parts.push(t(lang, "histMedian", { m: h.medianMin }));
   const runs = [t(lang, "histRuns", { n: n(h.trips), d: h.days })];

@@ -14,7 +14,7 @@ import { PLACE_ICON, journeyResults, layersSheet, networksSheet, pickField, plac
 import { endStations } from "./js/route.js";
 import { Planner } from "./js/planner.js";
 import { Locator, circlePolygon } from "./js/location.js";
-import { pickLang, t } from "./js/i18n.js";
+import { nextLang, pickLang, t } from "./js/i18n.js";
 import {
   ARROW_ZOOM,
   FLAG,
@@ -23,6 +23,8 @@ import {
   addCountries,
   addLayers,
   addOverview,
+  overviewNetwork,
+  scheduledNow,
   createMap,
   emptyGeoJson,
   maplibregl,
@@ -107,9 +109,13 @@ const store = {
 
 // Which country (plan 3): Spain or the UK, one at a time; CONFIG then
 // points at that country's data and feeds, times show in its time zone.
+// The app's first start opens on the phone's own country (its SIM's, else its
+// network's or its language's region); asked only when nothing is saved.
+const firstStart = !store.get(COUNTRY_KEY) && !new URLSearchParams(location.search).get("country");
 const country = pickCountry({
   search: location.search,
   saved: store.get(COUNTRY_KEY),
+  device: firstStart && CONFIG.platform !== "web" ? await appNative.deviceCountry() : "",
   languages: navigator.languages || [],
   zone: (() => {
     try {
@@ -176,6 +182,8 @@ const COUNTRY_TEXT = {
   au: { name: "countryAu", all: "allAu", credit: "attributionAu", scheduled: "scheduledCountOther" },
   nz: { name: "countryNz", all: "allNz", credit: "attributionNz", scheduled: "scheduledCountOther" },
   sg: { name: "countrySg", all: "allSg", credit: "attributionSg", scheduled: "scheduledCountOther", scheduledAll: "scheduledAllSg" },
+  pt: { name: "countryPt", all: "allPt", credit: "attributionPt", scheduled: "scheduledCountOther" },
+  jp: { name: "countryJp", all: "allJp", credit: "attributionJp", scheduled: "scheduledCountOther" },
 };
 /** A country's name; one still being built says so. */
 const countryName = (c) => {
@@ -190,7 +198,7 @@ const countryChoices = () => {
   return [...COUNTRY_LIST].sort((a, b) => rank(a) - rank(b) || countryName(a).localeCompare(countryName(b), lang));
 };
 /** Whose notices each country shows (the UK has its own panel). */
-const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi: "Fintraffic", nl: "NS", ch: "SBB", be: "SNCB", au: "Transport for NSW", nz: "Metlink and Auckland Transport", sg: "LTA", pl: "PKP PLK" };
+const NOTICES_BY = { es: "Renfe", ie: "Irish Rail", fr: "SNCF", no: "Entur", fi: "Fintraffic", nl: "NS", ch: "SBB", be: "SNCB", au: "Transport for NSW", nz: "Metlink and Auckland Transport", sg: "LTA", pl: "PKP PLK", jp: "Toei" };
 
 // Each country keeps its own favourites and commutes (station ids differ);
 // Spain's keep the original keys, which the Android widgets and alerts read.
@@ -230,46 +238,49 @@ function restoreDetail(d) {
 }
 const attribution = () => t(lang, COUNTRY_TEXT[country].credit);
 
-/** Each country's live status (status.json next to its feeds), for the
- * overview: { at, data: { code: { ok, live } } }, read at most once a minute. */
-let overview = { at: 0, data: {} };
-const statusUrl = (code) => {
+/** The website's world view: data/world.json (each country's stations,
+ * lines, trains by half hour and coarse network, from the deploy) and the
+ * live counts backend-eu writes every ten minutes (world/live.json): two
+ * small files instead of every country's feeds. */
+let world = null;
+let worldLive = { at: 0, doc: null };
+const WORLD_LIVE_MS = 10 * 60_000;
+const worldLiveUrl = () => {
   const base = NATIVE_BASES.liveBase || "/rt/";
-  return `${code === "es" ? base : base.replace(/rt\/?$/, `${code}/rt/`)}status.json`;
+  return base.replace(/rt\/?$/, "world/live.json");
 };
-/** How many trains a status.json says have live data (the largest feed's
- * entities kept), or null when it doesn't say. */
-function liveCount(st) {
-  const n = Object.entries(st?.feeds || {})
-    .filter(([name]) => /trip_updates|vehicle_positions/.test(name))
-    .map(([, f]) => f.kept ?? f.entities)
-    .filter(Number.isFinite);
-  return n.length ? Math.max(...n) : null;
-}
 async function refreshOverview() {
   const src = map?.getSource("overview");
   if (!src) return;
-  if (Date.now() - overview.at > 60_000) {
-    overview.at = Date.now();
-    await Promise.all(
-      COUNTRY_LIST.map(async (c) => {
-        if (!COUNTRY_INFO[c]?.live) return void (overview.data[c] = { ok: true, live: null, timetable: true });
-        try {
-          const r = await fetch(statusUrl(c), { cache: "no-cache", signal: AbortSignal.timeout(8000) });
-          const st = r.ok ? await r.json() : null;
-          overview.data[c] = { ok: !!st && st.ok !== false, live: liveCount(st) };
-        } catch {
-          overview.data[c] = { ok: false, live: null };
-        }
-      }),
-    );
+  if (!world) {
+    try {
+      const r = await fetch("data/world.json", { cache: "no-cache", signal: AbortSignal.timeout(15_000) });
+      world = r.ok ? await r.json() : { countries: {} };
+    } catch {
+      world = { countries: {} };
+    }
+    map.getSource("overview-net")?.setData(overviewNetwork(world));
+  }
+  if (Date.now() - worldLive.at > WORLD_LIVE_MS) {
+    worldLive.at = Date.now();
+    try {
+      const r = await fetch(worldLiveUrl(), { cache: "no-cache", signal: AbortSignal.timeout(8000) });
+      worldLive.doc = r.ok ? await r.json() : worldLive.doc;
+    } catch {
+      /* the timetable figures stand in */
+    }
   }
   const here = engine ? JSON.parse(engine.statsJson(Date.now()) || "null") : null;
   const features = COUNTRY_LIST.map((c) => {
-    const d = overview.data[c] || {};
-    const n = c === country && here?.trains ? here.trains : d.live;
-    const line = d.timetable ? t(lang, "overviewTimetable") : n ? t(lang, "overviewLive", { n: formatCount(lang, n) }) : d.ok ? "" : t(lang, "overviewNoLive");
-    return { type: "Feature", properties: { code: c, label: line ? `${countryName(c)}\n${line}` : countryName(c) }, geometry: { type: "Point", coordinates: COUNTRY_INFO[c].center } };
+    const s = world.countries?.[c];
+    const live = worldLive.doc?.countries?.[c]?.live;
+    // Running now: the trains on the map here; elsewhere the live count, or
+    // the timetable's for this half hour.
+    const n = c === country && here ? (here.trains || 0) + (here.scheduled || 0) : Number.isFinite(live) && live > 0 ? live : scheduledNow(s, COUNTRY_INFO[c].zone);
+    const lines = [countryName(c)];
+    if (Number.isFinite(n)) lines.push(t(lang, Number.isFinite(live) && live > 0 && c !== country ? "overviewLive" : "overviewRunning", { n: formatCount(lang, n) }));
+    if (s) lines.push(t(lang, "overviewNetwork", { lines: formatCount(lang, s.lines), stations: formatCount(lang, s.stations) }));
+    return { type: "Feature", properties: { code: c, label: lines.join("\n") }, geometry: { type: "Point", coordinates: COUNTRY_INFO[c].center } };
   });
   src.setData({ type: "FeatureCollection", features });
 }
@@ -298,7 +309,7 @@ function switchCountry(code) {
   location.replace(u.toString());
 }
 
-let lang = pickLang(store.get("lang"));
+let lang = pickLang(store.get("lang"), navigator.languages || []);
 let engine, ref, feeds, map, attr;
 let selected = null; // { trip_id, number }
 let popup = null;
@@ -369,9 +380,11 @@ function applyLang() {
   document.documentElement.lang = lang;
   document.title = t(lang, "title");
   const btn = $("lang");
-  btn.textContent = lang === "es" ? "EN" : "ES";
-  btn.setAttribute("aria-label", t(lang, "languageLabel"));
-  btn.title = t(lang, "language");
+  // The button shows the next language (ES → EN → PT → JA → ES).
+  const next = nextLang(lang);
+  btn.textContent = next.toUpperCase();
+  btn.setAttribute("aria-label", `${t(lang, "changeLanguage")}: ${t(next, "moreLanguageValue")}`);
+  btn.title = t(next, "moreLanguageValue");
   $("legend").replaceChildren(...legend(lang), el("span", { class: "legend-sep" }), ...serviceLegend(lang, true));
   $("delayed-btn").textContent = t(lang, "delayedList");
   $("delayed-title").textContent = t(lang, "delayedTitle");
@@ -3556,6 +3569,9 @@ async function main() {
   if (MULTI_COUNTRY && CONFIG.platform === "web") {
     addOverview(map);
     map.on("moveend", () => map.getZoom() < OVERVIEW_ZOOM && refreshOverview());
+    // While it's open: the labels follow the half hour and the ten-minute
+    // live counts.
+    setInterval(() => map.getZoom() < OVERVIEW_ZOOM && refreshOverview(), 60_000);
     if (map.getZoom() < OVERVIEW_ZOOM) refreshOverview();
   }
   if (window.innerWidth < 720) map.once("idle", foldCredits);
@@ -3744,7 +3760,7 @@ styleStatusBar();
 // One banner at a time: a country's note first.
 if (!setupCountryNote()) setupAppBanner();
 $("lang").addEventListener("click", () => {
-  lang = lang === "es" ? "en" : "es";
+  lang = nextLang(lang);
   store.set("lang", lang);
   applyLang();
   sheets.apply();

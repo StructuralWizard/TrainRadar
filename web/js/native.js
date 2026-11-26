@@ -228,6 +228,19 @@ export const appNative = {
     if (!p?.pinShortcut) return false;
     return !!(await p.pinShortcut({ id, label, url, kind })).pinned;
   },
+  /** The phone's country (SIM, network, else the language's region), for
+   * the first map: a lower-case code, or "" (also on the web, or when the
+   * plugin doesn't answer within `ms`). */
+  async deviceCountry(ms = 800) {
+    const p = plugin("TrainRadar");
+    if (!p?.deviceCountry) return "";
+    try {
+      const r = await Promise.race([p.deviceCountry(), new Promise((ok) => setTimeout(() => ok(null), ms))]);
+      return /^[a-z]{2}$/.test(r?.country || "") ? r.country : "";
+    } catch {
+      return "";
+    }
+  },
   /** The app icon's long-press menu: up to four favourites (Pro), [] to clear. */
   async setShortcuts(items) {
     await plugin("TrainRadar")?.setShortcuts?.({ items });

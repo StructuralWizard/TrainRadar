@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Os seus comboios favoritos e o seu atraso (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Próximas partidas de uma estação (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Próximas chegadas a uma estação (TrainRadar Pro)</string>
+    <string name="widget_train_description">Um comboio: atraso, próxima paragem e destino (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Avisos da Renfe em vigor (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Partidas</string>
+    <string name="widget_arrivals_label">Chegadas</string>
+    <string name="widget_train_label">Comboio</string>
+    <string name="widget_notices_label">Avisos da Renfe</string>
+    <string name="widget_refresh">Atualizar</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Atualização pronta</string>
+    <string name="update_ready_message">Foi transferida uma nova versão do TrainRadar. Reinicie para a usar.</string>
+    <string name="update_restart">Reiniciar</string>
+    <string name="update_later">Mais tarde</string>
+</resources>

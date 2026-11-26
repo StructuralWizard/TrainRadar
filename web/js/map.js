@@ -291,8 +291,21 @@ export const OVERVIEW_ZOOM = 3.5;
 export function addOverview(map) {
   if (map.getSource("overview")) return;
   map.addSource("overview", { type: "geojson", data: empty() });
+  // Every country's network, coarse (data/world.json; overviewNetwork).
+  map.addSource("overview-net", { type: "geojson", data: empty() });
   map.addLayer({ id: "countries-all", type: "fill", source: "countries", maxzoom: OVERVIEW_ZOOM, paint: { "fill-color": "#166534", "fill-opacity": 0.08 } });
   map.addLayer({ id: "countries-all-line", type: "line", source: "countries", maxzoom: OVERVIEW_ZOOM, paint: { "line-color": "#166534", "line-width": 1, "line-opacity": 0.6 } });
+  map.addLayer({
+    id: "overview-net",
+    type: "line",
+    source: "overview-net",
+    maxzoom: OVERVIEW_ZOOM,
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#b91c1c", "line-width": ["interpolate", ["linear"], ["zoom"], 1, 0.4, 3.5, 1.2], "line-opacity": 0.7 },
+  });
+  // The trains themselves aren't drawn this far out: the summary says how
+  // many run (too many to draw, and the page loads one country's feeds).
+  for (const id of ["trains-ring", "trains", "train-labels"]) if (map.getLayer(id)) map.setLayerZoomRange(id, OVERVIEW_ZOOM, 24);
   map.addLayer({
     id: "overview-labels",
     type: "symbol",
@@ -301,6 +314,34 @@ export function addOverview(map) {
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-anchor": "center", "text-allow-overlap": false, "text-optional": true },
     paint: { "text-color": "#14532d", "text-halo-color": "#fff", "text-halo-width": 1.6 },
   });
+}
+
+/** data/world.json's networks (flat lists of segments in hundredths of a
+ * degree) as one GeoJSON MultiLineString per country. */
+export function overviewNetwork(world) {
+  const features = [];
+  for (const [code, c] of Object.entries(world?.countries || {})) {
+    const n = c.net || [];
+    const lines = [];
+    for (let i = 0; i + 3 < n.length; i += 4) lines.push([[n[i] / 100, n[i + 1] / 100], [n[i + 2] / 100, n[i + 3] / 100]]);
+    if (lines.length) features.push({ type: "Feature", properties: { code }, geometry: { type: "MultiLineString", coordinates: lines } });
+  }
+  return { type: "FeatureCollection", features };
+}
+
+/** Trains a country's timetable has running now: its summary's half hour
+ * for the country's local date and time, or null outside its window. */
+export function scheduledNow(summary, zone, now = Date.now()) {
+  if (!summary?.running?.length || !summary.window_start) return null;
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(new Date(now))
+      .map((p) => [p.type, p.value]),
+  );
+  const day = Math.round((Date.UTC(+parts.year, +parts.month - 1, +parts.day) - Date.parse(`${summary.window_start}T00:00:00Z`)) / 86_400_000);
+  const row = summary.running[day];
+  if (!row) return null;
+  return row[Math.floor((+parts.hour * 60 + +parts.minute) / 30)] ?? null;
 }
 
 export function addLayers(map) {
