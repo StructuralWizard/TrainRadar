@@ -101,7 +101,7 @@ public abstract class ListWidget extends AppWidgetProvider {
     static void render(Context ctx, AppWidgetManager mgr, int id) {
         String kind = kindOf(mgr.getAppWidgetInfo(id));
         if (kind.isEmpty()) return;
-        boolean en = WidgetStore.english(ctx);
+        String lang = WidgetStore.lang(ctx);
         JSONObject cfg = WidgetStore.config(ctx, id);
         RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_list);
         for (int r : ROWS) {
@@ -112,16 +112,16 @@ public abstract class ListWidget extends AppWidgetProvider {
         String title;
         switch (kind) {
             case WidgetStore.DEP:
-                title = (en ? "Departures · " : "Salidas · ") + name;
+                title = Tr.pick(lang, "Salidas · ", "Departures · ", "Partidas · ", "出発 · ") + name;
                 break;
             case WidgetStore.ARR:
-                title = (en ? "Arrivals · " : "Llegadas · ") + name;
+                title = Tr.pick(lang, "Llegadas · ", "Arrivals · ", "Chegadas · ", "到着 · ") + name;
                 break;
             case WidgetStore.TRAIN:
-                title = name.isEmpty() ? (en ? "Train" : "Tren") : name;
+                title = name.isEmpty() ? Tr.pick(lang, "Tren", "Train", "Comboio", "列車") : name;
                 break;
             default:
-                title = en ? "Renfe notices" : "Avisos de Renfe";
+                title = Tr.pick(lang, "Avisos de Renfe", "Renfe notices", "Avisos da Renfe", "Renfeのお知らせ");
         }
         v.setTextViewText(R.id.w_title, title);
         v.setOnClickPendingIntent(R.id.w_root, openApp(ctx, id, kind, cfg));
@@ -130,13 +130,13 @@ public abstract class ListWidget extends AppWidgetProvider {
                 PendingIntent.getBroadcast(ctx, 100_000 + id, refresh, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
 
         if (!WidgetStore.pro(ctx)) {
-            line(v, 0, en ? "This widget is part of TrainRadar Pro." : "Este widget es parte de TrainRadar Pro.", Widget.GREY);
+            line(v, 0, Tr.pick(lang, "Este widget es parte de TrainRadar Pro.", "This widget is part of TrainRadar Pro.", "Este widget faz parte do TrainRadar Pro.", "このウィジェットは TrainRadar Pro の機能です。"), Widget.GREY);
             v.setTextViewText(R.id.w_sub, "");
             mgr.updateAppWidget(id, v);
             return;
         }
         if (!WidgetStore.NOTICES.equals(kind) && cfg.optString("id").isEmpty()) {
-            line(v, 0, en ? "Tap to choose a station or train." : "Toca para elegir una estación o un tren.", Widget.GREY);
+            line(v, 0, Tr.pick(lang, "Toca para elegir una estación o un tren.", "Tap to choose a station or train.", "Toque para escolher uma estação ou um comboio.", "タップして駅または列車を選択"), Widget.GREY);
             mgr.updateAppWidget(id, v);
             return;
         }
@@ -144,20 +144,20 @@ public abstract class ListWidget extends AppWidgetProvider {
         String json = WidgetStore.cached(ctx, key);
         long at = WidgetStore.cachedAt(ctx, key);
         v.setTextViewText(R.id.w_sub, at == 0
-                ? (en ? "Updating…" : "Actualizando…")
-                : (en ? "Updated " : "Actualizado ") + clock(at / 1000));
+                ? Tr.pick(lang, "Actualizando…", "Updating…", "A atualizar…", "更新中…")
+                : Tr.pick(lang, "Actualizado ", "Updated ", "Atualizado ", "更新 ") + clock(at / 1000));
         try {
             if (json == null) {
                 // nothing yet: the worker is on its way
             } else if (WidgetStore.NOTICES.equals(kind)) {
-                notices(v, new JSONObject(json), en);
+                notices(v, new JSONObject(json), lang);
             } else if (WidgetStore.TRAIN.equals(kind)) {
-                train(v, new JSONObject(json), en);
+                train(v, new JSONObject(json), lang);
             } else {
-                board(v, new JSONObject(json).optJSONArray(WidgetStore.DEP.equals(kind) ? "departures" : "arrivals"), kind, en);
+                board(v, new JSONObject(json).optJSONArray(WidgetStore.DEP.equals(kind) ? "departures" : "arrivals"), kind, lang);
             }
         } catch (Exception e) {
-            line(v, 0, en ? "No data yet." : "Aún sin datos.", Widget.GREY);
+            line(v, 0, Tr.pick(lang, "Aún sin datos.", "No data yet.", "Ainda sem dados.", "データはまだありません。"), Widget.GREY);
         }
         mgr.updateAppWidget(id, v);
     }
@@ -176,9 +176,9 @@ public abstract class ListWidget extends AppWidgetProvider {
         return PendingIntent.getActivity(ctx, id, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
-    static void board(RemoteViews v, JSONArray rows, String kind, boolean en) {
+    static void board(RemoteViews v, JSONArray rows, String kind, String lang) {
         if (rows == null || rows.length() == 0) {
-            line(v, 0, en ? "No trains in the next 3 hours." : "Sin trenes en las próximas 3 horas.", Widget.GREY);
+            line(v, 0, Tr.pick(lang, "Sin trenes en las próximas 3 horas.", "No trains in the next 3 hours.", "Sem comboios nas próximas 3 horas.", "今後3時間に列車はありません。"), Widget.GREY);
             return;
         }
         String arrow = WidgetStore.DEP.equals(kind) ? " → " : " ← ";
@@ -191,14 +191,14 @@ public abstract class ListWidget extends AppWidgetProvider {
             String route = r.optString("route");
             s.append(route.isEmpty() ? "" : route + " ").append(AlertRules.number(r.optString("number")));
             s.append(arrow).append(r.optString("place"));
-            status(s, r.optBoolean("canceled"), r.isNull("delay") ? null : r.optInt("delay") / 60, en, false);
+            status(s, r.optBoolean("canceled"), r.isNull("delay") ? null : r.optInt("delay") / 60, lang, false);
             v.setTextViewText(ROWS[i], s);
         }
     }
 
-    static void train(RemoteViews v, JSONObject t, boolean en) {
+    static void train(RemoteViews v, JSONObject t, String lang) {
         if (!t.optBoolean("running")) {
-            line(v, 0, en ? "Not running now." : "No circula ahora.", Widget.GREY);
+            line(v, 0, Tr.pick(lang, "No circula ahora.", "Not running now.", "Não circula agora.", "現在運行していません。"), Widget.GREY);
             return;
         }
         SpannableStringBuilder s0 = new SpannableStringBuilder();
@@ -207,19 +207,19 @@ public abstract class ListWidget extends AppWidgetProvider {
         s0.append(" → ").append(t.optString("destination", "?"));
         v.setTextViewText(ROWS[0], s0);
         SpannableStringBuilder s1 = new SpannableStringBuilder();
-        status(s1, t.optBoolean("canceled"), t.isNull("delay") ? null : t.optInt("delay") / 60, en, true);
+        status(s1, t.optBoolean("canceled"), t.isNull("delay") ? null : t.optInt("delay") / 60, lang, true);
         v.setTextViewText(ROWS[1], s1);
         if (!t.isNull("nextStop")) {
             String when = t.isNull("nextArrival") ? "" : " · " + clock(t.optLong("nextArrival"));
-            v.setTextViewText(ROWS[2], (en ? "Next stop: " : "Próxima parada: ") + t.optString("nextStop") + when);
+            v.setTextViewText(ROWS[2], Tr.pick(lang, "Próxima parada: ", "Next stop: ", "Próxima paragem: ", "次の停車駅: ") + t.optString("nextStop") + when);
         }
-        if (!t.isNull("origin")) v.setTextViewText(ROWS[3], (en ? "From " : "Desde ") + t.optString("origin"));
+        if (!t.isNull("origin")) v.setTextViewText(ROWS[3], Tr.pick(lang, "Desde ", "From ", "De ", "始発 ") + t.optString("origin"));
     }
 
-    static void notices(RemoteViews v, JSONObject doc, boolean en) {
+    static void notices(RemoteViews v, JSONObject doc, String lang) {
         JSONArray list = doc.optJSONArray("notices");
         if (list == null || list.length() == 0) {
-            line(v, 0, en ? "No notices in force." : "Ningún aviso en vigor.", Widget.GREY);
+            line(v, 0, Tr.pick(lang, "Ningún aviso en vigor.", "No notices in force.", "Nenhum aviso em vigor.", "現在お知らせはありません。"), Widget.GREY);
             return;
         }
         for (int i = 0; i < list.length() && i < ROWS.length; i++) {
@@ -238,18 +238,18 @@ public abstract class ListWidget extends AppWidgetProvider {
     }
 
     /** " +5'" / "a su hora" / "cancelado", coloured like the map. */
-    static void status(SpannableStringBuilder s, boolean canceled, Integer delayMin, boolean en, boolean full) {
+    static void status(SpannableStringBuilder s, boolean canceled, Integer delayMin, String lang, boolean full) {
         String text;
         int color;
         if (canceled) {
-            text = en ? "cancelled" : "cancelado";
+            text = Tr.pick(lang, "cancelado", "cancelled", "suprimido", "運休");
             color = Widget.RED;
         } else if (delayMin == null) {
             if (!full) return;
-            text = en ? "no live delay" : "sin retraso en directo";
+            text = Tr.pick(lang, "sin retraso en directo", "no live delay", "sem atraso em direto", "リアルタイム遅延なし");
             color = Widget.GREY;
         } else if (delayMin <= 0) {
-            text = full ? (en ? "on time" : "a su hora") : "✓";
+            text = full ? Tr.pick(lang, "a su hora", "on time", "à hora", "定刻") : "✓";
             color = Widget.GREEN;
         } else {
             text = "+" + delayMin + " min";

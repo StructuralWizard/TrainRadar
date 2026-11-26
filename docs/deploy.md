@@ -352,6 +352,43 @@ app, and update the "last updated" dates when they change.
   **`SG_LIVE_ENABLED`** = `true` adds LTA DataMall's train service alerts in the `eu` Worker, with
   `SG_LTA_ACCOUNT_KEY`. See [world/sg.md](world/sg.md).
 
+## Portugal (Lisbon)
+
+- **Turning it on:** **`PT_ENABLED`** = `true` builds Lisbon (Fertagus, CC BY 4.0, and Lisbon
+  Metro from dados.gov.pt, CC BY) into `data/pt/`, by timetable: Portugal publishes no live data.
+  No key.
+- **CP:** **`PT_CP_ENABLED`** = `true` adds CP's national timetable, **only once CP has given
+  written permission** to reuse it (its file says "No licence"; [europe/pt.md](europe/pt.md)).
+- Still hidden in the app (`hiddenCountries`); `?country=pt` opens it.
+
+## Japan (Tokyo, Kōchi)
+
+- **Turning it on:** **`JP_ENABLED`** = `true` builds Tokyo (Toei's subway, Toden Arakawa tram and
+  Nippori-Toneri Liner) and Kōchi (Tosaden's trams) from ODPT's public API (CC BY 4.0, no key)
+  into `data/jp/`. **`JP_LIVE_ENABLED`** = `true` adds Toei's GTFS-Realtime (positions, delays,
+  alerts) in the `eu` Worker: one call every 15 s, 5,760 a day of ODPT's 24,000.
+- Still hidden in the app (`hiddenCountries`); `?country=jp` opens it. See [world/jp.md](world/jp.md).
+
+## The world view (website)
+
+- **`data/world.json`**, built by the deploy (`tools/world/build.mjs`) from each country's
+  `summary.json` (refdata-build): stations, lines, trains running each half hour of the window,
+  and a coarse network (stop-to-stop segments on a 0.02° grid).
+- **`world/live.json`** on the live domain, written every 10 minutes by the `eu` Worker's cron
+  from the status files already in the bucket (no provider calls): live trains per country.
+- Zoomed out below 3.5 the page draws the networks and each country's summary, not trains.
+
+## Calls to providers (all countries)
+
+The `eu` Worker's planned rates are within each provider's published quota (the comment at the
+top of each `backend-eu/src/<country>.js`). Three guards in `backend-eu/src/cycle.js` keep a fault
+from turning into a ban:
+- a **429 or 503** pauses the whole country for as long as Retry-After asks (at least the
+  backoff), rotating countries included;
+- a **401, 403 or 404** rests that one feed for 30 minutes while the country's other feeds go on;
+- a **daily cap** per country (its planned calls and a quarter more, UTC day) stops calls if a
+  scheduling fault ever doubles the rate. `status.json` shows `callsToday` and `dailyCap`.
+
 ## Slovakia and Estonia (M4)
 
 - **Turning them on:** **`SK_ENABLED`** and **`EE_ENABLED`** = `true`. No keys, no live data: trains

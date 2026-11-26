@@ -23,6 +23,7 @@ COUNTRIES = {
     "it": ("ITA", (12.5, 42.3)), "dk": ("DNK", (10.6, 56.0)), "hu": ("HUN", (19.4, 47.2)),
     "de": ("DEU", (10.4, 51.2)), "be": ("BEL", (4.6, 50.6)), "au": ("AUS", (134.0, -27.0)),
     "nz": ("NZL", (172.5, -41.5)), "sg": ("SGP", (103.82, 1.35)),
+    "pt": ("PRT", (-8.2, 39.6)), "jp": ("JPN", (138.0, 37.0)),
 }
 MAX_KM = 2600
 TOLERANCE = 0.03  # degrees (about 3 km): enough to tap, small to load

@@ -151,6 +151,11 @@ if (cc === "ch") {
     process.exit(0);
   }
   await viaWorker(NZ, NZ.feeds.map((_, i) => i), 500);
+} else if (cc === "jp") {
+  // Japan: Toei's GTFS-Realtime from ODPT's public API (no key): each feed
+  // once through the Worker's code; trip ids should be the timetable's.
+  const { JP } = await import("../../backend-eu/src/japan.js");
+  await viaWorker(JP, [0, 1, 7], 1000);
 } else if (cc === "sg") {
   // Singapore: LTA's train service alerts, once, through the Worker's own
   // code (JSON → GTFS-RT alerts).

@@ -2,7 +2,7 @@
 // (Renfe), the United Kingdom (Network Rail), Ireland (Iarnród Éireann),
 // France (SNCF), Luxembourg (CFL), Finland (VR), Norway (Entur) or the
 // Netherlands (NS and the others), Slovakia (ZSSK), Estonia (Elron),
-// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB), Australia (New South Wales, Victoria) New Zealand (Wellington, Auckland) or Singapore (estimated).
+// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB), Australia (New South Wales, Victoria) New Zealand (Wellington, Auckland), Singapore (estimated), Portugal (Lisbon) or Japan (Tokyo, Kōchi).
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
@@ -42,6 +42,11 @@ export const COUNTRY_INFO = {
   // Singapore: estimated trains (LTA publishes no timetable or positions);
   // live is LTA's disruption alerts only.
   sg: { zone: "Asia/Singapore", center: [103.82, 1.35], zoom: 10.4, live: true },
+  // Lisbon (Fertagus, Lisbon Metro) by timetable: Portugal publishes no live
+  // data; CP's national timetable once CP allows its reuse.
+  pt: { zone: "Europe/Lisbon", center: [-9.1, 38.7], zoom: 9.6, live: false },
+  // Tokyo (Toei: GPS, delays, alerts) and Kōchi (Tosaden, by timetable).
+  jp: { zone: "Asia/Tokyo", center: [139.75, 35.69], zoom: 10.6, live: true },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);
@@ -57,6 +62,8 @@ const ZONE_ALIASES = {
   "Arctic/Longyearbyen": "no",
   "Europe/Monaco": "fr",
   "Pacific/Chatham": "nz",
+  "Atlantic/Madeira": "pt",
+  "Atlantic/Azores": "pt",
 };
 /** A language's region (en-GB, de-AT) → our country code. */
 const REGION_ALIASES = { gb: "uk" };
@@ -73,11 +80,15 @@ export function countryOfZone(zone) {
  * language's region (en-GB, de-AT); else Spain. Nothing leaves the device.
  * `allowed` are the countries offered; `hidden` ones (still being built)
  * open only from the address, and are then remembered like any other. */
-export function pickCountry({ search = "", saved = null, languages = [], zone = null, allowed = COUNTRIES, hidden = [] } = {}) {
+export function pickCountry({ search = "", saved = null, device = "", languages = [], zone = null, allowed = COUNTRIES, hidden = [] } = {}) {
   const ok = (c) => COUNTRIES.includes(c) && (allowed.includes(c) || hidden.includes(c));
   const asked = new URLSearchParams(search).get("country");
   if (ok(asked)) return asked;
   if (ok(saved)) return saved;
+  // The Android app's first start: the phone's own country (its SIM, else
+  // its network, else its language's region; TrainRadarPlugin.deviceCountry).
+  const own = REGION_ALIASES[String(device).toLowerCase()] || String(device).toLowerCase();
+  if (own && allowed.includes(own)) return own;
   const byZone = countryOfZone(zone);
   if (byZone && allowed.includes(byZone)) return byZone;
   for (const l of languages) {

@@ -26,6 +26,8 @@
 //   trains → nz/rt/.
 // - Singapore (SG_ENABLED, Worker secret SG_LTA_ACCOUNT_KEY): LTA DataMall's
 //   train service alerts → sg/rt/ (its trains are estimated, no live data).
+// - Japan (JP_ENABLED, no key): Toei's GTFS-Realtime from ODPT's public API
+//   → jp/rt/.
 // Each *_ENABLED variable is that country's kill switch.
 
 import { emptyState, runCycle } from "./cycle.js";
@@ -40,9 +42,11 @@ import { BE } from "./belgium.js";
 import { AU } from "./australia.js";
 import { NZ } from "./newzealand.js";
 import { SG } from "./singapore.js";
+import { JP } from "./japan.js";
+import { EVERY_MIN, writeWorld } from "./world.js";
 import { FI, NL, NO } from "./nordic.js";
 
-export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK, de: DE, be: BE, au: AU, nz: NZ, sg: SG };
+export const COUNTRIES = { ie: IE, fr: FR, fi: FI, no: NO, nl: NL, ch: CH, pl: PL, se: SE, cz: CZ, dk: DK, de: DE, be: BE, au: AU, nz: NZ, sg: SG, jp: JP };
 
 export class FeedIngest {
   constructor(ctx, env) {
@@ -86,12 +90,15 @@ export class FeedIngest {
 
 export default {
   // Every minute: re-arm each enabled country's alarm in case it stopped.
-  async scheduled(_event, env) {
+  async scheduled(event, env) {
     for (const [code, country] of Object.entries(COUNTRIES)) {
       if (!country.enabled(env)) continue;
       const stub = env.FEED_INGEST.get(env.FEED_INGEST.idFromName(code));
       await stub.fetch(`https://ingest/ensure?c=${code}`);
     }
+    // Every ten minutes: the world view's live counts (R2 reads only).
+    const at = event?.scheduledTime ?? Date.now();
+    if (new Date(at).getUTCMinutes() % EVERY_MIN === 0) await writeWorld(env, at);
   },
   async fetch() {
     return new Response("TrainRadar Europe ingest: see <country>/rt/status.json on the live domain (ie, fr, fi, no, nl, ch, pl, se).\n");

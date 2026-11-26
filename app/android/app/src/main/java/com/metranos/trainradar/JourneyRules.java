@@ -178,7 +178,6 @@ public final class JourneyRules {
      */
     public static List<Alert> decide(List<Active> active, List<JSONObject[]> runs, JSONArray summary,
             JSONArray notices, JSONObject state, long nowMs, String lang) throws JSONException {
-        boolean en = "en".equals(lang);
         String day = String.valueOf(today(nowMs).getTimeInMillis());
         if (!day.equals(state.optString("day"))) {
             state.put("day", day);
@@ -204,7 +203,7 @@ public final class JourneyRules {
                     String k = p + "level:" + i;
                     if (lv > sent.optInt(k, 0)) {
                         sent.put(k, lv);
-                        String body = train(l) + ": " + (lv == 3 ? (en ? "cancelled — see other options" : "cancelado — mira otras opciones")
+                        String body = train(l) + ": " + (lv == 3 ? Tr.pick(lang, "cancelado — mira otras opciones", "cancelled — see other options", "suprimido — veja outras opções", "運休 — 他の経路をご確認ください")
                                 : AlertRules.text(lang, lv, st[i].optInt("delay") / 60));
                         out.add(new Alert(p + "delay:" + i, l.optString("number"), j.title, body));
                     }
@@ -222,10 +221,14 @@ public final class JourneyRules {
                     if (sent.has(k)) continue;
                     sent.put(k, true);
                     String body = margin < 0
-                            ? (en ? "You'll miss the change at " + station + " to " + train(l) + ": see other options"
-                                    : "Pierdes el cambio en " + station + " al " + train(l) + ": mira otras opciones")
-                            : (en ? String.format(Locale.ROOT, "Change at %s at risk: %d min left for the %s", station, margin / MIN, train(l))
-                                    : String.format(Locale.ROOT, "Enlace en riesgo en %s: quedan %d min para el %s", station, margin / MIN, train(l)));
+                            ? Tr.pick(lang, "Pierdes el cambio en " + station + " al " + train(l) + ": mira otras opciones",
+                                    "You'll miss the change at " + station + " to " + train(l) + ": see other options",
+                                    "Vai perder o transbordo em " + station + " para o " + train(l) + ": veja outras opções",
+                                    station + "での" + train(l) + "への乗り換えに間に合いません。他の経路をご確認ください")
+                            : String.format(Locale.ROOT, Tr.pick(lang, "Enlace en riesgo en %s: quedan %d min para el %s",
+                                    "Change at %s at risk: %d min left for the %s",
+                                    "Transbordo em risco em %s: faltam %d min para o %s",
+                                    "%1$sでの乗り換えが危うい：%3$sまで残り%2$d分"), station, margin / MIN, train(l));
                     out.add(new Alert(p + "risk:" + i, l.optString("number"), j.title, body));
                 }
             }
@@ -234,12 +237,12 @@ public final class JourneyRules {
             if (j.notify("remind") && remind > 0 && nowMs >= j.dep[0] - remind * MIN && nowMs < j.dep[0] && !sent.has(p + "remind")) {
                 sent.put(p + "remind", true);
                 JSONObject l = j.legs.getJSONObject(0);
-                String how = st[0].optBoolean("canceled") ? (en ? "cancelled" : "cancelado")
+                String how = st[0].optBoolean("canceled") ? Tr.pick(lang, "cancelado", "cancelled", "suprimido", "運休")
                         : st[0].has("delay") && st[0].optInt("delay") >= 60
-                                ? String.format(Locale.ROOT, en ? "%d min late" : "%d min de retraso", st[0].optInt("delay") / 60)
-                                : (en ? "on time" : "a su hora");
-                String body = en ? String.format(Locale.ROOT, "You leave at %s: %s %s", l.optString("dep"), train(l), how)
-                        : String.format(Locale.ROOT, "Sales a las %s: %s %s", l.optString("dep"), train(l), how);
+                                ? String.format(Locale.ROOT, Tr.pick(lang, "%d min de retraso", "%d min late", "%d min de atraso", "%d分遅れ"), st[0].optInt("delay") / 60)
+                                : Tr.pick(lang, "a su hora", "on time", "à hora", "定刻");
+                String body = String.format(Locale.ROOT, Tr.pick(lang, "Sales a las %s: %s %s", "You leave at %s: %s %s",
+                        "Parte às %s: %s %s", "%s発：%s %s"), l.optString("dep"), train(l), how);
                 out.add(new Alert(p + "remind", l.optString("number"), j.title, body));
             }
             // Platforms: notified when one changes after it was first seen.
@@ -253,8 +256,10 @@ public final class JourneyRules {
                     if (before.isEmpty() || before.equals(now)) continue;
                     JSONObject l = j.legs.getJSONObject(i);
                     out.add(new Alert(p + "platform:" + i, l.optString("number"), j.title,
-                            en ? train(l) + " now leaves from platform " + now + " (was " + before + ")"
-                                    : train(l) + " sale ahora por la vía " + now + " (antes " + before + ")"));
+                            Tr.pick(lang, train(l) + " sale ahora por la vía " + now + " (antes " + before + ")",
+                                    train(l) + " now leaves from platform " + now + " (was " + before + ")",
+                                    train(l) + " parte agora da linha " + now + " (antes " + before + ")",
+                                    train(l) + "の発車番線が" + before + "番線から" + now + "番線に変更")));
                 }
             }
             // Station notices on the way, each once a day.
@@ -272,7 +277,7 @@ public final class JourneyRules {
                     String text = x.optString("text");
                     if (text.length() > 200) text = text.substring(0, 199) + "…";
                     out.add(new Alert(p + "notice:" + x.optString("id"), j.legs.getJSONObject(0).optString("number"),
-                            j.title + " · " + kind(x.optString("kind"), en), text));
+                            j.title + " · " + kind(x.optString("kind"), lang), text));
                 }
             }
         }
@@ -290,18 +295,18 @@ public final class JourneyRules {
         return (r.isEmpty() ? "" : r + " ") + AlertRules.number(leg.optString("number"));
     }
 
-    static String kind(String k, boolean en) {
+    static String kind(String k, String lang) {
         switch (k) {
             case "accessibility":
-                return en ? "lifts and access" : "ascensores y accesos";
+                return Tr.pick(lang, "ascensores y accesos", "lifts and access", "elevadores e acessos", "エレベーター・バリアフリー");
             case "works":
-                return en ? "works" : "obras";
+                return Tr.pick(lang, "obras", "works", "obras", "工事");
             case "strike":
-                return en ? "strike" : "huelga";
+                return Tr.pick(lang, "huelga", "strike", "greve", "ストライキ");
             case "disruption":
-                return en ? "disruption" : "incidencia";
+                return Tr.pick(lang, "incidencia", "disruption", "perturbação", "運行障害");
             default:
-                return en ? "notice" : "aviso";
+                return Tr.pick(lang, "aviso", "notice", "aviso", "お知らせ");
         }
     }
 }

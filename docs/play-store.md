@@ -9,11 +9,12 @@ download the `store-assets` artifact (built from the live app; see "Graphics" be
 
 ## Store listing
 
-Default language **Spanish (es-ES)**, translation **English (en-GB)**. From 3.0 the app
-covers the United Kingdom too: in Play Console → Production → Countries/regions, the
-United Kingdom must be selected (the Pro price is converted from the Spanish one). Category
-**Maps & Navigation**. Tags: Travel, Public transport. "Renfe" is not in the title or the
-icon (we are not Renfe); it appears in the description as the data source.
+Default language **Spanish (es-ES)**, translations **English (en-GB)**, **Portuguese
+(pt-PT)** and **Japanese (ja-JP)**. From 3.0 the app covers the United Kingdom too: in
+Play Console → Production → Countries/regions, the United Kingdom must be selected (the
+Pro price is converted from the Spanish one). Category **Maps & Navigation**. Tags:
+Travel, Public transport. "Renfe" is not in the title or the icon (we are not Renfe); it
+appears in the description as the data source.
 
 ### es-ES
 
@@ -95,6 +96,88 @@ No accounts, no ads, no tracking. Your favourites and trips stay on your phone (
 
 DATA
 Open data from Renfe Operadora (CC BY 4.0) and Spain's National Access Point for transport (MITRAMS). United Kingdom: contains information of Network Rail Infrastructure Limited licensed under the Open Government Licence v3.0, NaPTAN (DfT), Translink (Northern Ireland) and National Rail's notices via the Rail Data Marketplace. Map © OpenStreetMap, OpenFreeMap. TrainRadar isn't affiliated with Renfe, Adif, OUIGO, Network Rail, National Rail or Translink; the data may contain errors and delays.
+```
+
+### pt-PT
+
+- **App name** (≤ 30): `TrainRadar: comboios em direto`
+- **Short description** (≤ 80): `Mapa em direto dos comboios em Espanha e no Reino Unido, com atraso e avisos.`
+- **Full description** (≤ 4000):
+
+```
+TrainRadar mostra num mapa, em direto, onde estão os comboios da Renfe em toda a Espanha —Cercanías, AVE, Avlo, Alvia, Media Distancia— e os da OUIGO segundo o horário, coloridos pelo atraso: verde à hora, âmbar com 5 minutos ou mais, vermelho com 15 ou mais.
+
+E no Reino Unido: os comboios da Grã-Bretanha com os atrasos em direto da Network Rail, os da Irlanda do Norte segundo o horário, e os avisos da National Rail. Um toque muda de país.
+
+NO MAPA
+• Cada comboio com a sua direção, velocidade, próxima paragem e atraso, segundo a Renfe ou estimado por GPS.
+• Estações com as próximas partidas e os comboios que se aproximam.
+• Avisos da Renfe (obras, greves, perturbações) no mapa e por linha.
+• Pesquisa por número de comboio ou linha; mapa normal ou satélite.
+• Viagens: diretas ou com transbordos, com o tempo de cada transbordo e os atrasos em direto.
+• Horários até 9 semanas: escolha data e hora para uma estação, uma viagem ou um comboio.
+• Vou neste comboio?: com a sua localização, a app descobre em que comboio vai (a sua localização nunca sai do telemóvel).
+
+GRÁTIS
+• Tudo o que está acima, sem contas, sem anúncios.
+• 2 favoritos (comboios ou estações) e a pontualidade de cada linha nos últimos 7 dias.
+• Mais sobre cada comboio: os comboios à frente e atrás, os que se cruzam, via, inclinação e perfil de altitude.
+
+TRAINRADAR PRO (subscrição anual, 1,99 €)
+• Favoritos ilimitados.
+• Alertas de atraso dos seus comboios favoritos, também com a app fechada, e um widget para o ecrã inicial.
+• As minhas viagens: registo das suas viagens com o atraso em cada paragem, resumo para reclamar à Renfe, CSV e imagem para partilhar.
+• Histórico completo de pontualidade de linhas, comboios e estações (até 12 meses).
+• Trajetos habituais: guarde vários, com os seus comboios, e a app abre nos seus próximos comboios. Alertas de atrasos, supressões, ligações em risco, lembrete antes de sair e avisos nas suas estações (elevadores, obras, autocarros).
+• Repetição: veja onde estava cada comboio, e com que atraso, em qualquer momento passado.
+• Histórico de avisos: os avisos da Renfe (obras, greves, perturbações) de qualquer dia passado.
+
+PRIVACIDADE
+Sem contas, sem anúncios, sem rastreio. Os seus favoritos e viagens ficam no seu telemóvel (e na cópia de segurança do Android). TrainRadar é de código aberto: https://github.com/StructuralWizard/TrainRadar
+
+DADOS
+Dados abertos da Renfe Operadora (CC BY 4.0) e do Ponto de Acesso Nacional de transportes de Espanha (MITRAMS). Reino Unido: contém informação da Network Rail Infrastructure Limited licenciada ao abrigo da Open Government Licence v3.0, NaPTAN (DfT), Translink (Irlanda do Norte) e avisos da National Rail através do Rail Data Marketplace. Mapa © OpenStreetMap, OpenFreeMap. TrainRadar não é afiliada à Renfe, Adif, OUIGO, Network Rail, National Rail nem Translink; os dados podem conter erros e atrasos.
+```
+
+### ja-JP
+
+- **App name** (≤ 30): `TrainRadar: リアルタイム列車マップ`
+- **Short description** (≤ 80): `スペインと英国の列車の位置をリアルタイムで地図に表示。遅延と運行情報も。`
+- **Full description** (≤ 4000):
+
+```
+TrainRadar は、スペイン全土の Renfe の列車（Cercanías、AVE、Avlo、Alvia、Media Distancia）の現在位置をリアルタイムで、OUIGO の列車を時刻表に基づいて地図上に表示し、遅延に応じて色分けします：定刻は緑、5 分以上の遅れは黄、15 分以上は赤。
+
+英国にも対応：グレートブリテンの列車は Network Rail のリアルタイム遅延情報で、北アイルランドの列車は時刻表に基づいて表示し、National Rail の運行情報もお届けします。ワンタップで国を切り替えられます。
+
+地図で
+• 各列車の進行方向、速度、次の停車駅、遅延（Renfe の発表または GPS による推定）。
+• 駅ごとの次の発車と接近中の列車。
+• Renfe の運行情報（工事、ストライキ、運行障害）を地図上と路線ごとに表示。
+• 列車番号や路線で検索；標準地図または航空写真。
+• 経路検索：直通または乗り換えあり、乗り換えごとの時間とリアルタイムの遅延つき。
+• 最大 9 週間先までの時刻表：駅、経路、列車ごとに日付と時刻を選べます。
+• この列車に乗っている？：位置情報から、乗っている列車をアプリが判定します（位置情報が端末の外に出ることはありません）。
+
+無料
+• 上記のすべてを、アカウント不要・広告なしで。
+• お気に入り 2 件（列車または駅）と、各路線の過去 7 日間の定時運行率。
+• 各列車の詳細：前後を走る列車、すれ違う列車、番線、勾配、高低差プロファイル。
+
+TRAINRADAR PRO（年間サブスクリプション、1.99 ユーロ）
+• お気に入り無制限。
+• お気に入りの列車の遅延通知（アプリを閉じていても届きます）とホーム画面ウィジェット。
+• 乗車記録：各停車駅での遅延を含む乗車の記録、Renfe への払い戻し請求用の概要、CSV と共有用画像。
+• 路線、列車、駅の定時運行率の全履歴（最大 12 か月）。
+• いつもの経路：複数保存でき、列車も登録可能。アプリを開くと次の列車を表示します。遅延、運休、接続が危うい乗り換え、出発前のリマインダー、利用駅のお知らせ（エレベーター、工事、バス）を通知。
+• リプレイ：過去の任意の時点で、各列車がどこにいて、どれだけ遅れていたかを確認。
+• 運行情報の履歴：過去の任意の日の Renfe の運行情報（工事、ストライキ、運行障害）。
+
+プライバシー
+アカウント不要、広告なし、トラッキングなし。お気に入りと乗車記録はお使いの端末内（と Android のバックアップ）にのみ保存されます。TrainRadar はオープンソースです：https://github.com/StructuralWizard/TrainRadar
+
+データ
+Renfe Operadora のオープンデータ（CC BY 4.0）とスペイン国家交通アクセスポイント（MITRAMS）。英国：Open Government Licence v3.0 に基づく Network Rail Infrastructure Limited の情報、NaPTAN（DfT）、Translink（北アイルランド）、Rail Data Marketplace 経由の National Rail の運行情報を含みます。地図 © OpenStreetMap、OpenFreeMap。TrainRadar は Renfe、Adif、OUIGO、Network Rail、National Rail、Translink とは提携していません。データには誤りや遅れが含まれる場合があります。
 ```
 
 ### Graphics

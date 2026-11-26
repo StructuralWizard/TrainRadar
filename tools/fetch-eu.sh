@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -58,6 +58,16 @@
 #                         OpenStreetMap's routes and tools/sg/lines.tsv
 #                         (tools/sg/osm-gtfs.py); LTA publishes none. The
 #                         track is in it: use --no-osm
+#                     pt-lis  Lisbon: Fertagus (CC BY 4.0) and Lisbon Metro
+#                         (dados.gov.pt, CC BY), ids prefixed and merged; no key
+#                     pt  CP's national timetable: built only with PT_CP=1
+#                         (CP hasn't licensed reuse yet: docs/europe/pt.md)
+#                     jp-tyo  Tokyo: Toei's subway, Toden Arakawa tram and
+#                         Nippori-Toneri Liner (ODPT, CC BY 4.0), English and
+#                         Japanese names; no key. The track is the stations'
+#                         straight lines: use --no-osm
+#                     jp-kch  Kōchi: Tosaden's trams (ODPT, CC BY 4.0); its
+#                         own shapes: use --no-osm
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -402,10 +412,57 @@ except Exception as e:
     python3 -I tools/sg/osm-gtfs.py "$dir/routes.opl" tools/sg/lines.tsv "$dir/gtfs.zip" 70
     rm -f "$dir/routes.opl"
     region=asia/malaysia-singapore-brunei ;;
+  pt-lis)
+    # Fertagus (Lisbon-Setúbal across the 25 de Abril bridge) and Lisbon
+    # Metro, ids prefixed so they don't clash, merged; the metro kept (type 1).
+    get "Fertagus GTFS (CC BY 4.0)" https://www.fertagus.pt/GTFSTMLzip/Fertagus_GTFS.zip "$dir/fertagus.zip"
+    # Lisbon Metro's file has a new address with each version: the newest
+    # zip of its dados.gov.pt dataset.
+    ml=$(curl -fsSL --retry 4 --retry-delay 15 -A "$client (+https://mytrainradar.com)" \
+        https://dados.gov.pt/api/1/datasets/gtfs-do-metropolitano-de-lisboa/ |
+      python3 -I -c "import json,sys; d=json.load(sys.stdin); r=sorted((x for x in d['resources'] if x['url'].endswith('.zip')), key=lambda x: x.get('last_modified') or '', reverse=True); print(r[0]['url'] if r else '')")
+    [ -n "$ml" ] || { echo "Lisbon Metro: no GTFS in its dataset" >&2; exit 1; }
+    get "Metropolitano de Lisboa GTFS (dados.gov.pt, CC BY)" "$ml" "$dir/ml.zip"
+    python3 -I tools/gtfs-tidy.py "$dir/fertagus.zip" "$dir/ft.zip" --prefix=ft:
+    python3 -I tools/gtfs-tidy.py "$dir/ml.zip" "$dir/mlx.zip" --prefix=ml:
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/ft.zip" "$dir/mlx.zip" --parents --also=1
+    rm -f "$dir/fertagus.zip" "$dir/ml.zip" "$dir/ft.zip" "$dir/mlx.zip"
+    region=portugal ;;
+  pt)
+    # CP's timetable has no reuse licence yet ("No licence", and its legal
+    # notice forbids reproduction without written permission): built only
+    # once the maintainer sets PT_CP=1 with CP's permission in hand.
+    [ "${PT_CP:-}" = "1" ] || { echo "CP: not built (PT_CP is not 1; CP's permission is pending, docs/europe/pt.md)" >&2; exit 3; }
+    get "CP – Comboios de Portugal GTFS" https://publico.cp.pt/gtfs/gtfs.zip "$dir/cp.zip"
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/cp.zip"
+    rm -f "$dir/cp.zip"
+    region=portugal ;;
+  jp-tyo)
+    # Toei (Tokyo Metropolitan Bureau of Transportation): four subway lines,
+    # the Toden Arakawa tram (type 0) and the Nippori-Toneri Liner, CC BY 4.0
+    # on ODPT's public API (no key). Trip ids kept: Toei's GTFS-Realtime
+    # names trips by them. Stations "Shinjuku 新宿" (its translations.txt).
+    get "Toei Train GTFS (ODPT, CC BY 4.0)" https://api-public.odpt.org/api/v4/files/Toei/data/Toei-Train-GTFS.zip "$dir/toei.zip"
+    python3 -I tools/gtfs-tidy.py "$dir/toei.zip" "$dir/toei-en.zip" --keep-trips --lang=en --bilingual \
+      --short=1:A,2:I,3:S,4:E,5:NT,6:SA
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/toei-en.zip" --also=0,1
+    rm -f "$dir/toei.zip" "$dir/toei-en.zip"
+    region=asia/japan ;;
+  jp-kch)
+    # Tosaden Traffic (Kōchi): its tram network, CC BY 4.0 on ODPT's public
+    # API; the current timetable ("?date=current"). Stops have kana readings
+    # only (romaji from them) and one platform per direction (merged).
+    get "Tosaden Traffic streetcar GTFS (ODPT, CC BY 4.0)" \
+      "https://api-public.odpt.org/api/v4/files/odpt/TosadenTraffic/Streetcar.zip?date=current" "$dir/tosaden.zip"
+    python3 -I tools/gtfs-tidy.py "$dir/tosaden.zip" "$dir/tosaden-en.zip" --lang=en --bilingual --merge-platforms \
+      --short=東西線上り_A:East-West,東西線下り_A:East-West,南北線上り_A:North-South,南北線下り_A:North-South
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/tosaden-en.zip" --also=0
+    rm -f "$dir/tosaden.zip" "$dir/tosaden-en.zip"
+    region=asia/japan ;;
   nz-osm)
     # Only the OSM track for New Zealand (shared by its regions' builds).
     region=australia-oceania/new-zealand ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg [--no-osm]" >&2; exit 2 ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

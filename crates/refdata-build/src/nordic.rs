@@ -80,6 +80,14 @@ pub const NZ_AKL: &str = "nz-akl";
 /// Singapore: the MRT and LRT, an estimated timetable (OSM routes and
 /// published frequencies; LTA publishes none).
 pub const SG: &str = "sg";
+/// Portugal: CP's national timetable (only with CP's permission).
+pub const PT: &str = "pt";
+/// Lisbon: Fertagus and Lisbon Metro.
+pub const PT_LIS: &str = "pt-lis";
+/// Tokyo: Toei's subway, Toden Arakawa tram and Nippori-Toneri Liner.
+pub const JP_TYO: &str = "jp-tyo";
+/// Kōchi: Tosaden's trams.
+pub const JP_KCH: &str = "jp-kch";
 /// A German stop whose DHID names no Land (none seen in DELFI).
 pub const DE_OTHER: &str = "de-x";
 
@@ -123,6 +131,10 @@ Auckland Transport open data, CC BY 4.0. Track: © OpenStreetMap contributors, O
 pub const ATTRIBUTION_SG: &str = "Estimated timetable from OpenStreetMap (© OpenStreetMap \
 contributors, ODbL 1.0) and published frequencies; alerts: LTA DataMall (Singapore Open Data \
 Licence).";
+pub const ATTRIBUTION_PT: &str = "Data: Fertagus (CC BY 4.0) and Metropolitano de Lisboa \
+(dados.gov.pt, CC BY). Track: © OpenStreetMap contributors, ODbL 1.0.";
+pub const ATTRIBUTION_JP: &str = "Data: Tokyo Metropolitan Bureau of Transportation (Toei) and \
+Tosaden Traffic / 公共交通オープンデータセンター (ODPT), CC BY 4.0.";
 pub const ATTRIBUTION_AU: &str = "Data: Transport for NSW and Transport Victoria open data, CC BY \
 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
@@ -152,6 +164,8 @@ pub fn tz(code: &str) -> Option<&'static str> {
         AU_VIC => "Australia/Melbourne",
         NZ_WLG | NZ_AKL => "Pacific/Auckland",
         SG => "Asia/Singapore",
+        PT | PT_LIS => "Europe/Lisbon",
+        JP_TYO | JP_KCH => "Asia/Tokyo",
         _ => return None,
     })
 }
@@ -185,6 +199,10 @@ pub fn region_name(code: &str) -> &'static str {
         NZ_WLG => "Wellington",
         NZ_AKL => "Auckland",
         SG => "Singapore (estimated)",
+        PT => "Portugal (CP)",
+        PT_LIS => "Lisboa",
+        JP_TYO => "Tokyo (Toei)",
+        JP_KCH => "Kōchi (Tosaden)",
         DE_OTHER => "Germany (regional, cross-border)",
         c if c.starts_with("de-") => GERMAN_LANDS.iter().find(|l| l.1 == c).map_or("", |l| l.2),
         _ => "",

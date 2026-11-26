@@ -466,6 +466,29 @@ jobs:
           echo "### sg: alerts through the Worker" >> "$GITHUB_STEP_SUMMARY"
           : > build/sg-trips.txt
           node tools/feed-check/eu-probe.mjs sg build/sg-trips.txt build/probe-sg | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Portugal (Lisbon; CP's timetable not used without its permission)
+        continue-on-error: true # outside services: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh pt-lis --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/pt --pt-lis-gtfs gtfs/pt-lis/gtfs.zip \
+            --sources gtfs/pt-lis/sources.tsv --report refdata-pt.md
+          target/release/refdata-build verify build/pt
+          { echo "## Portugal reference data"; echo; cat refdata-pt.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/pt-lis/gtfs.zip routes.txt | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Japan (ODPT public API, CC BY 4.0, no key)
+        continue-on-error: true # outside services: a report, not a gate
+        run: |
+          set -o pipefail
+          tools/fetch-eu.sh jp-tyo --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          tools/fetch-eu.sh jp-kch --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/jp --jp-tyo-gtfs gtfs/jp-tyo/gtfs.zip --jp-kch-gtfs gtfs/jp-kch/gtfs.zip \
+            --sources gtfs/jp-tyo/sources.tsv --report refdata-jp.md
+          target/release/refdata-build verify build/jp
+          { echo "## Japan reference data"; echo; cat refdata-jp.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/jp-tyo/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/jp-trips.txt
+          echo "### jp: Toei's live feeds through the Worker" >> "$GITHUB_STEP_SUMMARY"
+          node tools/feed-check/eu-probe.mjs jp build/jp-trips.txt build/probe-jp | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |

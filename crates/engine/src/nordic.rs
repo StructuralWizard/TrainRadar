@@ -92,6 +92,19 @@ static NZ: [FeedSpec; 3] = [
 /// Singapore: LTA's train service alerts only (backend-eu); its trains are
 /// an estimated timetable.
 static SG: [FeedSpec; 1] = [feed("alerts", FeedKind::Alerts, "alerts.pb", 120)];
+/// Japan: Toei's trains in Tokyo (ODPT's public GTFS-Realtime, no key):
+/// positions, delays and alerts, trip ids the timetable's (backend-eu).
+/// Kōchi's trams have no live feed: by timetable.
+static JP: [FeedSpec; 3] = [
+    feed(
+        "vp_jp",
+        FeedKind::VehiclePositions,
+        "vehicle_positions.pb",
+        30,
+    ),
+    feed("tu_jp", FeedKind::TripUpdates, "trip_updates.pb", 60),
+    feed("alerts", FeedKind::Alerts, "alerts.pb", 300),
+];
 static DE: [FeedSpec; 1] = [feed("tu_de", FeedKind::TripUpdates, "trip_updates.pb", 60)];
 /// Czechia: PID's trains (Prague and Central Bohemia) from Golemio, GPS and
 /// delays, kept to trains by backend-eu; the rest of the country by
@@ -132,6 +145,8 @@ pub struct Australia;
 pub struct NewZealand;
 #[derive(Debug)]
 pub struct Singapore;
+#[derive(Debug)]
+pub struct Japan;
 
 macro_rules! adapter {
     ($t:ty, $id:literal, $feeds:ident) => {
@@ -159,6 +174,7 @@ adapter!(Belgium, "belgium", BE);
 adapter!(Australia, "australia", AU);
 adapter!(NewZealand, "new-zealand", NZ);
 adapter!(Singapore, "singapore", SG);
+adapter!(Japan, "japan", JP);
 
 impl SourceAdapter for Norway {
     fn id(&self) -> &'static str {

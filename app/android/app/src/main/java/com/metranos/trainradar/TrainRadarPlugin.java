@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.telephony.TelephonyManager;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
@@ -24,6 +25,7 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import org.json.JSONObject;
 
@@ -39,6 +41,30 @@ import org.json.JSONObject;
         permissions = {@Permission(alias = "notifications", strings = {Manifest.permission.POST_NOTIFICATIONS})})
 public class TrainRadarPlugin extends Plugin {
     static final String WORK = "delay-alerts";
+
+    /**
+     * The phone's country, for the first map the app opens: the SIM's
+     * country (where the phone's line was bought), else the mobile network's
+     * (where it is now), else the language setting's region. Two-letter
+     * lower-case code, or "" when none is known. Nothing leaves the phone.
+     */
+    @PluginMethod
+    public void deviceCountry(PluginCall call) {
+        String cc = "";
+        try {
+            TelephonyManager tm = (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+            if (tm != null) {
+                cc = tm.getSimCountryIso();
+                if (cc == null || cc.length() != 2) cc = tm.getNetworkCountryIso();
+            }
+        } catch (RuntimeException e) {
+            cc = "";
+        }
+        if (cc == null || cc.length() != 2) cc = Locale.getDefault().getCountry();
+        JSObject r = new JSObject();
+        r.put("country", cc == null || cc.length() != 2 ? "" : cc.toLowerCase(Locale.ROOT));
+        call.resolve(r);
+    }
 
     /** Turn the 15-minute background check on or off. */
     @PluginMethod

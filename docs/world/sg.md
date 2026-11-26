@@ -30,3 +30,8 @@ from the lines' usual frequencies and every one says so.
 - **Deploy:** `SG_ENABLED` = `true` builds `data/sg/`; `SG_LIVE_ENABLED` = `true` (with
   `SG_LTA_ACCOUNT_KEY`) adds the alerts in the `eu` Worker.
 - **Licences:** OpenStreetMap ODbL; LTA DataMall under the Singapore Open Data Licence.
+
+**Circle Line (2026-11-26):** OpenStreetMap has two Circle Line services per direction (the loop
+and Dhoby Ghaut–Prince Edward Road). Each ran at the line's full headway, doubling the trains on
+the shared section; the generator now gives each service every other train (two services per
+direction: twice the headway each, the second half a headway later).

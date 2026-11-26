@@ -80,7 +80,12 @@ final class WidgetStore {
     }
 
     static boolean english(Context ctx) {
-        return "en".equals(appConfig(ctx).optString("lang", "es"));
+        return "en".equals(lang(ctx));
+    }
+
+    /** The app's language: es, en, pt or ja (Tr.pick). */
+    static String lang(Context ctx) {
+        return appConfig(ctx).optString("lang", "es");
     }
 
     /** Favourite stations or trains, in the order sorted in Favoritos. */
