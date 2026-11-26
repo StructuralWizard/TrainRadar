@@ -26,6 +26,50 @@ final class TrTable {
         BY.put(lang, m);
     }
 
+    private static void fr() {
+        put("fr",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s part désormais de la voie %2$s (au lieu de %3$s)",
+                "%d min late", "%d min de retard",
+                "Arrivals · ", "Arrivées · ",
+                "Cancelled", "Supprimé",
+                "Change at %s at risk: %d min left for the %s", "Correspondance à %s menacée : %d min pour le %s",
+                "Delays of your trains", "Retards de vos trains",
+                "Departures · ", "Départs · ",
+                "From ", "De ",
+                "From your favourites:", "Parmi vos favoris :",
+                "Next stop: ", "Prochain arrêt : ",
+                "No data yet.", "Pas encore de données.",
+                "No notices in force.", "Aucune info trafic en cours.",
+                "No trains in the next 3 hours.", "Aucun train dans les 3 prochaines heures.",
+                "Not running now.", "Ne circule pas actuellement.",
+                "Open TrainRadar", "Ouvrir TrainRadar",
+                "Renfe notices", "Infos trafic Renfe",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Enregistrez d’abord une gare avec ☆ Enregistrer dans TrainRadar, puis ajoutez à nouveau le widget.",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Enregistrez d’abord un train avec ☆ Enregistrer dans TrainRadar, puis ajoutez à nouveau le widget.",
+                "Save trains with ☆ to see them here.", "Enregistrez des trains avec ☆ pour les voir ici.",
+                "Tap to choose a station or train.", "Touchez pour choisir une gare ou un train.",
+                "The widget is part of TrainRadar Pro.", "Le widget fait partie de TrainRadar Pro.",
+                "This widget is part of TrainRadar Pro.", "Ce widget fait partie de TrainRadar Pro.",
+                "Train", "Train",
+                "Updated ", "Mis à jour ",
+                "Updating…", "Mise à jour…",
+                "Which station?", "Quelle gare ?",
+                "Which train?", "Quel train ?",
+                "You leave at %s: %s %s", "Départ à %s : %s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "Vous allez manquer la correspondance à %1$s pour %2$s : voir d’autres options",
+                "cancelled", "supprimé",
+                "cancelled — see other options", "supprimé — voir d’autres options",
+                "disruption", "perturbation",
+                "lifts and access", "ascenseurs et accès",
+                "no live delay", "pas de retard en direct",
+                "not running", "ne circule pas",
+                "notice", "info trafic",
+                "on time", "à l’heure",
+                "strike", "grève",
+                "works", "travaux");
+    }
+
     static {
+        fr();
     }
 }
