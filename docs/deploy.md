@@ -352,6 +352,15 @@ app, and update the "last updated" dates when they change.
   **`SG_LIVE_ENABLED`** = `true` adds LTA DataMall's train service alerts in the `eu` Worker, with
   `SG_LTA_ACCOUNT_KEY`. See [world/sg.md](world/sg.md).
 
+## Cab-ride videos
+
+- **Nothing to turn on:** every deploy writes each country's `cabrides.json` next to its data
+  from `refdata/cabrides/` (`tools/cabrides/build.py`), no key ([plan-cab-rides.md](plan-cab-rides.md)).
+- **Weekly check:** the "Cab-ride videos check" workflow (Mondays) asks YouTube's public oEmbed
+  address about each video, one request every half second, and caches the ones gone; the next
+  deploy leaves them out. A list hiding more than a third of the videos is ignored.
+- **Adding videos:** rows in the CSVs, by pull request.
+
 ## Portugal
 
 - **Turning it on:** **`PT_ENABLED`** = `true` builds Portugal into `data/pt/`, by timetable

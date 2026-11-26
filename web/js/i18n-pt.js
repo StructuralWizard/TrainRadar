@@ -670,4 +670,8 @@ export const PT = {
     'Dados: horário da Iarnród Éireann da <a href="https://www.transportforireland.ie/transitData/PT_Data.html" target="_blank" rel="noopener">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, fornecido "tal como está" · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Sem ligação à Iarnród Éireann nem à NTA',
   attribution:
     'Dados: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Altitudes: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sem ligação à Renfe, à Adif nem à OUIGO',
+  cabTitle: "Vídeos da cabina",
+  cabMore: "mais {n}",
+  cabNote: "Abrem no YouTube no momento desta estação. ≈: momento estimado.",
+  cabTrain: "Ver da cabina",
 };

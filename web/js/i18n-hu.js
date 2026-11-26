@@ -647,4 +647,8 @@ export const HU = {
   attributionEe: "Adatok: az Elron menetrendje a közösségi közlekedési nyilvántartásból (az észt Regionális és Mezőgazdasági Minisztérium) · Pálya: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> közreműködők (ODbL) · Nem áll kapcsolatban ezzel: Elron",
   attributionIe: "Adatok: az Iarnród Éireann menetrendje a <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland) forrásból, CC BY 4.0, \"as is\" (jelenlegi állapotában) biztosítva · Pálya: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> közreműködők (ODbL) · Nem áll kapcsolatban ezekkel: Iarnród Éireann, NTA",
   attribution: "Adatok: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Pálya: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> közreműködők (ODbL), IGN (IGR-RT, CC BY 4.0) · Magasságok: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Nem áll kapcsolatban ezekkel: Renfe, Adif, OUIGO",
+  cabTitle: "Videók a vezetőállásból",
+  cabMore: "további {n}",
+  cabNote: "A YouTube-on ennél az állomásnál nyílnak meg. ≈: becsült időpont.",
+  cabTrain: "Nézd a vezetőállásból",
 };

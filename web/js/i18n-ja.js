@@ -670,4 +670,8 @@ export const JA = {
     'データ: <a href="https://www.transportforireland.ie/transitData/PT_Data.html" target="_blank" rel="noopener">National Transport Authority</a>（Transport for Ireland）のIarnród Éireann時刻表、CC BY 4.0、「現状のまま」提供 · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · Iarnród Éireann、NTAとは関係ありません',
   attribution:
     'データ: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a>（CC BY 4.0） · OUIGO: NAP、<a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL）、IGN（IGR-RT、CC BY 4.0） · 標高: Copernicus WorldDEM-30 © DLR e.V.、© Airbus DS · Renfe、Adif、OUIGOとは関係ありません',
+  cabTitle: "運転席からの動画",
+  cabMore: "他{n}件",
+  cabNote: "この駅の場面からYouTubeで開きます。≈：推定の時刻。",
+  cabTrain: "運転席から見る",
 };

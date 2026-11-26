@@ -10,7 +10,8 @@ import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from 
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
-import { PLACE_ICON, journeyResults, layersSheet, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
+import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
+import { loadRides, videoForTrain, videosAt } from "./js/cabrides.js";
 import { endStations } from "./js/route.js";
 import { Planner } from "./js/planner.js";
 import { Locator, circlePolygon } from "./js/location.js";
@@ -1093,6 +1094,7 @@ function showPopup(open = false) {
         : null,
     },
   );
+  body.append(...cabTrain(lang, trainVideo(info, now)));
   if (!popup) {
     foldCredits();
     if (!map.isMoving()) makeRoomBelow(info.lon, info.lat);
@@ -1120,6 +1122,15 @@ function showPopup(open = false) {
     }
   }
   popupToTop = false;
+}
+
+/** A cab-ride video of the stretch a train is on, opened about where it is. */
+function trainVideo(info, now) {
+  const idx = cabIndex();
+  if (!idx || !info.next_stop) return null;
+  const i = engine.findTrain(info.trip_id, info.number);
+  const trip = i < 0 ? null : JSON.parse(engine.tripJson(i));
+  return videoForTrain(idx, trip?.stops, info.next_stop, (now ?? Date.now()) / 1000);
 }
 
 /** Phone: the selected train in the detail sheet (desktop: a popup). */
@@ -1169,6 +1180,7 @@ function showTrainSheet(info, open, now) {
       proLink: CONFIG.platform === "android" && !CONFIG.pro ? () => (openSheet("settings"), renderSettings()) : null,
     },
   });
+  body.append(...cabTrain(lang, trainVideo(info, now)));
   const was = detailKind;
   if (open) {
     detailKind = "train"; // before the pager, which asks what is shown
@@ -1332,6 +1344,35 @@ function renderTrainDay(open = false) {
 }
 
 /** Popup with a station's next departures and approaching trains. */
+/** The country's cab-ride videos (docs/plan-cab-rides.md), loaded the first
+ * time a station or train is shown; then whatever is open is redrawn. */
+let rides = null;
+let ridesAsked = false;
+let cabAllFor = ""; // the station whose every video is listed
+function cabIndex() {
+  if (!ridesAsked) {
+    ridesAsked = true;
+    loadRides([CONFIG.remoteDataBase, CONFIG.dataBase].filter(Boolean)).then((idx) => {
+      rides = idx;
+      if (!idx) return;
+      if (stationPop?.isOpen() && lastStation) showStation(lastStation, { refresh: true });
+      if (detailKind === "station" && stationView) showStation(stationView, { refresh: true });
+    });
+  }
+  return rides;
+}
+/** The cab-ride rows for a station, with "N more". */
+function stationVideos(f) {
+  const { id, name } = f.properties;
+  return cabVideos(lang, videosAt(cabIndex(), name), {
+    showAll: cabAllFor === id,
+    onMore: () => {
+      cabAllFor = id;
+      showStation(f, { refresh: true });
+    },
+  });
+}
+
 function showStation(f, { refresh = false } = {}) {
   const { id, name } = f.properties;
   lastStation = f;
@@ -1381,6 +1422,7 @@ function showStation(f, { refresh = false } = {}) {
         : null,
     },
   );
+  body.append(...stationVideos(f));
   if (stationPop?.isOpen()) return stationPop.setLngLat([lon, lat]).setDOMContent(body);
   clearSelection();
   foldCredits();
@@ -1484,6 +1526,7 @@ function showStationSheet(f, regions, refresh) {
       : null,
     onRoute: () => openRoute({ kind: "station", item: { id, name, lon, lat } }, null),
   });
+  body.append(...stationVideos(f));
   const scroll = sheet.scrollTop;
   if (!refresh) {
     detailKind = "station";

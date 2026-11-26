@@ -647,4 +647,8 @@ export const DE = {
   attributionEe: "Daten: Fahrplan von Elron aus dem Register des öffentlichen Verkehrs (estnisches Ministerium für Regionalangelegenheiten und Landwirtschaft) · Strecken: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>-Mitwirkende (ODbL) · Nicht verbunden mit Elron",
   attributionIe: "Daten: Fahrplan von Iarnród Éireann von der <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, bereitgestellt \"as is\" · Strecken: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>-Mitwirkende (ODbL) · Nicht verbunden mit Iarnród Éireann oder der NTA",
   attribution: "Daten: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Strecken: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>-Mitwirkende (ODbL), IGN (IGR-RT, CC BY 4.0) · Höhen: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Nicht verbunden mit Renfe, Adif oder OUIGO",
+  cabTitle: "Videos aus dem Führerstand",
+  cabMore: "{n} weitere",
+  cabNote: "Sie öffnen sich auf YouTube an der Stelle dieses Bahnhofs. ≈: geschätzte Stelle.",
+  cabTrain: "Aus dem Führerstand ansehen",
 };

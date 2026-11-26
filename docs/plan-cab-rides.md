@@ -1,6 +1,25 @@
 # Plan: cab-ride videos at each station
 
-Status: **proposed 2026-11-22**, nothing built yet.
+Status: **V1 built 2026-11-26, for every country at once** (the maintainer's choice: free, no
+thumbnails, all countries). What V1 does, and how it differs from the plan below:
+
+- **Data:** `refdata/cabrides/` holds `videos.csv`, `video_stops.csv`, `stations.csv` from the
+  data branch, and `aliases.csv` (the build script's name aliases). `tools/cabrides/build.py`
+  writes each country's `cabrides.json` next to its data at deploy: 2,512 videos with timed
+  stations in the 21 countries the app has (Australia, New Zealand, Singapore and Japan have none).
+- **Matching** is by name in the app (`web/js/cabrides.js`), not a build-time alias table: the
+  app's station name, normalised like the database's keys, then without a short suffix (a Swiss
+  canton, "Bf", "pu", "zast."), then the part before a spaced dash ("Madrid-Puerta de Atocha -
+  Almudena Grandes"). A video stop named "A / B" or "A – B" (bilingual names, or Finnish chapters
+  naming a stretch) is found under each part. Measured on the local feeds: Portugal 323 of 457
+  stations have a video, Slovakia 267, Switzerland 658, Hungary 224, Finland 129, Ireland 48.
+- **Station sheet and popup:** "Videos from the cab", three then "N more"; train sheet and popup:
+  "Watch from the cab", opened where the train is between its last and next stop.
+- **Weekly check:** `.github/workflows/cabrides-check.yml` asks YouTube's oEmbed address about
+  every video and caches the list of gone ones; the deploy leaves them out.
+- **Not yet:** distance-based times for "estimated" videos (they keep even spacing, shown with
+  "≈"), links on journey legs, chapters for the videos without stops (needs `YOUTUBE_API_KEY`).
+
 
 The maintainer's request: link the YouTube cab-ride videos, with the moment each station appears,
 which the maintainer built with Cowork.
