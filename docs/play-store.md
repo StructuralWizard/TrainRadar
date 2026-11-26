@@ -14,748 +14,787 @@ Default language **Spanish (es-ES)**, translations **English (en-GB)**, **Portug
 **Dutch (nl-NL)**, **Danish (da-DK)**, **Swedish (sv-SE)**, **Norwegian (no-NO)**, **Finnish
 (fi-FI)**, **Polish (pl-PL)**, **Czech (cs-CZ)**, **Slovak (sk)**, **Hungarian (hu-HU)**,
 **Estonian (et)** and **Chinese, Simplified (zh-CN)**: Play Console → Grow → Store presence →
-Main store listing → Manage translations → Add your own translations. From 3.0 the app covers the United Kingdom too: in
-Play Console → Production → Countries/regions, the United Kingdom must be selected (the
-Pro price is converted from the Spanish one). Category **Maps & Navigation**. Tags:
+Main store listing → Manage translations → Add your own translations. From 3.3 the app covers 25 countries: in Play Console
+→ Production → Countries/regions, select at least Spain, the United Kingdom, Ireland,
+France, Luxembourg, Belgium, the Netherlands, Germany, Switzerland, Austria, Italy,
+Portugal, Denmark, Sweden, Norway, Finland, Estonia, Poland, Czechia, Slovakia, Hungary,
+Australia, New Zealand, Singapore and Japan (the Pro price is converted from the Spanish
+one). Category **Maps & Navigation**. Tags:
 Travel, Public transport. "Renfe" is not in the title or the icon (we are not Renfe); it
 appears in the description as the data source.
 
 ### es-ES
 
 - **App name** (≤ 30): `TrainRadar: trenes en directo`
-- **Short description** (≤ 80): `Mapa en directo de los trenes de España y Reino Unido, con su retraso y avisos.`
+- **Short description** (≤ 80): `Mapa en directo de los trenes de 25 países, con sus retrasos y avisos.`
 - **Full description** (≤ 4000):
 
 ```
-TrainRadar muestra en un mapa, en directo, dónde están los trenes de Renfe en toda España —Cercanías, AVE, Avlo, Alvia, Media Distancia— y los de OUIGO según su horario, coloreados por su retraso: verde a su hora, ámbar con 5 minutos o más, rojo con 15 o más.
+TrainRadar muestra en un mapa dónde están los trenes, en directo, con colores según el retraso: verde, puntual; ámbar, 5 minutos o más; rojo, 15 o más.
 
-Y en el Reino Unido: los trenes de Gran Bretaña con su retraso en directo de Network Rail, los de Irlanda del Norte según su horario, y los avisos de National Rail. Un toque cambia de país.
+25 PAÍSES
+España, Reino Unido, Irlanda, Francia, Luxemburgo, Bélgica, Países Bajos, Alemania, Suiza, Austria, Italia, Portugal (Lisboa), Dinamarca, Suecia, Noruega, Finlandia, Estonia, Polonia, Chequia, Eslovaquia, Hungría, Australia (Nueva Gales del Sur, Victoria), Nueva Zelanda (Wellington, Auckland), Singapur y Japón (Tokio, Kōchi). Retrasos en directo donde los operadores los publican; en el resto, trenes situados según su horario y marcados así. Elige un país y una zona, o toca un país vecino en el mapa. Cada país se descarga una vez y luego funciona sin conexión.
+
+18 IDIOMAS
+Español, inglés, portugués, japonés, francés, alemán, italiano, neerlandés, danés, sueco, noruego, finés, polaco, checo, eslovaco, húngaro, estonio y chino. La app usa el idioma de tu móvil (puedes cambiarlo en Más → Idioma) y se abre en el país en el que estás.
 
 EN EL MAPA
-• Cada tren con su dirección, velocidad, próxima parada y retraso, según Renfe o estimado por GPS.
-• Estaciones con próximas salidas y trenes que se acercan.
-• Avisos de Renfe (obras, huelgas, incidencias) en el mapa y por línea.
-• Busca por número de tren o línea; mapa normal o satélite.
-• Cómo llegar: directo o con transbordos, con el tiempo de cada cambio y los retrasos en directo.
-• Horarios de hasta 9 semanas: elige fecha y hora en una estación, en Cómo llegar o para un tren.
-• ¿Voy en este tren?: con tu ubicación, la app adivina en qué tren vas (tu ubicación no sale del teléfono).
+• Cada tren con su sentido, velocidad, próxima parada y retraso.
+• Estaciones con las próximas salidas y los trenes que llegan.
+• Avisos de los operadores (obras, huelgas, incidencias) en el mapa y por línea.
+• Búsqueda por número de tren, estación o línea; mapa normal o satélite.
+• Trayectos: directos o con transbordos, con el tiempo de cada cambio y los retrasos en directo.
+• Horarios hasta 9 semanas vista: elige fecha y hora para una estación, un trayecto o un tren.
+• ¿Voy en este tren?: con tu ubicación, la app averigua en qué tren vas (tu ubicación nunca sale del móvil).
 
 GRATIS
-• Todo lo anterior, sin cuentas, sin anuncios.
-• 2 favoritos (trenes o estaciones) y la puntualidad de cada línea en los últimos 7 días.
-• Más datos de cada tren: tren anterior y siguiente, trenes que se cruzan, vía, pendiente y perfil de altura.
+• Todo lo anterior, sin cuentas ni anuncios.
+• 2 favoritos (trenes o estaciones) en cada país.
+• Más sobre cada tren: el tren anterior y el siguiente, los cruces, la vía y el perfil de pendientes y alturas.
+• En España, la puntualidad de cada línea en los últimos 7 días.
 
 TRAINRADAR PRO (suscripción anual, 1,99 €)
-• Favoritos ilimitados.
-• Avisos de retraso de tus trenes favoritos, también con la app cerrada, y widget para la pantalla de inicio.
-• Mis viajes: registro de tus trayectos con el retraso en cada parada, resumen para reclamar a Renfe, CSV e imagen para compartir.
-• Historial completo de puntualidad de líneas, trenes y estaciones (hasta 12 meses).
-• Trayectos habituales: guarda varios, con sus trenes, y la app abre con tus próximos trenes. Avisos de retrasos, cancelaciones, enlaces en riesgo, recordatorio antes de salir y avisos en tus estaciones (ascensores, obras, autobuses).
-• Moviola: mira dónde estaba cada tren, y con cuánto retraso, en cualquier momento pasado.
-• Histórico de avisos: los avisos de Renfe (obras, huelgas, incidencias) de cualquier día pasado.
+• Favoritos y trayectos ilimitados, y la app se abre con tus próximos trenes.
+• Iconos en la pantalla de inicio que abren directamente una estación, un tren o un trayecto.
+• En España: avisos de retraso de tus trenes favoritos, también con la app cerrada; widgets para la pantalla de inicio; avisos de cancelaciones, transbordos en riesgo y avisos en tus estaciones; un recordatorio antes de salir.
+• En España: Mis viajes, un registro de tus viajes con el retraso en cada parada y un resumen para reclamar a Renfe; el historial completo de puntualidad de líneas, trenes y estaciones (hasta 12 meses); la Moviola, para ver dónde estaba cada tren en cualquier momento pasado; y el histórico de avisos de Renfe.
 
 PRIVACIDAD
-Sin cuentas, sin anuncios, sin rastreo. Tus favoritos y viajes se guardan solo en tu teléfono (y en la copia de seguridad de Android). TrainRadar es de código abierto: https://github.com/StructuralWizard/TrainRadar
+Sin cuentas, sin anuncios, sin rastreo. Tus favoritos y viajes se quedan en tu móvil (y en la copia de seguridad de Android). TrainRadar es de código abierto: https://github.com/StructuralWizard/TrainRadar
 
 DATOS
-Datos abiertos de Renfe Operadora (CC BY 4.0) y del Punto de Acceso Nacional de transportes (MITRAMS). Reino Unido: información de Network Rail Infrastructure Limited bajo la Open Government Licence v3.0, NaPTAN (DfT), Translink (Irlanda del Norte) y avisos de National Rail vía Rail Data Marketplace. Mapa © OpenStreetMap, OpenFreeMap. TrainRadar no está afiliado a Renfe, Adif, OUIGO, Network Rail, National Rail ni Translink; los datos pueden contener errores y retrasos.
+Datos abiertos de los operadores y autoridades de transporte de cada país; todas las fuentes y licencias figuran en la app, en «Licencias y atribución». España: Renfe Operadora (CC BY 4.0) y el Punto de Acceso Nacional de España (MITRAMS). Reino Unido: contiene información de Network Rail Infrastructure Limited con licencia Open Government Licence v3.0. Japón: Toei / ODPT (CC BY 4.0). Mapa © colaboradores de OpenStreetMap, OpenFreeMap. TrainRadar no está vinculada a ningún operador; los datos pueden contener errores y retrasos.
 ```
 
 ### en-GB
 
-- **App name** (≤ 30): `TrainRadar: live train map` (was `TrainRadar: live trains Spain` until 3.0)
-- **Short description** (≤ 80): `Live map of trains in Spain and the UK, with their delay and notices.`
-- **Full description**:
+- **App name** (≤ 30): `TrainRadar: live train map`
+- **Short description** (≤ 80): `Live map of trains in 25 countries, with their delays and notices.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar shows on a map, live, where Renfe's trains are across Spain —Cercanías, AVE, Avlo, Alvia, Media Distancia— and OUIGO's by their timetable, coloured by delay: green on time, amber 5 minutes or more late, red 15 or more.
+TrainRadar shows on a map where the trains are, live, coloured by delay: green on time, amber 5 minutes or more late, red 15 or more.
 
-And in the United Kingdom: Great Britain's trains with Network Rail's live delays, Northern Ireland's by timetable, and National Rail's notices. One tap switches country.
+25 COUNTRIES
+Spain, the United Kingdom, Ireland, France, Luxembourg, Belgium, the Netherlands, Germany, Switzerland, Austria, Italy, Portugal (Lisbon), Denmark, Sweden, Norway, Finland, Estonia, Poland, Czechia, Slovakia, Hungary, Australia (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore and Japan (Tokyo, Kōchi). Live delays where the operators publish them; elsewhere, trains placed by their timetable and marked as such. Pick a country and an area, or tap a neighbouring country on the map. Each country downloads once and then works offline.
+
+18 LANGUAGES
+Spanish, English, Portuguese, Japanese, French, German, Italian, Dutch, Danish, Swedish, Norwegian, Finnish, Polish, Czech, Slovak, Hungarian, Estonian and Chinese. The app follows your phone's language and opens on the country you're in.
 
 ON THE MAP
-• Every train with its direction, speed, next stop and delay, as published by Renfe or estimated from GPS.
+• Every train with its direction, speed, next stop and delay.
 • Stations with the next departures and approaching trains.
-• Renfe's notices (works, strikes, disruptions) on the map and per line.
-• Search by train number or line; standard or satellite map.
+• Operators' notices (works, strikes, disruptions) on the map and per line.
+• Search by train number, station or line; standard or satellite map.
 • Journeys: direct or with changes, with the time for each change and live delays.
 • Timetables up to 9 weeks ahead: pick a date and time for a station, a journey or a train.
 • Am I on this train?: with your location, the app works out which train you're on (your location never leaves the phone).
 
 FREE
 • All of the above, no accounts, no ads.
-• 2 favourites (trains or stations) and each line's punctuality over the last 7 days.
+• 2 favourites (trains or stations) in each country.
 • More about each train: the trains ahead and behind, oncoming trains, track, gradient and height profile.
+• In Spain, each line's punctuality over the last 7 days.
 
 TRAINRADAR PRO (yearly subscription, €1.99)
-• Unlimited favourites.
-• Delay alerts for your favourite trains, also with the app closed, and a home-screen widget.
-• My trips: a log of your journeys with the delay at each stop, a summary for a claim to Renfe, CSV and a shareable image.
-• Full punctuality history of lines, trains and stations (up to 12 months).
-• Commutes: save several, with their trains, and the app opens on your next trains. Alerts for delays, cancellations, connections at risk, a reminder before leaving, and notices at your stations (lifts, works, buses).
-• Replay: see where every train was, and how late, at any past moment.
-• Notices history: Renfe's notices (works, strikes, disruptions) of any past day.
+• Unlimited favourites and commutes, and the app opens on your next trains.
+• Home-screen icons that open a station, a train or a commute directly.
+• In Spain: delay alerts for your favourite trains, also with the app closed; home-screen widgets; alerts for cancellations, connections at risk and notices at your stations; a reminder before leaving.
+• In Spain: My trips, a log of your journeys with the delay at each stop and a summary for a claim to Renfe; the full punctuality history of lines, trains and stations (up to 12 months); Replay, to see where every train was at any past moment; and the history of Renfe's notices.
 
 PRIVACY
 No accounts, no ads, no tracking. Your favourites and trips stay on your phone (and in Android's backup). TrainRadar is open source: https://github.com/StructuralWizard/TrainRadar
 
 DATA
-Open data from Renfe Operadora (CC BY 4.0) and Spain's National Access Point for transport (MITRAMS). United Kingdom: contains information of Network Rail Infrastructure Limited licensed under the Open Government Licence v3.0, NaPTAN (DfT), Translink (Northern Ireland) and National Rail's notices via the Rail Data Marketplace. Map © OpenStreetMap, OpenFreeMap. TrainRadar isn't affiliated with Renfe, Adif, OUIGO, Network Rail, National Rail or Translink; the data may contain errors and delays.
+Open data from each country's operators and transport authorities; every source and licence is listed in the app under "Data licences and attribution". Spain: Renfe Operadora (CC BY 4.0) and Spain's National Access Point (MITRAMS). United Kingdom: contains information of Network Rail Infrastructure Limited licensed under the Open Government Licence v3.0. Japan: Toei / ODPT (CC BY 4.0). Map © OpenStreetMap contributors, OpenFreeMap. TrainRadar isn't affiliated with any operator; the data may contain errors and delays.
 ```
 
 ### pt-PT
 
-- **App name** (≤ 30): `TrainRadar: comboios em direto`
-- **Short description** (≤ 80): `Mapa em direto dos comboios em Espanha e no Reino Unido, com atraso e avisos.`
+- **App name** (≤ 30): `TrainRadar: comboios ao vivo`
+- **Short description** (≤ 80): `Mapa ao vivo dos comboios de 25 países, com os seus atrasos e avisos.`
 - **Full description** (≤ 4000):
 
 ```
-TrainRadar mostra num mapa, em direto, onde estão os comboios da Renfe em toda a Espanha —Cercanías, AVE, Avlo, Alvia, Media Distancia— e os da OUIGO segundo o horário, coloridos pelo atraso: verde à hora, âmbar com 5 minutos ou mais, vermelho com 15 ou mais.
+O TrainRadar mostra num mapa onde estão os comboios, ao vivo, com cores segundo o atraso: verde, a horas; âmbar, 5 minutos ou mais; vermelho, 15 ou mais.
 
-E no Reino Unido: os comboios da Grã-Bretanha com os atrasos em direto da Network Rail, os da Irlanda do Norte segundo o horário, e os avisos da National Rail. Um toque muda de país.
+25 PAÍSES
+Espanha, Reino Unido, Irlanda, França, Luxemburgo, Bélgica, Países Baixos, Alemanha, Suíça, Áustria, Itália, Portugal (Lisboa), Dinamarca, Suécia, Noruega, Finlândia, Estónia, Polónia, Chéquia, Eslováquia, Hungria, Austrália (Nova Gales do Sul, Vitória), Nova Zelândia (Wellington, Auckland), Singapura e Japão (Tóquio, Kōchi). Atrasos ao vivo onde os operadores os publicam; nos outros, comboios posicionados pelo horário e assinalados como tal. Escolha um país e uma zona, ou toque num país vizinho no mapa. Cada país é transferido uma vez e depois funciona offline.
+
+18 IDIOMAS
+Espanhol, inglês, português, japonês, francês, alemão, italiano, neerlandês, dinamarquês, sueco, norueguês, finlandês, polaco, checo, eslovaco, húngaro, estónio e chinês. A app segue o idioma do seu telemóvel (pode mudá-lo em Mais → Idioma) e abre no país onde está.
 
 NO MAPA
-• Cada comboio com a sua direção, velocidade, próxima paragem e atraso, segundo a Renfe ou estimado por GPS.
-• Estações com as próximas partidas e os comboios que se aproximam.
-• Avisos da Renfe (obras, greves, perturbações) no mapa e por linha.
-• Pesquisa por número de comboio ou linha; mapa normal ou satélite.
-• Viagens: diretas ou com transbordos, com o tempo de cada transbordo e os atrasos em direto.
-• Horários até 9 semanas: escolha data e hora para uma estação, uma viagem ou um comboio.
-• Vou neste comboio?: com a sua localização, a app descobre em que comboio vai (a sua localização nunca sai do telemóvel).
+• Cada comboio com o sentido, a velocidade, a próxima paragem e o atraso.
+• Estações com as próximas partidas e os comboios a chegar.
+• Avisos dos operadores (obras, greves, perturbações) no mapa e por linha.
+• Pesquisa por número de comboio, estação ou linha; mapa normal ou satélite.
+• Trajetos: diretos ou com transbordos, com o tempo de cada transbordo e os atrasos ao vivo.
+• Horários até 9 semanas à frente: escolha data e hora para uma estação, um trajeto ou um comboio.
+• Estou neste comboio?: com a sua localização, a app descobre em que comboio vai (a sua localização nunca sai do telemóvel).
 
 GRÁTIS
-• Tudo o que está acima, sem contas, sem anúncios.
-• 2 favoritos (comboios ou estações) e a pontualidade de cada linha nos últimos 7 dias.
-• Mais sobre cada comboio: os comboios à frente e atrás, os que se cruzam, via, inclinação e perfil de altitude.
+• Tudo o que está acima, sem contas nem anúncios.
+• 2 favoritos (comboios ou estações) em cada país.
+• Mais sobre cada comboio: os comboios à frente e atrás, os cruzamentos, a via e o perfil de inclinação e altitude.
+• Em Espanha, a pontualidade de cada linha nos últimos 7 dias.
 
 TRAINRADAR PRO (subscrição anual, 1,99 €)
-• Favoritos ilimitados.
-• Alertas de atraso dos seus comboios favoritos, também com a app fechada, e um widget para o ecrã inicial.
-• As minhas viagens: registo das suas viagens com o atraso em cada paragem, resumo para reclamar à Renfe, CSV e imagem para partilhar.
-• Histórico completo de pontualidade de linhas, comboios e estações (até 12 meses).
-• Trajetos habituais: guarde vários, com os seus comboios, e a app abre nos seus próximos comboios. Alertas de atrasos, supressões, ligações em risco, lembrete antes de sair e avisos nas suas estações (elevadores, obras, autocarros).
-• Repetição: veja onde estava cada comboio, e com que atraso, em qualquer momento passado.
-• Histórico de avisos: os avisos da Renfe (obras, greves, perturbações) de qualquer dia passado.
+• Favoritos e trajetos ilimitados, e a app abre nos seus próximos comboios.
+• Ícones no ecrã principal que abrem diretamente uma estação, um comboio ou um trajeto.
+• Em Espanha: alertas de atraso dos seus comboios favoritos, mesmo com a app fechada; widgets no ecrã principal; alertas de supressões, transbordos em risco e avisos nas suas estações; um lembrete antes de sair.
+• Em Espanha: As minhas viagens, um registo das suas viagens com o atraso em cada paragem e um resumo para reclamar à Renfe; o histórico completo de pontualidade de linhas, comboios e estações (até 12 meses); o Replay, para ver onde estava cada comboio em qualquer momento passado; e o histórico de avisos da Renfe.
 
 PRIVACIDADE
-Sem contas, sem anúncios, sem rastreio. Os seus favoritos e viagens ficam no seu telemóvel (e na cópia de segurança do Android). TrainRadar é de código aberto: https://github.com/StructuralWizard/TrainRadar
+Sem contas, sem anúncios, sem rastreio. Os seus favoritos e viagens ficam no seu telemóvel (e na cópia de segurança do Android). O TrainRadar é de código aberto: https://github.com/StructuralWizard/TrainRadar
 
 DADOS
-Dados abertos da Renfe Operadora (CC BY 4.0) e do Ponto de Acesso Nacional de transportes de Espanha (MITRAMS). Reino Unido: contém informação da Network Rail Infrastructure Limited licenciada ao abrigo da Open Government Licence v3.0, NaPTAN (DfT), Translink (Irlanda do Norte) e avisos da National Rail através do Rail Data Marketplace. Mapa © OpenStreetMap, OpenFreeMap. TrainRadar não é afiliada à Renfe, Adif, OUIGO, Network Rail, National Rail nem Translink; os dados podem conter erros e atrasos.
+Dados abertos dos operadores e autoridades de transportes de cada país; todas as fontes e licenças estão na app, em “Licenças dos dados e atribuição”. Espanha: Renfe Operadora (CC BY 4.0) e o Ponto de Acesso Nacional de Espanha (MITRAMS). Reino Unido: contém informação da Network Rail Infrastructure Limited licenciada ao abrigo da Open Government Licence v3.0. Japão: Toei / ODPT (CC BY 4.0). Mapa © contribuidores do OpenStreetMap, OpenFreeMap. O TrainRadar não está associado a nenhum operador; os dados podem conter erros e atrasos.
 ```
 
 ### ja-JP
 
 - **App name** (≤ 30): `TrainRadar: リアルタイム列車マップ`
-- **Short description** (≤ 80): `スペインと英国の列車の位置をリアルタイムで地図に表示。遅延と運行情報も。`
+- **Short description** (≤ 80): `25 か国の列車の位置をリアルタイムで地図に表示。遅延とお知らせも。`
 - **Full description** (≤ 4000):
 
 ```
-TrainRadar は、スペイン全土の Renfe の列車（Cercanías、AVE、Avlo、Alvia、Media Distancia）の現在位置をリアルタイムで、OUIGO の列車を時刻表に基づいて地図上に表示し、遅延に応じて色分けします：定刻は緑、5 分以上の遅れは黄、15 分以上は赤。
+TrainRadar は、列車の現在位置をリアルタイムで地図上に表示し、遅延に応じて色分けします：定刻は緑、5 分以上の遅れは黄、15 分以上は赤。
 
-英国にも対応：グレートブリテンの列車は Network Rail のリアルタイム遅延情報で、北アイルランドの列車は時刻表に基づいて表示し、National Rail の運行情報もお届けします。ワンタップで国を切り替えられます。
+25 か国
+スペイン、イギリス、アイルランド、フランス、ルクセンブルク、ベルギー、オランダ、ドイツ、スイス、オーストリア、イタリア、ポルトガル（リスボン）、デンマーク、スウェーデン、ノルウェー、フィンランド、エストニア、ポーランド、チェコ、スロバキア、ハンガリー、オーストラリア（ニューサウスウェールズ、ビクトリア）、ニュージーランド（ウェリントン、オークランド）、シンガポール、日本（東京・高知）。事業者が公開している場合はリアルタイムの遅延を表示し、それ以外は時刻表に基づいて列車を配置して、その旨を表示します。国とエリアを選ぶか、地図上の隣の国をタップしてください。各国のデータは一度ダウンロードすれば、その後はオフラインでも使えます。
+
+18 言語
+スペイン語、英語、ポルトガル語、日本語、フランス語、ドイツ語、イタリア語、オランダ語、デンマーク語、スウェーデン語、ノルウェー語、フィンランド語、ポーランド語、チェコ語、スロバキア語、ハンガリー語、エストニア語、中国語。アプリはスマートフォンの言語で表示され、今いる国で開きます。
 
 地図で
-• 各列車の進行方向、速度、次の停車駅、遅延（Renfe の発表または GPS による推定）。
+• 各列車の進行方向、速度、次の停車駅、遅延。
 • 駅ごとの次の発車と接近中の列車。
-• Renfe の運行情報（工事、ストライキ、運行障害）を地図上と路線ごとに表示。
-• 列車番号や路線で検索；標準地図または航空写真。
+• 事業者のお知らせ（工事、ストライキ、運行障害）を地図上と路線ごとに表示。
+• 列車番号、駅、路線で検索；標準地図または衛星写真。
 • 経路検索：直通または乗り換えあり、乗り換えごとの時間とリアルタイムの遅延つき。
 • 最大 9 週間先までの時刻表：駅、経路、列車ごとに日付と時刻を選べます。
-• この列車に乗っている？：位置情報から、乗っている列車をアプリが判定します（位置情報が端末の外に出ることはありません）。
+• この列車に乗っていますか？：位置情報から、乗っている列車をアプリが判定します（位置情報が端末の外に出ることはありません）。
 
 無料
 • 上記のすべてを、アカウント不要・広告なしで。
-• お気に入り 2 件（列車または駅）と、各路線の過去 7 日間の定時運行率。
+• 各国でお気に入り 2 件（列車または駅）。
 • 各列車の詳細：前後を走る列車、すれ違う列車、番線、勾配、高低差プロファイル。
+• スペインでは、各路線の過去 7 日間の定時運行率。
 
 TRAINRADAR PRO（年間サブスクリプション、1.99 ユーロ）
-• お気に入り無制限。
-• お気に入りの列車の遅延通知（アプリを閉じていても届きます）とホーム画面ウィジェット。
-• 乗車記録：各停車駅での遅延を含む乗車の記録、Renfe への払い戻し請求用の概要、CSV と共有用画像。
-• 路線、列車、駅の定時運行率の全履歴（最大 12 か月）。
-• いつもの経路：複数保存でき、列車も登録可能。アプリを開くと次の列車を表示します。遅延、運休、接続が危うい乗り換え、出発前のリマインダー、利用駅のお知らせ（エレベーター、工事、バス）を通知。
-• リプレイ：過去の任意の時点で、各列車がどこにいて、どれだけ遅れていたかを確認。
-• 運行情報の履歴：過去の任意の日の Renfe の運行情報（工事、ストライキ、運行障害）。
+• お気に入りと通勤ルートが無制限。アプリを開くと次の列車を表示します。
+• 駅、列車、通勤ルートを直接開けるホーム画面アイコン。
+• スペインでは：お気に入りの列車の遅延通知（アプリを閉じていても届きます）、ホーム画面ウィジェット、運休・接続が危うい乗り換え・利用駅のお知らせの通知、出発前のリマインダー。
+• スペインでは：マイトリップ（各停車駅での遅延と Renfe への払い戻し請求用の概要を含む乗車記録）、路線・列車・駅の定時運行率の全履歴（最大 12 か月）、過去の任意の時点で各列車がどこにいたかを確認できるリプレイ、Renfe のお知らせの履歴。
 
 プライバシー
 アカウント不要、広告なし、トラッキングなし。お気に入りと乗車記録はお使いの端末内（と Android のバックアップ）にのみ保存されます。TrainRadar はオープンソースです：https://github.com/StructuralWizard/TrainRadar
 
 データ
-Renfe Operadora のオープンデータ（CC BY 4.0）とスペイン国家交通アクセスポイント（MITRAMS）。英国：Open Government Licence v3.0 に基づく Network Rail Infrastructure Limited の情報、NaPTAN（DfT）、Translink（北アイルランド）、Rail Data Marketplace 経由の National Rail の運行情報を含みます。地図 © OpenStreetMap、OpenFreeMap。TrainRadar は Renfe、Adif、OUIGO、Network Rail、National Rail、Translink とは提携していません。データには誤りや遅れが含まれる場合があります。
+各国の事業者と交通当局のオープンデータを使用しています。すべての出典とライセンスは、アプリの「データのライセンスと帰属表示」に記載しています。スペイン：Renfe Operadora（CC BY 4.0）とスペイン国家交通アクセスポイント（MITRAMS）。イギリス：Open Government Licence v3.0 に基づいてライセンスされた Network Rail Infrastructure Limited の情報を含みます。日本：Toei / ODPT（CC BY 4.0）。地図 © OpenStreetMap の貢献者、OpenFreeMap。TrainRadar はいずれの事業者とも提携していません。データには誤りや遅れが含まれる場合があります。
 ```
 
 ### fr-FR
 
 - **App name** (≤ 30): `TrainRadar : trains en direct`
-- **Short description** (≤ 80): `Les trains en Espagne et au Royaume-Uni en direct : retards et infos trafic.`
-- **Full description**:
+- **Short description** (≤ 80): `Carte en direct des trains de 25 pays, avec leurs retards et infos trafic.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar affiche sur une carte, en direct, où se trouvent les trains Renfe dans toute l'Espagne —Cercanías, AVE, Avlo, Alvia, Media Distancia— et ceux de OUIGO selon leur horaire, colorés selon leur retard : vert à l'heure, orange 5 minutes de retard ou plus, rouge 15 ou plus.
+TrainRadar montre sur une carte où sont les trains, en direct, colorés selon leur retard : vert à l’heure, orange 5 minutes ou plus de retard, rouge 15 ou plus.
 
-Et au Royaume-Uni : les trains de Grande-Bretagne avec les retards en direct de Network Rail, ceux d'Irlande du Nord selon l'horaire, et les infos trafic de National Rail. Une touche suffit pour changer de pays.
+25 PAYS
+Espagne, Royaume-Uni, Irlande, France, Luxembourg, Belgique, Pays-Bas, Allemagne, Suisse, Autriche, Italie, Portugal (Lisbonne), Danemark, Suède, Norvège, Finlande, Estonie, Pologne, Tchéquie, Slovaquie, Hongrie, Australie (Nouvelle-Galles du Sud, Victoria), Nouvelle-Zélande (Wellington, Auckland), Singapour et Japon (Tokyo, Kōchi). Retards en direct là où les opérateurs les publient ; ailleurs, trains placés selon leur horaire et signalés comme tels. Choisissez un pays et une zone, ou touchez un pays voisin sur la carte. Chaque pays se télécharge une fois, puis fonctionne hors ligne.
+
+18 LANGUES
+Espagnol, anglais, portugais, japonais, français, allemand, italien, néerlandais, danois, suédois, norvégien, finnois, polonais, tchèque, slovaque, hongrois, estonien et chinois. L’appli suit la langue de votre téléphone (modifiable dans Plus → Langue) et s’ouvre sur le pays où vous êtes.
 
 SUR LA CARTE
-• Chaque train avec son sens de marche, sa vitesse, son prochain arrêt et son retard, tel que publié par Renfe ou estimé d'après le GPS.
+• Chaque train avec son sens, sa vitesse, son prochain arrêt et son retard.
 • Les gares avec les prochains départs et les trains en approche.
-• Les infos trafic Renfe (travaux, grèves, perturbations) sur la carte et par ligne.
-• Recherche par numéro de train ou par ligne ; carte standard ou satellite.
-• Itinéraires : directs ou avec correspondances, avec le temps pour chaque correspondance et les retards en direct.
-• Horaires jusqu'à 9 semaines à l'avance : choisissez une date et une heure pour une gare, un itinéraire ou un train.
-• Suis-je dans ce train ? : grâce à votre position, l'appli détermine dans quel train vous êtes (votre position ne quitte jamais le téléphone).
+• Les infos trafic des opérateurs (travaux, grèves, perturbations) sur la carte et par ligne.
+• Recherche par numéro de train, gare ou ligne ; carte standard ou satellite.
+• Trajets : directs ou avec correspondances, avec le temps de chaque correspondance et les retards en direct.
+• Horaires jusqu’à 9 semaines à l’avance : choisissez une date et une heure pour une gare, un trajet ou un train.
+• Suis-je dans ce train ? : grâce à votre position, l’appli trouve dans quel train vous êtes (votre position ne quitte jamais le téléphone).
 
 GRATUIT
-• Tout ce qui précède, sans compte, sans publicité.
-• 2 favoris (trains ou gares) et la ponctualité de chaque ligne sur les 7 derniers jours.
-• Plus d'infos sur chaque train : trains devant et derrière, trains croisés, voie, déclivité et profil altimétrique.
+• Tout ce qui précède, sans compte ni publicité.
+• 2 favoris (trains ou gares) dans chaque pays.
+• Plus d’infos sur chaque train : les trains devant et derrière, les croisements, la voie, le profil de pente et d’altitude.
+• En Espagne, la ponctualité de chaque ligne sur les 7 derniers jours.
 
 TRAINRADAR PRO (abonnement annuel, 1,99 €)
-• Favoris illimités.
-• Alertes de retard pour vos trains favoris, même appli fermée, et un widget pour l'écran d'accueil.
-• Mes voyages : un journal de vos trajets avec le retard à chaque arrêt, un récapitulatif pour une réclamation à Renfe, un export CSV et une image à partager.
-• Historique complet de ponctualité des lignes, trains et gares (jusqu'à 12 mois).
-• Trajets : enregistrez-en plusieurs, avec leurs trains, et l'appli s'ouvre sur vos prochains trains. Alertes en cas de retard, de suppression, de correspondance menacée, rappel avant le départ et infos trafic dans vos gares (ascenseurs, travaux, bus).
-• Replay : voyez où était chaque train, et avec quel retard, à n'importe quel moment passé.
-• Historique des infos trafic : les infos trafic Renfe (travaux, grèves, perturbations) de n'importe quel jour passé.
+• Favoris et trajets illimités, et l’appli s’ouvre sur vos prochains trains.
+• Des icônes sur l’écran d’accueil qui ouvrent directement une gare, un train ou un trajet.
+• En Espagne : alertes de retard pour vos trains favoris, même appli fermée ; widgets d’écran d’accueil ; alertes de suppressions, de correspondances compromises et d’infos trafic dans vos gares ; un rappel avant de partir.
+• En Espagne : Mes voyages, un journal de vos voyages avec le retard à chaque arrêt et un récapitulatif pour une réclamation à Renfe ; l’historique complet de ponctualité des lignes, trains et gares (jusqu’à 12 mois) ; Replay, pour voir où était chaque train à n’importe quel moment passé ; et l’historique des infos trafic de Renfe.
 
 CONFIDENTIALITÉ
-Sans compte, sans publicité, sans pistage. Vos favoris et voyages restent sur votre téléphone (et dans la sauvegarde Android). TrainRadar est open source : https://github.com/StructuralWizard/TrainRadar
+Pas de compte, pas de publicité, pas de pistage. Vos favoris et voyages restent sur votre téléphone (et dans la sauvegarde Android). TrainRadar est open source : https://github.com/StructuralWizard/TrainRadar
 
 DONNÉES
-Données ouvertes de Renfe Operadora (CC BY 4.0) et du point d'accès national aux données de transport espagnol (MITRAMS). Royaume-Uni : contient des informations de Network Rail Infrastructure Limited sous licence Open Government Licence v3.0, NaPTAN (DfT), Translink (Irlande du Nord) et les infos trafic de National Rail via le Rail Data Marketplace. Carte © OpenStreetMap, OpenFreeMap. TrainRadar n'est affilié ni à Renfe, Adif, OUIGO, Network Rail, National Rail ni Translink ; les données peuvent contenir des erreurs et des retards.
+Données ouvertes des opérateurs et autorités de transport de chaque pays ; chaque source et licence est indiquée dans l’appli, sous « Licences des données et attribution ». Espagne : Renfe Operadora (CC BY 4.0) et le point d’accès national espagnol (MITRAMS). Royaume-Uni : contient des informations de Network Rail Infrastructure Limited sous licence Open Government Licence v3.0. Japon : Toei / ODPT (CC BY 4.0). Carte © contributeurs d’OpenStreetMap, OpenFreeMap. TrainRadar n’est affilié à aucun opérateur ; les données peuvent contenir des erreurs et des retards.
 ```
 
 ### de-DE
 
 - **App name** (≤ 30): `TrainRadar: Live-Zugkarte`
-- **Short description** (≤ 80): `Live-Karte der Züge in Spanien und im Vereinigten Königreich, mit Verspätungen.`
-- **Full description**:
+- **Short description** (≤ 80): `Live-Karte der Züge in 25 Ländern, mit ihren Verspätungen und Meldungen.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar zeigt live auf einer Karte, wo die Züge von Renfe in ganz Spanien unterwegs sind – Cercanías, AVE, Avlo, Alvia, Media Distancia – und die von OUIGO nach Fahrplan, eingefärbt nach Verspätung: grün pünktlich, gelb ab 5 Minuten Verspätung, rot ab 15.
+TrainRadar zeigt dir live auf einer Karte, wo die Züge sind, eingefärbt nach Verspätung: grün pünktlich, gelb ab 5 Minuten Verspätung, rot ab 15.
 
-Und im Vereinigten Königreich: die Züge Großbritanniens mit den Live-Verspätungen von Network Rail, die Nordirlands nach Fahrplan und die Meldungen von National Rail. Ein Fingertipp wechselt das Land.
+25 LÄNDER
+Spanien, Vereinigtes Königreich, Irland, Frankreich, Luxemburg, Belgien, Niederlande, Deutschland, Schweiz, Österreich, Italien, Portugal (Lissabon), Dänemark, Schweden, Norwegen, Finnland, Estland, Polen, Tschechien, Slowakei, Ungarn, Australien (New South Wales, Victoria), Neuseeland (Wellington, Auckland), Singapur und Japan (Tokio, Kōchi). Live-Verspätungen, wo die Betreiber sie veröffentlichen; anderswo werden die Züge nach Fahrplan platziert und entsprechend gekennzeichnet. Wähle ein Land und ein Gebiet oder tippe auf der Karte auf ein Nachbarland. Jedes Land wird einmal heruntergeladen und funktioniert danach offline.
+
+18 SPRACHEN
+Spanisch, Englisch, Portugiesisch, Japanisch, Französisch, Deutsch, Italienisch, Niederländisch, Dänisch, Schwedisch, Norwegisch, Finnisch, Polnisch, Tschechisch, Slowakisch, Ungarisch, Estnisch und Chinesisch. Die App folgt der Sprache deines Handys und öffnet mit dem Land, in dem du bist.
 
 AUF DER KARTE
-• Jeder Zug mit Richtung, Geschwindigkeit, nächstem Halt und Verspätung, wie von Renfe veröffentlicht oder aus GPS geschätzt.
-• Bahnhöfe mit den nächsten Abfahrten und ankommenden Zügen.
-• Renfe-Meldungen (Bauarbeiten, Streiks, Störungen) auf der Karte und pro Linie.
-• Suche nach Zugnummer oder Linie; Standard- oder Satellitenkarte.
-• Verbindungen: direkt oder mit Umstiegen, mit der Umstiegszeit und Live-Verspätungen.
-• Fahrpläne bis zu 9 Wochen im Voraus: Datum und Uhrzeit für einen Bahnhof, eine Verbindung oder einen Zug wählen.
+• Jeder Zug mit Richtung, Geschwindigkeit, nächstem Halt und Verspätung.
+• Bahnhöfe mit den nächsten Abfahrten und den Zügen, die sich nähern.
+• Meldungen der Betreiber (Bauarbeiten, Streiks, Störungen) auf der Karte und pro Linie.
+• Suche nach Zugnummer, Bahnhof oder Linie; Standard- oder Satellitenkarte.
+• Verbindungen: direkt oder mit Umstiegen, mit der Zeit für jeden Umstieg und Live-Verspätungen.
+• Fahrpläne bis zu 9 Wochen im Voraus: Wähle Datum und Uhrzeit für einen Bahnhof, eine Verbindung oder einen Zug.
 • Bin ich in diesem Zug?: Mit deinem Standort erkennt die App, in welchem Zug du sitzt (dein Standort verlässt nie das Handy).
 
 KOSTENLOS
 • Alles oben Genannte, ohne Konto, ohne Werbung.
-• 2 Favoriten (Züge oder Bahnhöfe) und die Pünktlichkeit jeder Linie der letzten 7 Tage.
-• Mehr zu jedem Zug: Züge davor und dahinter, Gegenzüge, Strecke, Steigung und Höhenprofil.
+• 2 Favoriten (Züge oder Bahnhöfe) in jedem Land.
+• Mehr zu jedem Zug: die Züge davor und dahinter, Gegenzüge, Gleis, Steigung und Höhenprofil.
+• In Spanien die Pünktlichkeit jeder Linie in den letzten 7 Tagen.
 
 TRAINRADAR PRO (Jahresabo, 1,99 €)
-• Unbegrenzt Favoriten.
-• Verspätungsalarme für deine Lieblingszüge, auch bei geschlossener App, und ein Widget für den Startbildschirm.
-• Meine Fahrten: ein Protokoll deiner Fahrten mit der Verspätung an jedem Halt, einer Zusammenfassung für eine Entschädigungsforderung bei Renfe, CSV und einem Bild zum Teilen.
-• Vollständiger Pünktlichkeitsverlauf von Linien, Zügen und Bahnhöfen (bis zu 12 Monate).
-• Pendelstrecken: mehrere speichern, mit ihren Zügen, und die App öffnet mit deinen nächsten Zügen. Alarme bei Verspätungen, Ausfällen, gefährdeten Anschlüssen, eine Erinnerung vor der Abfahrt und Meldungen an deinen Bahnhöfen (Aufzüge, Bauarbeiten, Ersatzbusse).
-• Wiedergabe: sieh, wo jeder Zug zu einem beliebigen vergangenen Zeitpunkt war und wie verspätet.
-• Meldungsverlauf: Renfe-Meldungen (Bauarbeiten, Streiks, Störungen) eines beliebigen vergangenen Tages.
+• Unbegrenzt Favoriten und Pendelstrecken, und die App öffnet mit deinen nächsten Zügen.
+• Symbole auf dem Startbildschirm, die direkt einen Bahnhof, einen Zug oder eine Pendelstrecke öffnen.
+• In Spanien: Verspätungsalarme für deine Lieblingszüge, auch bei geschlossener App; Widgets für den Startbildschirm; Alarme bei Ausfällen, gefährdeten Anschlüssen und Meldungen an deinen Bahnhöfen; eine Erinnerung vor der Abfahrt.
+• In Spanien: Meine Fahrten, ein Protokoll deiner Fahrten mit der Verspätung an jedem Halt und einer Zusammenfassung für eine Reklamation bei Renfe; der vollständige Pünktlichkeitsverlauf von Linien, Zügen und Bahnhöfen (bis zu 12 Monate); Wiedergabe, um zu sehen, wo jeder Zug zu einem beliebigen vergangenen Zeitpunkt war; und der Verlauf der Renfe-Meldungen.
 
 DATENSCHUTZ
 Kein Konto, keine Werbung, kein Tracking. Deine Favoriten und Fahrten bleiben auf deinem Handy (und in der Android-Sicherung). TrainRadar ist Open Source: https://github.com/StructuralWizard/TrainRadar
 
 DATEN
-Offene Daten von Renfe Operadora (CC BY 4.0) und dem Nationalen Zugangspunkt für Verkehrsdaten Spaniens (MITRAMS). Vereinigtes Königreich: enthält Informationen von Network Rail Infrastructure Limited, lizenziert unter der Open Government Licence v3.0, NaPTAN (DfT), Translink (Nordirland) und Meldungen von National Rail über den Rail Data Marketplace. Karte © OpenStreetMap, OpenFreeMap. TrainRadar ist nicht mit Renfe, Adif, OUIGO, Network Rail, National Rail oder Translink verbunden; die Daten können Fehler und Verzögerungen enthalten.
+Offene Daten der Betreiber und Verkehrsbehörden jedes Landes; alle Quellen und Lizenzen stehen in der App unter „Datenlizenzen und Quellenangaben“. Spanien: Renfe Operadora (CC BY 4.0) und der Nationale Zugangspunkt Spaniens (MITRAMS). Vereinigtes Königreich: enthält Informationen von Network Rail Infrastructure Limited, lizenziert unter der Open Government Licence v3.0. Japan: Toei / ODPT (CC BY 4.0). Karte © OpenStreetMap-Mitwirkende, OpenFreeMap. TrainRadar ist mit keinem Betreiber verbunden; die Daten können Fehler und Verzögerungen enthalten.
 ```
 
 ### it-IT
 
-- **App name** (≤ 30): `TrainRadar: mappa treni live`
-- **Short description** (≤ 80): `Mappa live dei treni in Spagna e nel Regno Unito, con ritardi e avvisi.`
-- **Full description**:
+- **App name** (≤ 30): `TrainRadar: treni in diretta`
+- **Short description** (≤ 80): `Mappa in tempo reale dei treni di 25 paesi, con i loro ritardi e avvisi.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar mostra su una mappa, in tempo reale, dove si trovano i treni Renfe in tutta la Spagna —Cercanías, AVE, Avlo, Alvia, Media Distancia— e quelli OUIGO in base all'orario, colorati secondo il ritardo: verde in orario, arancione 5 minuti o più di ritardo, rosso 15 o più.
+TrainRadar mostra su una mappa dove sono i treni, in tempo reale, colorati in base al ritardo: verde in orario, ambra 5 minuti o più di ritardo, rosso 15 o più.
 
-E nel Regno Unito: i treni della Gran Bretagna con i ritardi in tempo reale di Network Rail, quelli dell'Irlanda del Nord in base all'orario e gli avvisi di National Rail. Basta un tocco per cambiare paese.
+25 PAESI
+Spagna, Regno Unito, Irlanda, Francia, Lussemburgo, Belgio, Paesi Bassi, Germania, Svizzera, Austria, Italia, Portogallo (Lisbona), Danimarca, Svezia, Norvegia, Finlandia, Estonia, Polonia, Cechia, Slovacchia, Ungheria, Australia (Nuovo Galles del Sud, Victoria), Nuova Zelanda (Wellington, Auckland), Singapore e Giappone (Tokyo, Kōchi). Ritardi in tempo reale dove gli operatori li pubblicano; altrove, treni posizionati in base all'orario e segnalati come tali. Scegli un paese e una zona, o tocca un paese vicino sulla mappa. Ogni paese si scarica una volta e poi funziona offline.
+
+18 LINGUE
+Spagnolo, inglese, portoghese, giapponese, francese, tedesco, italiano, olandese, danese, svedese, norvegese, finlandese, polacco, ceco, slovacco, ungherese, estone e cinese. L'app segue la lingua del telefono (puoi cambiarla in Altro → Lingua) e si apre sul paese in cui ti trovi.
 
 SULLA MAPPA
-• Ogni treno con direzione, velocità, prossima fermata e ritardo, come pubblicati da Renfe o stimati dal GPS.
+• Ogni treno con direzione, velocità, prossima fermata e ritardo.
 • Stazioni con le prossime partenze e i treni in arrivo.
-• Gli avvisi Renfe (lavori, scioperi, disservizi) sulla mappa e per linea.
-• Ricerca per numero di treno o linea; mappa standard o satellitare.
-• Percorsi: diretti o con cambi, con il tempo per ogni cambio e i ritardi in tempo reale.
-• Orari fino a 9 settimane in anticipo: scegli data e ora per una stazione, un percorso o un treno.
-• Sono su questo treno?: con la tua posizione, l'app capisce su quale treno sei (la posizione non lascia mai il telefono).
+• Avvisi degli operatori (lavori, scioperi, disagi) sulla mappa e per linea.
+• Ricerca per numero di treno, stazione o linea; mappa standard o satellite.
+• Tragitti: diretti o con cambi, con il tempo di ogni cambio e i ritardi in tempo reale.
+• Orari fino a 9 settimane in avanti: scegli data e ora per una stazione, un tragitto o un treno.
+• Sono su questo treno?: con la tua posizione, l'app capisce su quale treno sei (la tua posizione non lascia mai il telefono).
 
 GRATIS
-• Tutto quanto sopra, senza account e senza pubblicità.
-• 2 preferiti (treni o stazioni) e la puntualità di ogni linea negli ultimi 7 giorni.
-• Più dettagli su ogni treno: i treni che precedono e seguono, gli incroci, binari, pendenza e profilo altimetrico.
+• Tutto quanto sopra, senza account né pubblicità.
+• 2 preferiti (treni o stazioni) in ogni paese.
+• Di più su ogni treno: il treno che precede e quello che segue, gli incroci, i binari, il profilo di pendenza e altimetrico.
+• In Spagna, la puntualità di ogni linea negli ultimi 7 giorni.
 
 TRAINRADAR PRO (abbonamento annuale, 1,99 €)
-• Preferiti illimitati.
-• Avvisi di ritardo per i tuoi treni preferiti, anche con l'app chiusa, e un widget per la schermata Home.
-• I miei viaggi: un registro dei tuoi viaggi con il ritardo a ogni fermata, un riepilogo per un reclamo a Renfe, CSV e un'immagine da condividere.
-• Storico completo della puntualità di linee, treni e stazioni (fino a 12 mesi).
-• Tragitti: salvane diversi, con i loro treni, e l'app si apre sui tuoi prossimi treni. Avvisi per ritardi, soppressioni, coincidenze a rischio, un promemoria prima di partire e avvisi nelle tue stazioni (ascensori, lavori, bus).
-• Replay: guarda dov'era ogni treno, e con quanto ritardo, in qualsiasi momento passato.
-• Storico avvisi: gli avvisi Renfe (lavori, scioperi, disservizi) di qualsiasi giorno passato.
+• Preferiti e tragitti illimitati, e l'app si apre sui tuoi prossimi treni.
+• Icone nella schermata Home che aprono direttamente una stazione, un treno o un tragitto.
+• In Spagna: avvisi di ritardo per i tuoi treni preferiti, anche con l'app chiusa; widget per la schermata Home; avvisi di soppressioni, coincidenze a rischio e avvisi nelle tue stazioni; un promemoria prima di partire.
+• In Spagna: I miei viaggi, un registro dei tuoi viaggi con il ritardo a ogni fermata e un riepilogo per un reclamo a Renfe; lo storico completo della puntualità di linee, treni e stazioni (fino a 12 mesi); Replay, per vedere dov'era ogni treno in qualsiasi momento passato; e lo storico degli avvisi di Renfe.
 
 PRIVACY
 Nessun account, nessuna pubblicità, nessun tracciamento. I tuoi preferiti e viaggi restano sul telefono (e nel backup di Android). TrainRadar è open source: https://github.com/StructuralWizard/TrainRadar
 
 DATI
-Dati aperti di Renfe Operadora (CC BY 4.0) e del Punto di accesso nazionale ai trasporti della Spagna (MITRAMS). Regno Unito: contiene informazioni di Network Rail Infrastructure Limited concesse in licenza con la Open Government Licence v3.0, NaPTAN (DfT), Translink (Irlanda del Nord) e gli avvisi di National Rail tramite il Rail Data Marketplace. Mappa © OpenStreetMap, OpenFreeMap. TrainRadar non è affiliato a Renfe, Adif, OUIGO, Network Rail, National Rail né Translink; i dati possono contenere errori e ritardi.
+Dati aperti degli operatori e delle autorità dei trasporti di ogni paese; ogni fonte e licenza è elencata nell'app, in "Licenze dei dati e attribuzioni". Spagna: Renfe Operadora (CC BY 4.0) e il Punto di accesso nazionale spagnolo (MITRAMS). Regno Unito: contiene informazioni di Network Rail Infrastructure Limited concesse in licenza con la Open Government Licence v3.0. Giappone: Toei / ODPT (CC BY 4.0). Mappa © contributori di OpenStreetMap, OpenFreeMap. TrainRadar non è affiliata ad alcun operatore; i dati possono contenere errori e ritardi.
 ```
 
 ### nl-NL
 
 - **App name** (≤ 30): `TrainRadar: live treinkaart`
-- **Short description** (≤ 80): `Live kaart van treinen in Spanje en het VK, met hun vertraging en meldingen.`
-- **Full description**:
+- **Short description** (≤ 80): `Live kaart van treinen in 25 landen, met hun vertragingen en meldingen.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar toont live op een kaart waar de treinen van Renfe in heel Spanje rijden —Cercanías, AVE, Avlo, Alvia, Media Distancia— en die van OUIGO volgens de dienstregeling, gekleurd naar vertraging: groen op tijd, oranje 5 minuten of meer vertraging, rood 15 of meer.
+TrainRadar laat live op een kaart zien waar de treinen zijn, gekleurd naar vertraging: groen op tijd, oranje 5 minuten of meer te laat, rood 15 of meer.
 
-En in het Verenigd Koninkrijk: de treinen van Groot-Brittannië met live vertragingen van Network Rail, die van Noord-Ierland volgens de dienstregeling, en de meldingen van National Rail. Met één tik wissel je van land.
+25 LANDEN
+Spanje, het Verenigd Koninkrijk, Ierland, Frankrijk, Luxemburg, België, Nederland, Duitsland, Zwitserland, Oostenrijk, Italië, Portugal (Lissabon), Denemarken, Zweden, Noorwegen, Finland, Estland, Polen, Tsjechië, Slowakije, Hongarije, Australië (New South Wales, Victoria), Nieuw-Zeeland (Wellington, Auckland), Singapore en Japan (Tokio, Kōchi). Live vertragingen waar de vervoerders ze publiceren; elders staan de treinen volgens de dienstregeling op de kaart, en dat wordt aangegeven. Kies een land en een gebied, of tik op een buurland op de kaart. Elk land wordt één keer gedownload en werkt daarna offline.
+
+18 TALEN
+Spaans, Engels, Portugees, Japans, Frans, Duits, Italiaans, Nederlands, Deens, Zweeds, Noors, Fins, Pools, Tsjechisch, Slowaaks, Hongaars, Ests en Chinees. De app volgt de taal van je telefoon en opent op het land waar je bent.
 
 OP DE KAART
-• Elke trein met zijn rijrichting, snelheid, volgende stop en vertraging, zoals gepubliceerd door Renfe of geschat op basis van gps.
-• Stations met de eerstvolgende vertrektijden en de treinen die eraan komen.
-• Meldingen van Renfe (werkzaamheden, stakingen, storingen) op de kaart en per lijn.
-• Zoeken op treinnummer of lijn; standaardkaart of satelliet.
-• Reizen: direct of met overstappen, met de overstaptijd en live vertragingen.
+• Elke trein met zijn richting, snelheid, volgende halte en vertraging.
+• Stations met de eerstvolgende vertrektijden en naderende treinen.
+• Meldingen van de vervoerders (werkzaamheden, stakingen, storingen) op de kaart en per lijn.
+• Zoeken op treinnummer, station of lijn; standaard- of satellietkaart.
+• Reizen: direct of met overstappen, met de tijd voor elke overstap en live vertragingen.
 • Dienstregelingen tot 9 weken vooruit: kies een datum en tijd voor een station, een reis of een trein.
-• Zit ik in deze trein?: met je locatie bepaalt de app in welke trein je zit (je locatie verlaat je telefoon nooit).
+• Zit ik in deze trein?: met je locatie bepaalt de app in welke trein je zit (je locatie verlaat nooit je telefoon).
 
 GRATIS
-• Alles hierboven, zonder accounts en zonder advertenties.
-• 2 favorieten (treinen of stations) en de punctualiteit van elke lijn over de afgelopen 7 dagen.
-• Meer over elke trein: de treinen ervoor en erachter, tegenliggers, spoor, helling en hoogteprofiel.
+• Alles hierboven, zonder account, zonder advertenties.
+• 2 favorieten (treinen of stations) per land.
+• Meer over elke trein: de treinen ervoor en erachter, tegemoetkomende treinen, spoor, helling en hoogteprofiel.
+• In Spanje de punctualiteit van elke lijn over de afgelopen 7 dagen.
 
 TRAINRADAR PRO (jaarabonnement, € 1,99)
-• Onbeperkt favorieten.
-• Vertragingsmeldingen voor je favoriete treinen, ook als de app gesloten is, en een widget op je beginscherm.
-• Mijn reizen: een logboek van je reizen met de vertraging bij elke stop, een overzicht voor een claim bij Renfe, CSV en een afbeelding om te delen.
-• Volledige punctualiteitshistorie van lijnen, treinen en stations (tot 12 maanden).
-• Woon-werkreizen: bewaar er meerdere, met hun treinen, en de app opent met je eerstvolgende treinen. Meldingen bij vertraging, uitval, overstappen in gevaar, een herinnering voor vertrek en meldingen op je stations (liften, werkzaamheden, bussen).
-• Terugkijken: zie waar elke trein was, en met hoeveel vertraging, op elk moment in het verleden.
-• Meldingenhistorie: de meldingen van Renfe (werkzaamheden, stakingen, storingen) van elke dag in het verleden.
+• Onbeperkt favorieten en woon-werkreizen, en de app opent met je eerstvolgende treinen.
+• Pictogrammen op je beginscherm die direct een station, een trein of een woon-werkreis openen.
+• In Spanje: vertragingsmeldingen voor je favoriete treinen, ook als de app gesloten is; widgets op je beginscherm; meldingen bij uitval, bedreigde aansluitingen en meldingen op je stations; een herinnering voor vertrek.
+• In Spanje: Mijn reizen, een logboek van je reizen met de vertraging bij elke halte en een samenvatting voor een claim bij Renfe; de volledige punctualiteitsgeschiedenis van lijnen, treinen en stations (tot 12 maanden); Terugkijken, om te zien waar elke trein op elk moment in het verleden was; en de geschiedenis van de meldingen van Renfe.
 
 PRIVACY
-Geen accounts, geen advertenties, geen tracking. Je favorieten en reizen blijven op je telefoon (en in de back-up van Android). TrainRadar is open source: https://github.com/StructuralWizard/TrainRadar
+Geen account, geen advertenties, geen tracking. Je favorieten en reizen blijven op je telefoon (en in de back-up van Android). TrainRadar is open source: https://github.com/StructuralWizard/TrainRadar
 
 GEGEVENS
-Open data van Renfe Operadora (CC BY 4.0) en het nationale toegangspunt voor vervoer van Spanje (MITRAMS). Verenigd Koninkrijk: bevat informatie van Network Rail Infrastructure Limited, gelicentieerd onder de Open Government Licence v3.0, NaPTAN (DfT), Translink (Noord-Ierland) en de meldingen van National Rail via de Rail Data Marketplace. Kaart © OpenStreetMap, OpenFreeMap. TrainRadar is niet verbonden aan Renfe, Adif, OUIGO, Network Rail, National Rail of Translink; de gegevens kunnen fouten en vertragingen bevatten.
+Open data van de vervoerders en vervoersautoriteiten van elk land; elke bron en licentie staat in de app onder ‘Datalicenties en bronvermelding’. Spanje: Renfe Operadora (CC BY 4.0) en het Nationale Toegangspunt van Spanje (MITRAMS). Verenigd Koninkrijk: bevat informatie van Network Rail Infrastructure Limited, gelicentieerd onder de Open Government Licence v3.0. Japan: Toei / ODPT (CC BY 4.0). Kaart © bijdragers van OpenStreetMap, OpenFreeMap. TrainRadar is niet verbonden aan een vervoerder; de gegevens kunnen fouten en vertragingen bevatten.
 ```
 
 ### da-DK
 
-- **App name** (≤ 30): `TrainRadar: livekort over tog`
-- **Short description** (≤ 80): `Livekort over tog i Spanien og Storbritannien med forsinkelser og driftsinfo.`
-- **Full description**:
+- **App name** (≤ 30): `TrainRadar: live togkort`
+- **Short description** (≤ 80): `Live kort over tog i 25 lande med deres forsinkelser og driftsinfo.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar viser live på et kort, hvor Renfes tog befinder sig i hele Spanien —Cercanías, AVE, Avlo, Alvia, Media Distancia— og OUIGOs efter køreplanen, farvet efter forsinkelse: grøn til tiden, gul 5 minutter eller mere forsinket, rød 15 eller mere.
+TrainRadar viser live på et kort, hvor togene er, farvet efter forsinkelse: grøn til tiden, gul 5 minutter eller mere forsinket, rød 15 eller mere.
 
-Og i Storbritannien: tog i Great Britain med Network Rails forsinkelser live, Nordirlands efter køreplan og National Rails driftsmeddelelser. Ét tryk skifter land.
+25 LANDE
+Spanien, Storbritannien, Irland, Frankrig, Luxembourg, Belgien, Nederlandene, Tyskland, Schweiz, Østrig, Italien, Portugal (Lissabon), Danmark, Sverige, Norge, Finland, Estland, Polen, Tjekkiet, Slovakiet, Ungarn, Australien (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore og Japan (Tokyo, Kōchi). Live forsinkelser, hvor operatørerne offentliggør dem; andre steder placeres togene efter køreplanen og markeres som sådan. Vælg et land og et område, eller tryk på et naboland på kortet. Hvert land hentes én gang og virker derefter offline.
+
+18 SPROG
+Spansk, engelsk, portugisisk, japansk, fransk, tysk, italiensk, nederlandsk, dansk, svensk, norsk, finsk, polsk, tjekkisk, slovakisk, ungarsk, estisk og kinesisk. Appen følger din telefons sprog og åbner på det land, du er i.
 
 PÅ KORTET
-• Hvert tog med retning, hastighed, næste stop og forsinkelse, som offentliggjort af Renfe eller anslået ud fra GPS.
-• Stationer med de næste afgange og tog på vej.
-• Renfes driftsmeddelelser (sporarbejde, strejker, driftsforstyrrelser) på kortet og pr. linje.
-• Søg efter tognummer eller linje; standard- eller satellitkort.
-• Rejser: direkte eller med skift, med tid til hvert skift og forsinkelser live.
+• Hvert tog med retning, hastighed, næste stop og forsinkelse.
+• Stationer med de næste afgange og tog på vej ind.
+• Operatørernes driftsinfo (sporarbejde, strejker, driftsforstyrrelser) på kortet og pr. linje.
+• Søg efter tognummer, station eller linje; standard- eller satellitkort.
+• Rejser: direkte eller med skift, med tiden til hvert skift og live forsinkelser.
 • Køreplaner op til 9 uger frem: vælg dato og tid for en station, en rejse eller et tog.
-• Er jeg med dette tog?: med din placering finder appen ud af, hvilket tog du er med (din placering forlader aldrig telefonen).
+• Er jeg med dette tog?: ud fra din placering finder appen ud af, hvilket tog du er med (din placering forlader aldrig telefonen).
 
 GRATIS
-• Alt ovenstående, uden konti og uden reklamer.
-• 2 favoritter (tog eller stationer) og hver linjes punktlighed de seneste 7 dage.
-• Mere om hvert tog: togene foran og bagved, mødende tog, bane, stigning og højdeprofil.
+• Alt ovenstående, uden konto, uden reklamer.
+• 2 favoritter (tog eller stationer) i hvert land.
+• Mere om hvert tog: togene foran og bagved, modkørende tog, spor, stigning og højdeprofil.
+• I Spanien: hver linjes punktlighed de seneste 7 dage.
 
 TRAINRADAR PRO (årligt abonnement, 1,99 €)
-• Ubegrænsede favoritter.
-• Forsinkelsesalarmer for dine favorittog, også når appen er lukket, og en widget til startskærmen.
-• Mine rejser: en log over dine rejser med forsinkelsen ved hvert stop, et resumé til en klage til Renfe, CSV og et billede, du kan dele.
-• Fuld punktlighedshistorik for linjer, tog og stationer (op til 12 måneder).
-• Pendlerruter: gem flere, med deres tog, og appen åbner med dine næste tog. Alarmer ved forsinkelser, aflysninger, forbindelser i fare, en påmindelse før afgang og meddelelser på dine stationer (elevatorer, sporarbejde, togbusser).
-• Genafspilning: se, hvor alle tog var, og hvor forsinkede de var, på et hvilket som helst tidligere tidspunkt.
-• Meddelelseshistorik: Renfes meddelelser (sporarbejde, strejker, driftsforstyrrelser) for en hvilken som helst tidligere dag.
+• Ubegrænsede favoritter og pendlerruter, og appen åbner med dine næste tog.
+• Ikoner på startskærmen, der åbner en station, et tog eller en pendlerrute direkte.
+• I Spanien: forsinkelsesalarmer for dine favorittog, også når appen er lukket; widgets på startskærmen; alarmer ved aflysninger, truede forbindelser og driftsinfo på dine stationer; en påmindelse, før du skal af sted.
+• I Spanien: Mine rejser, en log over dine rejser med forsinkelsen ved hvert stop og et resumé til en klage til Renfe; den fulde punktlighedshistorik for linjer, tog og stationer (op til 12 måneder); Genafspilning, så du kan se, hvor hvert tog var på et hvilket som helst tidligere tidspunkt; og historikken over Renfes meddelelser.
 
 PRIVATLIV
-Ingen konti, ingen reklamer, ingen sporing. Dine favoritter og rejser bliver på din telefon (og i Androids backup). TrainRadar er open source: https://github.com/StructuralWizard/TrainRadar
+Ingen konto, ingen reklamer, ingen sporing. Dine favoritter og rejser bliver på din telefon (og i Androids backup). TrainRadar er open source: https://github.com/StructuralWizard/TrainRadar
 
 DATA
-Åbne data fra Renfe Operadora (CC BY 4.0) og Spaniens nationale adgangspunkt for transport (MITRAMS). Storbritannien: indeholder oplysninger fra Network Rail Infrastructure Limited, licenseret under Open Government Licence v3.0, NaPTAN (DfT), Translink (Nordirland) og National Rails driftsmeddelelser via Rail Data Marketplace. Kort © OpenStreetMap, OpenFreeMap. TrainRadar er ikke tilknyttet Renfe, Adif, OUIGO, Network Rail, National Rail eller Translink; data kan indeholde fejl og forsinkelser.
+Åbne data fra hvert lands operatører og transportmyndigheder; alle kilder og licenser står i appen under »Datalicenser og kildeangivelse«. Spanien: Renfe Operadora (CC BY 4.0) og Spaniens nationale adgangspunkt (MITRAMS). Storbritannien: indeholder oplysninger fra Network Rail Infrastructure Limited, licenseret under Open Government Licence v3.0. Japan: Toei / ODPT (CC BY 4.0). Kort © OpenStreetMap-bidragydere, OpenFreeMap. TrainRadar er ikke tilknyttet nogen operatør; dataene kan indeholde fejl og forsinkelser.
 ```
 
 ### sv-SE
 
 - **App name** (≤ 30): `TrainRadar: tågkarta i realtid`
-- **Short description** (≤ 80): `Tågen i Spanien och Storbritannien i realtid, med förseningar och meddelanden.`
-- **Full description**:
+- **Short description** (≤ 80): `Karta över tåg i 25 länder i realtid, med förseningar och meddelanden.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar visar på en karta, i realtid, var Renfes tåg befinner sig i hela Spanien —Cercanías, AVE, Avlo, Alvia, Media Distancia— och OUIGO:s enligt tidtabell, färgade efter försening: grönt i tid, gult 5 minuter eller mer försenat, rött 15 eller mer.
+TrainRadar visar i realtid på en karta var tågen är, färgade efter försening: grönt i tid, gult 5 minuter eller mer sent, rött 15 eller mer.
 
-Och i Storbritannien: tåg i Storbritannien med Network Rails förseningar i realtid, Nordirlands enligt tidtabell, och National Rails trafikmeddelanden. Ett tryck byter land.
+25 LÄNDER
+Spanien, Storbritannien, Irland, Frankrike, Luxemburg, Belgien, Nederländerna, Tyskland, Schweiz, Österrike, Italien, Portugal (Lissabon), Danmark, Sverige, Norge, Finland, Estland, Polen, Tjeckien, Slovakien, Ungern, Australien (New South Wales, Victoria), Nya Zeeland (Wellington, Auckland), Singapore och Japan (Tokyo, Kōchi). Förseningar i realtid där operatörerna publicerar dem; på andra håll placeras tågen enligt tidtabellen och märks som sådana. Välj ett land och ett område, eller tryck på ett grannland på kartan. Varje land laddas ner en gång och fungerar sedan offline.
+
+18 SPRÅK
+Spanska, engelska, portugisiska, japanska, franska, tyska, italienska, nederländska, danska, svenska, norska, finska, polska, tjeckiska, slovakiska, ungerska, estniska och kinesiska. Appen följer telefonens språk och öppnas på landet du befinner dig i.
 
 PÅ KARTAN
-• Varje tåg med riktning, hastighet, nästa hållplats och försening, som Renfe publicerar den eller uppskattad utifrån GPS.
-• Stationer med nästa avgångar och tåg på väg in.
-• Renfes trafikmeddelanden (banarbeten, strejker, störningar) på kartan och per linje.
-• Sök på tågnummer eller linje; vanlig karta eller satellitbild.
+• Varje tåg med riktning, hastighet, nästa stopp och försening.
+• Stationer med nästa avgångar och tåg som närmar sig.
+• Operatörernas meddelanden (banarbeten, strejker, störningar) på kartan och per linje.
+• Sök på tågnummer, station eller linje; standard- eller satellitkarta.
 • Resor: direkt eller med byten, med tiden för varje byte och förseningar i realtid.
 • Tidtabeller upp till 9 veckor framåt: välj datum och tid för en station, en resa eller ett tåg.
-• Är jag på det här tåget?: med din plats räknar appen ut vilket tåg du sitter på (din plats lämnar aldrig telefonen).
+• Är jag på det här tåget?: med din position räknar appen ut vilket tåg du sitter på (din position lämnar aldrig telefonen).
 
 GRATIS
-• Allt ovan, utan konton, utan annonser.
-• 2 favoriter (tåg eller stationer) och varje linjes punktlighet de senaste 7 dagarna.
-• Mer om varje tåg: tågen framför och bakom, mötande tåg, bana, lutning och höjdprofil.
+• Allt ovan, utan konto, utan reklam.
+• 2 favoriter (tåg eller stationer) i varje land.
+• Mer om varje tåg: tågen före och efter, mötande tåg, spår, lutning och höjdprofil.
+• I Spanien: varje linjes punktlighet de senaste 7 dagarna.
 
-TRAINRADAR PRO (årsprenumeration, 1,99 €)
-• Obegränsat antal favoriter.
-• Förseningsaviseringar för dina favorittåg, även när appen är stängd, och en widget för hemskärmen.
-• Mina resor: en logg över dina resor med förseningen vid varje hållplats, en sammanfattning för ersättningskrav hos Renfe, CSV och en bild att dela.
-• Full punktlighetshistorik för linjer, tåg och stationer (upp till 12 månader).
-• Pendling: spara flera, med deras tåg, så öppnas appen på dina nästa tåg. Aviseringar om förseningar, inställda tåg, byten i fara, påminnelse före avresa och meddelanden på dina stationer (hissar, banarbeten, ersättningsbussar).
-• Repris: se var varje tåg var, och hur försenat, vid valfri tidpunkt bakåt.
-• Meddelandehistorik: Renfes trafikmeddelanden (banarbeten, strejker, störningar) för valfri tidigare dag.
+TRAINRADAR PRO (årsabonnemang, 1,99 €)
+• Obegränsat antal favoriter och pendlingar, och appen öppnas på dina nästa tåg.
+• Ikoner på hemskärmen som öppnar en station, ett tåg eller en pendling direkt.
+• I Spanien: förseningsaviseringar för dina favorittåg, även när appen är stängd; widgetar på hemskärmen; aviseringar om inställda tåg, hotade anslutningar och meddelanden på dina stationer; en påminnelse innan du ska gå.
+• I Spanien: Mina resor, en logg över dina resor med förseningen vid varje stopp och en sammanfattning för ett krav till Renfe; hela punktlighetshistoriken för linjer, tåg och stationer (upp till 12 månader); Repris, för att se var varje tåg var vid vilken tidigare tidpunkt som helst; och historiken över Renfes meddelanden.
 
 INTEGRITET
-Inga konton, inga annonser, ingen spårning. Dina favoriter och resor stannar på din telefon (och i Androids säkerhetskopia). TrainRadar är öppen källkod: https://github.com/StructuralWizard/TrainRadar
+Inget konto, ingen reklam, ingen spårning. Dina favoriter och resor stannar på telefonen (och i Androids säkerhetskopia). TrainRadar är öppen källkod: https://github.com/StructuralWizard/TrainRadar
 
 DATA
-Öppna data från Renfe Operadora (CC BY 4.0) och Spaniens nationella åtkomstpunkt för transportdata (MITRAMS). Storbritannien: innehåller information från Network Rail Infrastructure Limited licensierad under Open Government Licence v3.0, NaPTAN (DfT), Translink (Nordirland) och National Rails trafikmeddelanden via Rail Data Marketplace. Karta © OpenStreetMap, OpenFreeMap. TrainRadar har ingen koppling till Renfe, Adif, OUIGO, Network Rail, National Rail eller Translink; data kan innehålla fel och förseningar.
+Öppna data från varje lands operatörer och trafikmyndigheter; alla källor och licenser listas i appen under ”Datalicenser och erkännanden”. Spanien: Renfe Operadora (CC BY 4.0) och Spaniens nationella åtkomstpunkt (MITRAMS). Storbritannien: innehåller information från Network Rail Infrastructure Limited licensierad under Open Government Licence v3.0. Japan: Toei / ODPT (CC BY 4.0). Karta © OpenStreetMap-bidragsgivare, OpenFreeMap. TrainRadar har ingen koppling till någon operatör; uppgifterna kan innehålla fel och förseningar.
 ```
 
 ### no-NO
 
 - **App name** (≤ 30): `TrainRadar: togkart i sanntid`
-- **Short description** (≤ 80): `Sanntidskart over tog i Spania og Storbritannia, med forsinkelser og meldinger.`
-- **Full description**:
+- **Short description** (≤ 80): `Sanntidskart over tog i 25 land, med forsinkelser og meldinger.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar viser på et kart, i sanntid, hvor Renfes tog befinner seg i hele Spania —Cercanías, AVE, Avlo, Alvia, Media Distancia— og OUIGOs etter rutetabellen, farget etter forsinkelse: grønn i rute, gul 5 minutter eller mer forsinket, rød 15 eller mer.
+TrainRadar viser i sanntid på et kart hvor togene er, farget etter forsinkelse: grønn i rute, gul 5 minutter eller mer forsinket, rød 15 eller mer.
 
-Og i Storbritannia: togene i England, Skottland og Wales med forsinkelser i sanntid fra Network Rail, Nord-Irlands etter rutetabellen, og meldinger fra National Rail. Ett trykk bytter land.
+25 LAND
+Spania, Storbritannia, Irland, Frankrike, Luxembourg, Belgia, Nederland, Tyskland, Sveits, Østerrike, Italia, Portugal (Lisboa), Danmark, Sverige, Norge, Finland, Estland, Polen, Tsjekkia, Slovakia, Ungarn, Australia (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore og Japan (Tokyo, Kōchi). Forsinkelser i sanntid der operatørene publiserer dem; andre steder plasseres togene etter rutetabellen og merkes slik. Velg et land og et område, eller trykk på et naboland på kartet. Hvert land lastes ned én gang og virker deretter uten nett.
+
+18 SPRÅK
+Spansk, engelsk, portugisisk, japansk, fransk, tysk, italiensk, nederlandsk, dansk, svensk, norsk, finsk, polsk, tsjekkisk, slovakisk, ungarsk, estisk og kinesisk. Appen følger språket på telefonen din og åpner på landet du er i.
 
 PÅ KARTET
-• Hvert tog med retning, fart, neste stopp og forsinkelse, slik Renfe publiserer den eller beregnet ut fra GPS.
-• Stasjoner med neste avganger og tog på vei inn.
-• Renfes meldinger (arbeider, streiker, avvik) på kartet og per linje.
-• Søk på tognummer eller linje; vanlig kart eller satellitt.
-• Reiser: direkte eller med bytte, med tid til hvert bytte og forsinkelser i sanntid.
+• Hvert tog med retning, fart, neste stopp og forsinkelse.
+• Stasjoner med de neste avgangene og tog som nærmer seg.
+• Operatørenes meldinger (arbeider, streiker, avvik) på kartet og per linje.
+• Søk etter tognummer, stasjon eller linje; standard- eller satellittkart.
+• Reiser: direkte eller med bytter, med tiden for hvert bytte og forsinkelser i sanntid.
 • Rutetabeller opptil 9 uker fram: velg dato og tid for en stasjon, en reise eller et tog.
-• Er jeg på dette toget?: med posisjonen din finner appen ut hvilket tog du sitter på (posisjonen forlater aldri telefonen).
+• Er jeg på dette toget?: ut fra posisjonen din finner appen ut hvilket tog du sitter på (posisjonen din forlater aldri telefonen).
 
 GRATIS
-• Alt det over, uten kontoer og uten reklame.
-• 2 favoritter (tog eller stasjoner) og punktligheten for hver linje de siste 7 dagene.
+• Alt det ovenfor, uten konto, uten reklame.
+• 2 favoritter (tog eller stasjoner) i hvert land.
 • Mer om hvert tog: togene foran og bak, møtende tog, spor, stigning og høydeprofil.
+• I Spania: punktligheten til hver linje de siste 7 dagene.
 
 TRAINRADAR PRO (årsabonnement, 1,99 €)
-• Ubegrenset med favoritter.
-• Forsinkelsesvarsler for favorittogene dine, også når appen er lukket, og en widget på startskjermen.
-• Mine reiser: en logg over reisene dine med forsinkelsen ved hvert stopp, et sammendrag for krav til Renfe, CSV og et bilde du kan dele.
-• Full punktlighetshistorikk for linjer, tog og stasjoner (opptil 12 måneder).
-• Pendling: lagre flere ruter med togene deres, og appen åpner med de neste togene dine. Varsler om forsinkelser, innstillinger, overganger i fare, en påminnelse før avreise og meldinger på stasjonene dine (heiser, arbeider, buss for tog).
-• Avspilling: se hvor hvert tog var, og hvor forsinket, på et hvilket som helst tidspunkt tilbake i tid.
-• Meldingshistorikk: Renfes meldinger (arbeider, streiker, avvik) for en hvilken som helst tidligere dag.
+• Ubegrenset med favoritter og pendlingsruter, og appen åpner med de neste togene dine.
+• Ikoner på startskjermen som åpner en stasjon, et tog eller en pendlingsrute direkte.
+• I Spania: forsinkelsesvarsler for favorittogene dine, også når appen er lukket; widgeter på startskjermen; varsler om innstilte tog, truede overganger og meldinger på stasjonene dine; en påminnelse før du skal dra.
+• I Spania: Mine reiser, en logg over reisene dine med forsinkelsen ved hvert stopp og et sammendrag til en klage til Renfe; hele punktlighetshistorikken for linjer, tog og stasjoner (opptil 12 måneder); Avspilling, for å se hvor hvert tog var på et hvilket som helst tidligere tidspunkt; og historikken over Renfes meldinger.
 
 PERSONVERN
-Ingen kontoer, ingen reklame, ingen sporing. Favorittene og reisene dine blir på telefonen (og i Androids sikkerhetskopi). TrainRadar har åpen kildekode: https://github.com/StructuralWizard/TrainRadar
+Ingen konto, ingen reklame, ingen sporing. Favorittene og reisene dine blir på telefonen (og i Androids sikkerhetskopi). TrainRadar er åpen kildekode: https://github.com/StructuralWizard/TrainRadar
 
 DATA
-Åpne data fra Renfe Operadora (CC BY 4.0) og Spanias nasjonale tilgangspunkt for transport (MITRAMS). Storbritannia: inneholder informasjon fra Network Rail Infrastructure Limited lisensiert under Open Government Licence v3.0, NaPTAN (DfT), Translink (Nord-Irland) og meldinger fra National Rail via Rail Data Marketplace. Kart © OpenStreetMap, OpenFreeMap. TrainRadar er ikke tilknyttet Renfe, Adif, OUIGO, Network Rail, National Rail eller Translink; dataene kan inneholde feil og forsinkelser.
+Åpne data fra operatørene og transportmyndighetene i hvert land; alle kilder og lisenser står i appen under «Datalisenser og kreditering». Spania: Renfe Operadora (CC BY 4.0) og Spanias nasjonale tilgangspunkt (MITRAMS). Storbritannia: inneholder informasjon fra Network Rail Infrastructure Limited lisensiert under Open Government Licence v3.0. Japan: Toei / ODPT (CC BY 4.0). Kart © OpenStreetMap-bidragsytere, OpenFreeMap. TrainRadar er ikke tilknyttet noen operatør; dataene kan inneholde feil og forsinkelser.
 ```
 
 ### fi-FI
 
 - **App name** (≤ 30): `TrainRadar: junat kartalla`
-- **Short description** (≤ 80): `Espanjan ja Britannian junat kartalla reaaliajassa: myöhästymiset ja tiedotteet.`
-- **Full description**:
+- **Short description** (≤ 80): `Junat reaaliajassa kartalla 25 maassa, myöhästymiset ja tiedotteet.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar näyttää kartalla reaaliajassa, missä Renfen junat kulkevat eri puolilla Espanjaa —Cercanías, AVE, Avlo, Alvia, Media Distancia— ja OUIGOn junat aikataulun mukaan, väritettyinä myöhästymisen mukaan: vihreä ajallaan, keltainen vähintään 5 minuuttia myöhässä, punainen 15 tai enemmän.
+TrainRadar näyttää kartalla reaaliajassa, missä junat ovat, väritettyinä myöhästymisen mukaan: vihreä ajallaan, keltainen vähintään 5 minuuttia myöhässä, punainen vähintään 15.
 
-Ja Yhdistyneessä kuningaskunnassa: Ison-Britannian junat Network Railin reaaliaikaisine myöhästymisineen, Pohjois-Irlannin junat aikataulun mukaan sekä National Railin tiedotteet. Maan vaihtaminen käy yhdellä napautuksella.
+25 MAATA
+Espanja, Yhdistynyt kuningaskunta, Irlanti, Ranska, Luxemburg, Belgia, Alankomaat, Saksa, Sveitsi, Itävalta, Italia, Portugali (Lissabon), Tanska, Ruotsi, Norja, Suomi, Viro, Puola, Tšekki, Slovakia, Unkari, Australia (Uusi Etelä-Wales, Victoria), Uusi-Seelanti (Wellington, Auckland), Singapore ja Japani (Tokio, Kōchi). Reaaliaikaiset myöhästymiset siellä, missä liikennöitsijät julkaisevat ne; muualla junat sijoitetaan aikataulun mukaan ja merkitään sellaisiksi. Valitse maa ja alue tai napauta naapurimaata kartalla. Kukin maa ladataan kerran, minkä jälkeen se toimii ilman yhteyttä.
+
+18 KIELTÄ
+espanja, englanti, portugali, japani, ranska, saksa, italia, hollanti, tanska, ruotsi, norja, suomi, puola, tšekki, slovakki, unkari, viro ja kiina. Sovellus seuraa puhelimesi kieltä ja avautuu siihen maahan, jossa olet.
 
 KARTALLA
-• Jokainen juna kulkusuuntineen, nopeuksineen, seuraavine pysähdyksineen ja myöhästymisineen, Renfen julkaisemana tai GPS:n perusteella arvioituna.
-• Asemat seuraavine lähtöineen ja lähestyvine junineen.
-• Renfen tiedotteet (ratatyöt, lakot, häiriöt) kartalla ja linjoittain.
-• Haku junan numerolla tai linjalla; peruskartta tai satelliittikartta.
-• Reitit: suorat tai vaihdolliset, kunkin vaihdon aika ja reaaliaikaiset myöhästymiset.
-• Aikataulut jopa 9 viikoksi eteenpäin: valitse päivä ja aika asemalle, reitille tai junalle.
+• Jokainen juna suuntineen, nopeuksineen, seuraavine pysähdyksineen ja myöhästymisineen.
+• Asemat, joilla seuraavat lähdöt ja saapuvat junat.
+• Liikennöitsijöiden tiedotteet (ratatyöt, lakot, häiriöt) kartalla ja linjoittain.
+• Haku junan numerolla, asemalla tai linjalla; tavallinen kartta tai satelliittikuva.
+• Matkat: suorat tai vaihdollisiset, vaihtoajat ja reaaliaikaiset myöhästymiset.
+• Aikataulut jopa 9 viikoksi eteenpäin: valitse päivä ja aika asemalle, matkalle tai junalle.
 • Olenko tässä junassa?: sijaintisi avulla sovellus päättelee, missä junassa olet (sijaintisi ei koskaan lähde puhelimesta).
 
-ILMAISEKSI
-• Kaikki yllä mainittu, ilman tilejä ja mainoksia.
-• 2 suosikkia (junia tai asemia) ja kunkin linjan täsmällisyys viimeisten 7 päivän ajalta.
-• Lisää jokaisesta junasta: edellä ja perässä kulkevat junat, vastaantulevat junat, rata, kaltevuus ja korkeusprofiili.
+ILMAINEN
+• Kaikki edellä mainittu, ilman tilejä ja mainoksia.
+• 2 suosikkia (junia tai asemia) kussakin maassa.
+• Lisää kustakin junasta: edellä ja perässä kulkevat junat, vastaantulevat junat, raide, kaltevuus ja korkeusprofiili.
+• Espanjassa kunkin linjan täsmällisyys viimeisten 7 päivän ajalta.
 
 TRAINRADAR PRO (vuositilaus, 1,99 €)
-• Rajattomasti suosikkeja.
-• Myöhästymishälytykset suosikkijunistasi, myös sovelluksen ollessa suljettuna, sekä aloitusnäytön widget.
-• Omat matkat: loki matkoistasi, myöhästyminen jokaisella pysähdyksellä, yhteenveto Renfelle tehtävää korvausvaatimusta varten, CSV ja jaettava kuva.
-• Linjojen, junien ja asemien koko täsmällisyyshistoria (jopa 12 kuukautta).
-• Työmatkat: tallenna useita junineen, ja sovellus avautuu seuraaviin juniisi. Hälytykset myöhästymisistä, peruutuksista ja vaarassa olevista vaihdoista, muistutus ennen lähtöä sekä asemiesi tiedotteet (hissit, ratatyöt, korvaavat bussit).
-• Toisto: näe, missä kukin juna oli ja kuinka myöhässä, mihin tahansa aiempaan aikaan.
-• Tiedotehistoria: Renfen tiedotteet (ratatyöt, lakot, häiriöt) mistä tahansa menneestä päivästä.
+• Rajattomasti suosikkeja ja työmatkoja, ja sovellus avautuu seuraaviin juniisi.
+• Aloitusnäytön kuvakkeet, jotka avaavat suoraan aseman, junan tai työmatkan.
+• Espanjassa: myöhästymishälytykset suosikkijunistasi, myös sovelluksen ollessa suljettuna; aloitusnäytön widgetit; hälytykset peruutuksista, vaarassa olevista vaihdoista ja asemiesi tiedotteista; muistutus ennen lähtöä.
+• Espanjassa: Omat matkat, loki matkoistasi myöhästymisineen jokaisella pysähdyksellä ja yhteenveto Renfelle tehtävää korvausvaatimusta varten; linjojen, junien ja asemien koko täsmällisyyshistoria (jopa 12 kuukautta); Toisto, jolla näet, missä kukin juna oli minä tahansa aiempana hetkenä; sekä Renfen tiedotteiden historia.
 
-TIETOSUOJA
+YKSITYISYYS
 Ei tilejä, ei mainoksia, ei seurantaa. Suosikkisi ja matkasi pysyvät puhelimessasi (ja Androidin varmuuskopiossa). TrainRadar on avointa lähdekoodia: https://github.com/StructuralWizard/TrainRadar
 
 DATA
-Renfe Operadoran avoin data (CC BY 4.0) ja Espanjan liikenteen kansallinen yhteyspiste (MITRAMS). Yhdistynyt kuningaskunta: sisältää Network Rail Infrastructure Limitedin tietoja Open Government Licence v3.0 -lisenssillä, NaPTAN (DfT), Translink (Pohjois-Irlanti) ja National Railin tiedotteet Rail Data Marketplacen kautta. Kartta © OpenStreetMap, OpenFreeMap. TrainRadar ei ole yhteydessä Renfeen, Adifiin, OUIGOon, Network Railiin, National Railiin tai Translinkiin; tiedoissa voi olla virheitä ja viiveitä.
+Kunkin maan liikennöitsijöiden ja liikenneviranomaisten avointa dataa; kaikki lähteet ja lisenssit on lueteltu sovelluksessa kohdassa ”Datan lisenssit ja lähdemaininnat”. Espanja: Renfe Operadora (CC BY 4.0) ja Espanjan kansallinen yhteyspiste (MITRAMS). Yhdistynyt kuningaskunta: sisältää Network Rail Infrastructure Limitedin tietoja, lisensoitu Open Government Licence v3.0 -lisenssillä. Japani: Toei / ODPT (CC BY 4.0). Kartta © OpenStreetMapin tekijät, OpenFreeMap. TrainRadar ei ole sidoksissa mihinkään liikennöitsijään; datassa voi olla virheitä ja viiveitä.
 ```
 
 ### pl-PL
 
 - **App name** (≤ 30): `TrainRadar: pociągi na żywo`
-- **Short description** (≤ 80): `Mapa pociągów w Hiszpanii i Wielkiej Brytanii na żywo: opóźnienia i komunikaty.`
-- **Full description**:
+- **Short description** (≤ 80): `Mapa pociągów na żywo w 25 krajach, z opóźnieniami i komunikatami.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar pokazuje na mapie, na żywo, gdzie są pociągi Renfe w całej Hiszpanii —Cercanías, AVE, Avlo, Alvia, Media Distancia— oraz pociągi OUIGO według rozkładu, w kolorach opóźnienia: zielony to punktualnie, pomarańczowy 5 minut lub więcej, czerwony 15 lub więcej.
+TrainRadar pokazuje na mapie, na żywo, gdzie są pociągi, w kolorach opóźnienia: zielony – punktualnie, bursztynowy – 5 minut opóźnienia lub więcej, czerwony – 15 lub więcej.
 
-A w Zjednoczonym Królestwie: pociągi w Wielkiej Brytanii z opóźnieniami na żywo od Network Rail, pociągi Irlandii Północnej według rozkładu oraz komunikaty National Rail. Jedno dotknięcie zmienia kraj.
+25 KRAJÓW
+Hiszpania, Wielka Brytania, Irlandia, Francja, Luksemburg, Belgia, Holandia, Niemcy, Szwajcaria, Austria, Włochy, Portugalia (Lizbona), Dania, Szwecja, Norwegia, Finlandia, Estonia, Polska, Czechy, Słowacja, Węgry, Australia (Nowa Południowa Walia, Wiktoria), Nowa Zelandia (Wellington, Auckland), Singapur i Japonia (Tokio, Kōchi). Opóźnienia na żywo tam, gdzie publikują je przewoźnicy; gdzie indziej pociągi są umieszczane według rozkładu i odpowiednio oznaczone. Wybierz kraj i obszar albo dotknij sąsiedniego kraju na mapie. Każdy kraj pobiera się raz, a potem działa offline.
+
+18 JĘZYKÓW
+hiszpański, angielski, portugalski, japoński, francuski, niemiecki, włoski, niderlandzki, duński, szwedzki, norweski, fiński, polski, czeski, słowacki, węgierski, estoński i chiński. Aplikacja używa języka Twojego telefonu i otwiera się na kraju, w którym jesteś.
 
 NA MAPIE
-• Każdy pociąg z kierunkiem, prędkością, następną stacją i opóźnieniem, publikowanym przez Renfe lub szacowanym z GPS.
-• Stacje z najbliższymi odjazdami i dojeżdżającymi pociągami.
-• Komunikaty Renfe (prace, strajki, utrudnienia) na mapie i dla każdej linii.
-• Wyszukiwanie po numerze pociągu lub linii; mapa standardowa lub satelitarna.
-• Połączenia: bezpośrednie lub z przesiadkami, z czasem na każdą przesiadkę i opóźnieniami na żywo.
-• Rozkłady do 9 tygodni naprzód: wybierz datę i godzinę dla stacji, połączenia lub pociągu.
-• Czy jadę tym pociągiem?: na podstawie Twojej lokalizacji aplikacja ustala, którym pociągiem jedziesz (lokalizacja nigdy nie opuszcza telefonu).
+• Każdy pociąg z kierunkiem, prędkością, następnym przystankiem i opóźnieniem.
+• Stacje z najbliższymi odjazdami i nadjeżdżającymi pociągami.
+• Komunikaty przewoźników (prace, strajki, utrudnienia) na mapie i dla każdej linii.
+• Wyszukiwanie po numerze pociągu, stacji lub linii; mapa standardowa lub satelitarna.
+• Podróże: bezpośrednie lub z przesiadkami, z czasem na każdą przesiadkę i opóźnieniami na żywo.
+• Rozkłady do 9 tygodni naprzód: wybierz datę i godzinę dla stacji, podróży lub pociągu.
+• Czy jadę tym pociągiem?: na podstawie Twojej lokalizacji aplikacja ustala, którym pociągiem jedziesz (Twoja lokalizacja nigdy nie opuszcza telefonu).
 
 ZA DARMO
 • Wszystko powyższe, bez kont i bez reklam.
-• 2 ulubione (pociągi lub stacje) i punktualność każdej linii z ostatnich 7 dni.
-• Więcej o każdym pociągu: pociągi przed nim i za nim, pociągi z przeciwka, tor, nachylenie i profil wysokości.
+• 2 ulubione (pociągi lub stacje) w każdym kraju.
+• Więcej o każdym pociągu: pociągi przed i za nim, pociągi z naprzeciwka, tor, nachylenie i profil wysokości.
+• W Hiszpanii punktualność każdej linii z ostatnich 7 dni.
 
 TRAINRADAR PRO (subskrypcja roczna, 1,99 €)
-• Nieograniczona liczba ulubionych.
-• Alerty o opóźnieniach ulubionych pociągów, także przy zamkniętej aplikacji, oraz widżet na ekranie głównym.
-• Moje podróże: dziennik przejazdów z opóźnieniem na każdej stacji, podsumowanie do reklamacji w Renfe, CSV i obrazek do udostępnienia.
-• Pełna historia punktualności linii, pociągów i stacji (do 12 miesięcy).
-• Dojazdy: zapisz kilka, z ich pociągami, a aplikacja otworzy się na najbliższych pociągach. Alerty o opóźnieniach, odwołaniach, zagrożonych przesiadkach, przypomnienie przed wyjściem i komunikaty na Twoich stacjach (windy, prace, autobusy).
-• Powtórka: zobacz, gdzie był każdy pociąg i jakie miał opóźnienie w dowolnej chwili z przeszłości.
-• Historia komunikatów: komunikaty Renfe (prace, strajki, utrudnienia) z dowolnego dnia w przeszłości.
+• Nieograniczona liczba ulubionych i dojazdów, a aplikacja otwiera się na Twoich najbliższych pociągach.
+• Ikony na ekranie głównym, które bezpośrednio otwierają stację, pociąg lub dojazd.
+• W Hiszpanii: alerty o opóźnieniach ulubionych pociągów, także przy zamkniętej aplikacji; widżety na ekranie głównym; alerty o odwołaniach, zagrożonych przesiadkach i komunikatach na Twoich stacjach; przypomnienie przed wyjściem.
+• W Hiszpanii: Moje podróże, dziennik Twoich przejazdów z opóźnieniem na każdym przystanku i podsumowaniem do reklamacji w Renfe; pełna historia punktualności linii, pociągów i stacji (do 12 miesięcy); Powtórka, by zobaczyć, gdzie był każdy pociąg w dowolnej chwili z przeszłości; oraz historia komunikatów Renfe.
 
 PRYWATNOŚĆ
-Bez kont, bez reklam, bez śledzenia. Twoje ulubione i podróże zostają w telefonie (i w kopii zapasowej Androida). TrainRadar ma otwarty kod źródłowy: https://github.com/StructuralWizard/TrainRadar
+Bez kont, bez reklam, bez śledzenia. Twoje ulubione i podróże zostają na Twoim telefonie (i w kopii zapasowej Androida). TrainRadar ma otwarty kod źródłowy: https://github.com/StructuralWizard/TrainRadar
 
 DANE
-Otwarte dane Renfe Operadora (CC BY 4.0) i hiszpańskiego Krajowego Punktu Dostępowego dla transportu (MITRAMS). Zjednoczone Królestwo: zawiera informacje Network Rail Infrastructure Limited na licencji Open Government Licence v3.0, NaPTAN (DfT), Translink (Irlandia Północna) oraz komunikaty National Rail przez Rail Data Marketplace. Mapa © OpenStreetMap, OpenFreeMap. TrainRadar nie jest powiązany z Renfe, Adif, OUIGO, Network Rail, National Rail ani Translink; dane mogą zawierać błędy i opóźnienia.
+Otwarte dane przewoźników i organów transportowych każdego kraju; wszystkie źródła i licencje są wymienione w aplikacji w sekcji „Licencje danych i atrybucja”. Hiszpania: Renfe Operadora (CC BY 4.0) i hiszpański krajowy punkt dostępowy (MITRAMS). Wielka Brytania: zawiera informacje Network Rail Infrastructure Limited na licencji Open Government Licence v3.0. Japonia: Toei / ODPT (CC BY 4.0). Mapa © współtwórcy OpenStreetMap, OpenFreeMap. TrainRadar nie jest powiązany z żadnym przewoźnikiem; dane mogą zawierać błędy i opóźnienia.
 ```
 
 ### cs-CZ
 
-- **App name** (≤ 30): `TrainRadar: mapa vlaků živě`
-- **Short description** (≤ 80): `Živá mapa vlaků ve Španělsku a Spojeném království se zpožděním a oznámeními.`
-- **Full description**:
+- **App name** (≤ 30): `TrainRadar: živá mapa vlaků`
+- **Short description** (≤ 80): `Živá mapa vlaků ve 25 zemích, s jejich zpožděním a oznámeními.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar ukazuje živě na mapě, kde se po celém Španělsku nacházejí vlaky Renfe —Cercanías, AVE, Avlo, Alvia, Media Distancia— a vlaky OUIGO podle jízdního řádu, obarvené podle zpoždění: zelená včas, oranžová zpoždění 5 minut a více, červená 15 a více.
+TrainRadar ukazuje na mapě, kde právě jsou vlaky, živě a obarvené podle zpoždění: zelená načas, oranžová zpoždění 5 minut a více, červená 15 a více.
 
-A ve Spojeném království: vlaky Velké Británie s aktuálním zpožděním od Network Rail, Severní Irsko podle jízdního řádu a oznámení National Rail. Zemi přepnete jedním klepnutím.
+25 ZEMÍ
+Španělsko, Spojené království, Irsko, Francie, Lucembursko, Belgie, Nizozemsko, Německo, Švýcarsko, Rakousko, Itálie, Portugalsko (Lisabon), Dánsko, Švédsko, Norsko, Finsko, Estonsko, Polsko, Česko, Slovensko, Maďarsko, Austrálie (Nový Jižní Wales, Victoria), Nový Zéland (Wellington, Auckland), Singapur a Japonsko (Tokio, Kóči). Živá zpoždění tam, kde je dopravci zveřejňují; jinde jsou vlaky umístěny podle jízdního řádu a takto označeny. Vyberte zemi a oblast, nebo klepněte na mapě na sousední zemi. Každá země se stáhne jednou a pak funguje i offline.
+
+18 JAZYKŮ
+španělština, angličtina, portugalština, japonština, francouzština, němčina, italština, nizozemština, dánština, švédština, norština, finština, polština, čeština, slovenština, maďarština, estonština a čínština. Aplikace se řídí jazykem vašeho telefonu a otevře se na zemi, ve které jste.
 
 NA MAPĚ
-• Každý vlak se směrem jízdy, rychlostí, další zastávkou a zpožděním, jak ho zveřejňuje Renfe nebo jak je odhadnuto z GPS.
+• Každý vlak se směrem, rychlostí, příští zastávkou a zpožděním.
 • Stanice s nejbližšími odjezdy a přijíždějícími vlaky.
-• Oznámení Renfe (výluky, stávky, mimořádnosti) na mapě i u jednotlivých linek.
-• Hledání podle čísla vlaku nebo linky; standardní nebo satelitní mapa.
-• Spojení: přímá nebo s přestupy, s časem na každý přestup a aktuálním zpožděním.
-• Jízdní řády až 9 týdnů dopředu: zvolte datum a čas pro stanici, spojení nebo vlak.
-• Jedu tímto vlakem?: podle vaší polohy aplikace pozná, ve kterém vlaku sedíte (poloha nikdy neopustí telefon).
+• Oznámení dopravců (výluky, stávky, mimořádnosti) na mapě i u jednotlivých linek.
+• Hledání podle čísla vlaku, stanice nebo linky; standardní nebo satelitní mapa.
+• Spojení: přímá nebo s přestupy, s časem na každý přestup a živým zpožděním.
+• Jízdní řády až 9 týdnů dopředu: vyberte datum a čas pro stanici, spojení nebo vlak.
+• Jedu tímto vlakem?: podle vaší polohy aplikace zjistí, kterým vlakem jedete (vaše poloha nikdy neopustí telefon).
 
 ZDARMA
 • Vše výše uvedené, bez účtů a bez reklam.
-• 2 oblíbené položky (vlaky nebo stanice) a přesnost každé linky za posledních 7 dní.
-• Více o každém vlaku: vlaky před ním a za ním, protijedoucí vlaky, trať, sklon a výškový profil.
+• 2 oblíbené (vlaky nebo stanice) v každé zemi.
+• Víc o každém vlaku: vlaky před ním a za ním, protijedoucí vlaky, kolej, sklon a výškový profil.
+• Ve Španělsku přesnost každé linky za posledních 7 dní.
 
 TRAINRADAR PRO (roční předplatné, 1,99 €)
-• Neomezeně oblíbených.
-• Upozornění na zpoždění oblíbených vlaků, i když je aplikace zavřená, a widget na plochu.
-• Moje cesty: záznam vašich cest se zpožděním v každé zastávce, souhrnem pro reklamaci u Renfe, exportem CSV a obrázkem ke sdílení.
-• Úplná historie přesnosti linek, vlaků a stanic (až 12 měsíců).
-• Dojíždění: uložte si několik tras i s vlaky a aplikace se otevře na vašich nejbližších vlacích. Upozornění na zpoždění, zrušení, ohrožené přestupy, připomenutí před odjezdem a oznámení ve vašich stanicích (výtahy, výluky, náhradní autobusy).
-• Přehrávání: podívejte se, kde byl každý vlak a jaké měl zpoždění v kterémkoli okamžiku v minulosti.
-• Historie oznámení: oznámení Renfe (výluky, stávky, mimořádnosti) z kteréhokoli minulého dne.
+• Neomezeně oblíbených a tras dojíždění a aplikace se otevře na vašich nejbližších vlacích.
+• Ikony na ploše, které přímo otevřou stanici, vlak nebo trasu dojíždění.
+• Ve Španělsku: upozornění na zpoždění oblíbených vlaků, i když je aplikace zavřená; widgety na plochu; upozornění na zrušení, ohrožené přestupy a oznámení ve vašich stanicích; připomenutí před odchodem.
+• Ve Španělsku: Moje cesty, záznam vašich cest se zpožděním v každé zastávce a souhrnem pro reklamaci u Renfe; úplná historie přesnosti linek, vlaků a stanic (až 12 měsíců); Přehrávání, kde uvidíte, kde byl každý vlak v kterémkoli okamžiku v minulosti; a historie oznámení Renfe.
 
 SOUKROMÍ
-Bez účtů, bez reklam, bez sledování. Vaše oblíbené a cesty zůstávají v telefonu (a v záloze Androidu). TrainRadar má otevřený zdrojový kód: https://github.com/StructuralWizard/TrainRadar
+Žádné účty, žádné reklamy, žádné sledování. Vaše oblíbené a cesty zůstávají ve vašem telefonu (a v záloze Androidu). TrainRadar má otevřený zdrojový kód: https://github.com/StructuralWizard/TrainRadar
 
 DATA
-Otevřená data Renfe Operadora (CC BY 4.0) a španělského národního přístupového bodu pro dopravu (MITRAMS). Spojené království: obsahuje informace Network Rail Infrastructure Limited licencované pod Open Government Licence v3.0, NaPTAN (DfT), Translink (Severní Irsko) a oznámení National Rail přes Rail Data Marketplace. Mapa © OpenStreetMap, OpenFreeMap. TrainRadar není spojen se společnostmi Renfe, Adif, OUIGO, Network Rail, National Rail ani Translink; data mohou obsahovat chyby a zpoždění.
+Otevřená data dopravců a dopravních úřadů jednotlivých zemí; všechny zdroje a licence jsou v aplikaci uvedeny v části „Licence dat a uvedení zdrojů“. Španělsko: Renfe Operadora (CC BY 4.0) a španělský národní přístupový bod (MITRAMS). Spojené království: obsahuje informace Network Rail Infrastructure Limited licencované pod Open Government Licence v3.0. Japonsko: Toei / ODPT (CC BY 4.0). Mapa © přispěvatelé OpenStreetMap, OpenFreeMap. TrainRadar není spojen s žádným dopravcem; data mohou obsahovat chyby a zpoždění.
 ```
 
 ### sk
 
 - **App name** (≤ 30): `TrainRadar: mapa vlakov naživo`
-- **Short description** (≤ 80): `Živá mapa vlakov v Španielsku a Spojenom kráľovstve s meškaním a oznamami.`
-- **Full description**:
+- **Short description** (≤ 80): `Živá mapa vlakov v 25 krajinách s ich meškaním a oznamami.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar ukazuje na mape naživo, kde sa nachádzajú vlaky Renfe po celom Španielsku —Cercanías, AVE, Avlo, Alvia, Media Distancia— a vlaky OUIGO podľa cestovného poriadku, zafarbené podľa meškania: zelená načas, oranžová meškanie 5 minút a viac, červená 15 a viac.
+TrainRadar ukazuje na mape naživo, kde sa nachádzajú vlaky, zafarbené podľa meškania: zelená načas, oranžová meškanie 5 minút a viac, červená 15 a viac.
 
-A v Spojenom kráľovstve: vlaky vo Veľkej Británii so živými meškaniami od Network Rail, v Severnom Írsku podľa cestovného poriadku a oznamy National Rail. Krajinu zmeníte jedným ťuknutím.
+25 KRAJÍN
+Španielsko, Spojené kráľovstvo, Írsko, Francúzsko, Luxembursko, Belgicko, Holandsko, Nemecko, Švajčiarsko, Rakúsko, Taliansko, Portugalsko (Lisabon), Dánsko, Švédsko, Nórsko, Fínsko, Estónsko, Poľsko, Česko, Slovensko, Maďarsko, Austrália (Nový Južný Wales, Victoria), Nový Zéland (Wellington, Auckland), Singapur a Japonsko (Tokio, Kōči). Živé meškania tam, kde ich dopravcovia zverejňujú; inde sú vlaky umiestnené podľa cestovného poriadku a sú tak aj označené. Vyberte krajinu a oblasť alebo ťuknite na susednú krajinu na mape. Každá krajina sa stiahne raz a potom funguje aj offline.
+
+18 JAZYKOV
+Španielčina, angličtina, portugalčina, japončina, francúzština, nemčina, taliančina, holandčina, dánčina, švédčina, nórčina, fínčina, poľština, čeština, slovenčina, maďarčina, estónčina a čínština. Aplikácia sa riadi jazykom vášho telefónu a otvorí sa na krajine, v ktorej sa nachádzate.
 
 NA MAPE
-• Každý vlak so smerom, rýchlosťou, ďalšou zastávkou a meškaním, ako ho zverejňuje Renfe alebo odhadnutým z GPS.
+• Každý vlak so smerom, rýchlosťou, ďalšou zastávkou a meškaním.
 • Stanice s najbližšími odchodmi a prichádzajúcimi vlakmi.
-• Oznamy Renfe (výluky, štrajky, mimoriadnosti) na mape a pri každej linke.
-• Vyhľadávanie podľa čísla vlaku alebo linky; štandardná alebo satelitná mapa.
+• Oznamy dopravcov (výluky, štrajky, mimoriadnosti) na mape a pri každej linke.
+• Vyhľadávanie podľa čísla vlaku, stanice alebo linky; štandardná alebo satelitná mapa.
 • Spojenia: priame alebo s prestupmi, s časom na každý prestup a živými meškaniami.
 • Cestovné poriadky až 9 týždňov dopredu: vyberte dátum a čas pre stanicu, spojenie alebo vlak.
-• Som v tomto vlaku?: podľa vašej polohy aplikácia zistí, v ktorom vlaku ste (poloha nikdy neopustí telefón).
+• Som v tomto vlaku?: podľa vašej polohy aplikácia zistí, v ktorom vlaku ste (vaša poloha nikdy neopustí telefón).
 
 ZADARMO
 • Všetko uvedené, bez účtov a bez reklám.
-• 2 obľúbené položky (vlaky alebo stanice) a presnosť každej linky za posledných 7 dní.
+• 2 obľúbené položky (vlaky alebo stanice) v každej krajine.
 • Viac o každom vlaku: vlaky pred ním a za ním, protiidúce vlaky, trať, sklon a výškový profil.
+• V Španielsku presnosť každej linky za posledných 7 dní.
 
 TRAINRADAR PRO (ročné predplatné, 1,99 €)
-• Neobmedzený počet obľúbených.
-• Upozornenia na meškanie obľúbených vlakov, aj keď je aplikácia zatvorená, a miniaplikácia na ploche.
-• Moje cesty: záznam vašich ciest s meškaním v každej zastávke, súhrnom na reklamáciu u Renfe, CSV a obrázkom na zdieľanie.
-• Úplná história presnosti liniek, vlakov a staníc (až 12 mesiacov).
-• Dochádzanie: uložte si viac trás aj s ich vlakmi a aplikácia sa otvorí na vašich najbližších vlakoch. Upozornenia na meškania, zrušenia, ohrozené prestupy, pripomienka pred odchodom a oznamy vo vašich staniciach (výťahy, výluky, autobusy).
-• Prehrávanie: pozrite sa, kde bol každý vlak a s akým meškaním v ľubovoľnom minulom okamihu.
-• História oznamov: oznamy Renfe (výluky, štrajky, mimoriadnosti) z ľubovoľného minulého dňa.
+• Neobmedzený počet obľúbených a trás na dochádzanie a aplikácia sa otvorí na vašich najbližších vlakoch.
+• Ikony na ploche, ktoré priamo otvoria stanicu, vlak alebo trasu dochádzania.
+• V Španielsku: upozornenia na meškanie obľúbených vlakov, aj keď je aplikácia zatvorená; miniaplikácie na ploche; upozornenia na zrušenia, ohrozené prestupy a oznamy vo vašich staniciach; pripomienka pred odchodom.
+• V Španielsku: Moje cesty, záznam vašich ciest s meškaním v každej zastávke a so súhrnom na reklamáciu u Renfe; úplná história presnosti liniek, vlakov a staníc (až 12 mesiacov); Prehrávanie, v ktorom uvidíte, kde bol každý vlak v ľubovoľnom minulom okamihu; a história oznamov Renfe.
 
 SÚKROMIE
 Bez účtov, bez reklám, bez sledovania. Vaše obľúbené a cesty zostávajú v telefóne (a v zálohe Androidu). TrainRadar má otvorený zdrojový kód: https://github.com/StructuralWizard/TrainRadar
 
 ÚDAJE
-Otvorené údaje Renfe Operadora (CC BY 4.0) a španielskeho Národného prístupového bodu pre dopravu (MITRAMS). Spojené kráľovstvo: obsahuje informácie Network Rail Infrastructure Limited licencované podľa Open Government Licence v3.0, NaPTAN (DfT), Translink (Severné Írsko) a oznamy National Rail cez Rail Data Marketplace. Mapa © OpenStreetMap, OpenFreeMap. TrainRadar nie je prepojený s Renfe, Adif, OUIGO, Network Rail, National Rail ani Translink; údaje môžu obsahovať chyby a oneskorenia.
+Otvorené údaje od dopravcov a dopravných orgánov každej krajiny; všetky zdroje a licencie sú uvedené v aplikácii v časti „Licencie údajov a uvedenie zdrojov“. Španielsko: Renfe Operadora (CC BY 4.0) a španielsky Národný prístupový bod (MITRAMS). Spojené kráľovstvo: obsahuje informácie Network Rail Infrastructure Limited licencované podľa Open Government Licence v3.0. Japonsko: Toei / ODPT (CC BY 4.0). Mapa © prispievatelia OpenStreetMap, OpenFreeMap. TrainRadar nie je prepojený so žiadnym dopravcom; údaje môžu obsahovať chyby a oneskorenia.
 ```
 
 ### hu-HU
 
 - **App name** (≤ 30): `TrainRadar: élő vonattérkép`
-- **Short description** (≤ 80): `Spanyol és brit vonatok élő térképen, késéssel és közleményekkel.`
-- **Full description**:
+- **Short description** (≤ 80): `Vonatok élő térképe 25 országban, késésekkel és közleményekkel.`
+- **Full description** (≤ 4000):
 
 ```
-A TrainRadar élőben mutatja a térképen, hol járnak a Renfe vonatai Spanyolországban —Cercanías, AVE, Avlo, Alvia, Media Distancia—, az OUIGO vonatait pedig menetrend szerint, késés szerint színezve: zöld, ha pontos, borostyánsárga, ha legalább 5 percet késik, piros, ha 15-öt vagy többet.
+A TrainRadar élőben mutatja a térképen, hol járnak a vonatok, késés szerint színezve: zöld, ha pontos, borostyánsárga, ha legalább 5 percet késik, piros, ha 15-öt vagy többet.
 
-Az Egyesült Királyságban is: Nagy-Britannia vonatai a Network Rail élő késésadataival, Észak-Írország vonatai menetrend szerint, valamint a National Rail közleményei. Egy koppintással országot válthatsz.
+25 ORSZÁG
+Spanyolország, Egyesült Királyság, Írország, Franciaország, Luxemburg, Belgium, Hollandia, Németország, Svájc, Ausztria, Olaszország, Portugália (Lisszabon), Dánia, Svédország, Norvégia, Finnország, Észtország, Lengyelország, Csehország, Szlovákia, Magyarország, Ausztrália (Új-Dél-Wales, Victoria), Új-Zéland (Wellington, Auckland), Szingapúr és Japán (Tokió, Kócsi). Élő késések ott, ahol a vasúttársaságok közzéteszik őket; máshol a vonatok menetrend szerint jelennek meg, és ezt jelöljük is. Válassz országot és területet, vagy koppints egy szomszédos országra a térképen. Minden ország egyszer töltődik le, utána offline is működik.
+
+18 NYELV
+Spanyol, angol, portugál, japán, francia, német, olasz, holland, dán, svéd, norvég, finn, lengyel, cseh, szlovák, magyar, észt és kínai. Az alkalmazás a telefonod nyelvét követi, és abban az országban nyílik meg, ahol éppen vagy.
 
 A TÉRKÉPEN
-• Minden vonat iránnyal, sebességgel, következő megállóval és késéssel, ahogy a Renfe közzéteszi, vagy GPS alapján becsülve.
+• Minden vonat iránnyal, sebességgel, következő megállóval és késéssel.
 • Állomások a következő indulásokkal és az érkező vonatokkal.
-• A Renfe közleményei (pályamunkák, sztrájkok, forgalmi zavarok) a térképen és vonalanként.
-• Keresés vonatszám vagy vonal szerint; normál vagy műholdas térkép.
+• A vasúttársaságok közleményei (pályamunkák, sztrájkok, forgalmi zavarok) a térképen és vonalanként.
+• Keresés vonatszám, állomás vagy vonal szerint; normál vagy műholdas térkép.
 • Útvonalak: közvetlenül vagy átszállással, az egyes átszállások idejével és élő késésekkel.
 • Menetrendek akár 9 hétre előre: válassz dátumot és időpontot egy állomáshoz, útvonalhoz vagy vonathoz.
 • Ezen a vonaton ülök?: a helyzeted alapján az alkalmazás kitalálja, melyik vonaton utazol (a helyzeted soha nem hagyja el a telefont).
 
 INGYENES
 • Mindez fiók és hirdetések nélkül.
-• 2 kedvenc (vonat vagy állomás), és minden vonal pontossága az elmúlt 7 napban.
+• 2 kedvenc (vonat vagy állomás) országonként.
 • Több adat minden vonatról: az előtte és mögötte haladó vonatok, a szembejövő vonatok, a pálya, a lejtviszonyok és a magassági profil.
+• Spanyolországban minden vonal pontossága az elmúlt 7 napban.
 
 TRAINRADAR PRO (éves előfizetés, 1,99 €)
-• Korlátlan számú kedvenc.
-• Késési értesítések a kedvenc vonataidról, bezárt alkalmazás mellett is, és kezdőképernyő-widget.
-• Utazásaim: az utazásaid naplója minden megálló késésével, összefoglaló a Renfe-nél benyújtható panaszhoz, CSV és megosztható kép.
-• A vonalak, vonatok és állomások teljes pontossági előzményei (akár 12 hónap).
-• Ingázás: több útvonal mentése a vonataikkal, és az alkalmazás a következő vonataiddal nyílik meg. Értesítések késésről, kimaradó vonatokról, veszélyben lévő csatlakozásokról, emlékeztető indulás előtt, valamint közlemények az állomásaidról (liftek, pályamunkák, pótlóbuszok).
-• Visszajátszás: nézd meg, hol volt és mennyit késett minden vonat bármely korábbi pillanatban.
-• Közlemény-előzmények: a Renfe közleményei (pályamunkák, sztrájkok, forgalmi zavarok) bármely korábbi napról.
+• Korlátlan számú kedvenc és ingázás, és az alkalmazás a következő vonataiddal nyílik meg.
+• Kezdőképernyő-ikonok, amelyek közvetlenül megnyitnak egy állomást, vonatot vagy ingázást.
+• Spanyolországban: késési értesítések a kedvenc vonataidról, bezárt alkalmazás mellett is; kezdőképernyő-widgetek; értesítések kimaradó vonatokról, veszélyben lévő csatlakozásokról és az állomásaidat érintő közleményekről; emlékeztető indulás előtt.
+• Spanyolországban: Utazásaim, az utazásaid naplója minden megálló késésével és egy összefoglalóval a Renfe-nél benyújtható panaszhoz; a vonalak, vonatok és állomások teljes pontossági előzményei (akár 12 hónap); Visszajátszás, hogy lásd, hol volt minden vonat bármely korábbi pillanatban; és a Renfe közleményeinek előzményei.
 
 ADATVÉDELEM
 Nincs fiók, nincs hirdetés, nincs követés. A kedvenceid és utazásaid a telefonodon maradnak (és az Android biztonsági mentésében). A TrainRadar nyílt forráskódú: https://github.com/StructuralWizard/TrainRadar
 
 ADATOK
-A Renfe Operadora nyílt adatai (CC BY 4.0) és a spanyol közlekedési Nemzeti Hozzáférési Pont (MITRAMS). Egyesült Királyság: a Network Rail Infrastructure Limited információit tartalmazza az Open Government Licence v3.0 alapján, NaPTAN (DfT), Translink (Észak-Írország) és a National Rail közleményei a Rail Data Marketplace-en keresztül. Térkép © OpenStreetMap, OpenFreeMap. A TrainRadar nem áll kapcsolatban ezekkel: Renfe, Adif, OUIGO, Network Rail, National Rail, Translink; az adatok hibákat és késéseket tartalmazhatnak.
+Az egyes országok vasúttársaságainak és közlekedési hatóságainak nyílt adatai; minden forrás és licenc megtalálható az alkalmazásban, az „Adatlicencek és forrásmegjelölés” menüpontban. Spanyolország: Renfe Operadora (CC BY 4.0) és a spanyol közlekedési Nemzeti Hozzáférési Pont (MITRAMS). Egyesült Királyság: a Network Rail Infrastructure Limited információit tartalmazza, az Open Government Licence v3.0 licenc alapján. Japán: Toei / ODPT (CC BY 4.0). Térkép © OpenStreetMap közreműködők, OpenFreeMap. A TrainRadar egyik vasúttársasággal sem áll kapcsolatban; az adatok hibákat és késéseket tartalmazhatnak.
 ```
 
 ### et
 
-- **App name** (≤ 30): `TrainRadar: rongid reaalajas`
-- **Short description** (≤ 80): `Hispaania ja Ühendkuningriigi rongid kaardil, hilinemiste ja teadetega.`
-- **Full description**:
+- **App name** (≤ 30): `TrainRadar: rongid kaardil`
+- **Short description** (≤ 80): `Rongid reaalajas kaardil 25 riigis, koos hilinemiste ja teadetega.`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar näitab kaardil reaalajas, kus Renfe rongid üle Hispaania asuvad —Cercanías, AVE, Avlo, Alvia, Media Distancia— ja OUIGO rongid sõiduplaani järgi, värvitud hilinemise järgi: roheline graafikus, kollane 5 minutit või rohkem hilinemist, punane 15 või rohkem.
+TrainRadar näitab kaardil reaalajas, kus rongid on, värvitud hilinemise järgi: roheline õigel ajal, kollane 5 minutit või rohkem hiljaks jäänud, punane 15 või rohkem.
 
-Ja Ühendkuningriigis: Suurbritannia rongid Network Raili reaalajas hilinemistega, Põhja-Iirimaa rongid sõiduplaani järgi ning National Raili teated. Riiki vahetad ühe puudutusega.
+25 RIIKI
+Hispaania, Ühendkuningriik, Iirimaa, Prantsusmaa, Luksemburg, Belgia, Madalmaad, Saksamaa, Šveits, Austria, Itaalia, Portugal (Lissabon), Taani, Rootsi, Norra, Soome, Eesti, Poola, Tšehhi, Slovakkia, Ungari, Austraalia (Uus-Lõuna-Wales, Victoria), Uus-Meremaa (Wellington, Auckland), Singapur ja Jaapan (Tokyo, Kōchi). Reaalajas hilinemised seal, kus vedajad neid avaldavad; mujal paigutatakse rongid sõiduplaani järgi ja märgitakse sellisena. Vali riik ja piirkond või puuduta kaardil naaberriiki. Iga riik laaditakse alla üks kord ja töötab seejärel ka võrguta.
+
+18 KEELT
+hispaania, inglise, portugali, jaapani, prantsuse, saksa, itaalia, hollandi, taani, rootsi, norra, soome, poola, tšehhi, slovaki, ungari, eesti ja hiina. Rakendus järgib telefoni keelt ja avaneb riigis, kus sa oled.
 
 KAARDIL
-• Iga rong koos suuna, kiiruse, järgmise peatuse ja hilinemisega, nagu Renfe on avaldanud või GPS-i põhjal hinnatud.
-• Jaamad järgmiste väljumiste ja lähenevate rongidega.
-• Renfe teated (tööd, streigid, häired) kaardil ja liinide kaupa.
-• Otsing rongi numbri või liini järgi; tavaline või satelliitkaart.
-• Teekonnad: otse või ümberistumistega, iga ümberistumise aja ja reaalajas hilinemistega.
-• Sõiduplaanid kuni 9 nädalat ette: vali jaamale, teekonnale või rongile kuupäev ja kellaaeg.
-• Kas olen selles rongis?: sinu asukoha põhjal leiab rakendus, millises rongis sa oled (sinu asukoht ei lahku kunagi telefonist).
+• Iga rong koos suuna, kiiruse, järgmise peatuse ja hilinemisega.
+• Jaamad järgmiste väljumiste ja saabuvate rongidega.
+• Vedajate teated (tööd, streigid, häired) kaardil ja liinide kaupa.
+• Otsing rongi numbri, jaama või liini järgi; tavaline kaart või satelliitvaade.
+• Sõidud: otse või ümberistumistega, iga ümberistumise aja ja reaalajas hilinemistega.
+• Sõiduplaanid kuni 9 nädalat ette: vali jaamale, sõidule või rongile kuupäev ja kellaaeg.
+• Kas olen selles rongis?: sinu asukoha abil leiab rakendus, millises rongis sa oled (sinu asukoht ei lahku kunagi telefonist).
 
 TASUTA
 • Kõik ülaltoodu, ilma kontode ja reklaamideta.
-• 2 lemmikut (rongid või jaamad) ja iga liini täpsus viimase 7 päeva jooksul.
-• Rohkem iga rongi kohta: eesolevad ja tagantulevad rongid, vastutulevad rongid, rööbastee, kalle ja kõrgusprofiil.
+• 2 lemmikut (rongi või jaama) igas riigis.
+• Rohkem iga rongi kohta: ees ja taga sõitvad rongid, vastutulevad rongid, rööbastee, kalle ja kõrgusprofiil.
+• Hispaanias iga liini täpsus viimase 7 päeva jooksul.
 
 TRAINRADAR PRO (aastatellimus, 1,99 €)
-• Piiramatult lemmikuid.
-• Lemmikrongide hilinemishäired, ka suletud rakendusega, ning avaekraani vidin.
-• Minu sõidud: sõitude logi koos hilinemisega igas peatuses, kokkuvõte Renfele kaebuse esitamiseks, CSV ja jagatav pilt.
-• Liinide, rongide ja jaamade täielik täpsusajalugu (kuni 12 kuud).
-• Igapäevased sõidud: salvesta mitu koos nende rongidega ja rakendus avaneb sinu järgmiste rongidega. Häired hilinemiste, tühistamiste, ohus ümberistumiste korral, meeldetuletus enne väljumist ja teated sinu jaamade kohta (liftid, tööd, bussid).
-• Taasesitus: vaata, kus iga rong mis tahes varasemal hetkel oli ja kui palju see hilines.
-• Teadete ajalugu: Renfe teated (tööd, streigid, häired) mis tahes möödunud päeva kohta.
+• Piiramatult lemmikuid ja igapäevaseid sõite ning rakendus avaneb sinu järgmiste rongidega.
+• Avaekraani ikoonid, mis avavad otse jaama, rongi või igapäevase sõidu.
+• Hispaanias: lemmikrongide hilinemishäired, ka siis, kui rakendus on suletud; avaekraani vidinad; häired tühistamiste, ohus ümberistumiste ja sinu jaamade teadete kohta; meeldetuletus enne väljumist.
+• Hispaanias: Minu sõidud, sinu sõitude logi koos hilinemisega igas peatuses ja kokkuvõttega Renfele kaebuse esitamiseks; liinide, rongide ja jaamade täielik täpsuse ajalugu (kuni 12 kuud); Taasesitus, et näha, kus iga rong mis tahes varasemal hetkel oli; ning Renfe teadete ajalugu.
 
 PRIVAATSUS
-Kontosid, reklaame ega jälgimist pole. Sinu lemmikud ja sõidud jäävad sinu telefoni (ja Androidi varukoopiasse). TrainRadar on avatud lähtekoodiga: https://github.com/StructuralWizard/TrainRadar
+Ilma kontode, reklaamide ja jälgimiseta. Sinu lemmikud ja sõidud jäävad sinu telefoni (ja Androidi varukoopiasse). TrainRadar on avatud lähtekoodiga: https://github.com/StructuralWizard/TrainRadar
 
 ANDMED
-Renfe Operadora avaandmed (CC BY 4.0) ja Hispaania transpordi riiklik juurdepääsupunkt (MITRAMS). Ühendkuningriik: sisaldab Network Rail Infrastructure Limitedi teavet, litsentsitud Open Government Licence v3.0 alusel, NaPTAN (DfT), Translink (Põhja-Iirimaa) ja National Raili teated Rail Data Marketplace'i kaudu. Kaart © OpenStreetMap, OpenFreeMap. TrainRadar ei ole seotud Renfe, Adifi, OUIGO, Network Raili, National Raili ega Translinkiga; andmetes võib esineda vigu ja viivitusi.
+Iga riigi vedajate ja transpordiasutuste avaandmed; kõik allikad ja litsentsid on loetletud rakenduses jaotises „Andmelitsentsid ja viited“. Hispaania: Renfe Operadora (CC BY 4.0) ja Hispaania riiklik juurdepääsupunkt (MITRAMS). Ühendkuningriik: sisaldab Network Rail Infrastructure Limitedi teavet, litsentsitud Open Government Licence v3.0 alusel. Jaapan: Toei / ODPT (CC BY 4.0). Kaart © OpenStreetMapi kaastöölised, OpenFreeMap. TrainRadar ei ole seotud ühegi vedajaga; andmetes võib esineda vigu ja viivitusi.
 ```
 
 ### zh-CN
 
 - **App name** (≤ 30): `TrainRadar：实时列车地图`
-- **Short description** (≤ 80): `西班牙和英国列车实时地图，显示误点和通告。`
-- **Full description**:
+- **Short description** (≤ 80): `25 个国家的列车实时地图，显示误点和通告。`
+- **Full description** (≤ 4000):
 
 ```
-TrainRadar 在地图上实时显示 Renfe 列车在西班牙各地的位置——Cercanías、AVE、Avlo、Alvia、Media Distancia——以及按时刻表显示 OUIGO 列车，并按误点着色：绿色为准点，琥珀色为误点 5 分钟或以上，红色为 15 分钟或以上。
+TrainRadar 在地图上实时显示列车的位置，并按误点着色：绿色为准点，琥珀色为误点 5 分钟或以上，红色为 15 分钟或以上。
 
-英国也有：大不列颠的列车附 Network Rail 的实时误点，北爱尔兰的列车按时刻表显示，还有 National Rail 的通告。点按一下即可切换国家。
+25 个国家
+西班牙、英国、爱尔兰、法国、卢森堡、比利时、荷兰、德国、瑞士、奥地利、意大利、葡萄牙（里斯本）、丹麦、瑞典、挪威、芬兰、爱沙尼亚、波兰、捷克、斯洛伐克、匈牙利、澳大利亚（新南威尔士州、维多利亚州）、新西兰（惠灵顿、奥克兰）、新加坡和日本（东京、高知）。运营商发布实时数据的地方显示实时误点；其他地方按时刻表显示列车，并加以标注。选择国家和地区，或在地图上点按相邻的国家。每个国家只需下载一次，之后即可离线使用。
+
+18 种语言
+西班牙语、英语、葡萄牙语、日语、法语、德语、意大利语、荷兰语、丹麦语、瑞典语、挪威语、芬兰语、波兰语、捷克语、斯洛伐克语、匈牙利语、爱沙尼亚语和中文。应用会跟随手机的语言，并打开您所在的国家。
 
 地图功能
-• 每趟列车的方向、速度、下一站和误点，数据来自 Renfe 发布或根据 GPS 估算。
+• 每趟列车的方向、速度、下一站和误点。
 • 车站显示下几班出发列车和即将到站的列车。
-• Renfe 的通告（工程、罢工、服务中断）显示在地图上，并可按线路查看。
-• 按车次或线路搜索；标准地图或卫星地图。
+• 运营商的通告（工程、罢工、服务中断）显示在地图上，并可按线路查看。
+• 按车次、车站或线路搜索；标准地图或卫星地图。
 • 行程：直达或换乘，显示每次换乘的时间和实时误点。
 • 最长 9 周的时刻表：为车站、行程或列车选择日期和时间。
 • 我在这趟车上吗？：根据您的位置，应用会判断您乘坐的是哪趟列车（您的位置绝不会离开手机）。
 
 免费
 • 以上所有功能，无需账户，无广告。
-• 2 个收藏（列车或车站），以及各线路最近 7 天的准点率。
+• 每个国家 2 个收藏（列车或车站）。
 • 每趟列车的更多信息：前车和后车、对向列车、轨道、坡度和高程剖面。
+• 在西班牙，各线路最近 7 天的准点率。
 
 TRAINRADAR PRO（年度订阅，€1.99）
-• 无限收藏。
-• 收藏列车的误点提醒，应用关闭时也会提醒，另有主屏幕小组件。
-• 我的行程：记录您的出行及每站的误点，生成向 Renfe 索赔的摘要、CSV 和可分享的图片。
-• 线路、列车和车站的完整准点历史（最长 12 个月）。
-• 通勤路线：可保存多条及其列车，应用会打开您的下几趟列车。误点、取消、换乘可能赶不上、出发前提醒，以及您所用车站的通告（电梯、工程、巴士）都会提醒您。
-• 回放：查看任一过去时刻每趟列车的位置和误点。
-• 通告历史：任何过去日期的 Renfe 通告（工程、罢工、服务中断）。
+• 无限收藏和通勤路线，应用会打开您的下几趟列车。
+• 主屏幕图标，可直接打开车站、列车或通勤路线。
+• 在西班牙：收藏列车的误点提醒，应用关闭时也会提醒；主屏幕小组件；取消、换乘可能赶不上以及您所用车站的通告提醒；出发前提醒。
+• 在西班牙：我的行程，记录您的出行及每站的误点，并生成向 Renfe 索赔的摘要；线路、列车和车站的完整准点历史（最长 12 个月）；回放，查看任一过去时刻每趟列车的位置；以及 Renfe 的通告历史。
 
 隐私
 无需账户，无广告，不追踪。您的收藏和行程保存在您的手机上（以及 Android 备份中）。TrainRadar 是开源项目：https://github.com/StructuralWizard/TrainRadar
 
 数据
-开放数据来自 Renfe Operadora（CC BY 4.0）和西班牙国家交通数据接入点（MITRAMS）。英国：包含 Network Rail Infrastructure Limited 的信息，依据 Open Government Licence v3.0 授权，NaPTAN（DfT）、Translink（北爱尔兰），以及经由 Rail Data Marketplace 提供的 National Rail 通告。地图 © OpenStreetMap、OpenFreeMap。TrainRadar 与 Renfe、Adif、OUIGO、Network Rail、National Rail 或 Translink 无关联；数据可能存在错误和延迟。
+开放数据来自各国的运营商和交通管理部门；所有来源和许可都列在应用的“数据许可和署名”中。西班牙：Renfe Operadora（CC BY 4.0）和西班牙国家交通数据接入点（MITRAMS）。英国：包含 Network Rail Infrastructure Limited 的信息，依据 Open Government Licence v3.0 授权。日本：Toei / ODPT（CC BY 4.0）。地图 © OpenStreetMap 贡献者、OpenFreeMap。TrainRadar 与任何运营商均无关联；数据可能存在错误和延迟。
 ```
 
 ### Graphics
