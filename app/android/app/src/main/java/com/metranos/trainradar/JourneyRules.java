@@ -221,10 +221,10 @@ public final class JourneyRules {
                     if (sent.has(k)) continue;
                     sent.put(k, true);
                     String body = margin < 0
-                            ? Tr.pick(lang, "Pierdes el cambio en " + station + " al " + train(l) + ": mira otras opciones",
-                                    "You'll miss the change at " + station + " to " + train(l) + ": see other options",
-                                    "Vai perder o transbordo em " + station + " para o " + train(l) + ": veja outras opções",
-                                    station + "での" + train(l) + "への乗り換えに間に合いません。他の経路をご確認ください")
+                            ? String.format(Locale.ROOT, Tr.pick(lang, "Pierdes el cambio en %1$s al %2$s: mira otras opciones",
+                                    "You'll miss the change at %1$s to %2$s: see other options",
+                                    "Vai perder o transbordo em %1$s para o %2$s: veja outras opções",
+                                    "%1$sでの%2$sへの乗り換えに間に合いません。他の経路をご確認ください"), station, train(l))
                             : String.format(Locale.ROOT, Tr.pick(lang, "Enlace en riesgo en %s: quedan %d min para el %s",
                                     "Change at %s at risk: %d min left for the %s",
                                     "Transbordo em risco em %s: faltam %d min para o %s",
@@ -256,10 +256,10 @@ public final class JourneyRules {
                     if (before.isEmpty() || before.equals(now)) continue;
                     JSONObject l = j.legs.getJSONObject(i);
                     out.add(new Alert(p + "platform:" + i, l.optString("number"), j.title,
-                            Tr.pick(lang, train(l) + " sale ahora por la vía " + now + " (antes " + before + ")",
-                                    train(l) + " now leaves from platform " + now + " (was " + before + ")",
-                                    train(l) + " parte agora da linha " + now + " (antes " + before + ")",
-                                    train(l) + "の発車番線が" + before + "番線から" + now + "番線に変更")));
+                            String.format(Locale.ROOT, Tr.pick(lang, "%1$s sale ahora por la vía %2$s (antes %3$s)",
+                                    "%1$s now leaves from platform %2$s (was %3$s)",
+                                    "%1$s parte agora da linha %2$s (antes %3$s)",
+                                    "%1$sの発車番線が%3$s番線から%2$s番線に変更"), train(l), now, before)));
                 }
             }
             // Station notices on the way, each once a day.

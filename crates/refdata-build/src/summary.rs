@@ -6,7 +6,7 @@
 //! `data/world.json`; live counts come every ten minutes from backend-eu.
 
 use serde::Serialize;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use trainradar_proto::refdata::TimetableFile;
 
 /// Half hours: the "running now" figure's resolution.
@@ -39,6 +39,9 @@ pub fn summarise(
 ) -> Summary {
     let mut running = vec![vec![0u32; SLOTS]; window_days];
     let mut lines = BTreeSet::new();
+    // Services named by their kind of train only ("IC", "L", Hungary's
+    // "Sz 36617"): kind → the stations each pattern calls at.
+    let mut runs: BTreeMap<String, BTreeSet<Vec<String>>> = BTreeMap::new();
     let mut segments = BTreeSet::new();
     for tt in regions {
         let ends: Vec<u32> = tt
@@ -90,11 +93,34 @@ pub fn summarise(
             }
         }
         // A line by its name: some feeds give every service its own route
-        // (Slovakia's, Hungary's), the same line in several regions too.
+        // (Slovakia's), the same line in several regions too. A route whose
+        // short name is a kind of train, not a line (no digit: Belgium's
+        // "IC" and "L" with one route per direction and end points,
+        // Hungary's route per train), counts by the stations it serves.
         for (r, u) in tt.routes.iter().zip(&used) {
-            if *u {
+            if *u && !is_kind(&r.short_name) {
                 let name = format!("{}|{}", r.short_name.trim(), r.long_name.trim());
                 lines.insert(if name == "|" { r.id.clone() } else { name });
+            }
+        }
+        for t in &tt.trips {
+            let (Some(r), Some(p)) = (
+                tt.routes.get(t.route as usize),
+                tt.patterns.get(t.pattern as usize),
+            ) else {
+                continue;
+            };
+            if is_kind(&r.short_name) {
+                let mut calls: Vec<String> = p
+                    .stops
+                    .iter()
+                    .filter_map(|&s| tt.stops.get(s as usize).map(|s| s.name.clone()))
+                    .collect();
+                calls.sort();
+                calls.dedup();
+                runs.entry(r.short_name.trim().to_owned())
+                    .or_default()
+                    .insert(calls);
             }
         }
         let snap = |v: i32| -> i32 {
@@ -116,6 +142,10 @@ pub fn summarise(
             }
         }
     }
+    // A kind's line: a set of stations no other of its patterns covers
+    // (short workings and trains that skip stations belong to the longer
+    // one; both directions are the same set).
+    let kinds: usize = runs.values().map(maximal).sum();
     let net = segments
         .into_iter()
         .flat_map(|((x1, y1), (x2, y2))| [x1, y1, x2, y2])
@@ -123,10 +153,37 @@ pub fn summarise(
     Summary {
         window_start,
         stations,
-        lines: lines.len(),
+        lines: lines.len() + kinds,
         running,
         net,
     }
+}
+
+/// A short name that names a kind of train rather than a line: letters
+/// only ("IC", "L", "Sz"), not empty.
+fn is_kind(short: &str) -> bool {
+    let s = short.trim();
+    !s.is_empty() && !s.chars().any(|c| c.is_ascii_digit())
+}
+
+/// How many of these sorted, deduplicated sets are in no larger one (or
+/// all but a fifth of them).
+fn maximal(sets: &BTreeSet<Vec<String>>) -> usize {
+    let mut by_size: Vec<&Vec<String>> = sets.iter().collect();
+    by_size.sort_by_key(|s| std::cmp::Reverse(s.len()));
+    let mut kept: Vec<&Vec<String>> = Vec::new();
+    for s in by_size {
+        // Inside a larger one when it misses at most one in five of its
+        // stations (a train that also calls somewhere the others pass).
+        let inside = |big: &&Vec<String>| {
+            let out = s.iter().filter(|x| big.binary_search(x).is_err()).count();
+            out * 5 <= s.len()
+        };
+        if !kept.iter().any(inside) {
+            kept.push(s);
+        }
+    }
+    kept.len()
 }
 
 #[cfg(test)]
@@ -205,5 +262,51 @@ mod tests {
         // Two segments, snapped to 0.02°: A-C and C-B.
         assert_eq!(s.net.len(), 8);
         assert!(s.net.iter().all(|v| v % GRID == 0));
+    }
+
+    #[test]
+    fn kinds_of_train_count_by_the_stations_they_serve() {
+        let mut t = tt();
+        // Every route an "IC", one per direction (as Belgium's) or per
+        // train (as Hungary's): A-B-C both ways and a short A-C working
+        // are one line; a second pattern D-E is another.
+        for r in &mut t.routes {
+            r.short_name = "IC".into();
+        }
+        t.stops.push(StopRec {
+            id: "D".into(),
+            name: "D".into(),
+            lat_e5: 0,
+            lon_e5: 0,
+        });
+        t.stops.push(StopRec {
+            id: "E".into(),
+            name: "E".into(),
+            lat_e5: 0,
+            lon_e5: 100,
+        });
+        let pat = |stops: Vec<u32>| {
+            let n = stops.len() as u32;
+            let times: Vec<(u32, u32)> = (0..n).map(|i| (i * 600, i * 600)).collect();
+            let dist: Vec<u32> = (0..n).map(|i| i * 1_000).collect();
+            PatternRec::from_absolute(stops, &times, &dist, None, 0)
+        };
+        t.patterns = vec![
+            pat(vec![0, 1, 2]),
+            pat(vec![2, 1, 0]),
+            pat(vec![0, 1]),
+            pat(vec![3, 4]),
+        ];
+        let base = t.trips[0].clone();
+        t.trips = (0..4u32)
+            .map(|i| TripRec {
+                route: i.min(2),
+                pattern: i,
+                id_rest: format!("k{i}"),
+                ..base.clone()
+            })
+            .collect();
+        let s = summarise(&[&t], 5, "2026-11-26".into(), 2);
+        assert_eq!(s.lines, 2);
     }
 }
