@@ -904,14 +904,16 @@ jobs:
           fi
 
       # Portugal → data/pt/, with PT_ENABLED: Lisbon (Fertagus and Lisbon
-      # Metro, open licences, no key), by timetable (no live data published).
-      # CP's national timetable only with PT_CP_ENABLED, once CP has given
-      # written permission to reuse it (docs/europe/pt.md).
+      # Metro, open licences, no key) and CP's national timetable (published
+      # for anyone at publico.cp.pt, no licence stated; credited, no logo, no
+      # endorsement implied), by timetable (no live data published). CP is
+      # built unless PT_CP_ENABLED is "false": the switch if CP objects
+      # (docs/europe/pt.md).
       - name: Portugal reference data
         if: vars.PT_ENABLED == 'true'
         continue-on-error: true
         env:
-          PT_CP: ${{ vars.PT_CP_ENABLED == 'true' && '1' || '' }}
+          PT_CP: ${{ vars.PT_CP_ENABLED != 'false' && '1' || '' }}
         run: |
           set -o pipefail
           command -v osmium >/dev/null || { sudo apt-get update && sudo apt-get install -y osmium-tool; }

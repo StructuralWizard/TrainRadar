@@ -579,7 +579,7 @@ export const JA = {
   countryAu: "オーストラリア（ニューサウスウェールズ、ビクトリア）",
   countryNz: "ニュージーランド（ウェリントン、オークランド）",
   countrySg: "シンガポール（推定）",
-  countryPt: "ポルトガル（リスボン）",
+  countryPt: "ポルトガル",
   countryJp: "日本（東京・高知）",
   countryTesting: "試験中",
   allSk: "スロバキア全土",
@@ -645,7 +645,7 @@ export const JA = {
   attributionNz:
     'データ: Metlink、Greater Wellington Regional Council（<a href="https://opendata.metlink.org.nz/" target="_blank" rel="noopener">opendata.metlink.org.nz</a>）およびAuckland Transport（<a href="https://at.govt.nz/about-us/at-data-sources/" target="_blank" rel="noopener">at.govt.nz</a>）、<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · Metlink、Greater Wellington、Auckland Transportとは関係ありません',
   attributionPt:
-    'データ: Fertagus（<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>、<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>）およびMetropolitano de Lisboa（<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>、CC BY） · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · Fertagus、Metropolitano de Lisboa、CPとは関係ありません',
+    'データ: Fertagus（<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>、<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>）およびMetropolitano de Lisboa（<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>、CC BY） · CP – Comboios de Portugal (<a href="https://www.cp.pt/" target="_blank" rel="noopener">cp.pt</a>) · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · Fertagus、Metropolitano de Lisboa、CPとは関係ありません',
   attributionJp:
     'データ: 東京都交通局（都営）およびとさでん交通 / 公共交通オープンデータセンター（<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>）、<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · 都営、とさでん交通、公共交通オープンデータセンターとは関係ありません',
   attributionSg:

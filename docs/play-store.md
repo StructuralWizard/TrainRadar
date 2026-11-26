@@ -33,7 +33,7 @@ appears in the description as the data source.
 TrainRadar muestra en un mapa dónde están los trenes, en directo, con colores según el retraso: verde, puntual; ámbar, 5 minutos o más; rojo, 15 o más.
 
 25 PAÍSES
-España, Reino Unido, Irlanda, Francia, Luxemburgo, Bélgica, Países Bajos, Alemania, Suiza, Austria, Italia, Portugal (Lisboa), Dinamarca, Suecia, Noruega, Finlandia, Estonia, Polonia, Chequia, Eslovaquia, Hungría, Australia (Nueva Gales del Sur, Victoria), Nueva Zelanda (Wellington, Auckland), Singapur y Japón (Tokio, Kōchi). Retrasos en directo donde los operadores los publican; en el resto, trenes situados según su horario y marcados así. Elige un país y una zona, o toca un país vecino en el mapa. Cada país se descarga una vez y luego funciona sin conexión.
+España, Reino Unido, Irlanda, Francia, Luxemburgo, Bélgica, Países Bajos, Alemania, Suiza, Austria, Italia, Portugal, Dinamarca, Suecia, Noruega, Finlandia, Estonia, Polonia, Chequia, Eslovaquia, Hungría, Australia (Nueva Gales del Sur, Victoria), Nueva Zelanda (Wellington, Auckland), Singapur y Japón (Tokio, Kōchi). Retrasos en directo donde los operadores los publican; en el resto, trenes situados según su horario y marcados así. Elige un país y una zona, o toca un país vecino en el mapa. Cada país se descarga una vez y luego funciona sin conexión.
 
 18 IDIOMAS
 Español, inglés, portugués, japonés, francés, alemán, italiano, neerlandés, danés, sueco, noruego, finés, polaco, checo, eslovaco, húngaro, estonio y chino. La app usa el idioma de tu móvil (puedes cambiarlo en Más → Idioma) y se abre en el país en el que estás.
@@ -76,7 +76,7 @@ Datos abiertos de los operadores y autoridades de transporte de cada país; toda
 TrainRadar shows on a map where the trains are, live, coloured by delay: green on time, amber 5 minutes or more late, red 15 or more.
 
 25 COUNTRIES
-Spain, the United Kingdom, Ireland, France, Luxembourg, Belgium, the Netherlands, Germany, Switzerland, Austria, Italy, Portugal (Lisbon), Denmark, Sweden, Norway, Finland, Estonia, Poland, Czechia, Slovakia, Hungary, Australia (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore and Japan (Tokyo, Kōchi). Live delays where the operators publish them; elsewhere, trains placed by their timetable and marked as such. Pick a country and an area, or tap a neighbouring country on the map. Each country downloads once and then works offline.
+Spain, the United Kingdom, Ireland, France, Luxembourg, Belgium, the Netherlands, Germany, Switzerland, Austria, Italy, Portugal, Denmark, Sweden, Norway, Finland, Estonia, Poland, Czechia, Slovakia, Hungary, Australia (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore and Japan (Tokyo, Kōchi). Live delays where the operators publish them; elsewhere, trains placed by their timetable and marked as such. Pick a country and an area, or tap a neighbouring country on the map. Each country downloads once and then works offline.
 
 18 LANGUAGES
 Spanish, English, Portuguese, Japanese, French, German, Italian, Dutch, Danish, Swedish, Norwegian, Finnish, Polish, Czech, Slovak, Hungarian, Estonian and Chinese. The app follows your phone's language and opens on the country you're in.
@@ -119,7 +119,7 @@ Open data from each country's operators and transport authorities; every source 
 O TrainRadar mostra num mapa onde estão os comboios, ao vivo, com cores segundo o atraso: verde, a horas; âmbar, 5 minutos ou mais; vermelho, 15 ou mais.
 
 25 PAÍSES
-Espanha, Reino Unido, Irlanda, França, Luxemburgo, Bélgica, Países Baixos, Alemanha, Suíça, Áustria, Itália, Portugal (Lisboa), Dinamarca, Suécia, Noruega, Finlândia, Estónia, Polónia, Chéquia, Eslováquia, Hungria, Austrália (Nova Gales do Sul, Vitória), Nova Zelândia (Wellington, Auckland), Singapura e Japão (Tóquio, Kōchi). Atrasos ao vivo onde os operadores os publicam; nos outros, comboios posicionados pelo horário e assinalados como tal. Escolha um país e uma zona, ou toque num país vizinho no mapa. Cada país é transferido uma vez e depois funciona offline.
+Espanha, Reino Unido, Irlanda, França, Luxemburgo, Bélgica, Países Baixos, Alemanha, Suíça, Áustria, Itália, Portugal, Dinamarca, Suécia, Noruega, Finlândia, Estónia, Polónia, Chéquia, Eslováquia, Hungria, Austrália (Nova Gales do Sul, Vitória), Nova Zelândia (Wellington, Auckland), Singapura e Japão (Tóquio, Kōchi). Atrasos ao vivo onde os operadores os publicam; nos outros, comboios posicionados pelo horário e assinalados como tal. Escolha um país e uma zona, ou toque num país vizinho no mapa. Cada país é transferido uma vez e depois funciona offline.
 
 18 IDIOMAS
 Espanhol, inglês, português, japonês, francês, alemão, italiano, neerlandês, dinamarquês, sueco, norueguês, finlandês, polaco, checo, eslovaco, húngaro, estónio e chinês. A app segue o idioma do seu telemóvel (pode mudá-lo em Mais → Idioma) e abre no país onde está.
@@ -162,7 +162,7 @@ Dados abertos dos operadores e autoridades de transportes de cada país; todas a
 TrainRadar は、列車の現在位置をリアルタイムで地図上に表示し、遅延に応じて色分けします：定刻は緑、5 分以上の遅れは黄、15 分以上は赤。
 
 25 か国
-スペイン、イギリス、アイルランド、フランス、ルクセンブルク、ベルギー、オランダ、ドイツ、スイス、オーストリア、イタリア、ポルトガル（リスボン）、デンマーク、スウェーデン、ノルウェー、フィンランド、エストニア、ポーランド、チェコ、スロバキア、ハンガリー、オーストラリア（ニューサウスウェールズ、ビクトリア）、ニュージーランド（ウェリントン、オークランド）、シンガポール、日本（東京・高知）。事業者が公開している場合はリアルタイムの遅延を表示し、それ以外は時刻表に基づいて列車を配置して、その旨を表示します。国とエリアを選ぶか、地図上の隣の国をタップしてください。各国のデータは一度ダウンロードすれば、その後はオフラインでも使えます。
+スペイン、イギリス、アイルランド、フランス、ルクセンブルク、ベルギー、オランダ、ドイツ、スイス、オーストリア、イタリア、ポルトガル、デンマーク、スウェーデン、ノルウェー、フィンランド、エストニア、ポーランド、チェコ、スロバキア、ハンガリー、オーストラリア（ニューサウスウェールズ、ビクトリア）、ニュージーランド（ウェリントン、オークランド）、シンガポール、日本（東京・高知）。事業者が公開している場合はリアルタイムの遅延を表示し、それ以外は時刻表に基づいて列車を配置して、その旨を表示します。国とエリアを選ぶか、地図上の隣の国をタップしてください。各国のデータは一度ダウンロードすれば、その後はオフラインでも使えます。
 
 18 言語
 スペイン語、英語、ポルトガル語、日本語、フランス語、ドイツ語、イタリア語、オランダ語、デンマーク語、スウェーデン語、ノルウェー語、フィンランド語、ポーランド語、チェコ語、スロバキア語、ハンガリー語、エストニア語、中国語。アプリはスマートフォンの言語で表示され、今いる国で開きます。
@@ -205,7 +205,7 @@ TRAINRADAR PRO（年間サブスクリプション、1.99 ユーロ）
 TrainRadar montre sur une carte où sont les trains, en direct, colorés selon leur retard : vert à l’heure, orange 5 minutes ou plus de retard, rouge 15 ou plus.
 
 25 PAYS
-Espagne, Royaume-Uni, Irlande, France, Luxembourg, Belgique, Pays-Bas, Allemagne, Suisse, Autriche, Italie, Portugal (Lisbonne), Danemark, Suède, Norvège, Finlande, Estonie, Pologne, Tchéquie, Slovaquie, Hongrie, Australie (Nouvelle-Galles du Sud, Victoria), Nouvelle-Zélande (Wellington, Auckland), Singapour et Japon (Tokyo, Kōchi). Retards en direct là où les opérateurs les publient ; ailleurs, trains placés selon leur horaire et signalés comme tels. Choisissez un pays et une zone, ou touchez un pays voisin sur la carte. Chaque pays se télécharge une fois, puis fonctionne hors ligne.
+Espagne, Royaume-Uni, Irlande, France, Luxembourg, Belgique, Pays-Bas, Allemagne, Suisse, Autriche, Italie, Portugal, Danemark, Suède, Norvège, Finlande, Estonie, Pologne, Tchéquie, Slovaquie, Hongrie, Australie (Nouvelle-Galles du Sud, Victoria), Nouvelle-Zélande (Wellington, Auckland), Singapour et Japon (Tokyo, Kōchi). Retards en direct là où les opérateurs les publient ; ailleurs, trains placés selon leur horaire et signalés comme tels. Choisissez un pays et une zone, ou touchez un pays voisin sur la carte. Chaque pays se télécharge une fois, puis fonctionne hors ligne.
 
 18 LANGUES
 Espagnol, anglais, portugais, japonais, français, allemand, italien, néerlandais, danois, suédois, norvégien, finnois, polonais, tchèque, slovaque, hongrois, estonien et chinois. L’appli suit la langue de votre téléphone (modifiable dans Plus → Langue) et s’ouvre sur le pays où vous êtes.
@@ -248,7 +248,7 @@ Données ouvertes des opérateurs et autorités de transport de chaque pays ; ch
 TrainRadar zeigt dir live auf einer Karte, wo die Züge sind, eingefärbt nach Verspätung: grün pünktlich, gelb ab 5 Minuten Verspätung, rot ab 15.
 
 25 LÄNDER
-Spanien, Vereinigtes Königreich, Irland, Frankreich, Luxemburg, Belgien, Niederlande, Deutschland, Schweiz, Österreich, Italien, Portugal (Lissabon), Dänemark, Schweden, Norwegen, Finnland, Estland, Polen, Tschechien, Slowakei, Ungarn, Australien (New South Wales, Victoria), Neuseeland (Wellington, Auckland), Singapur und Japan (Tokio, Kōchi). Live-Verspätungen, wo die Betreiber sie veröffentlichen; anderswo werden die Züge nach Fahrplan platziert und entsprechend gekennzeichnet. Wähle ein Land und ein Gebiet oder tippe auf der Karte auf ein Nachbarland. Jedes Land wird einmal heruntergeladen und funktioniert danach offline.
+Spanien, Vereinigtes Königreich, Irland, Frankreich, Luxemburg, Belgien, Niederlande, Deutschland, Schweiz, Österreich, Italien, Portugal, Dänemark, Schweden, Norwegen, Finnland, Estland, Polen, Tschechien, Slowakei, Ungarn, Australien (New South Wales, Victoria), Neuseeland (Wellington, Auckland), Singapur und Japan (Tokio, Kōchi). Live-Verspätungen, wo die Betreiber sie veröffentlichen; anderswo werden die Züge nach Fahrplan platziert und entsprechend gekennzeichnet. Wähle ein Land und ein Gebiet oder tippe auf der Karte auf ein Nachbarland. Jedes Land wird einmal heruntergeladen und funktioniert danach offline.
 
 18 SPRACHEN
 Spanisch, Englisch, Portugiesisch, Japanisch, Französisch, Deutsch, Italienisch, Niederländisch, Dänisch, Schwedisch, Norwegisch, Finnisch, Polnisch, Tschechisch, Slowakisch, Ungarisch, Estnisch und Chinesisch. Die App folgt der Sprache deines Handys und öffnet mit dem Land, in dem du bist.
@@ -291,7 +291,7 @@ Offene Daten der Betreiber und Verkehrsbehörden jedes Landes; alle Quellen und 
 TrainRadar mostra su una mappa dove sono i treni, in tempo reale, colorati in base al ritardo: verde in orario, ambra 5 minuti o più di ritardo, rosso 15 o più.
 
 25 PAESI
-Spagna, Regno Unito, Irlanda, Francia, Lussemburgo, Belgio, Paesi Bassi, Germania, Svizzera, Austria, Italia, Portogallo (Lisbona), Danimarca, Svezia, Norvegia, Finlandia, Estonia, Polonia, Cechia, Slovacchia, Ungheria, Australia (Nuovo Galles del Sud, Victoria), Nuova Zelanda (Wellington, Auckland), Singapore e Giappone (Tokyo, Kōchi). Ritardi in tempo reale dove gli operatori li pubblicano; altrove, treni posizionati in base all'orario e segnalati come tali. Scegli un paese e una zona, o tocca un paese vicino sulla mappa. Ogni paese si scarica una volta e poi funziona offline.
+Spagna, Regno Unito, Irlanda, Francia, Lussemburgo, Belgio, Paesi Bassi, Germania, Svizzera, Austria, Italia, Portogallo, Danimarca, Svezia, Norvegia, Finlandia, Estonia, Polonia, Cechia, Slovacchia, Ungheria, Australia (Nuovo Galles del Sud, Victoria), Nuova Zelanda (Wellington, Auckland), Singapore e Giappone (Tokyo, Kōchi). Ritardi in tempo reale dove gli operatori li pubblicano; altrove, treni posizionati in base all'orario e segnalati come tali. Scegli un paese e una zona, o tocca un paese vicino sulla mappa. Ogni paese si scarica una volta e poi funziona offline.
 
 18 LINGUE
 Spagnolo, inglese, portoghese, giapponese, francese, tedesco, italiano, olandese, danese, svedese, norvegese, finlandese, polacco, ceco, slovacco, ungherese, estone e cinese. L'app segue la lingua del telefono (puoi cambiarla in Altro → Lingua) e si apre sul paese in cui ti trovi.
@@ -334,7 +334,7 @@ Dati aperti degli operatori e delle autorità dei trasporti di ogni paese; ogni 
 TrainRadar laat live op een kaart zien waar de treinen zijn, gekleurd naar vertraging: groen op tijd, oranje 5 minuten of meer te laat, rood 15 of meer.
 
 25 LANDEN
-Spanje, het Verenigd Koninkrijk, Ierland, Frankrijk, Luxemburg, België, Nederland, Duitsland, Zwitserland, Oostenrijk, Italië, Portugal (Lissabon), Denemarken, Zweden, Noorwegen, Finland, Estland, Polen, Tsjechië, Slowakije, Hongarije, Australië (New South Wales, Victoria), Nieuw-Zeeland (Wellington, Auckland), Singapore en Japan (Tokio, Kōchi). Live vertragingen waar de vervoerders ze publiceren; elders staan de treinen volgens de dienstregeling op de kaart, en dat wordt aangegeven. Kies een land en een gebied, of tik op een buurland op de kaart. Elk land wordt één keer gedownload en werkt daarna offline.
+Spanje, het Verenigd Koninkrijk, Ierland, Frankrijk, Luxemburg, België, Nederland, Duitsland, Zwitserland, Oostenrijk, Italië, Portugal, Denemarken, Zweden, Noorwegen, Finland, Estland, Polen, Tsjechië, Slowakije, Hongarije, Australië (New South Wales, Victoria), Nieuw-Zeeland (Wellington, Auckland), Singapore en Japan (Tokio, Kōchi). Live vertragingen waar de vervoerders ze publiceren; elders staan de treinen volgens de dienstregeling op de kaart, en dat wordt aangegeven. Kies een land en een gebied, of tik op een buurland op de kaart. Elk land wordt één keer gedownload en werkt daarna offline.
 
 18 TALEN
 Spaans, Engels, Portugees, Japans, Frans, Duits, Italiaans, Nederlands, Deens, Zweeds, Noors, Fins, Pools, Tsjechisch, Slowaaks, Hongaars, Ests en Chinees. De app volgt de taal van je telefoon en opent op het land waar je bent.
@@ -377,7 +377,7 @@ Open data van de vervoerders en vervoersautoriteiten van elk land; elke bron en 
 TrainRadar viser live på et kort, hvor togene er, farvet efter forsinkelse: grøn til tiden, gul 5 minutter eller mere forsinket, rød 15 eller mere.
 
 25 LANDE
-Spanien, Storbritannien, Irland, Frankrig, Luxembourg, Belgien, Nederlandene, Tyskland, Schweiz, Østrig, Italien, Portugal (Lissabon), Danmark, Sverige, Norge, Finland, Estland, Polen, Tjekkiet, Slovakiet, Ungarn, Australien (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore og Japan (Tokyo, Kōchi). Live forsinkelser, hvor operatørerne offentliggør dem; andre steder placeres togene efter køreplanen og markeres som sådan. Vælg et land og et område, eller tryk på et naboland på kortet. Hvert land hentes én gang og virker derefter offline.
+Spanien, Storbritannien, Irland, Frankrig, Luxembourg, Belgien, Nederlandene, Tyskland, Schweiz, Østrig, Italien, Portugal, Danmark, Sverige, Norge, Finland, Estland, Polen, Tjekkiet, Slovakiet, Ungarn, Australien (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore og Japan (Tokyo, Kōchi). Live forsinkelser, hvor operatørerne offentliggør dem; andre steder placeres togene efter køreplanen og markeres som sådan. Vælg et land og et område, eller tryk på et naboland på kortet. Hvert land hentes én gang og virker derefter offline.
 
 18 SPROG
 Spansk, engelsk, portugisisk, japansk, fransk, tysk, italiensk, nederlandsk, dansk, svensk, norsk, finsk, polsk, tjekkisk, slovakisk, ungarsk, estisk og kinesisk. Appen følger din telefons sprog og åbner på det land, du er i.
@@ -420,7 +420,7 @@ DATA
 TrainRadar visar i realtid på en karta var tågen är, färgade efter försening: grönt i tid, gult 5 minuter eller mer sent, rött 15 eller mer.
 
 25 LÄNDER
-Spanien, Storbritannien, Irland, Frankrike, Luxemburg, Belgien, Nederländerna, Tyskland, Schweiz, Österrike, Italien, Portugal (Lissabon), Danmark, Sverige, Norge, Finland, Estland, Polen, Tjeckien, Slovakien, Ungern, Australien (New South Wales, Victoria), Nya Zeeland (Wellington, Auckland), Singapore och Japan (Tokyo, Kōchi). Förseningar i realtid där operatörerna publicerar dem; på andra håll placeras tågen enligt tidtabellen och märks som sådana. Välj ett land och ett område, eller tryck på ett grannland på kartan. Varje land laddas ner en gång och fungerar sedan offline.
+Spanien, Storbritannien, Irland, Frankrike, Luxemburg, Belgien, Nederländerna, Tyskland, Schweiz, Österrike, Italien, Portugal, Danmark, Sverige, Norge, Finland, Estland, Polen, Tjeckien, Slovakien, Ungern, Australien (New South Wales, Victoria), Nya Zeeland (Wellington, Auckland), Singapore och Japan (Tokyo, Kōchi). Förseningar i realtid där operatörerna publicerar dem; på andra håll placeras tågen enligt tidtabellen och märks som sådana. Välj ett land och ett område, eller tryck på ett grannland på kartan. Varje land laddas ner en gång och fungerar sedan offline.
 
 18 SPRÅK
 Spanska, engelska, portugisiska, japanska, franska, tyska, italienska, nederländska, danska, svenska, norska, finska, polska, tjeckiska, slovakiska, ungerska, estniska och kinesiska. Appen följer telefonens språk och öppnas på landet du befinner dig i.
@@ -463,7 +463,7 @@ DATA
 TrainRadar viser i sanntid på et kart hvor togene er, farget etter forsinkelse: grønn i rute, gul 5 minutter eller mer forsinket, rød 15 eller mer.
 
 25 LAND
-Spania, Storbritannia, Irland, Frankrike, Luxembourg, Belgia, Nederland, Tyskland, Sveits, Østerrike, Italia, Portugal (Lisboa), Danmark, Sverige, Norge, Finland, Estland, Polen, Tsjekkia, Slovakia, Ungarn, Australia (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore og Japan (Tokyo, Kōchi). Forsinkelser i sanntid der operatørene publiserer dem; andre steder plasseres togene etter rutetabellen og merkes slik. Velg et land og et område, eller trykk på et naboland på kartet. Hvert land lastes ned én gang og virker deretter uten nett.
+Spania, Storbritannia, Irland, Frankrike, Luxembourg, Belgia, Nederland, Tyskland, Sveits, Østerrike, Italia, Portugal, Danmark, Sverige, Norge, Finland, Estland, Polen, Tsjekkia, Slovakia, Ungarn, Australia (New South Wales, Victoria), New Zealand (Wellington, Auckland), Singapore og Japan (Tokyo, Kōchi). Forsinkelser i sanntid der operatørene publiserer dem; andre steder plasseres togene etter rutetabellen og merkes slik. Velg et land og et område, eller trykk på et naboland på kartet. Hvert land lastes ned én gang og virker deretter uten nett.
 
 18 SPRÅK
 Spansk, engelsk, portugisisk, japansk, fransk, tysk, italiensk, nederlandsk, dansk, svensk, norsk, finsk, polsk, tsjekkisk, slovakisk, ungarsk, estisk og kinesisk. Appen følger språket på telefonen din og åpner på landet du er i.
@@ -506,7 +506,7 @@ DATA
 TrainRadar näyttää kartalla reaaliajassa, missä junat ovat, väritettyinä myöhästymisen mukaan: vihreä ajallaan, keltainen vähintään 5 minuuttia myöhässä, punainen vähintään 15.
 
 25 MAATA
-Espanja, Yhdistynyt kuningaskunta, Irlanti, Ranska, Luxemburg, Belgia, Alankomaat, Saksa, Sveitsi, Itävalta, Italia, Portugali (Lissabon), Tanska, Ruotsi, Norja, Suomi, Viro, Puola, Tšekki, Slovakia, Unkari, Australia (Uusi Etelä-Wales, Victoria), Uusi-Seelanti (Wellington, Auckland), Singapore ja Japani (Tokio, Kōchi). Reaaliaikaiset myöhästymiset siellä, missä liikennöitsijät julkaisevat ne; muualla junat sijoitetaan aikataulun mukaan ja merkitään sellaisiksi. Valitse maa ja alue tai napauta naapurimaata kartalla. Kukin maa ladataan kerran, minkä jälkeen se toimii ilman yhteyttä.
+Espanja, Yhdistynyt kuningaskunta, Irlanti, Ranska, Luxemburg, Belgia, Alankomaat, Saksa, Sveitsi, Itävalta, Italia, Portugali, Tanska, Ruotsi, Norja, Suomi, Viro, Puola, Tšekki, Slovakia, Unkari, Australia (Uusi Etelä-Wales, Victoria), Uusi-Seelanti (Wellington, Auckland), Singapore ja Japani (Tokio, Kōchi). Reaaliaikaiset myöhästymiset siellä, missä liikennöitsijät julkaisevat ne; muualla junat sijoitetaan aikataulun mukaan ja merkitään sellaisiksi. Valitse maa ja alue tai napauta naapurimaata kartalla. Kukin maa ladataan kerran, minkä jälkeen se toimii ilman yhteyttä.
 
 18 KIELTÄ
 espanja, englanti, portugali, japani, ranska, saksa, italia, hollanti, tanska, ruotsi, norja, suomi, puola, tšekki, slovakki, unkari, viro ja kiina. Sovellus seuraa puhelimesi kieltä ja avautuu siihen maahan, jossa olet.
@@ -549,7 +549,7 @@ Kunkin maan liikennöitsijöiden ja liikenneviranomaisten avointa dataa; kaikki 
 TrainRadar pokazuje na mapie, na żywo, gdzie są pociągi, w kolorach opóźnienia: zielony – punktualnie, bursztynowy – 5 minut opóźnienia lub więcej, czerwony – 15 lub więcej.
 
 25 KRAJÓW
-Hiszpania, Wielka Brytania, Irlandia, Francja, Luksemburg, Belgia, Holandia, Niemcy, Szwajcaria, Austria, Włochy, Portugalia (Lizbona), Dania, Szwecja, Norwegia, Finlandia, Estonia, Polska, Czechy, Słowacja, Węgry, Australia (Nowa Południowa Walia, Wiktoria), Nowa Zelandia (Wellington, Auckland), Singapur i Japonia (Tokio, Kōchi). Opóźnienia na żywo tam, gdzie publikują je przewoźnicy; gdzie indziej pociągi są umieszczane według rozkładu i odpowiednio oznaczone. Wybierz kraj i obszar albo dotknij sąsiedniego kraju na mapie. Każdy kraj pobiera się raz, a potem działa offline.
+Hiszpania, Wielka Brytania, Irlandia, Francja, Luksemburg, Belgia, Holandia, Niemcy, Szwajcaria, Austria, Włochy, Portugalia, Dania, Szwecja, Norwegia, Finlandia, Estonia, Polska, Czechy, Słowacja, Węgry, Australia (Nowa Południowa Walia, Wiktoria), Nowa Zelandia (Wellington, Auckland), Singapur i Japonia (Tokio, Kōchi). Opóźnienia na żywo tam, gdzie publikują je przewoźnicy; gdzie indziej pociągi są umieszczane według rozkładu i odpowiednio oznaczone. Wybierz kraj i obszar albo dotknij sąsiedniego kraju na mapie. Każdy kraj pobiera się raz, a potem działa offline.
 
 18 JĘZYKÓW
 hiszpański, angielski, portugalski, japoński, francuski, niemiecki, włoski, niderlandzki, duński, szwedzki, norweski, fiński, polski, czeski, słowacki, węgierski, estoński i chiński. Aplikacja używa języka Twojego telefonu i otwiera się na kraju, w którym jesteś.
@@ -592,7 +592,7 @@ Otwarte dane przewoźników i organów transportowych każdego kraju; wszystkie 
 TrainRadar ukazuje na mapě, kde právě jsou vlaky, živě a obarvené podle zpoždění: zelená načas, oranžová zpoždění 5 minut a více, červená 15 a více.
 
 25 ZEMÍ
-Španělsko, Spojené království, Irsko, Francie, Lucembursko, Belgie, Nizozemsko, Německo, Švýcarsko, Rakousko, Itálie, Portugalsko (Lisabon), Dánsko, Švédsko, Norsko, Finsko, Estonsko, Polsko, Česko, Slovensko, Maďarsko, Austrálie (Nový Jižní Wales, Victoria), Nový Zéland (Wellington, Auckland), Singapur a Japonsko (Tokio, Kóči). Živá zpoždění tam, kde je dopravci zveřejňují; jinde jsou vlaky umístěny podle jízdního řádu a takto označeny. Vyberte zemi a oblast, nebo klepněte na mapě na sousední zemi. Každá země se stáhne jednou a pak funguje i offline.
+Španělsko, Spojené království, Irsko, Francie, Lucembursko, Belgie, Nizozemsko, Německo, Švýcarsko, Rakousko, Itálie, Portugalsko, Dánsko, Švédsko, Norsko, Finsko, Estonsko, Polsko, Česko, Slovensko, Maďarsko, Austrálie (Nový Jižní Wales, Victoria), Nový Zéland (Wellington, Auckland), Singapur a Japonsko (Tokio, Kóči). Živá zpoždění tam, kde je dopravci zveřejňují; jinde jsou vlaky umístěny podle jízdního řádu a takto označeny. Vyberte zemi a oblast, nebo klepněte na mapě na sousední zemi. Každá země se stáhne jednou a pak funguje i offline.
 
 18 JAZYKŮ
 španělština, angličtina, portugalština, japonština, francouzština, němčina, italština, nizozemština, dánština, švédština, norština, finština, polština, čeština, slovenština, maďarština, estonština a čínština. Aplikace se řídí jazykem vašeho telefonu a otevře se na zemi, ve které jste.
@@ -635,7 +635,7 @@ Otevřená data dopravců a dopravních úřadů jednotlivých zemí; všechny z
 TrainRadar ukazuje na mape naživo, kde sa nachádzajú vlaky, zafarbené podľa meškania: zelená načas, oranžová meškanie 5 minút a viac, červená 15 a viac.
 
 25 KRAJÍN
-Španielsko, Spojené kráľovstvo, Írsko, Francúzsko, Luxembursko, Belgicko, Holandsko, Nemecko, Švajčiarsko, Rakúsko, Taliansko, Portugalsko (Lisabon), Dánsko, Švédsko, Nórsko, Fínsko, Estónsko, Poľsko, Česko, Slovensko, Maďarsko, Austrália (Nový Južný Wales, Victoria), Nový Zéland (Wellington, Auckland), Singapur a Japonsko (Tokio, Kōči). Živé meškania tam, kde ich dopravcovia zverejňujú; inde sú vlaky umiestnené podľa cestovného poriadku a sú tak aj označené. Vyberte krajinu a oblasť alebo ťuknite na susednú krajinu na mape. Každá krajina sa stiahne raz a potom funguje aj offline.
+Španielsko, Spojené kráľovstvo, Írsko, Francúzsko, Luxembursko, Belgicko, Holandsko, Nemecko, Švajčiarsko, Rakúsko, Taliansko, Portugalsko, Dánsko, Švédsko, Nórsko, Fínsko, Estónsko, Poľsko, Česko, Slovensko, Maďarsko, Austrália (Nový Južný Wales, Victoria), Nový Zéland (Wellington, Auckland), Singapur a Japonsko (Tokio, Kōči). Živé meškania tam, kde ich dopravcovia zverejňujú; inde sú vlaky umiestnené podľa cestovného poriadku a sú tak aj označené. Vyberte krajinu a oblasť alebo ťuknite na susednú krajinu na mape. Každá krajina sa stiahne raz a potom funguje aj offline.
 
 18 JAZYKOV
 Španielčina, angličtina, portugalčina, japončina, francúzština, nemčina, taliančina, holandčina, dánčina, švédčina, nórčina, fínčina, poľština, čeština, slovenčina, maďarčina, estónčina a čínština. Aplikácia sa riadi jazykom vášho telefónu a otvorí sa na krajine, v ktorej sa nachádzate.
@@ -678,7 +678,7 @@ Otvorené údaje od dopravcov a dopravných orgánov každej krajiny; všetky zd
 A TrainRadar élőben mutatja a térképen, hol járnak a vonatok, késés szerint színezve: zöld, ha pontos, borostyánsárga, ha legalább 5 percet késik, piros, ha 15-öt vagy többet.
 
 25 ORSZÁG
-Spanyolország, Egyesült Királyság, Írország, Franciaország, Luxemburg, Belgium, Hollandia, Németország, Svájc, Ausztria, Olaszország, Portugália (Lisszabon), Dánia, Svédország, Norvégia, Finnország, Észtország, Lengyelország, Csehország, Szlovákia, Magyarország, Ausztrália (Új-Dél-Wales, Victoria), Új-Zéland (Wellington, Auckland), Szingapúr és Japán (Tokió, Kócsi). Élő késések ott, ahol a vasúttársaságok közzéteszik őket; máshol a vonatok menetrend szerint jelennek meg, és ezt jelöljük is. Válassz országot és területet, vagy koppints egy szomszédos országra a térképen. Minden ország egyszer töltődik le, utána offline is működik.
+Spanyolország, Egyesült Királyság, Írország, Franciaország, Luxemburg, Belgium, Hollandia, Németország, Svájc, Ausztria, Olaszország, Portugália, Dánia, Svédország, Norvégia, Finnország, Észtország, Lengyelország, Csehország, Szlovákia, Magyarország, Ausztrália (Új-Dél-Wales, Victoria), Új-Zéland (Wellington, Auckland), Szingapúr és Japán (Tokió, Kócsi). Élő késések ott, ahol a vasúttársaságok közzéteszik őket; máshol a vonatok menetrend szerint jelennek meg, és ezt jelöljük is. Válassz országot és területet, vagy koppints egy szomszédos országra a térképen. Minden ország egyszer töltődik le, utána offline is működik.
 
 18 NYELV
 Spanyol, angol, portugál, japán, francia, német, olasz, holland, dán, svéd, norvég, finn, lengyel, cseh, szlovák, magyar, észt és kínai. Az alkalmazás a telefonod nyelvét követi, és abban az országban nyílik meg, ahol éppen vagy.
@@ -721,7 +721,7 @@ Az egyes országok vasúttársaságainak és közlekedési hatóságainak nyílt
 TrainRadar näitab kaardil reaalajas, kus rongid on, värvitud hilinemise järgi: roheline õigel ajal, kollane 5 minutit või rohkem hiljaks jäänud, punane 15 või rohkem.
 
 25 RIIKI
-Hispaania, Ühendkuningriik, Iirimaa, Prantsusmaa, Luksemburg, Belgia, Madalmaad, Saksamaa, Šveits, Austria, Itaalia, Portugal (Lissabon), Taani, Rootsi, Norra, Soome, Eesti, Poola, Tšehhi, Slovakkia, Ungari, Austraalia (Uus-Lõuna-Wales, Victoria), Uus-Meremaa (Wellington, Auckland), Singapur ja Jaapan (Tokyo, Kōchi). Reaalajas hilinemised seal, kus vedajad neid avaldavad; mujal paigutatakse rongid sõiduplaani järgi ja märgitakse sellisena. Vali riik ja piirkond või puuduta kaardil naaberriiki. Iga riik laaditakse alla üks kord ja töötab seejärel ka võrguta.
+Hispaania, Ühendkuningriik, Iirimaa, Prantsusmaa, Luksemburg, Belgia, Madalmaad, Saksamaa, Šveits, Austria, Itaalia, Portugal, Taani, Rootsi, Norra, Soome, Eesti, Poola, Tšehhi, Slovakkia, Ungari, Austraalia (Uus-Lõuna-Wales, Victoria), Uus-Meremaa (Wellington, Auckland), Singapur ja Jaapan (Tokyo, Kōchi). Reaalajas hilinemised seal, kus vedajad neid avaldavad; mujal paigutatakse rongid sõiduplaani järgi ja märgitakse sellisena. Vali riik ja piirkond või puuduta kaardil naaberriiki. Iga riik laaditakse alla üks kord ja töötab seejärel ka võrguta.
 
 18 KEELT
 hispaania, inglise, portugali, jaapani, prantsuse, saksa, itaalia, hollandi, taani, rootsi, norra, soome, poola, tšehhi, slovaki, ungari, eesti ja hiina. Rakendus järgib telefoni keelt ja avaneb riigis, kus sa oled.
@@ -764,7 +764,7 @@ Iga riigi vedajate ja transpordiasutuste avaandmed; kõik allikad ja litsentsid 
 TrainRadar 在地图上实时显示列车的位置，并按误点着色：绿色为准点，琥珀色为误点 5 分钟或以上，红色为 15 分钟或以上。
 
 25 个国家
-西班牙、英国、爱尔兰、法国、卢森堡、比利时、荷兰、德国、瑞士、奥地利、意大利、葡萄牙（里斯本）、丹麦、瑞典、挪威、芬兰、爱沙尼亚、波兰、捷克、斯洛伐克、匈牙利、澳大利亚（新南威尔士州、维多利亚州）、新西兰（惠灵顿、奥克兰）、新加坡和日本（东京、高知）。运营商发布实时数据的地方显示实时误点；其他地方按时刻表显示列车，并加以标注。选择国家和地区，或在地图上点按相邻的国家。每个国家只需下载一次，之后即可离线使用。
+西班牙、英国、爱尔兰、法国、卢森堡、比利时、荷兰、德国、瑞士、奥地利、意大利、葡萄牙、丹麦、瑞典、挪威、芬兰、爱沙尼亚、波兰、捷克、斯洛伐克、匈牙利、澳大利亚（新南威尔士州、维多利亚州）、新西兰（惠灵顿、奥克兰）、新加坡和日本（东京、高知）。运营商发布实时数据的地方显示实时误点；其他地方按时刻表显示列车，并加以标注。选择国家和地区，或在地图上点按相邻的国家。每个国家只需下载一次，之后即可离线使用。
 
 18 种语言
 西班牙语、英语、葡萄牙语、日语、法语、德语、意大利语、荷兰语、丹麦语、瑞典语、挪威语、芬兰语、波兰语、捷克语、斯洛伐克语、匈牙利语、爱沙尼亚语和中文。应用会跟随手机的语言，并打开您所在的国家。

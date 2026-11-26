@@ -44,7 +44,7 @@ export const COUNTRY_INFO = {
   sg: { zone: "Asia/Singapore", center: [103.82, 1.35], zoom: 10.4, live: true },
   // Lisbon (Fertagus, Lisbon Metro) by timetable: Portugal publishes no live
   // data; CP's national timetable once CP allows its reuse.
-  pt: { zone: "Europe/Lisbon", center: [-9.1, 38.7], zoom: 9.6, live: false },
+  pt: { zone: "Europe/Lisbon", center: [-8.1, 39.6], zoom: 6.2, live: false },
   // Tokyo (Toei: GPS, delays, alerts) and Kōchi (Tosaden, by timetable).
   jp: { zone: "Asia/Tokyo", center: [139.75, 35.69], zoom: 10.6, live: true },
 };

@@ -579,7 +579,7 @@ export const PT = {
   countryAu: "Austrália (Nova Gales do Sul, Vitória)",
   countryNz: "Nova Zelândia (Wellington, Auckland)",
   countrySg: "Singapura (estimado)",
-  countryPt: "Portugal (Lisboa)",
+  countryPt: "Portugal",
   countryJp: "Japão (Tóquio, Kōchi)",
   countryTesting: "em testes",
   allSk: "Toda a Eslováquia",
@@ -645,7 +645,7 @@ export const PT = {
   attributionNz:
     'Dados: Metlink, Greater Wellington Regional Council (<a href="https://opendata.metlink.org.nz/" target="_blank" rel="noopener">opendata.metlink.org.nz</a>) e Auckland Transport (<a href="https://at.govt.nz/about-us/at-data-sources/" target="_blank" rel="noopener">at.govt.nz</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Sem ligação à Metlink, à Greater Wellington nem à Auckland Transport',
   attributionPt:
-    'Dados: Fertagus (<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) e Metropolitano de Lisboa (<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>, CC BY) · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Sem ligação à Fertagus, ao Metropolitano de Lisboa nem à CP',
+    'Dados: Fertagus (<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) e Metropolitano de Lisboa (<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>, CC BY) · CP – Comboios de Portugal (<a href="https://www.cp.pt/" target="_blank" rel="noopener">cp.pt</a>) · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Sem ligação à Fertagus, ao Metropolitano de Lisboa nem à CP',
   attributionJp:
     'Dados: Tokyo Metropolitan Bureau of Transportation (Toei) e Tosaden Traffic / 公共交通オープンデータセンター (<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · Sem ligação à Toei, à Tosaden nem ao ODPT',
   attributionSg:

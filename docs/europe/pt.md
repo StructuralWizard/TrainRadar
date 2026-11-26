@@ -2,11 +2,17 @@
 
 Part of [the Europe plan](README.md), wave 1. Proposed 2026-11-22.
 
-**Built 2026-11-26, offered from 3.3: Lisbon only.** Fertagus (CC BY 4.0) and Lisbon Metro (dados.gov.pt,
-CC BY), merged as region `pt-lis`, by timetable (`tools/fetch-eu.sh pt-lis`, `PT_ENABLED`). CP's
-national timetable is wired (`tools/fetch-eu.sh pt`, region `pt`) but only built with
-`PT_CP_ENABLED`, which stays off until CP gives written permission: its licence was still "No
-licence" on 2026-11-26.
+**Built 2026-11-26, offered from 3.3; CP added 2026-11-26.** Fertagus (CC BY 4.0) and Lisbon
+Metro (dados.gov.pt, CC BY), merged as region `pt-lis`, and CP's national timetable as region `pt`
+(`tools/fetch-eu.sh pt-lis` and `pt`, `PT_ENABLED`), all by timetable. CP publishes its GTFS for
+anyone at publico.cp.pt (official, free), but no licence is stated anywhere we looked: its
+dados.gov.pt copy has an empty licence field, the National Access Point lists no CP entry with
+a licence, and the Mobility Database shows none. The EU rules on travel data oblige CP to make
+the timetable available, not to license it openly. The maintainer chose to use it now, credited
+as "CP – Comboios de Portugal", without CP's logo and without suggesting endorsement, while the
+letter to CP (below) asks for written terms. `PT_CP_ENABLED` = `false` turns CP off if CP
+objects. Live positions remain out of reach: the only source is the CP app's unofficial
+servers.
 
 Checked 2026-11-22: the CP and Fertagus GTFS files were downloaded and inspected, and the pages
 below were read at source.
@@ -127,7 +133,8 @@ is a fair point to make in the request.
 ## Credits
 
 - Fertagus, CC BY 4.0.
-- CP, in whatever words its permission asks for.
+- CP: "CP – Comboios de Portugal" with a link to cp.pt, no logo; in whatever words CP's reply asks
+  for, once it comes.
 - IP, CC BY.
 - OpenStreetMap, ODbL.
 
