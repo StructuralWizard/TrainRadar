@@ -2,7 +2,7 @@
 
 Asia/Tokyo (UTC+9 all year) · Japanese and English names · the app's country `jp`.
 
-**Built 2026-11-26 (hidden).** Source: the Public Transportation Open Data Center's public API
+**Built 2026-11-26, offered from 3.3.** Source: the Public Transportation Open Data Center's public API
 (`api-public.odpt.org`, no key). Only datasets under an open licence (CC BY 4.0, CC0, ODbL) are
 used; "Challenge-limited" datasets never; "Other licence" ones (Hakodate's tram, Shimoden…) not
 until their terms are read. Attribution: "<operator> / 公共交通オープンデータセンター (ODPT), CC BY 4.0".
