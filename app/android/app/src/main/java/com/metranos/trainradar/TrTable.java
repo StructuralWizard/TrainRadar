@@ -26,6 +26,92 @@ final class TrTable {
         BY.put(lang, m);
     }
 
+    private static void de() {
+        put("de",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s fährt jetzt von Gleis %2$s ab (statt %3$s)",
+                "%d min late", "%d Min. Verspätung",
+                "Arrivals · ", "Ankünfte · ",
+                "Cancelled", "Fällt aus",
+                "Change at %s at risk: %d min left for the %s", "Umstieg in %1$s gefährdet: noch %2$d Min. für den %3$s",
+                "Delays of your trains", "Verspätungen deiner Züge",
+                "Departures · ", "Abfahrten · ",
+                "From ", "Von ",
+                "From your favourites:", "Aus deinen Favoriten:",
+                "Next stop: ", "Nächster Halt: ",
+                "No data yet.", "Noch keine Daten.",
+                "No notices in force.", "Keine aktuellen Meldungen.",
+                "No trains in the next 3 hours.", "Keine Züge in den nächsten 3 Stunden.",
+                "Not running now.", "Derzeit nicht unterwegs.",
+                "Open TrainRadar", "TrainRadar öffnen",
+                "Renfe notices", "Renfe-Meldungen",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Merke dir zuerst in TrainRadar einen Bahnhof mit ☆ Merken und füge das Widget dann erneut hinzu.",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Merke dir zuerst in TrainRadar einen Zug mit ☆ Merken und füge das Widget dann erneut hinzu.",
+                "Save trains with ☆ to see them here.", "Merke dir Züge mit ☆, um sie hier zu sehen.",
+                "Tap to choose a station or train.", "Tippen, um einen Bahnhof oder Zug zu wählen.",
+                "The widget is part of TrainRadar Pro.", "Das Widget ist Teil von TrainRadar Pro.",
+                "This widget is part of TrainRadar Pro.", "Dieses Widget ist Teil von TrainRadar Pro.",
+                "Train", "Zug",
+                "Updated ", "Aktualisiert ",
+                "Updating…", "Wird aktualisiert…",
+                "Which station?", "Welcher Bahnhof?",
+                "Which train?", "Welcher Zug?",
+                "You leave at %s: %s %s", "Abfahrt um %s: %s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "Du verpasst den Umstieg in %1$s zum %2$s: Alternativen ansehen",
+                "cancelled", "fällt aus",
+                "cancelled — see other options", "fällt aus – Alternativen ansehen",
+                "disruption", "Störung",
+                "lifts and access", "Aufzüge und Zugang",
+                "no live delay", "keine Live-Verspätung",
+                "not running", "nicht unterwegs",
+                "notice", "Meldung",
+                "on time", "pünktlich",
+                "strike", "Streik",
+                "works", "Bauarbeiten");
+    }
+
+    private static void fi() {
+        put("fi",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s lähtee nyt raiteelta %2$s (aiemmin %3$s)",
+                "%d min late", "%d min myöhässä",
+                "Arrivals · ", "Saapuvat · ",
+                "Cancelled", "Peruttu",
+                "Change at %s at risk: %d min left for the %s", "Vaihto asemalla %s vaarassa: %d min aikaa junaan %s",
+                "Delays of your trains", "Juniesi myöhästymiset",
+                "Departures · ", "Lähtevät · ",
+                "From ", "Lähtöasema: ",
+                "From your favourites:", "Suosikeistasi:",
+                "Next stop: ", "Seuraava pysähdys: ",
+                "No data yet.", "Ei vielä tietoja.",
+                "No notices in force.", "Ei voimassa olevia tiedotteita.",
+                "No trains in the next 3 hours.", "Ei junia seuraavan 3 tunnin aikana.",
+                "Not running now.", "Ei liikenteessä nyt.",
+                "Open TrainRadar", "Avaa TrainRadar",
+                "Renfe notices", "Renfen tiedotteet",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Tallenna ensin asema TrainRadarissa painikkeella ☆ Tallenna ja lisää sitten widget uudelleen.",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Tallenna ensin juna TrainRadarissa painikkeella ☆ Tallenna ja lisää sitten widget uudelleen.",
+                "Save trains with ☆ to see them here.", "Tallenna junia ☆-painikkeella nähdäksesi ne täällä.",
+                "Tap to choose a station or train.", "Napauta valitaksesi aseman tai junan.",
+                "The widget is part of TrainRadar Pro.", "Widget kuuluu TrainRadar Prohon.",
+                "This widget is part of TrainRadar Pro.", "Tämä widget kuuluu TrainRadar Prohon.",
+                "Train", "Juna",
+                "Updated ", "Päivitetty ",
+                "Updating…", "Päivitetään…",
+                "Which station?", "Mikä asema?",
+                "Which train?", "Mikä juna?",
+                "You leave at %s: %s %s", "Lähtö klo %s: %s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "Et ehdi vaihtoon asemalla %1$s junaan %2$s: katso muut vaihtoehdot",
+                "cancelled", "peruttu",
+                "cancelled — see other options", "peruttu — katso muut vaihtoehdot",
+                "disruption", "häiriö",
+                "lifts and access", "hissit ja kulku",
+                "no live delay", "ei reaaliaikaista myöhästymistietoa",
+                "not running", "ei liikenteessä",
+                "notice", "tiedote",
+                "on time", "ajallaan",
+                "strike", "lakko",
+                "works", "ratatyöt");
+    }
+
     private static void fr() {
         put("fr",
                 "%1$s now leaves from platform %2$s (was %3$s)", "%1$s part désormais de la voie %2$s (au lieu de %3$s)",
@@ -110,6 +196,49 @@ final class TrTable {
                 "on time", "in orario",
                 "strike", "sciopero",
                 "works", "lavori");
+    }
+
+    private static void nb() {
+        put("nb",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s går nå fra spor %2$s (var %3$s)",
+                "%d min late", "%d min forsinket",
+                "Arrivals · ", "Ankomster · ",
+                "Cancelled", "Innstilt",
+                "Change at %s at risk: %d min left for the %s", "Overgang på %1$s i fare: %2$d min igjen til %3$s",
+                "Delays of your trains", "Forsinkelser på togene dine",
+                "Departures · ", "Avganger · ",
+                "From ", "Fra ",
+                "From your favourites:", "Fra favorittene dine:",
+                "Next stop: ", "Neste stopp: ",
+                "No data yet.", "Ingen data ennå.",
+                "No notices in force.", "Ingen gjeldende meldinger.",
+                "No trains in the next 3 hours.", "Ingen tog de neste 3 timene.",
+                "Not running now.", "Ikke i trafikk nå.",
+                "Open TrainRadar", "Åpne TrainRadar",
+                "Renfe notices", "Renfe-meldinger",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Lagre først en stasjon med ☆ Lagre i TrainRadar, og legg deretter til widgeten på nytt.",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Lagre først et tog med ☆ Lagre i TrainRadar, og legg deretter til widgeten på nytt.",
+                "Save trains with ☆ to see them here.", "Lagre tog med ☆ for å se dem her.",
+                "Tap to choose a station or train.", "Trykk for å velge en stasjon eller et tog.",
+                "The widget is part of TrainRadar Pro.", "Widgeten er en del av TrainRadar Pro.",
+                "This widget is part of TrainRadar Pro.", "Denne widgeten er en del av TrainRadar Pro.",
+                "Train", "Tog",
+                "Updated ", "Oppdatert ",
+                "Updating…", "Oppdaterer…",
+                "Which station?", "Hvilken stasjon?",
+                "Which train?", "Hvilket tog?",
+                "You leave at %s: %s %s", "Du reiser kl. %s: %s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "Du rekker ikke overgangen på %1$s til %2$s: se andre alternativer",
+                "cancelled", "innstilt",
+                "cancelled — see other options", "innstilt — se andre alternativer",
+                "disruption", "avvik",
+                "lifts and access", "heiser og tilgang",
+                "no live delay", "ingen sanntidsforsinkelse",
+                "not running", "ikke i trafikk",
+                "notice", "melding",
+                "on time", "i rute",
+                "strike", "streik",
+                "works", "arbeider");
     }
 
     private static void nl() {
@@ -285,8 +414,11 @@ final class TrTable {
     }
 
     static {
+        de();
+        fi();
         fr();
         it();
+        nb();
         nl();
         sk();
         sv();
