@@ -293,8 +293,13 @@ def main(argv):
         print(f"{line}: {len(pats)} relations, {len(chosen)} patterns: "
               + "; ".join(f"{p['stops'][0][0]} → {p['stops'][-1][0]} ({len(p['stops'])} stops, "
                           f"{'track' if len(p['track']) > 1 else 'straight'})" for p in chosen))
+        # Two services per direction (the Circle Line's loop and its
+        # Dhoby Ghaut-Prince Edward Road service) share the line's trains:
+        # each runs every other train, the second half a headway later.
+        share = max(1, len(chosen) // 2)
         for d, p in enumerate(chosen):
             shape = f"{line}-{d}"
+            slot = d // 2 if share > 1 else 0
             track = p["track"] if len(p["track"]) > 1 else [xy for _, xy in p["stops"]]
             # Along-track distance of each stop; straight lines where the
             # track and the stops don't agree (more than 300 m off).
@@ -318,7 +323,8 @@ def main(argv):
                 offsets.append(offsets[-1] + info["dwell"] + round((b - a) / info["mps"]) + 20)
             head = p["stops"][-1][0]
             for service in ("WK", "WE"):
-                t = info["first"]
+                first_h = info["weekend"] if service == "WE" else info["off"]
+                t = info["first"] + round(slot * first_h * 60)
                 while t <= info["last"]:
                     trip = f"est-{line}-{d}-{service}-{gtfs_time(t).replace(':', '')}"
                     w["trips"].writerow([line, service, trip, head, d % 2, shape])
@@ -333,7 +339,7 @@ def main(argv):
                         h = info["peak"]
                     else:
                         h = info["off"]
-                    t += round(h * 60)
+                    t += round(h * share * 60)
     missing = sorted(set(lines) - set(patterns))
     if missing:
         print(f"no route relations found for: {', '.join(missing)}")

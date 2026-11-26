@@ -24,3 +24,8 @@ of `au/rt/vehicle_positions.pb`, `trip_updates.pb` and `alerts.pb`. Region `au-n
 where a train sends it, timetable plus delay for the rest.
 
 **Variables:** `AU_NSW_ENABLED` (the timetable), `AU_NSW_LIVE_ENABLED` (the Worker).
+
+**TrainLink match (2026-11-26):** NSW TrainLink's trip updates matched 66 % and its GPS 49 %; the
+unmatched ids (`141.241126.42.1010`) have the form run.ddmmyy.variant.hhmm. The Refdata probe now
+reports, for each unmatched id, whether a timetable trip has the same run and time (a different
+timetable version) or none (likely a coach, route types 204/205, dropped), to choose the fix.
