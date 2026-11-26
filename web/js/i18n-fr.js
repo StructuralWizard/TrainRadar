@@ -651,4 +651,5 @@ export const FR = {
   cabMore: "{n} de plus",
   cabNote: "Elles s'ouvrent sur YouTube au moment de cette gare. ≈ : moment estimé.",
   cabTrain: "Voir depuis la cabine",
+  netAreas: "Zones",
 };

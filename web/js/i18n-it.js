@@ -651,4 +651,5 @@ export const IT = {
   cabMore: "altri {n}",
   cabNote: "Si aprono su YouTube al momento di questa stazione. ≈: momento stimato.",
   cabTrain: "Guarda dalla cabina",
+  netAreas: "Zone",
 };

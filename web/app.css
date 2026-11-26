@@ -738,6 +738,10 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   min-height: 44px; width: 100%; padding: 0 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 12px;
   background: var(--bg, #fff); color: inherit; font: inherit; font-size: 15px;
 }
+@media (max-width: 719px) and (prefers-color-scheme: dark) {
+  /* After the rule above, which would otherwise keep them white with light text. */
+  .net-pick select { background: #1f2937; color: #f3f4f6; border-color: #374151; }
+}
 /* "Ir a Francia" where another country was tapped on the map. */
 .country-go {
   min-height: 40px; padding: 0 14px; border: 0; border-radius: 20px; background: #166534; color: #fff;

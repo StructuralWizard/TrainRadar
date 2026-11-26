@@ -651,4 +651,5 @@ export const ET = {
   cabMore: "veel {n}",
   cabNote: "Need avanevad YouTube'is selle jaama kohalt. ≈: hinnanguline hetk.",
   cabTrain: "Vaata juhikabiinist",
+  netAreas: "Piirkonnad",
 };

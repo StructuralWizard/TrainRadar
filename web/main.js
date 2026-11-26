@@ -2797,6 +2797,8 @@ function renderNetworks(keepInput = false) {
         ],
     area: netPinned && netPinned !== "es" ? netPinned : currentNetwork()?.code || null,
     allLabel: ES ? t(lang, "allSpain") : t(lang, COUNTRY_TEXT[country].all),
+    // Spain lists its Cercanías networks; elsewhere, the country's areas.
+    groupLabel: ES ? null : t(lang, "netAreas"),
     // Spain's núcleos (with their medians), communities and provinces; other
     // countries' areas.
     networks: !ES

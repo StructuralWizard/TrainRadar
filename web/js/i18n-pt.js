@@ -674,4 +674,5 @@ export const PT = {
   cabMore: "mais {n}",
   cabNote: "Abrem no YouTube no momento desta estação. ≈: momento estimado.",
   cabTrain: "Ver da cabina",
+  netAreas: "Zonas",
 };

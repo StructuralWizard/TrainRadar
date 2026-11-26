@@ -651,4 +651,5 @@ export const NB = {
   cabMore: "{n} til",
   cabNote: "De åpnes på YouTube ved denne stasjonen. ≈: anslått tidspunkt.",
   cabTrain: "Se fra førerhuset",
+  netAreas: "Områder",
 };

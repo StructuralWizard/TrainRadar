@@ -651,4 +651,5 @@ export const NL = {
   cabMore: "nog {n}",
   cabNote: "Ze openen op YouTube bij dit station. ≈: geschat moment.",
   cabTrain: "Bekijk vanuit de cabine",
+  netAreas: "Gebieden",
 };

@@ -651,4 +651,5 @@ export const ZH = {
   cabMore: "还有{n}个",
   cabNote: "在 YouTube 上从本站的时刻开始播放。≈：估计的时刻。",
   cabTrain: "从驾驶室观看",
+  netAreas: "区域",
 };

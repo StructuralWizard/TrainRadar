@@ -480,7 +480,7 @@ export function networksSheet(lang, o) {
     // No networks to list at all (the UK, for now): just the cards.
     ...(o.networks?.length || o.communities?.length || o.provinces?.length
       ? [
-          ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, t(lang, "netGroup"))] : []),
+          ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, o.groupLabel || t(lang, "netGroup"))] : []),
           list.length ? el("ul", { class: "net-list" }, list.map((n) => row(n, right(n)))) : extra.length ? null : el("p", { class: "muted small" }, t(lang, "netNone")),
         ]
       : []),
