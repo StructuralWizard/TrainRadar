@@ -87,7 +87,7 @@ client="Metranos-TrainRadar"
 get() { # name url out [header]
   local headers
   headers=$(mktemp)
-  curl -fsSL --retry 4 --retry-delay 15 --compressed -D "$headers" ${4:+-H "$4"} \
+  curl -fsSL --retry 4 --retry-delay 15 --retry-all-errors --compressed -D "$headers" ${4:+-H "$4"} \
     -A "$client (+https://mytrainradar.com)" -o "$3.part" "$2"
   mv "$3.part" "$3"
   local etag modified

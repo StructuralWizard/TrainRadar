@@ -89,9 +89,12 @@ pub fn summarise(
                 }
             }
         }
+        // A line by its name: some feeds give every service its own route
+        // (Slovakia's, Hungary's), the same line in several regions too.
         for (r, u) in tt.routes.iter().zip(&used) {
             if *u {
-                lines.insert(r.id.clone());
+                let name = format!("{}|{}", r.short_name.trim(), r.long_name.trim());
+                lines.insert(if name == "|" { r.id.clone() } else { name });
             }
         }
         let snap = |v: i32| -> i32 {
@@ -173,7 +176,7 @@ mod tests {
                 stop("C", 40.2, -3.7),
                 stop("B", 40.4, -3.7),
             ],
-            routes: vec![route("R1"), route("R2")],
+            routes: vec![route("R1"), route("R2"), route("R1")],
             shapes: vec![],
             patterns: vec![p],
             services: vec![],
@@ -184,10 +187,12 @@ mod tests {
 
     #[test]
     fn running_by_half_hour_lines_and_network() {
-        let t = tt();
+        let mut t = tt();
+        // The night trip on another route of the same name: one line.
+        t.trips[1].route = 2;
         let s = summarise(&[&t], 3, "2026-11-26".into(), 2);
         assert_eq!(s.stations, 3);
-        // Only R1 has trips.
+        // Only R1 has trips (two routes of that name).
         assert_eq!(s.lines, 1);
         // 08:00-09:00: the middles of 08:00-08:30 and 08:30-09:00.
         assert_eq!(s.running[0][16], 1);
