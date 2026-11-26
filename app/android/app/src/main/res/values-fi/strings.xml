@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Suosikkijunasi ja niiden myöhästyminen (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Aseman seuraavat lähdöt (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Aseman seuraavat saapuvat junat (TrainRadar Pro)</string>
+    <string name="widget_train_description">Yksi juna: myöhästyminen, seuraava pysähdys ja määränpää (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Renfen voimassa olevat tiedotteet (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Lähtevät</string>
+    <string name="widget_arrivals_label">Saapuvat</string>
+    <string name="widget_train_label">Juna</string>
+    <string name="widget_notices_label">Renfen tiedotteet</string>
+    <string name="widget_refresh">Päivitä</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Päivitys valmis</string>
+    <string name="update_ready_message">TrainRadarin uusi versio on ladattu. Käynnistä uudelleen ottaaksesi sen käyttöön.</string>
+    <string name="update_restart">Käynnistä uudelleen</string>
+    <string name="update_later">Myöhemmin</string>
+</resources>

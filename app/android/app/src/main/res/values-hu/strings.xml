@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Kedvenc vonataid és késésük (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Következő indulások egy állomásról (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Következő érkezések egy állomásra (TrainRadar Pro)</string>
+    <string name="widget_train_description">Egy vonat: késés, következő megálló és célállomás (TrainRadar Pro)</string>
+    <string name="widget_notices_description">A Renfe érvényes közleményei (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Indulások</string>
+    <string name="widget_arrivals_label">Érkezések</string>
+    <string name="widget_train_label">Vonat</string>
+    <string name="widget_notices_label">Renfe-közlemények</string>
+    <string name="widget_refresh">Frissítés</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Frissítés kész</string>
+    <string name="update_ready_message">Letöltődött a TrainRadar új verziója. Indítsd újra a használatához.</string>
+    <string name="update_restart">Újraindítás</string>
+    <string name="update_later">Később</string>
+</resources>

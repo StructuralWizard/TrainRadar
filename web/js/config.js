@@ -16,11 +16,11 @@ export const CONFIG = {
   // Countries offered, in the app too (tools/build-web.sh: UK_APP=false
   // builds one with Spain only): Spain and the UK first, the others A–Z by
   // name where they're listed.
-  countries: ["es", "uk", "ie", "fr", "lu", "fi", "no", "nl", "sk", "ee", "ch", "se", "pl", "at", "cz", "it", "dk", "hu", "de", "be", "au", "nz", "sg"],
+  countries: ["es", "uk", "ie", "fr", "lu", "fi", "no", "nl", "sk", "ee", "ch", "se", "pl", "at", "cz", "it", "dk", "hu", "de", "be", "au", "nz", "sg", "pt", "jp"],
   // Countries still being built (docs/europe/): not offered, but a link with
   // ?country=xx opens them, for testing. The Android app has none
   // (tools/build-web.sh).
-  hiddenCountries: ["pt", "jp"],
+  hiddenCountries: [],
   // Android app: the site's data/ (absolute URL), newer than the copy in the
   // app once the app is a few days old; "" = only dataBase.
   remoteDataBase: "",

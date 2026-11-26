@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Sinu lemmikrongid ja nende hilinemine (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Järgmised väljumised jaamast (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Järgmised saabumised jaama (TrainRadar Pro)</string>
+    <string name="widget_train_description">Üks rong: hilinemine, järgmine peatus ja sihtjaam (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Renfe kehtivad teated (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Väljumised</string>
+    <string name="widget_arrivals_label">Saabumised</string>
+    <string name="widget_train_label">Rong</string>
+    <string name="widget_notices_label">Renfe teated</string>
+    <string name="widget_refresh">Värskenda</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Uuendus on valmis</string>
+    <string name="update_ready_message">TrainRadari uus versioon on alla laaditud. Selle kasutamiseks taaskäivita.</string>
+    <string name="update_restart">Taaskäivita</string>
+    <string name="update_later">Hiljem</string>
+</resources>

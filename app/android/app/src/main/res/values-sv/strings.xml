@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Dina favorittåg och deras försening (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Nästa avgångar från en station (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Nästa ankomster till en station (TrainRadar Pro)</string>
+    <string name="widget_train_description">Ett tåg: försening, nästa hållplats och destination (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Renfes gällande trafikmeddelanden (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Avgångar</string>
+    <string name="widget_arrivals_label">Ankomster</string>
+    <string name="widget_train_label">Tåg</string>
+    <string name="widget_notices_label">Renfes meddelanden</string>
+    <string name="widget_refresh">Uppdatera</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Uppdatering klar</string>
+    <string name="update_ready_message">En ny version av TrainRadar har laddats ned. Starta om för att använda den.</string>
+    <string name="update_restart">Starta om</string>
+    <string name="update_later">Senare</string>
+</resources>

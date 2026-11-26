@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Vaše obľúbené vlaky a ich meškanie (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Najbližšie odchody zo stanice (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Najbližšie príchody do stanice (TrainRadar Pro)</string>
+    <string name="widget_train_description">Jeden vlak: meškanie, ďalšia zastávka a cieľ (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Platné oznamy Renfe (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Odchody</string>
+    <string name="widget_arrivals_label">Príchody</string>
+    <string name="widget_train_label">Vlak</string>
+    <string name="widget_notices_label">Oznamy Renfe</string>
+    <string name="widget_refresh">Obnoviť</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Aktualizácia je pripravená</string>
+    <string name="update_ready_message">Nová verzia TrainRadar bola stiahnutá. Reštartujte aplikáciu a začnite ju používať.</string>
+    <string name="update_restart">Reštartovať</string>
+    <string name="update_later">Neskôr</string>
+</resources>

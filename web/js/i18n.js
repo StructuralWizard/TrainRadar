@@ -1,11 +1,25 @@
-// Interface strings. Spanish is the default; English, European Portuguese
-// (i18n-pt.js) and Japanese (i18n-ja.js) on request, or from the browser's
-// language the first time.
+// Interface strings. Spanish is the default and English the base of the
+// others, each in its own file (i18n-pt.js, i18n-fr.js, …), all on request
+// or from the browser's language the first time.
 
 import { PT } from "./i18n-pt.js";
 import { JA } from "./i18n-ja.js";
+import { FR } from "./i18n-fr.js";
+import { DE } from "./i18n-de.js";
+import { IT } from "./i18n-it.js";
+import { NL } from "./i18n-nl.js";
+import { DA } from "./i18n-da.js";
+import { SV } from "./i18n-sv.js";
+import { NB } from "./i18n-nb.js";
+import { FI } from "./i18n-fi.js";
+import { PL } from "./i18n-pl.js";
+import { CS } from "./i18n-cs.js";
+import { SK } from "./i18n-sk.js";
+import { HU } from "./i18n-hu.js";
+import { ET } from "./i18n-et.js";
+import { ZH } from "./i18n-zh.js";
 
-export const LANGS = ["es", "en", "pt", "ja"];
+export const LANGS = ["es", "en", "pt", "ja", "fr", "de", "it", "nl", "da", "sv", "nb", "fi", "pl", "cs", "sk", "hu", "et", "zh"];
 
 export const STRINGS = {
   es: {
@@ -1372,29 +1386,38 @@ export const STRINGS = {
 
 STRINGS.pt = { ...PT, changeLanguage: "Mudar de idioma", daysCount: "{n} dias" };
 STRINGS.ja = { ...JA, changeLanguage: "言語を切り替え", daysCount: "{n}日" };
+Object.assign(STRINGS, { fr: FR, de: DE, it: IT, nl: NL, da: DA, sv: SV, nb: NB, fi: FI, pl: PL, cs: CS, sk: SK, hu: HU, et: ET, zh: ZH });
 
 /** Each language's locale for numbers and dates. */
-export const LOCALES = { es: "es-ES", en: "en-GB", pt: "pt-PT", ja: "ja-JP" };
+export const LOCALES = {
+  es: "es-ES", en: "en-GB", pt: "pt-PT", ja: "ja-JP", fr: "fr-FR", de: "de-DE", it: "it-IT", nl: "nl-NL", da: "da-DK",
+  sv: "sv-SE", nb: "nb-NO", fi: "fi-FI", pl: "pl-PL", cs: "cs-CZ", sk: "sk-SK", hu: "hu-HU", et: "et-EE", zh: "zh-SG",
+};
 export const locale = (lang) => LOCALES[lang] || "es-ES";
 
-/** The language after `lang` on the language button. */
+/** The language after `lang` in LANGS. */
 export const nextLang = (lang) => LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
 
-/** Translate `key`, filling `{name}` placeholders from `vars`. Portuguese
- * and Japanese fall back to English, the others to Spanish. */
+/** Translate `key`, filling `{name}` placeholders from `vars`. A key
+ * missing in a language falls back to English (Spanish's to Spanish). */
 export function t(lang, key, vars = {}) {
-  const fallback = lang === "pt" || lang === "ja" ? STRINGS.en : STRINGS.es;
+  const fallback = lang === "es" || !STRINGS[lang] ? STRINGS.es : STRINGS.en;
   const s = (STRINGS[lang] || STRINGS.es)[key] ?? fallback[key] ?? STRINGS.es[key] ?? key;
   return s.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
-/** The language picked before; else Portuguese or Japanese for a browser
- * (or phone) in that language; else Spanish. */
+/** Browser language codes that mean one of LANGS: Norwegian (no, nn) is
+ * written in Bokmål. */
+const ALIASES = { no: "nb", nn: "nb" };
+
+/** The language picked before; else the browser's (or phone's) first
+ * language that the app speaks, English excepted; else Spanish. */
 export function pickLang(stored, languages = []) {
   if (LANGS.includes(stored)) return stored;
   for (const l of languages) {
     const base = String(l).toLowerCase().split("-")[0];
-    if (base === "pt" || base === "ja") return base;
+    const code = ALIASES[base] || base;
+    if (code !== "en" && LANGS.includes(code)) return code;
   }
   return "es";
 }

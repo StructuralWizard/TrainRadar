@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">Ulubione pociągi i ich opóźnienie (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Najbliższe odjazdy ze stacji (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Najbliższe przyjazdy na stację (TrainRadar Pro)</string>
+    <string name="widget_train_description">Jeden pociąg: opóźnienie, następna stacja i cel (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Obowiązujące komunikaty Renfe (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Odjazdy</string>
+    <string name="widget_arrivals_label">Przyjazdy</string>
+    <string name="widget_train_label">Pociąg</string>
+    <string name="widget_notices_label">Komunikaty Renfe</string>
+    <string name="widget_refresh">Odśwież</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Aktualizacja gotowa</string>
+    <string name="update_ready_message">Pobrano nową wersję TrainRadar. Uruchom ponownie, aby z niej korzystać.</string>
+    <string name="update_restart">Uruchom ponownie</string>
+    <string name="update_later">Później</string>
+</resources>

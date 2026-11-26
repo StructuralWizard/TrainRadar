@@ -91,6 +91,7 @@ try {
 
   await page.click("#tab-more");
   await page.click("#more-lang");
+  await page.click("#lang-en");
   await page.waitForFunction(() => /trains/.test(document.getElementById("stats").textContent));
   console.log("english:", await page.textContent("#stats"));
   if (errors.length) await fail(`page errors: ${errors.join("; ")}`);
