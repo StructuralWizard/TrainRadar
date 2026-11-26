@@ -3,7 +3,7 @@
 // works out delays, positions and spacing.
 import init, { Engine } from "./pkg/engine.js";
 import { CONFIG } from "./js/config.js";
-import { COUNTRY_INFO, COUNTRY_KEY, applyCountry, areaKey, areaName, areasOf, pickCountry, viewKey } from "./js/country.js";
+import { COUNTRY_INFO, COUNTRY_KEY, applyCountry, areaKey, areaName, areasOf, pickCountry, viewKey, withPlaces } from "./js/country.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
 import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
@@ -192,9 +192,8 @@ const countryName = (c) => {
 };
 /** COUNTRY_LIST in the order shown: the offered ones, then the rest A–Z. */
 const countryChoices = () => {
-  // Spain and the UK first (as offered), then every other country A–Z.
-  const first = CONFIG.countries.slice(0, 2);
-  const rank = (c) => (first.includes(c) ? first.indexOf(c) : 99);
+  // The country shown first, then every other one A–Z in the app's language.
+  const rank = (c) => (c === country ? 0 : 1);
   return [...COUNTRY_LIST].sort((a, b) => rank(a) - rank(b) || countryName(a).localeCompare(countryName(b), lang));
 };
 /** Whose notices each country shows (the UK has its own panel). */
@@ -2614,7 +2613,7 @@ function phoneChrome() {
 /** The network the map shows: the Cercanías núcleo under its centre, else Spain. */
 let netPinned = null; // the network just picked, until the user moves the map
 function currentNetwork() {
-  if (netPinned) return netPinned === "es" ? null : placeByCode(netPinned) || ref?.region(netPinned) || null;
+  if (netPinned) return netPinned === "es" ? null : placeByCode(netPinned) || ref?.region(netPinned) || placeArea(netPinned) || null;
   // The UK and Ireland are one network each here (Great Britain's box also
   // covers Northern Ireland).
   if (!ES || !map || !ref || map.getZoom() < 7.5) return null;
@@ -2626,8 +2625,19 @@ const netName = () => {
   if (n) return n.code && ref?.region(n.code) ? areaName(n.name) : n.name;
   return ES ? t(lang, "netSpain") : countryName(country);
 };
-/** This country's areas (country.js), for the drop-downs. */
-const countryAreas = () => areasOf(ref?.manifest, country, lang);
+/** This country's areas (country.js), for the drop-downs: its timetable's,
+ * and where that has fewer than two, the regions of areas.json that have
+ * stations (the UK's regions, Sweden's counties…). */
+let placesDoc = null;
+const placesReady = ES
+  ? Promise.resolve(null)
+  : fetch("areas.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => (placesDoc = d))
+      .catch(() => null);
+const countryAreas = () => withPlaces(areasOf(ref?.manifest, country, lang), placesDoc, country, lang, ref ? stationList() : []);
+/** An area of areas.json by its code ("adm:uk:greater-london"). */
+const placeArea = (code) => (String(code).startsWith("adm:") ? countryAreas().find((a) => a.code === code) || null : null);
 
 function updateNetChip() {
   const l = $("net-chip-l");
@@ -2678,7 +2688,7 @@ function goToNetwork(code) {
   updateNetChip();
   if (code === "es") return map.flyTo({ center: CONFIG.center, zoom: CONFIG.zoom });
   const place = placeByCode(code);
-  const bbox = place ? place.bbox || cityBox(place) : ref?.region(code)?.bbox;
+  const bbox = place ? place.bbox || cityBox(place) : ref?.region(code)?.bbox || placeArea(code)?.bbox;
   if (bbox) fitBox(bbox, place && !place.bbox ? 13 : 11);
 }
 
@@ -3688,6 +3698,8 @@ async function main() {
     whenTrains().then(() => {
       // Back to a country whose map wasn't saved: its last area, if any.
       if (!lastView && savedArea && (ref?.region(savedArea) || placeByCode(savedArea))) goToNetwork(savedArea);
+      // A region of areas.json (the UK's, Sweden's…): once that file is in.
+      else if (!lastView && String(savedArea || "").startsWith("adm:")) placesReady.then(() => placeArea(savedArea) && goToNetwork(savedArea));
       if (lastView?.detail && restoreDetail(lastView.detail)) return;
       const nothingOpen = isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden);
       if (CONFIG.pro && activeCommute(commutes) && nothingOpen) {

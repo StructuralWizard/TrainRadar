@@ -727,7 +727,15 @@ impl Engine {
         let mut s = String::from(r#"{"type":"FeatureCollection","features":["#);
         let mut first = true;
         for (ri, r) in self.net.regions.iter().enumerate() {
-            if r.tt.region == "ld" || !r.tt.live {
+            // A region by timetable is drawn as track when it has
+            // OpenStreetMap legs (OUIGO, Austria…); one without (Singapore's
+            // estimated lines, Lisbon, Kōchi: their own shapes) gets its
+            // lines here, or it would have none.
+            let has_legs = r
+                .geom
+                .iter()
+                .any(|g| matches!(g, network::PatternGeom::Legs(_)));
+            if r.tt.region == "ld" || (!r.tt.live && has_legs) {
                 continue;
             }
             // Longest trip per line name draws that line.
@@ -1924,6 +1932,23 @@ mod tests {
             l["features"][0]["properties"]["notice_kinds"],
             incidents::Kind::Works as u32
         );
+    }
+
+    #[test]
+    fn a_region_by_timetable_without_osm_track_draws_its_lines() {
+        use crate::network::tests::sample_timetable;
+        // Singapore's estimated lines (and Lisbon, Kōchi): no live data, the
+        // feed's own shapes, no OpenStreetMap legs. Their lines are drawn
+        // in colour, or the map would show trains on no line at all.
+        let mut tt = sample_timetable();
+        tt.region = "sg".into();
+        tt.live = false;
+        let mut e = Engine::new();
+        e.net.load_timetable(&encode(&tt).unwrap()).unwrap();
+        let l: serde_json::Value = serde_json::from_str(&e.lines_geojson(0.0)).unwrap();
+        let f = l["features"].as_array().unwrap();
+        assert_eq!(f.len(), 1);
+        assert_eq!(f[0]["properties"]["region"], "sg");
     }
 
     #[test]

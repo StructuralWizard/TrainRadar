@@ -128,6 +128,35 @@ export function areasOf(manifest, code, lang = "en") {
     .sort((a, b) => a.name.localeCompare(b.name, lang));
 }
 
+/**
+ * A country's areas with the regions of areas.json (tools/outlines/areas.py:
+ * the UK's regions, Sweden's counties…) where its timetable has fewer than
+ * two: each `{ code: "adm:…", name, bbox }`, in `lang`, kept only when at
+ * least `min` of `stations` ({lat, lon}) are inside it, and not named like
+ * one of the timetable's own. A–Z with them.
+ */
+export function withPlaces(areas, doc, code, lang = "en", stations = [], min = 2) {
+  const rows = doc?.[code];
+  if (!rows?.length || areas.length >= 2) return areas;
+  const fold = (s) => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const known = new Set(areas.map((a) => fold(a.name)));
+  const inside = (b) => {
+    let n = 0;
+    for (const s of stations) if (s.lat >= b[0] && s.lat <= b[2] && s.lon >= b[1] && s.lon <= b[3] && ++n >= min) return true;
+    return false;
+  };
+  const extra = rows
+    .filter((r) => !Object.values(r.names).some((n) => known.has(fold(n))) && inside(r.bbox))
+    .map((r) => ({ code: r.code, name: r.names[lang] || r.names.en, bbox: r.bbox }));
+  // The timetable's own areas in the app's language where areas.json names
+  // them ("Northern Ireland" → "Irlanda del Norte").
+  const own = areas.map((a) => {
+    const r = rows.find((x) => Object.values(x.names).some((n) => fold(n) === fold(a.name)));
+    return r ? { ...a, name: r.names[lang] || a.name } : a;
+  });
+  return [...own, ...extra].sort((a, b) => a.name.localeCompare(b.name, lang));
+}
+
 /** "Germany (Berlin, Brandenburg)" → "Berlin, Brandenburg"; "TER Bretagne"
  * → "Bretagne"; "Italy (Lombardy, Trenord)" → "Lombardy". */
 export function areaName(name) {

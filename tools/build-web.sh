@@ -55,7 +55,7 @@ fi
 if [ -n "${DIST:-}" ]; then
   rm -rf "$DIST" && mkdir -p "$DIST"
   cp -r web/index.html web/main.js web/app.css web/icon.svg web/icons web/js web/pkg web/vendor web/legal \
-    web/manifest.webmanifest web/sw.js web/_headers web/countries.geojson "$DIST"/
+    web/manifest.webmanifest web/sw.js web/_headers web/countries.geojson web/areas.json "$DIST"/
   # Search engines and AI assistants: crawl files, guide pages (static text,
   # no scripts) and the link preview image. docs/seo.md.
   cp -r web/robots.txt web/sitemap.xml web/llms.txt web/404.html web/og-image.jpg web/guides.css \

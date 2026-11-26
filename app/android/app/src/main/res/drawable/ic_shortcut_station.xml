@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home-screen shortcut icon (TrainRadar Pro): a coloured disc and a white glyph. -->
+<!-- Home-screen shortcut icon (TrainRadar Pro), a station: a green disc and
+     a white station building (gabled roof with a clock, door, platform). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
     <path android:fillColor="#FF166534" android:pathData="M24,2a22,22 0,1 0,0.01 0z" />
-    <group android:translateX="12" android:translateY="12">
-        <path android:fillColor="#FFFFFFFF" android:pathData="M5,5h14v14H5z" />
+    <path android:strokeColor="#33FFFFFF" android:strokeWidth="1.5" android:fillColor="#00000000"
+        android:pathData="M24,5.5a18.5,18.5 0,1 0,0.01 0z" />
+    <group android:translateX="12" android:translateY="11">
+        <!-- Roof with a clock in the gable. -->
+        <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+            android:pathData="M1.5,10.5 L12,3 22.5,10.5 V12 H1.5z M12,6.2a1.9,1.9 0,1 0,0.01 0z" />
+        <!-- The building, its door and two windows. -->
+        <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+            android:pathData="M4,13 H20 V21.5 H4z M10.25,16 H13.75 V21.5 H10.25z M5.75,15 H8.5 V17.75 H5.75z M15.5,15 H18.25 V17.75 H15.5z" />
+        <!-- The platform. -->
+        <path android:fillColor="#FFFFFFFF" android:pathData="M0.5,22.5 H23.5 V24.5 H0.5z" />
     </group>
 </vector>
