@@ -53,14 +53,14 @@ public class WidgetConfigActivity extends Activity {
                     ? Tr.pick(lang, "Guarda antes un tren con ☆ Guardar en TrainRadar y vuelve a añadir el widget.", "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Guarde primeiro um comboio com ☆ Guardar no TrainRadar e volte a adicionar o widget.", "先に TrainRadar で ☆保存 から列車を保存し、もう一度ウィジェットを追加してください。")
                     : Tr.pick(lang, "Guarda antes una estación con ☆ Guardar en TrainRadar y vuelve a añadir el widget.", "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Guarde primeiro uma estação com ☆ Guardar no TrainRadar e volte a adicionar o widget.", "先に TrainRadar で ☆保存 から駅を保存し、もう一度ウィジェットを追加してください。"));
             Button open = new Button(this);
-            open.setTextTr.pick(lang, "Abrir TrainRadar", "Open TrainRadar", "Abrir o TrainRadar", "TrainRadar を開く");
+            open.setText(Tr.pick(lang, "Abrir TrainRadar", "Open TrainRadar", "Abrir o TrainRadar", "TrainRadar を開く"));
             open.setOnClickListener(x -> {
                 startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 finish();
             });
             box.addView(open);
         } else {
-            hint.setTextTr.pick(lang, "De tus favoritos:", "From your favourites:", "Dos seus favoritos:", "お気に入りから:");
+            hint.setText(Tr.pick(lang, "De tus favoritos:", "From your favourites:", "Dos seus favoritos:", "お気に入りから:"));
             for (int i = 0; i < favs.length(); i++) {
                 JSONObject f = favs.optJSONObject(i);
                 if (f == null) continue;
