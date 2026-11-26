@@ -26,6 +26,49 @@ final class TrTable {
         BY.put(lang, m);
     }
 
+    private static void cs() {
+        put("cs",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s nyní odjíždí z koleje %2$s (dříve %3$s)",
+                "%d min late", "zpoždění %d min",
+                "Arrivals · ", "Příjezdy · ",
+                "Cancelled", "Zrušeno",
+                "Change at %s at risk: %d min left for the %s", "Přestup ve stanici %1$s je ohrožen: na %3$s zbývá %2$d min",
+                "Delays of your trains", "Zpoždění vašich vlaků",
+                "Departures · ", "Odjezdy · ",
+                "From ", "Výchozí stanice: ",
+                "From your favourites:", "Z vašich oblíbených:",
+                "Next stop: ", "Další zastávka: ",
+                "No data yet.", "Zatím žádná data.",
+                "No notices in force.", "Žádná platná oznámení.",
+                "No trains in the next 3 hours.", "V příštích 3 hodinách nejede žádný vlak.",
+                "Not running now.", "Teď nejede.",
+                "Open TrainRadar", "Otevřít TrainRadar",
+                "Renfe notices", "Oznámení Renfe",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "Nejdřív v TrainRadaru uložte stanici pomocí ☆ Uložit a pak widget přidejte znovu.",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "Nejdřív v TrainRadaru uložte vlak pomocí ☆ Uložit a pak widget přidejte znovu.",
+                "Save trains with ☆ to see them here.", "Uložte vlaky pomocí ☆ a uvidíte je zde.",
+                "Tap to choose a station or train.", "Klepnutím vyberte stanici nebo vlak.",
+                "The widget is part of TrainRadar Pro.", "Widget je součástí TrainRadar Pro.",
+                "This widget is part of TrainRadar Pro.", "Tento widget je součástí TrainRadar Pro.",
+                "Train", "Vlak",
+                "Updated ", "Aktualizováno ",
+                "Updating…", "Aktualizace…",
+                "Which station?", "Která stanice?",
+                "Which train?", "Který vlak?",
+                "You leave at %s: %s %s", "Odjíždíte v %s: %s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "Nestihnete přestup ve stanici %1$s na %2$s: podívejte se na jiné možnosti",
+                "cancelled", "zrušen",
+                "cancelled — see other options", "zrušen — podívejte se na jiné možnosti",
+                "disruption", "mimořádnost",
+                "lifts and access", "výtahy a přístup",
+                "no live delay", "bez aktuálního zpoždění",
+                "not running", "nejede",
+                "notice", "oznámení",
+                "on time", "včas",
+                "strike", "stávka",
+                "works", "výluka");
+    }
+
     private static void da() {
         put("da",
                 "%1$s now leaves from platform %2$s (was %3$s)", "%1$s afgår nu fra spor %2$s (før %3$s)",
@@ -500,6 +543,7 @@ final class TrTable {
     }
 
     static {
+        cs();
         da();
         de();
         et();
