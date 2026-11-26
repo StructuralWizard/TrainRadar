@@ -3,8 +3,9 @@
 Status: **V1 built 2026-11-26, for every country at once** (the maintainer's choice: free, no
 thumbnails, all countries). What V1 does, and how it differs from the plan below:
 
-- **Data:** `refdata/cabrides/` holds `videos.csv`, `video_stops.csv`, `stations.csv` from the
-  data branch, and `aliases.csv` (the build script's name aliases). `tools/cabrides/build.py`
+- **Data:** `refdata/cabrides/` holds `videos.csv` and `video_stops.csv` from the data branch,
+  and `aliases.csv` (the build script's name aliases). `stations.csv` stays on the data branch:
+  the app matches stations by name, so nothing reads it. `tools/cabrides/build.py`
   writes each country's `cabrides.json` next to its data at deploy: 2,512 videos with timed
   stations in the 21 countries the app has (Australia, New Zealand, Singapore and Japan have none).
 - **Matching** is by name in the app (`web/js/cabrides.js`), not a build-time alias table: the
