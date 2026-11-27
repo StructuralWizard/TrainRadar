@@ -928,7 +928,7 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
  * language, search with the country button, the five tabs as a segmented
  * control, then the open sheet); the map fills the rest. */
 @media (min-width: 900px) {
-  :root { --panel-w: 392px; --panel-top: 196px; --tab-h: 0px; }
+  :root { --panel-w: 392px; --panel-top: 200px; --tab-h: 0px; }
   #map { left: var(--panel-w); }
   .panel-bg {
     display: block; position: fixed; z-index: 5; left: 0; top: 0; bottom: 0; width: var(--panel-w);
@@ -950,10 +950,10 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .map-chip { box-shadow: var(--tr-shadow); }
   .tabbar {
     position: fixed; z-index: 7; top: 134px; left: 20px; right: auto; bottom: auto;
-    width: calc(var(--panel-w) - 40px); height: 48px; padding: 4px; gap: 2px;
+    width: calc(var(--panel-w) - 40px); height: 52px; padding: 4px; gap: 2px;
     background: var(--tr-ground); border: 0; border-radius: var(--tr-radius-sm);
   }
-  .tab { min-height: 40px; flex-direction: row; gap: 4px; font-size: 13px; border-radius: 8px; color: var(--tr-muted); }
+  .tab { min-height: 44px; flex-direction: row; gap: 4px; font-size: 13px; border-radius: 8px; color: var(--tr-muted); }
   .tab > .icon { display: none; }
   .tab[aria-current="page"] { background: var(--tr-surface); color: var(--tr-brand); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
   .tab-badge { position: static; margin: 0; }
@@ -983,7 +983,7 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
     max-width: 360px; padding: 4px 6px; border-radius: var(--tr-radius); background: var(--tr-surface); box-shadow: var(--tr-shadow); font-size: 13px;
   }
   body.lefty .legend { left: auto; right: 64px; }
-  .legend-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 32px; padding: 0 8px; border: 0; background: none; color: var(--tr-muted); font: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; justify-content: space-between; }
+  .legend-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 44px; padding: 0 8px; border: 0; background: none; color: var(--tr-muted); font: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; justify-content: space-between; }
   .legend-body { padding: 2px 8px 8px; display: flex; flex-direction: column; gap: 6px; }
   .legend-row { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; color: var(--tr-ink); }
   .legend .legend-sep { display: none; }
