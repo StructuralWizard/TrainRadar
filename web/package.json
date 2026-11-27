@@ -2,11 +2,12 @@
   "name": "trainradar-web",
   "private": true,
   "type": "module",
-  "description": "TrainRadar static site. MapLibre is vendored from npm at build time.",
+  "description": "TrainRadar static site. MapLibre and the Inter font are vendored from npm at build time.",
   "scripts": {
     "test": "node --test js/*.test.mjs"
   },
   "devDependencies": {
+    "@fontsource-variable/inter": "5.3.0",
     "maplibre-gl": "6.14.0"
   }
 }

@@ -13,6 +13,10 @@ tools/build-wasm.sh
 mkdir -p web/vendor/maplibre
 cp web/node_modules/maplibre-gl/dist/{maplibre-gl.mjs,maplibre-gl-worker.mjs,maplibre-gl.css} \
   web/node_modules/maplibre-gl/LICENSE.txt web/vendor/maplibre/
+# Inter (SIL Open Font License), served from the site: no font host sees the visitors.
+mkdir -p web/vendor/inter
+cp web/node_modules/@fontsource-variable/inter/files/inter-{latin,latin-ext}-wght-normal.woff2 \
+  web/node_modules/@fontsource-variable/inter/LICENSE web/vendor/inter/
 
 if [ -n "${RT_BASE:-}" ]; then
   # Production: point the app and its CSP at the deployed feed sources.
