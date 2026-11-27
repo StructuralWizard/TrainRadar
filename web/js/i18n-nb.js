@@ -670,4 +670,6 @@ export const NB = {
   kindRegional: "Regiontog",
   kindTimetable: "Etter rutetabell (ingen sanntidsdata)",
   showLinesOther: "Linjer",
+  whenToday: "I dag",
+  whenTomorrow: "I morgen",
 };

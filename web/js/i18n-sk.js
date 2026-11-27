@@ -670,4 +670,6 @@ export const SK = {
   kindRegional: "Regionálne",
   kindTimetable: "Podľa cestovného poriadku (bez živých údajov)",
   showLinesOther: "Linky",
+  whenToday: "Dnes",
+  whenTomorrow: "Zajtra",
 };

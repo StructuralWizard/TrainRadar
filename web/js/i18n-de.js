@@ -670,4 +670,6 @@ export const DE = {
   kindRegional: "Regionalverkehr",
   kindTimetable: "Nach Fahrplan (ohne Live-Daten)",
   showLinesOther: "Linien",
+  whenToday: "Heute",
+  whenTomorrow: "Morgen",
 };

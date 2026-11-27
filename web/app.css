@@ -814,8 +814,18 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
 .journey-notify li { padding: 3px 0; }
 .journey-remind select { font: inherit; }
 
-/* "When": now, or a date and time (future timetables). */
-.when-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 8px; }
+/* "When": Ahora · Hoy · Mañana · Otro día, then a time (future timetables). */
+.when-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 8px; }
+.when-chip {
+  min-height: 44px; padding: 0 16px; border: 1px solid var(--tr-line); border-radius: 22px; background: var(--tr-surface);
+  color: var(--tr-ink); font: inherit; font-size: 14px; font-weight: 600;
+}
+.when-chip[aria-pressed="true"] { background: var(--tr-brand-fill); border-color: var(--tr-brand-fill); color: var(--tr-on-brand); }
+.when-chip:focus-visible { outline: 3px solid var(--tr-focus); outline-offset: 2px; }
+.when-pick input { min-height: 44px; }
+/* A station's lines, as badges under its name. */
+.ss-lines { display: flex; flex-wrap: wrap; gap: 4px; }
+.ss-lines .line-badge { font-size: 12px; padding: 1px 6px; border-radius: 5px; }
 .when-pick { display: inline-flex; align-items: center; gap: 6px; color: var(--tr-muted); }
 .when-pick input { font: inherit; padding: 4px 6px; border: 1px solid var(--tr-line); border-radius: 8px; background: transparent; color: inherit; }
 .trainday-stops { list-style: none; margin: 0; padding: 0; }

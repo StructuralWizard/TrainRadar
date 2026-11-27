@@ -670,4 +670,6 @@ export const NL = {
   kindRegional: "Regionaal",
   kindTimetable: "Volgens dienstregeling (geen live gegevens)",
   showLinesOther: "Lijnen",
+  whenToday: "Vandaag",
+  whenTomorrow: "Morgen",
 };

@@ -20,7 +20,7 @@ export const delayMinutes = (secs) => Math.round(secs / 60);
 
 /** Short delay for pills: "+12", "A su hora", "—". */
 export function delayShort(lang, secs) {
-  if (secs === null || secs === undefined) return "—";
+  if (secs === null || secs === undefined) return t(lang, "legendUnknown");
   const m = delayMinutes(secs);
   return m <= 0 ? t(lang, "onTime") : `+${formatCount(lang, m)}`;
 }
@@ -275,20 +275,38 @@ export function trainSheet(lang, info, o = {}) {
  * (YYYY-MM-DD) or null; `onChange(ms | null)`.
  */
 export function whenField(lang, { id, value, tz, until, onChange }) {
-  const input = el("input", {
-    type: "datetime-local",
-    id,
-    "aria-label": t(lang, "whenLabel"),
-    value: value ? zonedInput(value, tz) : "",
-    min: zonedInput(Date.now() - 3600_000, tz),
-    max: until ? `${until}T23:59` : null,
-    onchange: (e) => onChange(fromZonedInput(e.target.value, tz)),
-  });
+  // Ahora · Hoy · Mañana · Otro día, then a time (and for another day, its
+  // date): docs/design/ui-redesign/PLAN.md, step 8.
+  const nowStr = zonedInput(Date.now(), tz);
+  const today = nowStr.slice(0, 10);
+  const tomorrow = zonedInput(Date.now() + 86_400_000, tz).slice(0, 10);
+  const cur = value ? zonedInput(value, tz) : null;
+  const day = cur ? cur.slice(0, 10) : null;
+  const time = cur ? cur.slice(11, 16) : nowStr.slice(11, 16);
+  const which = !cur ? "now" : day === today ? "today" : day === tomorrow ? "tomorrow" : "other";
+  const at = (d, tm = time) => onChange(fromZonedInput(`${d}T${tm}`, tz));
+  const chip = (k, label, onclick) =>
+    el("button", { type: "button", class: "when-chip", id: `${id}-${k}`, "aria-pressed": String(which === k), onclick }, label);
+  // The day after tomorrow, to start "another day" from.
+  const later = zonedInput(Date.now() + 2 * 86_400_000, tz).slice(0, 10);
   return el(
     "div",
-    { class: "when-row" },
-    el("button", { type: "button", class: value ? "pill small" : "pill small pill-strong", "aria-pressed": String(!value), id: `${id}-now`, onclick: () => onChange(null) }, t(lang, "whenNow")),
-    el("label", { class: "when-pick" }, icon("clock", 16), input),
+    { class: "when-row", id },
+    chip("now", t(lang, "whenNow"), () => onChange(null)),
+    chip("today", t(lang, "whenToday"), () => at(today)),
+    chip("tomorrow", t(lang, "whenTomorrow"), () => at(tomorrow)),
+    which === "other"
+      ? el("label", { class: "when-pick" }, icon("calendar", 16), el("input", {
+          type: "date", id: `${id}-date`, "aria-label": t(lang, "otherDay"), value: day, min: today, max: until || null,
+          onchange: (e) => e.target.value && at(e.target.value),
+        }))
+      : chip("other", t(lang, "otherDay"), () => at(until && later > until ? until : later)),
+    which === "now"
+      ? null
+      : el("label", { class: "when-pick" }, icon("clock", 16), el("input", {
+          type: "time", id: `${id}-time`, "aria-label": t(lang, "whenLabel"), value: time,
+          onchange: (e) => e.target.value && at(day || today, e.target.value),
+        })),
   );
 }
 
@@ -417,7 +435,13 @@ export function stationSheet(lang, station, o = {}) {
     el(
       "div",
       { class: "ss-head sheet-grip" },
-      el("div", { class: "ss-main" }, el("h2", { class: "popup-title" }, station.name), o.sub ? el("p", { class: "ts-meta" }, o.sub) : null),
+      el(
+        "div",
+        { class: "ss-main" },
+        el("h2", { class: "popup-title" }, station.name),
+        o.routes?.length ? el("div", { class: "ss-lines" }, o.routes.map((r) => lineBadge(r, o.lineColor?.(r)))) : null,
+        o.sub ? el("p", { class: "ts-meta" }, o.sub) : null,
+      ),
       closeButton(lang, o.onClose),
     ),
     chips.length ? el("div", { class: "chip-row" }, chips) : null,

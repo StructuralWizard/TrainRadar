@@ -693,4 +693,6 @@ export const JA = {
   kindRegional: "地域列車",
   kindTimetable: "時刻表による（リアルタイムなし）",
   showLinesOther: "路線",
+  whenToday: "今日",
+  whenTomorrow: "明日",
 };

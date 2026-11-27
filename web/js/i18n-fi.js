@@ -670,4 +670,6 @@ export const FI = {
   kindRegional: "Taajamajunat",
   kindTimetable: "Aikataulun mukaan (ei reaaliaikatietoa)",
   showLinesOther: "Linjat",
+  whenToday: "Tänään",
+  whenTomorrow: "Huomenna",
 };

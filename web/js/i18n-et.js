@@ -670,4 +670,6 @@ export const ET = {
   kindRegional: "Regionaalrongid",
   kindTimetable: "Sõiduplaani järgi (reaalajas andmeteta)",
   showLinesOther: "Liinid",
+  whenToday: "Täna",
+  whenTomorrow: "Homme",
 };

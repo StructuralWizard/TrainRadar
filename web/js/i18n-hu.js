@@ -670,4 +670,6 @@ export const HU = {
   kindRegional: "Regionális",
   kindTimetable: "Menetrend szerint (élő adatok nélkül)",
   showLinesOther: "Vonalak",
+  whenToday: "Ma",
+  whenTomorrow: "Holnap",
 };

@@ -670,4 +670,6 @@ export const DA = {
   kindRegional: "Regionaltog",
   kindTimetable: "Efter køreplan (ingen livedata)",
   showLinesOther: "Linjer",
+  whenToday: "I dag",
+  whenTomorrow: "I morgen",
 };

@@ -209,8 +209,17 @@ const later = await page.evaluate(() => {
 // Cómo llegar on that date: Zaragoza → Pinto (AVE + Cercanías).
 await page.fill("#search-q", "zaragoza a pinto");
 await page.click("#search-route-go").catch(() => fail("no Zaragoza → Pinto row"));
+// The date picker (step 8 of docs/design/ui-redesign/PLAN.md): "Otro día",
+// then the date and the time.
+const pickDay = async (id) => {
+  await page.click(`#${id}-other`);
+  await page.waitForSelector(`#${id}-date`);
+  await page.fill(`#${id}-date`, later.slice(0, 10));
+  await page.waitForSelector(`#${id}-time`);
+  await page.fill(`#${id}-time`, later.slice(11, 16));
+};
 await page.waitForSelector("#route:not([hidden]) #route-when");
-await page.fill("#route-when", later);
+await pickDay("route-when");
 await page.waitForSelector("#route #route-planned", { timeout: 15000 }).catch(() => fail("route: no timetable mode for a later date"));
 await page.waitForSelector('#route .journey-row[data-changes="1"]', { timeout: 15000 }).catch(async () => fail(`route on a later date: ${await page.textContent("#route-body")}`));
 console.log("route later:", (await page.textContent("#route-body")).replace(/\s+/g, " ").slice(0, 200));
@@ -223,7 +232,7 @@ await page.fill("#search-q", "zaragoza deli");
 await page.waitForSelector("#search-results .search-station", { timeout: 5000 });
 await page.click("#search-results .search-station");
 await page.waitForSelector("#detail:not([hidden]) .sheet-station #station-when", { timeout: 8000 }).catch(() => fail("no date field on the station sheet"));
-await page.fill("#station-when", later);
+await pickDay("station-when");
 await page.waitForFunction(() => /Según horario/.test(document.getElementById("station-planned")?.textContent || "") && document.querySelectorAll("#detail .sheet-station .dep-row").length > 0, null, { timeout: 15000 })
   .catch(async () => fail(`station on a later date: ${(await page.textContent("#detail")).slice(0, 300)}`));
 console.log("station later:", (await page.textContent("#detail .sheet-station")).replace(/\s+/g, " ").slice(0, 200));

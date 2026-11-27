@@ -1507,15 +1507,15 @@ function showStationSheet(f, regions, refresh) {
   const board = when ? stationPlan.board : JSON.parse(engine.stationBoardJson(id, now, 90 * 60, 12));
   const approaching = when ? [] : JSON.parse(engine.approachingJson(id, now, 30 * 60)).slice(0, 10);
   const nucleo = regions.find((r) => r.code !== "ld");
-  const routes = [...new Set(board.map((r) => r.route).filter(Boolean))].slice(0, 4);
+  const routes = [...new Set(board.map((r) => r.route).filter(Boolean))].slice(0, 6);
   const sub = [];
   if (nucleo) sub.push(t(lang, "cercanias", { region: nucleo.name }));
-  if (routes.length) sub.push(routes.join(", "));
   if (userFix) sub.push(t(lang, "awayDistance", { d: formatDistance(lang, distanceM(userFix, { lat, lon })) }));
   const redraw = () => showStation(f, { refresh: true });
   const region = nucleo?.code || "";
   const body = stationSheet(lang, { id, name }, {
     sub: sub.join(" · "),
+    routes,
     board,
     approaching,
     planned: !!when,

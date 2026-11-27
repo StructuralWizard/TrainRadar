@@ -670,4 +670,6 @@ export const SV = {
   kindRegional: "Regionaltåg",
   kindTimetable: "Enligt tidtabell (inga realtidsdata)",
   showLinesOther: "Linjer",
+  whenToday: "I dag",
+  whenTomorrow: "I morgon",
 };

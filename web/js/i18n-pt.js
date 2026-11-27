@@ -693,4 +693,6 @@ export const PT = {
   kindRegional: "Regionais",
   kindTimetable: "Segundo o horário (sem dados em direto)",
   showLinesOther: "Linhas",
+  whenToday: "Hoje",
+  whenTomorrow: "Amanhã",
 };

@@ -670,4 +670,6 @@ export const ZH = {
   kindRegional: "区域列车",
   kindTimetable: "按时刻表（无实时数据）",
   showLinesOther: "线路",
+  whenToday: "今天",
+  whenTomorrow: "明天",
 };

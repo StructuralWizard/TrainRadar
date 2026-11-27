@@ -670,4 +670,6 @@ export const CS = {
   kindRegional: "Regionální",
   kindTimetable: "Podle jízdního řádu (bez živých dat)",
   showLinesOther: "Linky",
+  whenToday: "Dnes",
+  whenTomorrow: "Zítra",
 };
