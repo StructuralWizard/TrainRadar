@@ -118,7 +118,7 @@ export const ET = {
   stoppedLikely: "⏸ Tõenäoliselt seisab {a} ja {b} vahel (uut GPS-i pole {t})",
   timetableOnly: "Sõiduplaani järgi: selle riigi reaalajas andmeid veel pole",
   timetableOnlyNi: "Asukoht sõiduplaani järgi: NI Railwaysi reaalajas andmed pole praegu avalikud.",
-  timetableOnlyTfl: "Asukoht sõiduplaani järgi: TfL-i reaalajas andmeid veel ei näidata.",
+  timetableOnlyTfl: "Asukoht sõiduplaani järgi: TfL ei anna praegu selle rongi kohta reaalajas saabumisaega.",
   timetableSourceNi: "Sõiduplaan: Translink (NI Railways), Open Government Licence v3.0 alusel.",
   timetableSource: "Sõiduplaan: riiklik juurdepääsupunkt, avaldatud {date}.",
   operatorLive: "Reaalajas olek: {op} ↗",

@@ -118,7 +118,7 @@ export const CS = {
   stoppedLikely: "⏸ Pravděpodobně stojí mezi {a} a {b} (žádná nová GPS už {t})",
   timetableOnly: "Podle jízdního řádu: pro tuto zemi zatím nejsou živá data",
   timetableOnlyNi: "Poloha podle jízdního řádu: živá data NI Railways teď nejsou veřejná.",
-  timetableOnlyTfl: "Poloha podle jízdního řádu: živá data TfL se zatím nezobrazují.",
+  timetableOnlyTfl: "Poloha podle jízdního řádu: TfL teď pro tento vlak neuvádí živý příjezd.",
   timetableSourceNi: "Jízdní řád: Translink (NI Railways), pod licencí Open Government Licence v3.0.",
   timetableSource: "Jízdní řád: národní přístupový bod, zveřejněno {date}.",
   operatorLive: "Aktuální stav u {op} ↗",

@@ -118,7 +118,7 @@ export const SV = {
   stoppedLikely: "⏸ Står troligen still mellan {a} och {b} (ingen ny GPS på {t})",
   timetableOnly: "Enligt tidtabell: ingen realtidsdata för det här landet än",
   timetableOnlyNi: "Position enligt tidtabell: NI Railways realtidsdata är inte offentlig just nu.",
-  timetableOnlyTfl: "Position enligt tidtabellen: TfL:s realtidsdata visas inte ännu.",
+  timetableOnlyTfl: "Position enligt tidtabellen: TfL har just nu ingen realtidsankomst för det här tåget.",
   timetableSourceNi: "Tidtabell: Translink (NI Railways), under Open Government Licence v3.0.",
   timetableSource: "Tidtabell: National Access Point, publicerad {date}.",
   operatorLive: "Trafikläge hos {op} ↗",

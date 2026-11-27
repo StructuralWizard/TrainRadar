@@ -118,7 +118,7 @@ export const NB = {
   stoppedLikely: "⏸ Trolig stoppet mellom {a} og {b} (ingen ny GPS på {t})",
   timetableOnly: "Etter rutetabell: ingen sanntidsdata for dette landet ennå",
   timetableOnlyNi: "Posisjon fra rutetabellen: sanntidsdataene til NI Railways er ikke offentlige nå.",
-  timetableOnlyTfl: "Posisjon etter rutetabellen: TfLs sanntidsdata vises ikke ennå.",
+  timetableOnlyTfl: "Posisjon etter rutetabellen: TfL har ingen sanntidsankomst for dette toget akkurat nå.",
   timetableSourceNi: "Rutetabell: Translink (NI Railways), under Open Government Licence v3.0.",
   timetableSource: "Rutetabell: nasjonalt tilgangspunkt, publisert {date}.",
   operatorLive: "Sanntidsstatus hos {op} ↗",

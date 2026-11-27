@@ -118,7 +118,7 @@ export const FI = {
   stoppedLikely: "⏸ Todennäköisesti pysähtyneenä välillä {a}–{b} (ei uutta GPS-tietoa ajassa {t})",
   timetableOnly: "Aikataulun mukaan: tästä maasta ei vielä ole reaaliaikaista tietoa",
   timetableOnlyNi: "Sijainti aikataulusta: NI Railwaysin reaaliaikainen data ei ole nyt julkista.",
-  timetableOnlyTfl: "Sijainti aikataulun mukaan: TfL:n reaaliaikaisia tietoja ei vielä näytetä.",
+  timetableOnlyTfl: "Sijainti aikataulun mukaan: TfL ei juuri nyt anna tälle junalle reaaliaikaista saapumisaikaa.",
   timetableSourceNi: "Aikataulu: Translink (NI Railways), Open Government Licence v3.0 -lisenssillä.",
   timetableSource: "Aikataulu: kansallinen yhteyspiste, julkaistu {date}.",
   operatorLive: "Reaaliaikainen tilanne: {op} ↗",

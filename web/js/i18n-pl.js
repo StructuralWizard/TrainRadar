@@ -118,7 +118,7 @@ export const PL = {
   stoppedLikely: "⏸ Prawdopodobnie stoi na odcinku {a} – {b} (brak nowego GPS od {t})",
   timetableOnly: "Według rozkładu: brak jeszcze danych na żywo dla tego kraju",
   timetableOnlyNi: "Pozycja według rozkładu: dane na żywo NI Railways nie są obecnie publiczne.",
-  timetableOnlyTfl: "Pozycja według rozkładu: dane na żywo TfL nie są jeszcze pokazywane.",
+  timetableOnlyTfl: "Pozycja według rozkładu: TfL nie podaje teraz przyjazdu na żywo dla tego pociągu.",
   timetableSourceNi: "Rozkład: Translink (NI Railways), na licencji Open Government Licence v3.0.",
   timetableSource: "Rozkład: National Access Point, opublikowany {date}.",
   operatorLive: "Status na żywo u {op} ↗",

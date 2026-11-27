@@ -118,7 +118,7 @@ export const NL = {
   stoppedLikely: "⏸ Staat waarschijnlijk stil tussen {a} en {b} (al {t} geen nieuwe gps)",
   timetableOnly: "Volgens dienstregeling: nog geen live gegevens voor dit land",
   timetableOnlyNi: "Positie volgens dienstregeling: de live gegevens van NI Railways zijn op dit moment niet openbaar.",
-  timetableOnlyTfl: "Positie volgens de dienstregeling: de live gegevens van TfL worden nog niet getoond.",
+  timetableOnlyTfl: "Positie volgens de dienstregeling: TfL geeft voor deze trein nu geen live aankomsttijd.",
   timetableSourceNi: "Dienstregeling: Translink (NI Railways), onder de Open Government Licence v3.0.",
   timetableSource: "Dienstregeling: National Access Point, gepubliceerd op {date}.",
   operatorLive: "Live status bij {op} ↗",

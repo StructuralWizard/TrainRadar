@@ -118,7 +118,7 @@ export const DE = {
   stoppedLikely: "⏸ Steht vermutlich zwischen {a} und {b} (seit {t} kein neues GPS)",
   timetableOnly: "Nach Fahrplan: für dieses Land noch keine Live-Daten",
   timetableOnlyNi: "Position nach Fahrplan: Die Live-Daten von NI Railways sind derzeit nicht öffentlich.",
-  timetableOnlyTfl: "Position nach Fahrplan: Die Echtzeitdaten von TfL werden noch nicht angezeigt.",
+  timetableOnlyTfl: "Position nach Fahrplan: TfL meldet für diesen Zug gerade keine Ankunft in Echtzeit.",
   timetableSourceNi: "Fahrplan: Translink (NI Railways), unter der Open Government Licence v3.0.",
   timetableSource: "Fahrplan: Nationaler Zugangspunkt, veröffentlicht am {date}.",
   operatorLive: "Live-Status bei {op} ↗",

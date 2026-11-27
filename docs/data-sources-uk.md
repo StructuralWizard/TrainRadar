@@ -155,8 +155,16 @@ TfL's Unified API (`api.tfl.gov.uk`), region `uk-tfl` in the UK's data, by timet
   sits behind a browser check that automated downloads can't pass: not used.
 - No shapes yet: straight lines between stations (`lineStrings` in the route sequence could give
   them). Elizabeth line, Overground and Merseyrail are already in Network Rail's timetable.
-- **Live, next:** `/Mode/tube,dlr,tram/Arrivals` gives every prediction in one call (no GPS for
-  the Tube): positions would be estimated from the time to the next station.
+- **Live (added 2026-11-27):** the UK ingest Worker (`backend-uk/src/tfl.js`), every minute:
+  `/Mode/{tube|dlr|tram}/Arrivals?count=-1` (one mode per call, so 3 calls, ~4,300 a day). TfL has
+  no positions for these trains and DLR predictions carry no vehicle ids, so each prediction (line,
+  station, destination, expected time) is matched to the timetabled trip due there nearest that
+  time (within 15 minutes), from `data/uk/tfl-index.json` (`tfl-gtfs.py --index`, the same
+  timetable compactly, 601 KB); a trip's delay is the median of its predictions'. Published as
+  `uk/rt/tfl_updates.pb` (TripUpdates, trip ids `tfl:…`), read by the engine as `tu_tfl` beside
+  Network Rail's `tu_uk`: trains placed by timetable shifted by the delay. 2026-11-27, Friday
+  23:30: 3,433 predictions, 88 % matched (the rest mostly without a destination), 306 trains;
+  delays p10 −2.4 min, median +35 s, p90 +3.6 min. `tools/feed-check/tfl-match.mjs` checks it.
 - **Licence:** TfL open data (transport data service terms): "Powered by TfL Open Data";
   contains OS data © Crown copyright and database rights.
 

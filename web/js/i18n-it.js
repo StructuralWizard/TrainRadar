@@ -118,7 +118,7 @@ export const IT = {
   stoppedLikely: "⏸ Probabilmente fermo tra {a} e {b} (nessun nuovo GPS da {t})",
   timetableOnly: "Da orario: ancora nessun dato in tempo reale per questo paese",
   timetableOnlyNi: "Posizione da orario: i dati in tempo reale di NI Railways al momento non sono pubblici.",
-  timetableOnlyTfl: "Posizione secondo l'orario: i dati in tempo reale di TfL non sono ancora mostrati.",
+  timetableOnlyTfl: "Posizione secondo l'orario: al momento TfL non fornisce arrivi in tempo reale per questo treno.",
   timetableSourceNi: "Orario: Translink (NI Railways), con Open Government Licence v3.0.",
   timetableSource: "Orario: punto di accesso nazionale, pubblicato il {date}.",
   operatorLive: "Stato in tempo reale su {op} ↗",

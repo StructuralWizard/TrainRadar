@@ -118,7 +118,7 @@ export const HU = {
   stoppedLikely: "⏸ Valószínűleg áll {a} és {b} között ({t} óta nincs új GPS-adat)",
   timetableOnly: "Menetrend szerint: ehhez az országhoz még nincs élő adat",
   timetableOnlyNi: "Pozíció a menetrend alapján: az NI Railways élő adatai jelenleg nem nyilvánosak.",
-  timetableOnlyTfl: "Menetrend szerinti helyzet: a TfL valós idejű adatai még nem jelennek meg.",
+  timetableOnlyTfl: "Menetrend szerinti helyzet: a TfL most nem ad valós idejű érkezést ehhez a vonathoz.",
   timetableSourceNi: "Menetrend: Translink (NI Railways), Open Government Licence v3.0 alatt.",
   timetableSource: "Menetrend: Nemzeti Hozzáférési Pont, közzétéve: {date}.",
   operatorLive: "Élő állapot: {op} ↗",

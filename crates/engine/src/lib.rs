@@ -1987,4 +1987,58 @@ mod tests {
         live.ingest(&net, "tu_uk", FeedData::TripUpdates(vec![tu]), now);
         assert_eq!(flag(&live) & FLAG_SCHEDULED_ONLY, 0);
     }
+
+    #[test]
+    fn london_trains_take_tfls_matched_delays_beside_network_rails() {
+        use crate::network::tests::{local, sample_timetable};
+        use crate::source::{FeedData, RtTripUpdate};
+        let mut tt = sample_timetable();
+        tt.region = "uk-tfl".into();
+        for (t, id) in tt.trips.iter_mut().zip([
+            "tfl:victoria:940GZZLUBXN:0:1:2",
+            "tfl:victoria:940GZZLUBXN:0:1:3",
+            "tfl:victoria:940GZZLUBXN:0:1:4",
+        ]) {
+            t.service = None;
+            t.id_rest = id.into();
+        }
+        assert!(crate::networkrail::placed_by_timetable("uk-tfl", true));
+        let mut net = Network::default();
+        net.load_timetable(&encode(&tt).unwrap()).unwrap();
+        let now = local(9, 5);
+        let mut live = live::Live::default();
+        live.rebuild(&net, now);
+        let flag = |live: &live::Live| {
+            let v = &live.views(&net, now, false)[0];
+            flags(&net, v, &live.trains[v.index])
+        };
+        assert_ne!(flag(&live) & FLAG_SCHEDULED_ONLY, 0);
+        // Network Rail's feed doesn't clear TfL's, nor TfL's Network Rail's.
+        let tu = |id: &str| RtTripUpdate {
+            trip_id: id.into(),
+            delay: Some(120),
+            canceled: false,
+            accessible: None,
+            stops: vec![],
+        };
+        live.ingest(
+            &net,
+            "tu_tfl",
+            FeedData::TripUpdates(
+                ["2", "3", "4"]
+                    .iter()
+                    .map(|j| tu(&format!("tfl:victoria:940GZZLUBXN:0:1:{j}")))
+                    .collect(),
+            ),
+            now,
+        );
+        assert_eq!(flag(&live) & FLAG_SCHEDULED_ONLY, 0);
+        live.ingest(
+            &net,
+            "tu_uk",
+            FeedData::TripUpdates(vec![tu("C1:2026-05-17:P")]),
+            now,
+        );
+        assert_eq!(flag(&live) & FLAG_SCHEDULED_ONLY, 0);
+    }
 }

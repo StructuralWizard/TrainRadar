@@ -116,7 +116,7 @@ export const JA = {
   stoppedLikely: "⏸ {a}と{b}の間で停車中の可能性（{t}新しいGPSなし）",
   timetableOnly: "時刻表による表示：この国のリアルタイムデータはまだありません",
   timetableOnlyNi: "時刻表による位置：NI Railwaysのリアルタイムデータは現在公開されていません。",
-  timetableOnlyTfl: "時刻表に基づく位置：TfLのリアルタイム情報はまだ表示されていません。",
+  timetableOnlyTfl: "時刻表に基づく位置：現在、この列車のTfLのリアルタイム到着情報はありません。",
   timetableSourceNi: "時刻表：Translink（NI Railways）、Open Government Licence v3.0に基づく。",
   timetableSource: "時刻表：ナショナルアクセスポイント、{date}公開。",
   operatorLive: "{op}で運行状況を見る ↗",

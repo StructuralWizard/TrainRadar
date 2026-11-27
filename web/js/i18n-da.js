@@ -118,7 +118,7 @@ export const DA = {
   stoppedLikely: "⏸ Holder formentlig stille mellem {a} og {b} (ingen ny GPS i {t})",
   timetableOnly: "Efter køreplan: endnu ingen livedata for dette land",
   timetableOnlyNi: "Position efter køreplanen: NI Railways' livedata er ikke offentlige lige nu.",
-  timetableOnlyTfl: "Position efter køreplanen: TfL’s live-data vises endnu ikke.",
+  timetableOnlyTfl: "Position efter køreplanen: TfL har lige nu ingen live-ankomst for dette tog.",
   timetableSourceNi: "Køreplan: Translink (NI Railways), under Open Government Licence v3.0.",
   timetableSource: "Køreplan: National Access Point, offentliggjort {date}.",
   operatorLive: "Live status hos {op} ↗",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """London Underground, DLR and London Trams as GTFS, from TfL's Unified API:
 
-    UK_TFL_APP_KEY=… python3 -I tools/uk/tfl-gtfs.py OUT.zip [DAYS]
+    UK_TFL_APP_KEY=… python3 -I tools/uk/tfl-gtfs.py OUT.zip [DAYS] [--index=INDEX.json]
 
 For each line: its stations and branches (/Line/{id}/Route/Sequence/all),
 then the timetable from each terminus (/Line/{id}/Timetable/{stop}): every
@@ -13,7 +13,12 @@ that start mid-line (from a depot) aren't in TfL's timetables: left out.
 About 100 calls a run (TfL allows 500 a minute with a key). The key goes
 only in the `app_key` request header (TfL reads it there as well as in the
 query string), never in a URL; without one, TfL's anonymous limit applies
-and the calls are spaced out. Licence: TfL open data, "Powered by TfL Open
+and the calls are spaced out. --index writes the same timetable compactly
+for the UK ingest Worker (backend-uk/src/tfl.js), which matches TfL's live
+arrivals to these trips: {"v": 1, "groups": [{"p": trip id prefix, "l":
+line, "d": weekdays (0 = Monday), "iv": {interval id: [[stop, seconds after
+the departure], ...]}, "j": [[departure seconds, interval id], ...]}]}; a
+trip's id is "<p>:<index in j>". Licence: TfL open data, "Powered by TfL Open
 Data"; contains OS data © Crown copyright and database rights.
 Standard library only.
 """
@@ -115,8 +120,11 @@ def main(argv):
     if not argv:
         print(__doc__, file=sys.stderr)
         return 2
+    index_path = next((a[8:] for a in argv if a.startswith("--index=")), "")
+    argv = [a for a in argv if not a.startswith("--index=")]
     out = argv[0]
     span = int(argv[1]) if len(argv) > 1 else 70
+    groups = []
     today = datetime.date.today()
     stops = {}  # station id → (name, lat, lon)
     routes, trips, stop_times, services = [], [], [], {}
@@ -148,12 +156,25 @@ def main(argv):
                         continue
                     svc = "tfl:" + "".join(str(d) for d in days)
                     services[svc] = days
+                    group = {"p": f"tfl:{line}:{origin}:{ri}:{si}", "l": line, "d": days, "iv": {}, "j": []}
+                    groups.append(group)
                     for ji, j in enumerate(sched.get("knownJourneys", [])):
                         iv = intervals.get(int(j.get("intervalId", 0)))
                         if not iv:
                             continue
                         dep = int(j["hour"]) * 60 + int(j["minute"])
                         trip = f"tfl:{line}:{origin}:{ri}:{si}:{ji}"
+                        ivid = str(int(j.get("intervalId", 0)))
+                        if ivid not in group["iv"]:
+                            run, prev_t = [[origin, 0]], 0.0
+                            for x in iv:
+                                prev_t = max(float(x["timeToArrival"]), prev_t)
+                                run.append([x["stopId"], int(round(prev_t * 60))])
+                            group["iv"][ivid] = run
+                        # Every journey keeps its place: the trip id is its index.
+                        while len(group["j"]) < ji:
+                            group["j"].append(None)
+                        group["j"].append([dep * 60, int(ivid)])
                         last = iv[-1]["stopId"]
                         trips.append([f"tfl:{line}", svc, trip, stops.get(last, (short_name(last),))[0]])
                         stop_times.append([trip, hhmmss(dep), hhmmss(dep), origin, 1])
@@ -191,6 +212,10 @@ def main(argv):
         z.writestr("stop_times.txt", table(["trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence"],
                                            stop_times))
         z.writestr("calendar.txt", table(["service_id"] + DAYS + ["start_date", "end_date"], cal))
+    if index_path:
+        with open(index_path, "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "generated": today.isoformat(), "groups": groups}, f, separators=(",", ":"))
+        print(f"{index_path}: {len(groups)} groups, {os.path.getsize(index_path) // 1024} KB")
     print(f"{out}: {len(routes)} lines, {len(trips)} trips, {len(stop_times)} stop times, "
           f"{len(used & set(stops))} stations; {calls} calls to TfL")
     return 0 if trips else 1

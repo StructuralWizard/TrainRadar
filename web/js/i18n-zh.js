@@ -118,7 +118,7 @@ export const ZH = {
   stoppedLikely: "⏸ 可能在 {a} 与 {b} 之间停车（{t} 没有新的 GPS）",
   timetableOnly: "按时刻表：该国暂无实时数据",
   timetableOnlyNi: "位置来自时刻表：NI Railways 的实时数据目前未公开。",
-  timetableOnlyTfl: "按时刻表显示位置：尚未显示 TfL 的实时数据。",
+  timetableOnlyTfl: "按时刻表显示位置：TfL 目前未提供该列车的实时到站信息。",
   timetableSourceNi: "时刻表：Translink（NI Railways），依据 Open Government Licence v3.0。",
   timetableSource: "时刻表：国家交通数据接入点，发布于 {date}。",
   operatorLive: "在 {op} 查看实时状态 ↗",

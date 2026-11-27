@@ -638,7 +638,8 @@ fn run_build(a: BuildArgs) -> Result<()> {
             // Singapore: every train estimated from frequencies (no live
             // positions or delays; its alerts are notices only).
             // Portugal: no live data published (docs/europe/pt.md); Kōchi:
-            // Tosaden's timetable only. Tokyo: Toei's GTFS-Realtime.
+            // Tosaden's timetable only. Tokyo: Toei's GTFS-Realtime. London (TfL):
+            // live, TfL's arrivals matched to the timetable (backend-uk).
             let live = !matches!(
                 kind,
                 "sk" | "ee"
@@ -651,7 +652,6 @@ fn run_build(a: BuildArgs) -> Result<()> {
                     | "pt-lis"
                     | "jp-kch"
                     | "tw"
-                    | "uk-tfl"
             ) && !nordic::is_jp_regional(kind);
             report.push_str(&format!(
                 "- `{}` ({operator}): {} trips in feed, {} in window ({}), {} dropped, {} outside \
