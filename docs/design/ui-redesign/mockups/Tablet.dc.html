@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>TrainRadar tableta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width:834px;height:1112px;position:relative;font-family:Inter,system-ui,sans-serif;color:#0F172A;background:#E8EDF2;overflow:hidden;font-variant-numeric:tabular-nums">
+<svg width="834" height="1112" viewBox="0 0 834 1112" style="position:absolute;inset:0" aria-hidden="true">
+<path d="M40 1112 L30 760 L110 520 L90 260 L260 120 L560 100 L760 200 L834 190 L834 1112Z" fill="#F8FAFC"></path>
+<path d="M250 560 C360 510 450 450 540 360 S700 260 790 240" stroke="#7C3AED" stroke-width="5" fill="none"></path>
+<path d="M250 560 C280 680 330 800 370 960" stroke="#7C3AED" stroke-width="5" fill="none"></path>
+<path d="M250 560 C180 470 160 360 180 220" stroke="#7C3AED" stroke-width="5" fill="none"></path>
+<path d="M250 560 C360 640 480 690 600 820" stroke="#0F766E" stroke-width="4" fill="none"></path>
+<path d="M540 360 C600 460 650 560 700 680" stroke="#0F766E" stroke-width="4" fill="none"></path>
+<circle cx="250" cy="560" r="7" fill="#fff" stroke="#0F172A" stroke-width="3"></circle>
+<circle cx="540" cy="360" r="6" fill="#fff" stroke="#0F172A" stroke-width="3"></circle>
+<circle cx="640" cy="300" r="11" fill="#B91C1C" stroke="#fff" stroke-width="3"></circle>
+<circle cx="400" cy="490" r="9" fill="#15803D" stroke="#fff" stroke-width="2.5"></circle>
+<circle cx="300" cy="740" r="9" fill="#15803D" stroke="#fff" stroke-width="2.5"></circle>
+<circle cx="480" cy="690" r="9" fill="#B45309" stroke="#fff" stroke-width="2.5"></circle>
+<circle cx="180" cy="320" r="9" fill="#15803D" stroke="#fff" stroke-width="2.5"></circle>
+<text x="266" y="586" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#0F172A">Madrid</text>
+<text x="556" y="386" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#0F172A">Zaragoza</text>
+</svg>
+
+<div style="position:absolute;top:24px;left:24px;right:24px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:10px;height:56px;border-radius:28px;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.12);padding:0 8px 0 20px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<label style="flex:1;font-size:16px;color:#64748B">Buscar tren, estación o ciudad</label>
+<button style="height:42px;padding:0 16px;border-radius:21px;border:0;background:#DBEAFE;color:#1D4ED8;font-weight:700;font-size:15px">España ▾</button>
+</div>
+<div style="display:flex;gap:8px">
+<div style="height:36px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#fff;border-radius:18px;box-shadow:0 4px 16px rgba(15,23,42,.12);font-weight:700;font-size:14px"><span style="width:8px;height:8px;border-radius:50%;background:#15803D"></span>412 trenes</div>
+<div style="height:36px;display:flex;align-items:center;padding:0 14px;background:#fff;border-radius:18px;box-shadow:0 4px 16px rgba(15,23,42,.12);font-weight:700;font-size:14px">Mediana +2 min</div>
+</div>
+</div>
+
+<div style="position:absolute;right:24px;top:500px;display:flex;flex-direction:column;gap:8px">
+<button aria-label="Capas" style="width:48px;height:48px;border-radius:24px;border:0;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.12);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg></button>
+<button aria-label="Mi ubicación" style="width:48px;height:48px;border-radius:24px;border:0;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.12);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1D4ED8" aria-hidden="true"><path d="M21 3L3 10.5l7.5 3 3 7.5z"></path></svg></button>
+</div>
+<button aria-label="Atribución de datos" style="position:absolute;left:24px;top:576px;width:32px;height:32px;border-radius:50%;border:0;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.15);font-weight:800;font-size:14px;color:#475569">i</button>
+
+<div style="position:absolute;left:24px;right:24px;bottom:96px;height:400px;background:#fff;border-radius:24px;box-shadow:0 -4px 24px rgba(15,23,42,.14);padding:12px 24px 20px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+<div style="width:44px;height:5px;border-radius:3px;background:#CBD5E1;align-self:center"></div>
+<div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font-size:22px;font-weight:800">Retrasos ahora</h2><span style="flex:1"></span><span style="font-size:14px;color:#475569">34 de 412 con retraso</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<div style="background:#FEF2F2;border-radius:14px;padding:12px 14px"><div style="font-size:13px;font-weight:600;color:#991B1B">15+ min</div><div style="font-size:28px;font-weight:800;color:#991B1B">12</div></div>
+<div style="background:#FFF7ED;border-radius:14px;padding:12px 14px"><div style="font-size:13px;font-weight:600;color:#9A3412">5–14 min</div><div style="font-size:28px;font-weight:800;color:#9A3412">22</div></div>
+<div style="background:#F0FDF4;border-radius:14px;padding:12px 14px"><div style="font-size:13px;font-weight:600;color:#166534">A su hora</div><div style="font-size:28px;font-weight:800;color:#166534">378</div></div>
+</div>
+<div style="display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #E2E8F0"><span style="background:#B91C1C;color:#fff;font-weight:800;font-size:14px;border-radius:8px;padding:4px 8px;min-width:36px;text-align:center">+17</span><span style="background:#DCFCE7;color:#14532D;font-weight:800;font-size:12px;border-radius:6px;padding:2px 6px">AVE</span><span style="font-weight:700;font-size:15px">03063 → Barcelona</span><span style="flex:1"></span><span style="font-size:14px;color:#475569">Lleida 07:58</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #E2E8F0"><span style="background:#B91C1C;color:#fff;font-weight:800;font-size:14px;border-radius:8px;padding:4px 8px;min-width:36px;text-align:center">+15</span><span style="background:#FEF9C3;color:#713F12;font-weight:800;font-size:12px;border-radius:6px;padding:2px 6px">C6</span><span style="font-weight:700;font-size:15px">35021 → València Nord</span><span style="flex:1"></span><span style="font-size:14px;color:#475569">Moncofa 22:31</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #E2E8F0"><span style="background:#B45309;color:#fff;font-weight:800;font-size:14px;border-radius:8px;padding:4px 8px;min-width:36px;text-align:center">+9</span><span style="background:#E0E7FF;color:#312E81;font-weight:800;font-size:12px;border-radius:6px;padding:2px 6px">ALVIA</span><span style="font-weight:700;font-size:15px">04081 → Gijón</span><span style="flex:1"></span><span style="font-size:14px;color:#475569">León 23:12</span></div>
+</div>
+</div>
+
+<nav style="position:absolute;left:0;right:0;bottom:0;height:80px;background:#fff;border-top:1px solid #E2E8F0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center">
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#1D4ED8;font-size:13px;font-weight:700"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"></path><path d="M9 4v14M15 6v14"></path></svg>Mapa</a>
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#475569;font-size:13px;font-weight:600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>Cerca</a>
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#475569;font-size:13px;font-weight:600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3L2 20h20z"></path><path d="M12 10v4M12 17v.5"></path></svg>Avisos</a>
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#475569;font-size:13px;font-weight:600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></svg>Favoritos</a>
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#475569;font-size:13px;font-weight:600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>Más</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":834,"height":1112}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

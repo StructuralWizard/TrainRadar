@@ -1,0 +1,93 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Desktop.dc.html": {
+      "h": 900,
+      "title": "Desktop 1440 — proposed",
+      "w": 1440,
+      "x": 1400,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 3200,
+      "title": "Review — findings & Claude Code plan",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "Phone-Map.dc.html": {
+      "h": 844,
+      "title": "Phone — map home",
+      "w": 390,
+      "x": 1400,
+      "y": 1240
+    },
+    "Phone-Station.dc.html": {
+      "h": 844,
+      "title": "Phone — station departures",
+      "w": 390,
+      "x": 2340,
+      "y": 1240
+    },
+    "Phone-Train.dc.html": {
+      "h": 844,
+      "title": "Phone — train detail",
+      "w": 390,
+      "x": 1870,
+      "y": 1240
+    },
+    "PlayStore.dc.html": {
+      "h": 844,
+      "title": "Play Store screenshots",
+      "w": 1360,
+      "x": 2810,
+      "y": 1240
+    },
+    "Tablet.dc.html": {
+      "h": 1112,
+      "title": "Tablet 834 — proposed",
+      "w": 834,
+      "x": 2920,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-26T23:06:43Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t1": {
+      "kind": "title1",
+      "maxW": 2600,
+      "text": "Proposed redesign — one design language on every screen",
+      "w": 240,
+      "x": 1400,
+      "y": -260
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 2770,
+      "text": "Phone + Play Store",
+      "w": 240,
+      "x": 1400,
+      "y": 980
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Desktop.dc.html",
+    "Tablet.dc.html",
+    "Phone-Map.dc.html",
+    "Phone-Train.dc.html",
+    "Phone-Station.dc.html",
+    "PlayStore.dc.html"
+  ],
+  "pages": [],
+  "title": "TrainRadar UI review & redesign"
+}

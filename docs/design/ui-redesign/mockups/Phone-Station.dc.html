@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>TrainRadar móvil estación</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;font-family:Inter,system-ui,sans-serif;color:#0F172A;background:#F8FAFC;overflow:hidden;font-variant-numeric:tabular-nums">
+<svg width="390" height="200" viewBox="0 0 390 200" style="position:absolute;inset:0" aria-hidden="true">
+<path d="M0 160 C120 130 220 100 390 40" stroke="#F97316" stroke-width="6" fill="none"></path>
+<path d="M120 0 C150 60 180 130 200 200" stroke="#7C3AED" stroke-width="5" fill="none"></path>
+<circle cx="170" cy="112" r="10" fill="#fff" stroke="#0F172A" stroke-width="4"></circle>
+</svg>
+<a href="Phone-Map.dc.html" aria-label="Volver al mapa" style="position:absolute;top:16px;left:16px;width:44px;height:44px;border-radius:22px;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.12);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.4" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+
+<div style="position:absolute;left:0;right:0;top:150px;bottom:72px;background:#fff;border-radius:24px 24px 0 0;box-shadow:0 -4px 20px rgba(15,23,42,.12);padding:10px 20px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+<div style="width:40px;height:5px;border-radius:3px;background:#CBD5E1;align-self:center"></div>
+<div>
+<div style="font-size:22px;font-weight:800">Madrid-Atocha Cercanías</div>
+<div style="display:flex;gap:4px;margin-top:6px;align-items:center;flex-wrap:wrap">
+<span style="background:#FDE047;color:#713F12;font-weight:800;font-size:11px;border-radius:5px;padding:2px 5px">C10</span>
+<span style="background:#1E3A8A;color:#fff;font-weight:800;font-size:11px;border-radius:5px;padding:2px 5px">C4a</span>
+<span style="background:#F97316;color:#fff;font-weight:800;font-size:11px;border-radius:5px;padding:2px 5px">C3</span>
+<span style="background:#7C3AED;color:#fff;font-weight:800;font-size:11px;border-radius:5px;padding:2px 5px">C5</span>
+<span style="font-size:13px;color:#475569;margin-left:4px">· Puntualidad hoy 94 %</span>
+</div>
+</div>
+<div style="display:flex;gap:8px">
+<button style="height:36px;padding:0 14px;border-radius:18px;border:0;background:#1D4ED8;color:#fff;font-weight:700;font-size:14px">Ahora</button>
+<button style="height:36px;padding:0 14px;border-radius:18px;border:1px solid #E2E8F0;background:#fff;font-weight:600;font-size:14px">Hoy</button>
+<button style="height:36px;padding:0 14px;border-radius:18px;border:1px solid #E2E8F0;background:#fff;font-weight:600;font-size:14px">Mañana</button>
+<span style="flex:1"></span>
+<button aria-label="Guardar estación" style="width:36px;height:36px;border-radius:18px;border:1px solid #E2E8F0;background:#fff;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></svg></button>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));background:#F1F5F9;border-radius:12px;padding:4px">
+<button style="height:36px;border:0;border-radius:9px;background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.12);font-weight:700;font-size:14px">Salidas</button>
+<button style="height:36px;border:0;border-radius:9px;background:transparent;font-weight:600;font-size:14px;color:#475569">Llegadas</button>
+</div>
+<div style="display:flex;flex-direction:column">
+<div style="display:grid;grid-template-columns:50px 40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #E2E8F0"><span style="font-weight:800;font-size:16px">00:06</span><span style="background:#FDE047;color:#713F12;font-weight:800;font-size:12px;border-radius:6px;padding:3px 0;text-align:center">C10</span><div style="min-width:0"><div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Chamartín-Clara Campoamor</div><div style="font-size:12px;color:#475569">Vía 1 · tren 75172</div></div><span style="background:#DCFCE7;color:#14532D;font-weight:700;font-size:12px;border-radius:8px;padding:4px 8px">a su hora</span></div>
+<div style="display:grid;grid-template-columns:50px 40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #E2E8F0"><span style="font-weight:800;font-size:16px">00:09</span><span style="background:#1E3A8A;color:#fff;font-weight:800;font-size:12px;border-radius:6px;padding:3px 0;text-align:center">C4a</span><div style="min-width:0"><div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Alcobendas-S. S. de los Reyes</div><div style="font-size:12px;color:#475569">Vía 3 · tren 24611</div></div><span style="background:#FFEDD5;color:#9A3412;font-weight:700;font-size:12px;border-radius:8px;padding:4px 8px">+6</span></div>
+<div style="display:grid;grid-template-columns:50px 40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #E2E8F0"><span style="font-weight:800;font-size:16px">00:14</span><span style="background:#F97316;color:#fff;font-weight:800;font-size:12px;border-radius:6px;padding:3px 0;text-align:center">C3</span><div style="min-width:0"><div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Aranjuez</div><div style="font-size:12px;color:#475569">Vía 5 · tren 23088</div></div><span style="background:#DCFCE7;color:#14532D;font-weight:700;font-size:12px;border-radius:8px;padding:4px 8px">a su hora</span></div>
+<div style="display:grid;grid-template-columns:50px 40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #E2E8F0"><span style="font-weight:800;font-size:16px">00:21</span><span style="background:#7C3AED;color:#fff;font-weight:800;font-size:12px;border-radius:6px;padding:3px 0;text-align:center">C5</span><div style="min-width:0"><div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Humanes</div><div style="font-size:12px;color:#475569">Vía 7 · tren 25190</div></div><span style="background:#FEE2E2;color:#991B1B;font-weight:700;font-size:12px;border-radius:8px;padding:4px 8px">+18</span></div>
+<div style="display:grid;grid-template-columns:50px 40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0"><span style="font-weight:800;font-size:16px">00:24</span><span style="background:#FDE047;color:#713F12;font-weight:800;font-size:12px;border-radius:6px;padding:3px 0;text-align:center">C10</span><div style="min-width:0"><div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Villalba de Guadarrama</div><div style="font-size:12px;color:#475569">Vía 2 · programado</div></div><span style="background:#F1F5F9;color:#475569;font-weight:700;font-size:12px;border-radius:8px;padding:4px 8px">sin datos</span></div>
+</div>
+</div>
+
+<nav style="position:absolute;left:0;right:0;bottom:0;height:72px;background:#fff;border-top:1px solid #E2E8F0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;font-size:12px">
+<a href="Phone-Map.dc.html" style="text-align:center;text-decoration:none;color:#1D4ED8;font-weight:700">Mapa</a>
+<a href="#" style="text-align:center;text-decoration:none;color:#475569;font-weight:600">Cerca</a>
+<a href="#" style="text-align:center;text-decoration:none;color:#475569;font-weight:600">Avisos</a>
+<a href="#" style="text-align:center;text-decoration:none;color:#475569;font-weight:600">Favoritos</a>
+<a href="#" style="text-align:center;text-decoration:none;color:#475569;font-weight:600">Más</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
