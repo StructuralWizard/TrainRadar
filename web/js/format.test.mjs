@@ -56,10 +56,11 @@ test("days", () => {
 
 test("train labels on the map", async () => {
   const { trainLabel } = await import("./format.js");
-  assert.equal(trainLabel("C5", "21047", 720, true), "C5 +12");
-  assert.equal(trainLabel("AVE", "03047", 180, false), "AVE 3047 +3");
+  assert.equal(trainLabel("C5", "21047", 720, true), "C5 · +12");
+  assert.equal(trainLabel("AVE", "03047", 180, false), "AVE 3047 · +3");
   assert.equal(trainLabel("C3", "20047", 20, true), "C3");
-  assert.equal(trainLabel("R2", "1", -120, true), "R2 -2");
+  assert.equal(trainLabel("C3", "20047", 20, true, "a su hora"), "C3 · a su hora");
+  assert.equal(trainLabel("R2", "1", -120, true), "R2 · -2");
   assert.equal(trainLabel("", "", 600, false), null);
   assert.equal(trainLabel("MD", "18000", null, false), "MD 18000");
 });

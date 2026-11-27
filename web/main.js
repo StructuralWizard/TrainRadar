@@ -3348,7 +3348,7 @@ function trainMeta(pos, now) {
       n,
       rows: rows.map(([, route, number, , , , , delay, flags]) => {
         const cer = !!(flags & FLAG.commuter);
-        return { lb: trainLabel(route, number, delay, cer), lc: cer && route ? lineColors.get(`|${route}`) || null : null };
+        return { lb: trainLabel(route, number, delay, cer, t(lang, "onTime")), lc: cer && route ? lineColors.get(`|${route}`) || null : null };
       }),
     };
   }
