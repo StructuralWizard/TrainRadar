@@ -858,6 +858,17 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .cab-row { border-color: #1f2937; }
 }
 
+/* "Seguir C10 75172" on launch (step 9): a dark chip over the map. */
+.follow-chip {
+  position: fixed; z-index: 4; left: 52px; bottom: calc(var(--tab-h, 0px) + var(--sheet-h, 0px) + 16px); /* clear of the credits ⓘ */
+  display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px;
+  border: 0; border-radius: 24px; background: #0f172a; color: #fff; font: inherit; font-size: 15px; font-weight: 700;
+  box-shadow: var(--tr-shadow);
+}
+.follow-chip[hidden] { display: none; }
+.follow-chip:focus-visible { outline: 3px solid var(--tr-focus); outline-offset: 2px; }
+.follow-chip .line-badge { font-size: 12px; padding: 1px 6px; border-radius: 5px; }
+
 /* Train detail (step 4): header, actions, stop timeline, neighbour cards. */
 .ts-title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; font-size: 22px; line-height: 1.2; font-weight: 800; color: var(--tr-ink); overflow-wrap: anywhere; }
 .ts-title .line-badge { font-size: 13px; }

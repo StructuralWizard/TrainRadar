@@ -10,7 +10,7 @@ import { formatAgo, formatCount, formatDelay, formatDistance, formatMedian, trai
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
-import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
+import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, lineBadge, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
 import { loadRides, videoForTrain, videosAt } from "./js/cabrides.js";
 import { endStations } from "./js/route.js";
 import { Planner } from "./js/planner.js";
@@ -1022,6 +1022,7 @@ function regionName(code) {
 }
 
 function selectTrain(info, { fly = false } = {}) {
+  $("follow-chip").hidden = true;
   selected = { trip_id: info.trip_id, number: info.number };
   popupToTop = true;
   updateRoute();
@@ -1068,6 +1069,24 @@ function followTrain(info, force = false) {
   if (!force && (map.isMoving() || Date.now() - followAt < 2000)) return;
   followAt = Date.now();
   map.easeTo({ center: [info.lon, info.lat], duration: force ? 600 : 1000, offset: isPhone() ? phoneOffset(true) : [0, 0] });
+}
+
+/** "Seguir C10 75172": the train followed when the app was left, if it's
+ * still running; a tap opens it and follows it again. */
+function showFollowChip() {
+  const chip = $("follow-chip");
+  const info = following ? liveTrain(following) : null;
+  if (!info) return (chip.hidden = true);
+  const route = info.route || info.line;
+  chip.replaceChildren(
+    route ? lineBadge(route, lineColors.get(`${info.region}|${route}`) || lineColors.get(`|${route}`)) : null,
+    el("span", {}, t(lang, "followChip", { train: String(info.number).replace(/^0+/, "") })),
+  );
+  chip.onclick = () => {
+    chip.hidden = true;
+    selectTrain(info, { fly: true });
+  };
+  chip.hidden = false;
 }
 
 function showPopup(open = false) {
@@ -3833,7 +3852,11 @@ async function main() {
       if (!lastView && savedArea && (ref?.region(savedArea) || placeByCode(savedArea))) goToNetwork(savedArea);
       // A region of areas.json (the UK's, Sweden's…): once that file is in.
       else if (!lastView && String(savedArea || "").startsWith("adm:")) placesReady.then(() => placeArea(savedArea) && goToNetwork(savedArea));
-      if (lastView?.detail && restoreDetail(lastView.detail)) return;
+      // Phone (step 9 of docs/design/ui-redesign/PLAN.md): open on the map,
+      // not on the last train's or station's sheet; a train being followed
+      // gets a chip that brings it back. The side panel restores it.
+      if (isPhone()) showFollowChip();
+      else if (lastView?.detail && restoreDetail(lastView.detail)) return;
       const nothingOpen = !sheets.top();
       if (CONFIG.pro && activeCommute(commutes) && nothingOpen) {
         openSheet("commute");
