@@ -687,6 +687,9 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .sheet input, .sheet select, .sheet textarea { background: #1f2937; color: #f3f4f6; border-color: var(--tr-ink); }
   .maplibregl-ctrl-attrib.maplibregl-compact-show, .maplibregl-ctrl-attrib:not(.maplibregl-compact) { background: #1f2937; color: #e5e7eb; }
   .maplibregl-ctrl-attrib a { color: #93c5fd; }
+  .maplibregl-ctrl-group { background: var(--tr-surface); }
+  .maplibregl-ctrl-group button + button { border-top-color: var(--tr-line); }
+  .maplibregl-ctrl-group .maplibregl-ctrl-icon { filter: invert(1); }
   .app-banner { background: #1f2937; color: #f3f4f6; }
   .pro-chip { background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; }
   /* Map popups (the moviola's train): dark like the sheet, or the light
@@ -945,8 +948,24 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .maplibregl-ctrl-top-right { display: block; }
   .maplibregl-ctrl-bottom-right { left: auto; right: 0; bottom: 0; }
   .maplibregl-ctrl-attrib.maplibregl-compact-show { max-width: calc(100vw - var(--panel-w) - 24px); }
-  .fabs { right: 20px; bottom: 40px; }
-  body.lefty .fabs { left: calc(var(--panel-w) + 20px); right: auto; }
+  /* Zoom, layers and locate stacked at the map's top right (step 5). */
+  .maplibregl-ctrl-top-right { top: 12px; right: 12px; }
+  .maplibregl-ctrl-group { border-radius: 12px; box-shadow: var(--tr-shadow); overflow: hidden; background: var(--tr-surface); }
+  .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+  .fabs { top: 124px; bottom: auto; right: 22px; gap: 10px; transition: none; }
+  .fab { width: 44px; height: 44px; border-radius: 12px; }
+  body.lefty .fabs { left: calc(var(--panel-w) + 22px); right: auto; }
+  body.lefty .maplibregl-ctrl-top-right { right: auto; left: calc(var(--panel-w) + 12px); }
+  /* The key: a small card at the map's bottom left, foldable. */
+  .legend {
+    display: block; position: fixed; z-index: 3; top: auto; left: calc(var(--panel-w) + 20px); bottom: 20px;
+    max-width: 360px; padding: 4px 6px; border-radius: var(--tr-radius); background: var(--tr-surface); box-shadow: var(--tr-shadow); font-size: 13px;
+  }
+  body.lefty .legend { left: auto; right: 64px; }
+  .legend-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 32px; padding: 0 8px; border: 0; background: none; color: var(--tr-muted); font: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; justify-content: space-between; }
+  .legend-body { padding: 2px 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; color: var(--tr-ink); }
+  .legend .legend-sep { display: none; }
   .app-banner { left: calc(var(--panel-w) + 16px); right: auto; bottom: 16px; }
   .replay-bar { left: calc(var(--panel-w) + 16px); right: auto; }
   .toast { left: calc(50% + var(--panel-w) / 2); }

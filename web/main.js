@@ -387,7 +387,7 @@ function applyLang() {
   $("langs-title").textContent = t(lang, "moreLanguage");
   $("langs-close").setAttribute("aria-label", t(lang, "close"));
   if (!$("langs").hidden) renderLangs();
-  $("legend").replaceChildren(...legend(lang), el("span", { class: "legend-sep" }), ...serviceLegend(lang, true));
+  renderLegend();
   $("delayed-btn").textContent = t(lang, "delayedList");
   $("delayed-title").textContent = t(lang, "delayedTitle");
   $("delayed-close").setAttribute("aria-label", t(lang, "close"));
@@ -2727,6 +2727,26 @@ function updateNetChip() {
     l.textContent = name;
     $("net-chip").setAttribute("aria-label", t(lang, "netChipLabel", { name }));
   }
+}
+
+/** Desktop (≥ 900 px): the map key as a small card at the map's bottom
+ * left, folded or open as the user left it (on a phone it's in Capas). */
+const LEGEND_KEY = "legend-open";
+function renderLegend() {
+  const open = store.get(LEGEND_KEY) !== "0";
+  const toggle = () => {
+    store.set(LEGEND_KEY, open ? "0" : "1");
+    renderLegend();
+  };
+  $("legend").replaceChildren(
+    el(
+      "button",
+      { type: "button", class: "legend-toggle", id: "legend-toggle", "aria-expanded": String(open), onclick: toggle },
+      el("span", {}, t(lang, "legendTitle")),
+      icon(open ? "chevronDown" : "chevronUp", 16),
+    ),
+    open ? el("div", { class: "legend-body" }, el("div", { class: "legend-row" }, ...legend(lang)), el("div", { class: "legend-row" }, ...serviceLegend(lang, true))) : null,
+  );
 }
 
 /** Two chips: "498 trenes" with a dot (green live, orange stale, red
