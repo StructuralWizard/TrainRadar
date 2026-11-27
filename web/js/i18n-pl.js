@@ -661,4 +661,13 @@ export const PL = {
   nowBetween: "Teraz: między {a} a {b}",
   journeyStops: "Trasa",
   followChip: "Śledź {train}",
+  titleCountry: "TrainRadar · {country}: pociągi na żywo",
+  aboutTextCountry: "{country}: mapa pociągów na żywo, w kolorach według opóźnienia. Otwarty kod; działa w przeglądarce, bez kont, ciasteczek i reklam.",
+  aboutData: "Dane",
+  kindSuburban: "Pociągi podmiejskie",
+  kindHighSpeed: "Dużych prędkości",
+  kindLongDistance: "Dalekobieżne",
+  kindRegional: "Regionalne",
+  kindTimetable: "Według rozkładu (bez danych na żywo)",
+  showLinesOther: "Linie",
 };

@@ -378,7 +378,8 @@ const lineColors = new Map(); // "region|line" and "|line" → "#rrggbb"
 
 function applyLang() {
   document.documentElement.lang = lang;
-  document.title = t(lang, "title");
+  // The page title names the country shown (Spain keeps its own, with Renfe).
+  document.title = ES ? t(lang, "title") : t(lang, "titleCountry", { country: countryName(country) });
   const btn = $("lang");
   // The button shows the language in use and opens the list of languages.
   btn.textContent = lang.toUpperCase();
@@ -2745,7 +2746,7 @@ function renderLegend() {
       el("span", {}, t(lang, "legendTitle")),
       icon(open ? "chevronDown" : "chevronUp", 16),
     ),
-    open ? el("div", { class: "legend-body" }, el("div", { class: "legend-row" }, ...legend(lang)), el("div", { class: "legend-row" }, ...serviceLegend(lang, true))) : null,
+    open ? el("div", { class: "legend-body" }, el("div", { class: "legend-row" }, ...legend(lang)), el("div", { class: "legend-row" }, ...serviceLegend(lang, true, ES))) : null,
   );
 }
 
@@ -2908,8 +2909,9 @@ function renderLayers() {
     { class: "map-key", id: "map-key" },
     el("h3", { class: "group-h" }, t(lang, "legendTitle")),
     el("p", { class: "legend-row" }, el("span", { class: "legend-head" }, `${t(lang, "legendDelay")}:`), ...legend(lang)),
-    el("p", { class: "legend-row" }, ...serviceLegend(lang)),
-    el("p", { class: "small muted" }, t(lang, "legendStations")),
+    el("p", { class: "legend-row" }, ...serviceLegend(lang, false, ES)),
+    // Spain's station key (long-distance and Cercanías interchanges).
+    ES ? el("p", { class: "small muted" }, t(lang, "legendStations")) : null,
   );
   $("layers-panel-body").replaceChildren(
     key,
@@ -2924,11 +2926,14 @@ function renderLayers() {
       groups: [
         {
           title: t(lang, "groupTrains"),
-          items: [sw("f-commuter", "showCommuter"), sw("f-av", "showAv"), sw("f-ld", "showLd"), sw("f-md", "showMd"), sw("f-scheduled", "showScheduled", "scheduledHint")],
+          // Spain's own names (Cercanías, AVE, OUIGO); elsewhere, the kinds of service.
+          items: ES
+            ? [sw("f-commuter", "showCommuter"), sw("f-av", "showAv"), sw("f-ld", "showLd"), sw("f-md", "showMd"), sw("f-scheduled", "showScheduled", "scheduledHint")]
+            : [sw("f-commuter", "kindSuburban"), sw("f-av", "kindHighSpeed"), sw("f-ld", "kindLongDistance"), sw("f-md", "kindRegional"), sw("f-scheduled", "kindTimetable", "scheduledHint")],
         },
         {
           title: t(lang, "groupMap"),
-          items: [sw("f-lines", "showLines"), sw("f-tav", "showTrackAv"), sw("f-tld", "showTrackLd"), sw("f-tmd", "showTrackMd"), sw("f-stations", "showStations")],
+          items: [sw("f-lines", ES ? "showLines" : "showLinesOther"), sw("f-tav", "showTrackAv"), sw("f-tld", "showTrackLd"), sw("f-tmd", "showTrackMd"), sw("f-stations", "showStations")],
         },
         {
           title: t(lang, "groupIncidents"),
@@ -2938,8 +2943,9 @@ function renderLayers() {
             sw("f-k-accessibility", "kind_accessibility"),
             sw("f-k-strike", "kind_strike"),
             sw("f-k-other", "kind_other"),
-            sw("f-stopped", "showStopped"),
-          ],
+            // Stopped trains come from Renfe's GPS: Spain only.
+            ES ? sw("f-stopped", "showStopped") : null,
+          ].filter(Boolean),
         },
       ],
     }).flat(),
@@ -3233,6 +3239,10 @@ function haptic() {
 function renderAbout() {
   $("about-body").replaceChildren(
     ...aboutPanel(lang, {
+      // Outside Spain: the country's own description and data sources.
+      spain: ES,
+      countryName: countryName(country),
+      credit: attribution(),
       playUrl: CONFIG.playUrl,
       coffeeUrl: CONFIG.coffeeUrl,
       platform: CONFIG.platform,

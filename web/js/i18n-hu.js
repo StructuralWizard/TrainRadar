@@ -661,4 +661,13 @@ export const HU = {
   nowBetween: "Most: {a} és {b} között",
   journeyStops: "Útvonal",
   followChip: "Követés: {train}",
+  titleCountry: "TrainRadar · {country}: vonatok élőben",
+  aboutTextCountry: "{country}: élő vonattérkép, a késés szerint színezve. Nyílt forráskódú; a böngésződben fut, fiók, sütik és reklámok nélkül.",
+  aboutData: "Adatok",
+  kindSuburban: "Elővárosi vonatok",
+  kindHighSpeed: "Nagysebességű",
+  kindLongDistance: "Távolsági",
+  kindRegional: "Regionális",
+  kindTimetable: "Menetrend szerint (élő adatok nélkül)",
+  showLinesOther: "Vonalak",
 };

@@ -661,4 +661,13 @@ export const NB = {
   nowBetween: "Nå: mellom {a} og {b}",
   journeyStops: "Rute",
   followChip: "Følg {train}",
+  titleCountry: "TrainRadar · {country}: tog i sanntid",
+  aboutTextCountry: "{country}: sanntidskart over togene, farget etter forsinkelse. Åpen kildekode; kjører i nettleseren, uten konto, informasjonskapsler og reklame.",
+  aboutData: "Data",
+  kindSuburban: "Lokaltog",
+  kindHighSpeed: "Høyhastighet",
+  kindLongDistance: "Fjerntog",
+  kindRegional: "Regiontog",
+  kindTimetable: "Etter rutetabell (ingen sanntidsdata)",
+  showLinesOther: "Linjer",
 };

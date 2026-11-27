@@ -661,4 +661,13 @@ export const DE = {
   nowBetween: "Jetzt: zwischen {a} und {b}",
   journeyStops: "Fahrtverlauf",
   followChip: "{train} folgen",
+  titleCountry: "TrainRadar · {country}: Züge live",
+  aboutTextCountry: "{country}: Live-Karte der Züge, nach Verspätung eingefärbt. Open Source; läuft im Browser, ohne Konto, ohne Cookies und ohne Werbung.",
+  aboutData: "Daten",
+  kindSuburban: "S-Bahn und Vorortzüge",
+  kindHighSpeed: "Hochgeschwindigkeit",
+  kindLongDistance: "Fernverkehr",
+  kindRegional: "Regionalverkehr",
+  kindTimetable: "Nach Fahrplan (ohne Live-Daten)",
+  showLinesOther: "Linien",
 };

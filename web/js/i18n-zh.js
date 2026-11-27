@@ -661,4 +661,13 @@ export const ZH = {
   nowBetween: "现在：{a}与{b}之间",
   journeyStops: "路线",
   followChip: "跟随 {train}",
+  titleCountry: "TrainRadar · {country}：实时列车",
+  aboutTextCountry: "{country}：按误点着色的实时列车地图。开源；在浏览器中运行，无需账户，无 Cookie，无广告。",
+  aboutData: "数据",
+  kindSuburban: "市郊列车",
+  kindHighSpeed: "高速列车",
+  kindLongDistance: "长途列车",
+  kindRegional: "区域列车",
+  kindTimetable: "按时刻表（无实时数据）",
+  showLinesOther: "线路",
 };

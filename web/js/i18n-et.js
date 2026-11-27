@@ -661,4 +661,13 @@ export const ET = {
   nowBetween: "Praegu: {a} ja {b} vahel",
   journeyStops: "Teekond",
   followChip: "Jälgi: {train}",
+  titleCountry: "TrainRadar · {country}: rongid reaalajas",
+  aboutTextCountry: "{country}: rongide reaalajas kaart, värvitud hilinemise järgi. Avatud lähtekood; töötab brauseris, ilma kontode, küpsiste ja reklaamideta.",
+  aboutData: "Andmed",
+  kindSuburban: "Linnalähirongid",
+  kindHighSpeed: "Kiirrongid",
+  kindLongDistance: "Kaugrongid",
+  kindRegional: "Regionaalrongid",
+  kindTimetable: "Sõiduplaani järgi (reaalajas andmeteta)",
+  showLinesOther: "Liinid",
 };

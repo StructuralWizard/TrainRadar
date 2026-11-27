@@ -661,4 +661,13 @@ export const DA = {
   nowBetween: "Nu: mellem {a} og {b}",
   journeyStops: "Rute",
   followChip: "Følg {train}",
+  titleCountry: "TrainRadar · {country}: tog live",
+  aboutTextCountry: "{country}: livekort over togene, farvet efter forsinkelse. Open source; kører i din browser uden konto, cookies og reklamer.",
+  aboutData: "Data",
+  kindSuburban: "S-tog og nærtrafik",
+  kindHighSpeed: "Højhastighed",
+  kindLongDistance: "Fjerntog",
+  kindRegional: "Regionaltog",
+  kindTimetable: "Efter køreplan (ingen livedata)",
+  showLinesOther: "Linjer",
 };

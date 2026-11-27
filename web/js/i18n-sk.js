@@ -661,4 +661,13 @@ export const SK = {
   nowBetween: "Teraz: medzi {a} a {b}",
   journeyStops: "Trasa",
   followChip: "Sledovať {train}",
+  titleCountry: "TrainRadar · {country}: vlaky naživo",
+  aboutTextCountry: "{country}: živá mapa vlakov, farebne podľa meškania. Otvorený kód; beží v prehliadači, bez účtov, cookies a reklám.",
+  aboutData: "Údaje",
+  kindSuburban: "Prímestské vlaky",
+  kindHighSpeed: "Vysokorýchlostné",
+  kindLongDistance: "Diaľkové",
+  kindRegional: "Regionálne",
+  kindTimetable: "Podľa cestovného poriadku (bez živých údajov)",
+  showLinesOther: "Linky",
 };

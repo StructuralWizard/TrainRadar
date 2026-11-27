@@ -661,4 +661,13 @@ export const FI = {
   nowBetween: "Nyt: välillä {a}–{b}",
   journeyStops: "Reitti",
   followChip: "Seuraa: {train}",
+  titleCountry: "TrainRadar · {country}: junat reaaliajassa",
+  aboutTextCountry: "{country}: reaaliaikainen junakartta, värit myöhästymisen mukaan. Avointa lähdekoodia; toimii selaimessa ilman tiliä, evästeitä ja mainoksia.",
+  aboutData: "Tiedot",
+  kindSuburban: "Lähijunat",
+  kindHighSpeed: "Suurnopeusjunat",
+  kindLongDistance: "Kaukojunat",
+  kindRegional: "Taajamajunat",
+  kindTimetable: "Aikataulun mukaan (ei reaaliaikatietoa)",
+  showLinesOther: "Linjat",
 };

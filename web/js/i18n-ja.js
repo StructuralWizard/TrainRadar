@@ -684,4 +684,13 @@ export const JA = {
   nowBetween: "現在：{a}〜{b}間",
   journeyStops: "経路",
   followChip: "{train}を追跡",
+  titleCountry: "TrainRadar · {country}：列車をリアルタイムで",
+  aboutTextCountry: "{country}：遅延で色分けした列車のリアルタイム地図。オープンソース。ブラウザで動作し、アカウント・Cookie・広告はありません。",
+  aboutData: "データ",
+  kindSuburban: "近郊列車",
+  kindHighSpeed: "高速列車",
+  kindLongDistance: "長距離列車",
+  kindRegional: "地域列車",
+  kindTimetable: "時刻表による（リアルタイムなし）",
+  showLinesOther: "路線",
 };

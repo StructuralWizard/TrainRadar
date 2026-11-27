@@ -661,4 +661,13 @@ export const SV = {
   nowBetween: "Nu: mellan {a} och {b}",
   journeyStops: "Färdväg",
   followChip: "Följ {train}",
+  titleCountry: "TrainRadar · {country}: tåg i realtid",
+  aboutTextCountry: "{country}: karta över tågen i realtid, färgade efter försening. Öppen källkod; körs i webbläsaren, utan konto, kakor och reklam.",
+  aboutData: "Data",
+  kindSuburban: "Pendeltåg",
+  kindHighSpeed: "Höghastighet",
+  kindLongDistance: "Fjärrtåg",
+  kindRegional: "Regionaltåg",
+  kindTimetable: "Enligt tidtabell (inga realtidsdata)",
+  showLinesOther: "Linjer",
 };

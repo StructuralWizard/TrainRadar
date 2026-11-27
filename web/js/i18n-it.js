@@ -661,4 +661,13 @@ export const IT = {
   nowBetween: "Ora: tra {a} e {b}",
   journeyStops: "Percorso",
   followChip: "Segui {train}",
+  titleCountry: "TrainRadar · {country}: treni in diretta",
+  aboutTextCountry: "{country}: mappa dei treni in diretta, colorati in base al ritardo. Open source; funziona nel browser, senza account, senza cookie e senza pubblicità.",
+  aboutData: "Dati",
+  kindSuburban: "Treni suburbani",
+  kindHighSpeed: "Alta velocità",
+  kindLongDistance: "Lunga percorrenza",
+  kindRegional: "Regionali",
+  kindTimetable: "Secondo l'orario (senza dati in diretta)",
+  showLinesOther: "Linee",
 };

@@ -684,4 +684,13 @@ export const PT = {
   nowBetween: "Agora: entre {a} e {b}",
   journeyStops: "Percurso",
   followChip: "Seguir {train}",
+  titleCountry: "TrainRadar · {country}: comboios em direto",
+  aboutTextCountry: "{country}: mapa em direto dos comboios, coloridos pelo atraso. Código aberto; funciona no seu navegador, sem contas, sem cookies e sem publicidade.",
+  aboutData: "Dados",
+  kindSuburban: "Comboios suburbanos",
+  kindHighSpeed: "Alta velocidade",
+  kindLongDistance: "Longo curso",
+  kindRegional: "Regionais",
+  kindTimetable: "Segundo o horário (sem dados em direto)",
+  showLinesOther: "Linhas",
 };
