@@ -48,6 +48,9 @@ export const COUNTRY_INFO = {
   // Tokyo (Toei: GPS, delays, alerts); Kōchi (Tosaden) and the regional lines
   // from gtfs-data.jp (Aomori … Kumamoto), by timetable.
   jp: { zone: "Asia/Tokyo", center: [139.75, 35.69], zoom: 10.6, live: true },
+  // Taiwan (TRA, THSR, the metros) from TDX's national GTFS, by timetable
+  // (docs/world/tw.md); still being built: CONFIG.hiddenCountries.
+  tw: { zone: "Asia/Taipei", center: [120.97, 23.7], zoom: 7, live: false },
 };
 
 export const COUNTRIES = Object.keys(COUNTRY_INFO);

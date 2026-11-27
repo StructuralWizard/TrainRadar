@@ -45,7 +45,7 @@ jobs:
           FR_ENABLED: ${{ vars.FR_ENABLED }}
           LU_ENABLED: ${{ vars.LU_ENABLED }}
           M2_ENABLED: ${{ vars.FI_ENABLED == 'true' || vars.NO_ENABLED == 'true' || vars.NL_ENABLED == 'true' }}
-          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' || vars.BE_ENABLED == 'true' || vars.AU_NSW_ENABLED == 'true' || vars.AU_VIC_ENABLED == 'true' || vars.NZ_WLG_ENABLED == 'true' || vars.NZ_AKL_ENABLED == 'true' || vars.SG_ENABLED == 'true' || vars.PT_ENABLED == 'true' || vars.JP_ENABLED == 'true' }}
+          M3_ENABLED: ${{ vars.CH_ENABLED == 'true' || vars.SE_ENABLED == 'true' || vars.PL_ENABLED == 'true' || vars.AT_ENABLED == 'true' || vars.CZ_ENABLED == 'true' || vars.DK_ENABLED == 'true' || vars.DE_ENABLED == 'true' || vars.BE_ENABLED == 'true' || vars.AU_NSW_ENABLED == 'true' || vars.AU_VIC_ENABLED == 'true' || vars.NZ_WLG_ENABLED == 'true' || vars.NZ_AKL_ENABLED == 'true' || vars.SG_ENABLED == 'true' || vars.PT_ENABLED == 'true' || vars.JP_ENABLED == 'true' || vars.TW_ENABLED == 'true' }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -978,6 +978,49 @@ jobs:
             { echo "## Japan reference data"; echo; cat refdata-jp.md; } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::warning::Japan's reference data failed: deploying without Japan."
+            exit 1
+          fi
+
+      # Taiwan → data/tw/, with TW_ENABLED (only once TDX has approved the
+      # GTFS service: docs/world/tw.md): TDX's national GTFS, kept to TRA,
+      # THSR and the metros, by timetable. The free plan allows ~3,000 calls
+      # a month: the file is cached for the week (one token and one download
+      # a week); "pending" (401/403) skips Taiwan without retrying.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.TW_ENABLED == 'true'
+        with:
+          path: gtfs/tw-cache
+          key: tdx-gtfs-tw-v1-${{ steps.week.outputs.week }}
+      - name: Taiwan reference data
+        if: vars.TW_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          TW_TDX_CLIENT_ID: ${{ secrets.TW_TDX_CLIENT_ID }}
+          TW_TDX_CLIENT_SECRET: ${{ secrets.TW_TDX_CLIENT_SECRET }}
+        run: |
+          set -o pipefail
+          rc=0
+          tools/fetch-eu.sh tw --no-osm | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
+          if [ "$rc" = 3 ]; then
+            echo "::warning::Taiwan: TDX's GTFS service is still pending approval: deploying without Taiwan."
+            exit 1
+          elif [ "$rc" != 0 ]; then
+            echo "::warning::Taiwan's GTFS failed: deploying without Taiwan."
+            exit 1
+          fi
+          if cargo run --release -q -p trainradar-refdata-build -- build --out build/tw-data --gzip --tw-gtfs gtfs/tw/gtfs.zip \
+              --sources gtfs/tw/sources.tsv --report refdata-tw.md \
+            && cargo run --release -q -p trainradar-refdata-build -- verify build/tw-data; then
+            mv build/tw-data build/data/tw
+            if cargo run --release -q -p trainradar-refdata-build -- build --out build/tw-plan --gzip --days 63 --tw-gtfs gtfs/tw/gtfs.zip --report tw-plan.md \
+              && cargo run --release -q -p trainradar-refdata-build -- verify build/tw-plan; then
+              mv build/tw-plan build/data/tw/plan
+            else
+              echo "::warning::Taiwan's plan-ahead timetables failed: it has today's week only."
+            fi
+            { echo "## Taiwan reference data"; echo; cat refdata-tw.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Taiwan's reference data failed: deploying without Taiwan."
             exit 1
           fi
 

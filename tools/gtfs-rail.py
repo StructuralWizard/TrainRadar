@@ -2,6 +2,7 @@
 """Cut GTFS feeds down to their trains, streaming, and merge them into one.
 
     python3 -I tools/gtfs-rail.py OUT.zip IN.zip [IN.zip ...] [--parents] [--also=401,1]
+        [--translations]
 
 For countries whose national GTFS covers every mode (the Netherlands' is
 1.3 GB of stop times) or comes one file per operator (Norway's): the
@@ -10,7 +11,10 @@ or 100-117 (rail), their trips, stop times, stops, services and shapes.
 With --parents, each stop time points at its stop's parent station
 (platforms merged into their station, as the live feeds' trips stay the
 same). Ids must not clash between inputs (Entur's and OVapi's are
-prefixed or global). Standard library only.
+prefixed or global). With --translations, translations.txt's rows for the
+kept stops, routes, trips and agencies come along (for tools/gtfs-tidy.py
+--lang, after the cut: Taiwan's national feed is too big to tidy whole).
+Standard library only.
 """
 
 import csv
@@ -69,16 +73,18 @@ class Table:
 
 def main(argv):
     parents = "--parents" in argv
+    with_tr = "--translations" in argv
     # Other route types to keep too (Sydney Metro is type 401 or 1).
     also = {t for a in argv if a.startswith("--also=") for t in a[7:].split(",") if t}
     rail = RAIL | also
-    args = [a for a in argv if a != "--parents" and not a.startswith("--also=")]
+    args = [a for a in argv if a not in ("--parents", "--translations") and not a.startswith("--also=")]
     if len(args) < 2:
         print(__doc__, file=sys.stderr)
         return 2
     out_path, inputs = args[0], args[1:]
     tables = {n: Table(n) for n in ["agency.txt", "routes.txt", "trips.txt", "stops.txt",
-                                     "calendar.txt", "calendar_dates.txt", "shapes.txt", "feed_info.txt"]}
+                                     "calendar.txt", "calendar_dates.txt", "shapes.txt", "feed_info.txt",
+                                     "translations.txt"]}
     # stop_times is the big one: written straight to the zip, input by input.
     st_cols = ["trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence",
                "pickup_type", "drop_off_type", "stop_headsign", "shape_dist_traveled"]
@@ -176,6 +182,23 @@ def main(argv):
                         for row in r:
                             if row[k] in shapes:
                                 tables["shapes.txt"].add(h, row)
+                    if with_tr:
+                        kept = {"stops": used | {c for c, p in parent_of.items() if p in used},
+                                "routes": routes, "trips": trips, "agency": agencies}
+                        h, r = rows(z, "translations.txt")
+                        if h and "table_name" in h:
+                            ti_, ri = h.index("table_name"), (h.index("record_id") if "record_id" in h else -1)
+                            for row in r:
+                                if len(row) <= ti_ or row[ti_] not in kept:
+                                    continue
+                                rid = row[ri] if 0 <= ri < len(row) else ""
+                                if not rid or rid in kept[row[ti_]]:
+                                    # A platform's translation names its
+                                    # station, the stop that's kept.
+                                    if rid and row[ti_] == "stops" and rid in parent_of:
+                                        row = list(row)
+                                        row[ri] = parent_of[rid]
+                                    tables["translations.txt"].add(h, row)
                     if not tables["feed_info.txt"].buf:
                         h, r = rows(z, "feed_info.txt")
                         for row in r:

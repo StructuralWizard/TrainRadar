@@ -227,7 +227,7 @@ impl Engine {
             "uk" => Country::UnitedKingdom,
             "ie" => Country::Ireland,
             "fr" => Country::France,
-            "lu" | "sk" | "ee" | "at" | "it" | "hu" | "pt" => Country::TimetableOnly,
+            "lu" | "sk" | "ee" | "at" | "it" | "hu" | "pt" | "tw" => Country::TimetableOnly,
             "au" => Country::Australia,
             "nz" => Country::NewZealand,
             "sg" => Country::Singapore,

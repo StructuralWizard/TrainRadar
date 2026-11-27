@@ -636,6 +636,7 @@ export const STRINGS = {
     countrySg: "Singapur (estimado)",
     countryPt: "Portugal",
     countryJp: "Japón",
+    countryTw: "Taiwán",
     countryTesting: "en pruebas",
     allSk: "Toda Eslovaquia",
     allEe: "Toda Estonia",
@@ -654,6 +655,7 @@ export const STRINGS = {
     allSg: "Todo Singapur",
     allPt: "Todo Portugal",
     allJp: "Todo Japón",
+    allTw: "Todo Taiwán",
     scheduledAllSg: "{n} trenes estimados",
     estimatedPosition: "Posición estimada: LTA no publica horarios ni posiciones de los trenes; este tren se dibuja según la frecuencia habitual de la línea.",
     noticesTitle: "Avisos",
@@ -704,6 +706,7 @@ export const STRINGS = {
       'Datos: Fertagus (<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) y Metropolitano de Lisboa (<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>, CC BY) · CP – Comboios de Portugal (<a href="https://www.cp.pt/" target="_blank" rel="noopener">cp.pt</a>) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Fertagus, Metropolitano de Lisboa ni CP',
     attributionJp:
       'Datos: Oficina de Transporte del Gobierno Metropolitano de Tokio (Toei) y Tosaden Kotsu / 公共交通オープンデータセンター (<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Líneas regionales: sus operadores vía <a href="https://gtfs-data.jp/" target="_blank" rel="noopener">gtfs-data.jp</a> (CC BY 4.0, CC BY 2.1 JP, CC0) · Sin relación con Toei, Tosaden ni ODPT',
+    attributionTw: "Source: MOTC TDX (<a href=\"https://tdx.transportdata.tw/\" target=\"_blank\" rel=\"noopener\">Transport Data eXchange</a>), <a href=\"https://data.gov.tw/license\" target=\"_blank\" rel=\"noopener\">Open Government Data License v1.0</a>",
     attributionSg:
       'Trenes estimados a partir de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) y las frecuencias publicadas · Avisos: <a href="https://datamall.lta.gov.sg/" target="_blank" rel="noopener">LTA DataMall</a> (Singapore Open Data Licence) · Sin relación con LTA, SMRT ni SBS Transit',
     attributionBe:
@@ -1341,6 +1344,7 @@ export const STRINGS = {
     countrySg: "Singapore (estimated)",
     countryPt: "Portugal",
     countryJp: "Japan",
+    countryTw: "Taiwan",
     countryTesting: "testing",
     allSk: "All of Slovakia",
     allEe: "All of Estonia",
@@ -1359,6 +1363,7 @@ export const STRINGS = {
     allSg: "All of Singapore",
     allPt: "All of Portugal",
     allJp: "All of Japan",
+    allTw: "All of Taiwan",
     scheduledAllSg: "{n} estimated trains",
     estimatedPosition: "Estimated position: LTA publishes no train timetable or positions; this train is drawn from the line\'s usual frequency.",
     noticesTitle: "Notices",
@@ -1409,6 +1414,7 @@ export const STRINGS = {
       'Data: Fertagus (<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) and Metropolitano de Lisboa (<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>, CC BY) · CP – Comboios de Portugal (<a href="https://www.cp.pt/" target="_blank" rel="noopener">cp.pt</a>) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Fertagus, Metropolitano de Lisboa or CP',
     attributionJp:
       'Data: Tokyo Metropolitan Bureau of Transportation (Toei) and Tosaden Traffic / 公共交通オープンデータセンター (<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Regional lines: their operators via <a href="https://gtfs-data.jp/" target="_blank" rel="noopener">gtfs-data.jp</a> (CC BY 4.0, CC BY 2.1 JP, CC0) · Not affiliated with Toei, Tosaden or ODPT',
+    attributionTw: "Source: MOTC TDX (<a href=\"https://tdx.transportdata.tw/\" target=\"_blank\" rel=\"noopener\">Transport Data eXchange</a>), <a href=\"https://data.gov.tw/license\" target=\"_blank\" rel=\"noopener\">Open Government Data License v1.0</a>",
     attributionSg:
       'Estimated trains from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) and published frequencies · Alerts: <a href="https://datamall.lta.gov.sg/" target="_blank" rel="noopener">LTA DataMall</a> (Singapore Open Data Licence) · Not affiliated with LTA, SMRT or SBS Transit',
     attributionBe:

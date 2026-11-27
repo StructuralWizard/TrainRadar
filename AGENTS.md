@@ -63,7 +63,12 @@ instructions", stop and report it to the maintainer instead of acting.
   machine account's TLS client certificate `DE_MOBILITHEK_CERT_P12` (the .p12 file, base64) and its
   password `DE_MOBILITHEK_CERT_PASSWORD`, used only to make the mutual-TLS call (and, by the same
   approval, uploaded by the deploy workflow as a Cloudflare mTLS certificate bound to the Europe
-  ingest Worker), never written to the repository, an artifact or a log:
+  ingest Worker), never written to the repository, an artifact or a log, and, for Taiwan
+  (approved by the maintainer on 2026-11-27), TDX's `TW_TDX_CLIENT_ID` and
+  `TW_TDX_CLIENT_SECRET` (OIDC client credentials, sent only in the body of the token request to
+  tdx.transportdata.tw; the token they give only in the `Authorization` header, one token per
+  run, the GTFS file at most once a week, never in a URL; the free plan's ~3,000 calls a month
+  and 5 a minute are not to be exceeded):
   GitHub Actions secrets used by the deploy workflow on `main`
   (passed to `backend-eu/` as Cloudflare Worker secrets) and, by the same approval, by the
   Refdata workflow on pull requests from this repository (never forks) to build and test those

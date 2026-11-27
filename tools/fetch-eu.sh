@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch|jp-aom|jp-ygt|jp-tym|jp-gif|jp-mie|jp-tks|jp-kmm [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch|jp-aom|jp-ygt|jp-tym|jp-gif|jp-mie|jp-tks|jp-kmm|tw [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -74,6 +74,12 @@
 #                         CC BY 2.1 JP or CC0, each feed its own): Aomori,
 #                         Yamagata, Toyama, Gifu, Mie, Tokushima, Kumamoto
 #                         (docs/world/jp.md); use --no-osm
+#                     tw  Taiwan: TDX's national GTFS (MOTC, Open Government
+#                         Data License v1.0), cut to TRA, THSR and the metros;
+#                         needs TW_TDX_CLIENT_ID and TW_TDX_CLIENT_SECRET (a
+#                         token per run, the file once a week: TW_CACHE); exit
+#                         3 while TDX hasn't approved the GTFS service (401/403);
+#                         use --no-osm
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -498,10 +504,68 @@ except Exception as e:
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents --also=0
     rm -f "${parts[@]}"
     region=asia/japan ;;
+  tw)
+    # TDX (Ministry of Transportation and Communications): the national GTFS,
+    # every mode and ~100 operators, kept to trains, metros and light rail.
+    # Free plan: ~3,000 calls a month, 5 a minute. So: the file once a week
+    # (kept in TW_CACHE, gtfs/tw-cache by default: the workflows cache it by
+    # week), one token per run (valid ~24 h, never fetched per call), no
+    # retries on a refusal: 401/403 means TDX hasn't approved the account's
+    # GTFS service yet (docs/world/tw.md), exit 3 ("pending").
+    cache="${TW_CACHE:-gtfs/tw-cache}"
+    mkdir -p "$cache"
+    url=https://tdx.transportdata.tw/api/gtfs/V3/Map/GTFS/Static
+    if [ -s "$cache/tdx.zip" ]; then
+      echo "tdx.zip: this week's copy ($(du -h "$cache/tdx.zip" | cut -f1)), no call to TDX"
+    else
+      [ -n "${TW_TDX_CLIENT_ID:-}" ] && [ -n "${TW_TDX_CLIENT_SECRET:-}" ] ||
+        { echo "TW_TDX_CLIENT_ID and TW_TDX_CLIENT_SECRET are not set" >&2; exit 2; }
+      # OIDC client credentials: the secret only in the token request's
+      # body; neither it nor the token is printed, written or put on a
+      # command line.
+      token=$(python3 -I -c '
+import json, os, sys, urllib.parse, urllib.request
+body = urllib.parse.urlencode({"grant_type": "client_credentials", "client_id": os.environ["TW_TDX_CLIENT_ID"],
+    "client_secret": os.environ["TW_TDX_CLIENT_SECRET"]}).encode()
+req = urllib.request.Request("https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token",
+    data=body, headers={"User-Agent": "Metranos-TrainRadar", "Content-Type": "application/x-www-form-urlencoded"})
+try:
+    print(json.load(urllib.request.urlopen(req, timeout=60))["access_token"])
+except Exception as e:
+    sys.exit("TDX login refused: " + str(getattr(e, "code", "")) + " " + type(e).__name__)
+')
+      code=$(printf 'header = "Authorization: Bearer %s"\n' "$token" | curl -sSL --compressed -A "$client (+https://mytrainradar.com)" \
+        -o "$cache/tdx.zip.part" -w '%{http_code}' -K - "$url" || true)
+      unset token
+      case "$code" in
+        200) ;;
+        401|403)
+          rm -f "$cache/tdx.zip.part"
+          echo "Taiwan: TDX's GTFS service is pending approval (HTTP $code): not built, not retried" >&2
+          exit 3 ;;
+        *)
+          rm -f "$cache/tdx.zip.part"
+          echo "Taiwan: TDX GTFS download failed (HTTP ${code:-none})" >&2
+          exit 1 ;;
+      esac
+      # A zip starts "PK"; anything else (a JSON error page) isn't one.
+      [ "$(head -c 2 "$cache/tdx.zip.part")" = "PK" ] ||
+        { echo "Taiwan: TDX answered without a zip ($(head -c 120 "$cache/tdx.zip.part" | tr -dc '[:print:]'))" >&2; rm -f "$cache/tdx.zip.part"; exit 1; }
+      mv "$cache/tdx.zip.part" "$cache/tdx.zip"
+      echo "tdx.zip: $(du -h "$cache/tdx.zip" | cut -f1), downloaded"
+    fi
+    printf '%s\t%s\t\t%s\n' "MOTC TDX national GTFS (Open Government Data License v1.0)" "$url" \
+      "$(date -u -r "$cache/tdx.zip" '+%a, %d %b %Y %H:%M:%S GMT')" >>"$dir/sources.tsv"
+    # Trains (2, 100-117), metros (1, 400-402) and light rail (0, 900);
+    # the fare tables (fare_*.txt, GTFS-Fares v2, very large) are never read.
+    python3 -I tools/gtfs-rail.py "$dir/cut.zip" "$cache/tdx.zip" --parents --translations --also=0,1,400,401,402,900
+    python3 -I tools/gtfs-tidy.py "$dir/cut.zip" "$dir/gtfs.zip" --keep-trips --lang=en --bilingual
+    rm -f "$dir/cut.zip"
+    region=asia/taiwan ;;
   nz-osm)
     # Only the OSM track for New Zealand (shared by its regions' builds).
     region=australia-oceania/new-zealand ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch|jp-aom|jp-ygt|jp-tym|jp-gif|jp-mie|jp-tks|jp-kmm [--no-osm]" >&2; exit 2 ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch|jp-aom|jp-ygt|jp-tym|jp-gif|jp-mie|jp-tks|jp-kmm|tw [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

@@ -581,6 +581,7 @@ export const PT = {
   countrySg: "Singapura (estimado)",
   countryPt: "Portugal",
   countryJp: "Japão",
+  countryTw: "Taiwan",
   countryTesting: "em testes",
   allSk: "Toda a Eslováquia",
   allEe: "Toda a Estónia",
@@ -599,6 +600,7 @@ export const PT = {
   allSg: "Toda Singapura",
   allPt: "Todo Portugal",
   allJp: "Todo o Japão",
+  allTw: "Todo o Taiwan",
   scheduledAllSg: "{n} comboios estimados",
   estimatedPosition: "Posição estimada: a LTA não publica horários nem posições dos comboios; este comboio é desenhado segundo a frequência habitual da linha.",
   noticesTitle: "Avisos",
@@ -648,6 +650,7 @@ export const PT = {
     'Dados: Fertagus (<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>) e Metropolitano de Lisboa (<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>, CC BY) · CP – Comboios de Portugal (<a href="https://www.cp.pt/" target="_blank" rel="noopener">cp.pt</a>) · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Sem ligação à Fertagus, ao Metropolitano de Lisboa nem à CP',
   attributionJp:
     'Dados: Tokyo Metropolitan Bureau of Transportation (Toei) e Tosaden Traffic / 公共交通オープンデータセンター (<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Linhas regionais: os seus operadores via <a href="https://gtfs-data.jp/" target="_blank" rel="noopener">gtfs-data.jp</a> (CC BY 4.0, CC BY 2.1 JP, CC0) · Sem ligação à Toei, à Tosaden nem ao ODPT',
+  attributionTw: "Source: MOTC TDX (<a href=\"https://tdx.transportdata.tw/\" target=\"_blank\" rel=\"noopener\">Transport Data eXchange</a>), <a href=\"https://data.gov.tw/license\" target=\"_blank\" rel=\"noopener\">Open Government Data License v1.0</a>",
   attributionSg:
     'Comboios estimados a partir dos contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) e das frequências publicadas · Alertas: <a href="https://datamall.lta.gov.sg/" target="_blank" rel="noopener">LTA DataMall</a> (Singapore Open Data Licence) · Sem ligação à LTA, à SMRT nem à SBS Transit',
   attributionBe:

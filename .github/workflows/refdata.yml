@@ -500,6 +500,32 @@ jobs:
           unzip -p gtfs/jp-tyo/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/jp-trips.txt
           echo "### jp: Toei's live feeds through the Worker" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs jp build/jp-trips.txt build/probe-jp | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      # Taiwan, with TW_ENABLED (after TDX approves the GTFS service): the
+      # file cached for the week, so a pull request's runs don't spend the
+      # free plan's ~3,000 calls a month.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: vars.TW_ENABLED == 'true'
+        with:
+          path: gtfs/tw-cache
+          key: tdx-gtfs-tw-v1-${{ steps.week.outputs.week }}
+      - name: Taiwan (TDX national GTFS, Open Government Data License)
+        if: vars.TW_ENABLED == 'true'
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          TW_TDX_CLIENT_ID: ${{ secrets.TW_TDX_CLIENT_ID }}
+          TW_TDX_CLIENT_SECRET: ${{ secrets.TW_TDX_CLIENT_SECRET }}
+        run: |
+          set -o pipefail
+          if [ -z "$TW_TDX_CLIENT_SECRET" ]; then echo "Taiwan: no TW_TDX_CLIENT_SECRET (a fork, or not set): skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          rc=0
+          tools/fetch-eu.sh tw --no-osm | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
+          if [ "$rc" = 3 ]; then echo "Taiwan: TDX's GTFS service is pending approval: skipped." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          [ "$rc" = 0 ]
+          target/release/refdata-build build --out build/tw --tw-gtfs gtfs/tw/gtfs.zip \
+            --sources gtfs/tw/sources.tsv --report refdata-tw.md
+          target/release/refdata-build verify build/tw
+          { echo "## Taiwan reference data"; echo; cat refdata-tw.md; } >> "$GITHUB_STEP_SUMMARY"
+          unzip -p gtfs/tw/gtfs.zip routes.txt | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Track network validation (consecutive stops joined by track)
         continue-on-error: true # a report, not a gate: OSM gaps shouldn't stop the data
         run: |
