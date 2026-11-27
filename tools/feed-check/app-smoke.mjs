@@ -50,11 +50,12 @@ async function openTrain(number) {
 // No Pro sticker without Pro.
 if (await page.isVisible("#pro-chip")) await fail("Pro sticker without Pro");
 
-// Free edition: the same train details as the web (trains ahead and
-// behind, track), free in the app too.
+// Free edition: the same train details as the web ("Más datos": origin,
+// track…), free in the app too. The trains ahead and behind are cards shown
+// only when there is one (docs/design/ui-redesign/PLAN.md, step 4).
 await openTrain(live[0]);
-await page.waitForFunction(() => /Tren anterior/.test(document.querySelector(".popup")?.textContent || ""), null, { timeout: 8000 })
-  .catch(() => fail("free app lacks the train-ahead/behind details"));
+await page.waitForFunction(() => /Más datos/.test(document.querySelector(".popup")?.textContent || "") && document.querySelector(".popup .ts-details"), null, { timeout: 8000 })
+  .catch(() => fail("free app lacks the train details"));
 const text = (await page.textContent(".popup")).replace(/\s+/g, " ");
 console.log("popup:", text.slice(0, 200));
 if (!text.includes("Retraso")) await fail("popup lacks the delay");

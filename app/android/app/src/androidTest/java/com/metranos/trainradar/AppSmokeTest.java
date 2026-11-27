@@ -103,8 +103,9 @@ public class AppSmokeTest {
         String popup = (String) eval("var p = document.querySelector('.popup');"
                 + "return p ? p.textContent : 'NO POPUP: ' + (window.__smokeMark ? 'same page, sheet closed' : 'the page reloaded, ' + " + RELOAD_INFO + ");");
         assertTrue(popup, popup.contains(number.replaceFirst("^0+", "")));
-        // The train details (trains ahead and behind, track) are free, as on the web.
-        assertTrue("free edition shows the train details: " + popup, popup.contains("Tren anterior"));
+        // The train details ("Más datos": origin, track…) are free, as on the web. The
+        // trains ahead and behind are cards only when there is one.
+        assertTrue("free edition shows the train details: " + popup, popup.contains("Más datos"));
         String fav = (String) eval("var p = document.querySelector('.popup');"
                 + "return !p ? 'NO POPUP: ' + (window.__smokeMark ? 'same page, sheet closed' : 'the page reloaded, ' + " + RELOAD_INFO + ")"
                 + " : p.querySelector('.fav-btn') ? 'ok' : 'popup without it: ' + p.className;");

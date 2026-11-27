@@ -2241,6 +2241,10 @@ function openLink(link) {
   if (link.type === "train") {
     const info = liveTrain(link.number);
     if (info) return selectTrain(info, { fly: true });
+    // The first trains can be on the map before the linked one's data:
+    // give it a few seconds before falling back to the search.
+    const tries = link.tries || 0;
+    if (tries < 10) return void setTimeout(() => openLink({ ...link, tries: tries + 1 }), 1000);
     $("search-q").value = link.number; // not running now: show what search finds
     return renderSearch();
   }
