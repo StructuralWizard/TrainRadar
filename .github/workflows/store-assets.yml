@@ -1,6 +1,9 @@
-# Google Play graphics (phase C6): phone screenshots of the app on the live
-# data and the feature graphic, as the "store-assets" artifact. Run by hand
-# (Actions → Store assets → Run workflow) before a store listing update.
+# Google Play graphics (docs/design/ui-redesign/PLAN.md, step 10): eight
+# phone screenshots of the app on the live data, captured at 1080 × 2340 and
+# framed with a headline (es/ and en/, 1080 × 1920), and the feature graphic
+# (the live map and the logo, in Spanish and English), as the "store-assets"
+# artifact. Run by hand (Actions → Store assets → Run workflow) before a
+# store listing update.
 name: Store assets
 
 on:
