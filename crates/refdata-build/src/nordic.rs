@@ -88,6 +88,33 @@ pub const PT_LIS: &str = "pt-lis";
 pub const JP_TYO: &str = "jp-tyo";
 /// Kōchi: Tosaden's trams.
 pub const JP_KCH: &str = "jp-kch";
+/// Japan's regional railways and trams from the GTFS Data Repository
+/// (gtfs-data.jp), one region each: (code, name, operator). By timetable.
+pub const JP_REGIONS: [(&str, &str, &str); 7] = [
+    ("jp-aom", "Aomori (Kōnan Railway)", "Kōnan Railway"),
+    ("jp-ygt", "Yamagata (Flower Nagai Line)", "Yamagata Railway"),
+    ("jp-tym", "Toyama (city tram)", "Toyama Chihō Railway"),
+    ("jp-gif", "Gifu (Akechi Railway)", "Akechi Railway"),
+    ("jp-mie", "Mie (Ise Railway)", "Ise Railway"),
+    (
+        "jp-tks",
+        "Tokushima (Asa Seaside Railway)",
+        "Asa Seaside Railway",
+    ),
+    (
+        "jp-kmm",
+        "Kumamoto (city tram, Kumamoto Electric Railway)",
+        "Kumamoto City / Kumamoto Electric Railway",
+    ),
+];
+
+/// Taiwan: TDX's national GTFS (TRA, THSR, the metros), by timetable.
+pub const TW: &str = "tw";
+
+/// One of JP_REGIONS.
+pub fn is_jp_regional(code: &str) -> bool {
+    JP_REGIONS.iter().any(|r| r.0 == code)
+}
 /// A German stop whose DHID names no Land (none seen in DELFI).
 pub const DE_OTHER: &str = "de-x";
 
@@ -134,7 +161,10 @@ Licence).";
 pub const ATTRIBUTION_PT: &str = "Data: Fertagus (CC BY 4.0) and Metropolitano de Lisboa \
 (dados.gov.pt, CC BY). Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_JP: &str = "Data: Tokyo Metropolitan Bureau of Transportation (Toei) and \
-Tosaden Traffic / 公共交通オープンデータセンター (ODPT), CC BY 4.0.";
+Tosaden Traffic / 公共交通オープンデータセンター (ODPT), CC BY 4.0. Regional lines: their \
+operators via the GTFS Data Repository (gtfs-data.jp), CC BY 4.0, CC BY 2.1 JP or CC0 1.0.";
+pub const ATTRIBUTION_TW: &str = "Source: MOTC TDX (Transport Data eXchange), Open Government \
+Data License v1.0.";
 pub const ATTRIBUTION_AU: &str = "Data: Transport for NSW and Transport Victoria open data, CC BY \
 4.0. Track: © OpenStreetMap contributors, ODbL 1.0.";
 pub const ATTRIBUTION_DK: &str = "Data: Rejsekort & Rejseplan A/S, via Dataudveksleren \
@@ -166,6 +196,8 @@ pub fn tz(code: &str) -> Option<&'static str> {
         SG => "Asia/Singapore",
         PT | PT_LIS => "Europe/Lisbon",
         JP_TYO | JP_KCH => "Asia/Tokyo",
+        c if is_jp_regional(c) => "Asia/Tokyo",
+        TW => "Asia/Taipei",
         _ => return None,
     })
 }
@@ -203,6 +235,8 @@ pub fn region_name(code: &str) -> &'static str {
         PT_LIS => "Lisboa",
         JP_TYO => "Tokyo (Toei)",
         JP_KCH => "Kōchi (Tosaden)",
+        c if is_jp_regional(c) => JP_REGIONS.iter().find(|r| r.0 == c).map_or("", |r| r.1),
+        TW => "Taiwan",
         DE_OTHER => "Germany (regional, cross-border)",
         c if c.starts_with("de-") => GERMAN_LANDS.iter().find(|l| l.1 == c).map_or("", |l| l.2),
         _ => "",

@@ -580,7 +580,8 @@ export const JA = {
   countryNz: "ニュージーランド（ウェリントン、オークランド）",
   countrySg: "シンガポール（推定）",
   countryPt: "ポルトガル",
-  countryJp: "日本（東京・高知）",
+  countryJp: "日本",
+  countryTw: "台湾",
   countryTesting: "試験中",
   allSk: "スロバキア全土",
   allEe: "エストニア全土",
@@ -598,7 +599,8 @@ export const JA = {
   allNz: "ウェリントンとオークランド",
   allSg: "シンガポール全土",
   allPt: "ポルトガル全土",
-  allJp: "東京と高知",
+  allJp: "日本全土",
+  allTw: "台湾全土",
   scheduledAllSg: "推定列車{n}本",
   estimatedPosition: "推定位置：LTAは列車の時刻表も位置も公開していないため、この列車は路線の通常の運行間隔から描画しています。",
   noticesTitle: "お知らせ",
@@ -647,7 +649,8 @@ export const JA = {
   attributionPt:
     'データ: Fertagus（<a href="https://www.fertagus.pt/" target="_blank" rel="noopener">fertagus.pt</a>、<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>）およびMetropolitano de Lisboa（<a href="https://dados.gov.pt/" target="_blank" rel="noopener">dados.gov.pt</a>、CC BY） · CP – Comboios de Portugal (<a href="https://www.cp.pt/" target="_blank" rel="noopener">cp.pt</a>) · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · Fertagus、Metropolitano de Lisboa、CPとは関係ありません',
   attributionJp:
-    'データ: 東京都交通局（都営）およびとさでん交通 / 公共交通オープンデータセンター（<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>）、<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · 都営、とさでん交通、公共交通オープンデータセンターとは関係ありません',
+    'データ: 東京都交通局（都営）およびとさでん交通 / 公共交通オープンデータセンター（<a href="https://www.odpt.org/" target="_blank" rel="noopener">ODPT</a>）、<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>。地方路線：各事業者 / <a href="https://gtfs-data.jp/" target="_blank" rel="noopener">gtfs-data.jp</a>（CC BY 4.0、CC BY 2.1 JP、CC0） · 都営、とさでん交通、公共交通オープンデータセンターとは関係ありません',
+  attributionTw: "Source: MOTC TDX (<a href=\"https://tdx.transportdata.tw/\" target=\"_blank\" rel=\"noopener\">Transport Data eXchange</a>), <a href=\"https://data.gov.tw/license\" target=\"_blank\" rel=\"noopener\">Open Government Data License v1.0</a>",
   attributionSg:
     '推定列車: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL）と公表されている運行間隔に基づく · 運行情報: <a href="https://datamall.lta.gov.sg/" target="_blank" rel="noopener">LTA DataMall</a>（Singapore Open Data Licence） · LTA、SMRT、SBS Transitとは関係ありません',
   attributionBe:
