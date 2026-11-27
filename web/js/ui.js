@@ -368,7 +368,7 @@ export function trainAlerts(lang, info, onIncidents) {
     // Singapore: drawn from the line's frequency, not a timetable.
     rows.push(el("div", { class: "notice-box" }, t(lang, "estimatedPosition")));
   } else if (info.timetable_only) {
-    rows.push(el("div", { class: "notice-box" }, t(lang, info.operator === "NI Railways" ? "timetableOnlyNi" : "timetableOnly", { op: info.operator })));
+    rows.push(el("div", { class: "notice-box" }, t(lang, info.operator === "NI Railways" ? "timetableOnlyNi" : info.operator === "TfL" ? "timetableOnlyTfl" : "timetableOnly", { op: info.operator })));
   }
   if (info.stopped) {
     const vars = { a: info.stopped.after, b: info.stopped.before, t: formatDuration(lang, Date.now() / 1000 - info.stopped.since) };

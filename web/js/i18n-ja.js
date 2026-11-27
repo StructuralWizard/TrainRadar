@@ -116,6 +116,7 @@ export const JA = {
   stoppedLikely: "⏸ {a}と{b}の間で停車中の可能性（{t}新しいGPSなし）",
   timetableOnly: "時刻表による表示：この国のリアルタイムデータはまだありません",
   timetableOnlyNi: "時刻表による位置：NI Railwaysのリアルタイムデータは現在公開されていません。",
+  timetableOnlyTfl: "時刻表に基づく位置：TfLのリアルタイム情報はまだ表示されていません。",
   timetableSourceNi: "時刻表：Translink（NI Railways）、Open Government Licence v3.0に基づく。",
   timetableSource: "時刻表：ナショナルアクセスポイント、{date}公開。",
   operatorLive: "{op}で運行状況を見る ↗",
@@ -623,7 +624,7 @@ export const JA = {
   ukSource: "お知らせ：{source}。",
   ukPosition: "推定位置：時刻表 + リアルタイム遅延",
   attributionUk:
-    'データ: Network Rail Infrastructure Limitedの情報を含みます（<a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a>に基づく） · 駅: NaPTAN（DfT、OGL v3.0） · 北アイルランド: Translinkの時刻表（OGL v3.0） · お知らせ: National Rail、Rail Data Marketplace経由 · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · Network Rail、National Rail、各事業者とは関係ありません',
+    'データ: Network Rail Infrastructure Limitedの情報を含みます（<a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a>に基づく） · 駅: NaPTAN（DfT、OGL v3.0） · 北アイルランド: Translinkの時刻表（OGL v3.0） · お知らせ: National Rail、Rail Data Marketplace経由 · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · ロンドン地下鉄・DLR・トラム: <a href="https://tfl.gov.uk/info-for/open-data-users/" target="_blank" rel="noopener">Powered by TfL Open Data</a> (contains OS data © Crown copyright and database rights) · Network Rail、National Rail、各事業者とは関係ありません',
   attributionFr:
     'データ: SNCF Voyageursの時刻表とリアルタイムデータ、<a href="https://transport.data.gouv.fr/datasets/horaires-sncf" target="_blank" rel="noopener">transport.data.gouv.fr</a>経由（ODbL） · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · SNCFとは関係ありません',
   attributionLu:

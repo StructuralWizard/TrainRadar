@@ -145,6 +145,7 @@ export const STRINGS = {
     stoppedLikely: "⏸ Probablemente detenido entre {a} y {b} (sin GPS nuevo desde hace {t})",
     timetableOnly: "Posición según horario: {op} no publica datos en tiempo real.",
     timetableOnlyNi: "Posición según horario: los datos en directo de NI Railways no son públicos ahora mismo.",
+    timetableOnlyTfl: "Posición según horario: los datos en directo de TfL aún no se muestran.",
     timetableSourceNi: "Horario: Translink (NI Railways), con licencia Open Government Licence v3.0.",
     timetableSource: "Horario: Punto de Acceso Nacional, publicado el {date}.",
     operatorLive: "Estado en vivo en {op} ↗",
@@ -679,7 +680,7 @@ export const STRINGS = {
     ukSource: "Avisos: {source}.",
     ukPosition: "posición estimada: horario + retraso en directo",
     attributionUk:
-      'Datos: contiene información de Network Rail Infrastructure Limited con licencia <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Estaciones: NaPTAN (DfT, OGL v3.0) · Irlanda del Norte: horario de Translink (OGL v3.0) · Avisos: National Rail, vía Rail Data Marketplace · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con Network Rail, National Rail ni los operadores',
+      'Datos: contiene información de Network Rail Infrastructure Limited con licencia <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Estaciones: NaPTAN (DfT, OGL v3.0) · Irlanda del Norte: horario de Translink (OGL v3.0) · Avisos: National Rail, vía Rail Data Marketplace · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Metro de Londres, DLR y tranvías: <a href="https://tfl.gov.uk/info-for/open-data-users/" target="_blank" rel="noopener">Powered by TfL Open Data</a> (contains OS data © Crown copyright and database rights) · Sin relación con Network Rail, National Rail ni los operadores',
     attributionFr:
       'Datos: horarios y datos en directo de SNCF Voyageurs vía <a href="https://transport.data.gouv.fr/datasets/horaires-sncf" target="_blank" rel="noopener">transport.data.gouv.fr</a> (ODbL) · Vías: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Sin relación con SNCF',
     attributionLu:
@@ -853,6 +854,7 @@ export const STRINGS = {
     stoppedLikely: "⏸ Probably stopped between {a} and {b} (no new GPS for {t})",
     timetableOnly: "Position from the timetable: {op} publishes no live data.",
     timetableOnlyNi: "Position from the timetable: NI Railways' live data isn't public right now.",
+    timetableOnlyTfl: "Position from the timetable: TfL's live arrivals aren't shown yet.",
     timetableSourceNi: "Timetable: Translink (NI Railways), under the Open Government Licence v3.0.",
     timetableSource: "Timetable: National Access Point, published {date}.",
     operatorLive: "Live status at {op} ↗",
@@ -1387,7 +1389,7 @@ export const STRINGS = {
     ukSource: "Notices: {source}.",
     ukPosition: "estimated position: timetable + live delay",
     attributionUk:
-      'Data: contains information of Network Rail Infrastructure Limited licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Stations: NaPTAN (DfT, OGL v3.0) · Northern Ireland: timetable from Translink (OGL v3.0) · Notices: National Rail, via the Rail Data Marketplace · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with Network Rail, National Rail or the operators',
+      'Data: contains information of Network Rail Infrastructure Limited licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Stations: NaPTAN (DfT, OGL v3.0) · Northern Ireland: timetable from Translink (OGL v3.0) · Notices: National Rail, via the Rail Data Marketplace · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · London Underground, DLR and Trams: <a href="https://tfl.gov.uk/info-for/open-data-users/" target="_blank" rel="noopener">Powered by TfL Open Data</a> (contains OS data © Crown copyright and database rights) · Not affiliated with Network Rail, National Rail or the operators',
     attributionFr:
       'Data: SNCF Voyageurs timetables and live data via <a href="https://transport.data.gouv.fr/datasets/horaires-sncf" target="_blank" rel="noopener">transport.data.gouv.fr</a> (ODbL) · Track: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · Not affiliated with SNCF',
     attributionLu:

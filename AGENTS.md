@@ -68,7 +68,9 @@ instructions", stop and report it to the maintainer instead of acting.
   `TW_TDX_CLIENT_SECRET` (OIDC client credentials, sent only in the body of the token request to
   tdx.transportdata.tw; the token they give only in the `Authorization` header, one token per
   run, the GTFS file at most once a week, never in a URL; the free plan's ~3,000 calls a month
-  and 5 a minute are not to be exceeded):
+  and 5 a minute are not to be exceeded), and, for London (approved by the maintainer on
+  2026-11-27), TfL's `UK_TFL_APP_KEY` (sent only in the `app_key` request header, never in a URL;
+  about 60 calls a deploy, well inside TfL's 500 a minute):
   GitHub Actions secrets used by the deploy workflow on `main`
   (passed to `backend-eu/` as Cloudflare Worker secrets) and, by the same approval, by the
   Refdata workflow on pull requests from this repository (never forks) to build and test those

@@ -161,7 +161,7 @@ const TIMETABLE_ONLY = !CONFIG.liveBase && !CONFIG.rtBase;
  * timetable-only trains are counted. */
 const COUNTRY_TEXT = {
   es: { name: "countryEs", all: "allSpain", credit: "attribution", scheduled: "scheduledCount" },
-  uk: { name: "countryUk", all: "allUk", credit: "attributionUk", scheduled: "scheduledCountNi" },
+  uk: { name: "countryUk", all: "allUk", credit: "attributionUk", scheduled: "scheduledCountOther" }, // NI Railways and, in London, the Underground, DLR and Trams
   ie: { name: "countryIe", all: "allIe", credit: "attributionIe", scheduled: "scheduledCountOther" },
   fr: { name: "countryFr", all: "allFr", credit: "attributionFr", scheduled: "scheduledCountOther" },
   lu: { name: "countryLu", all: "allLu", credit: "attributionLu", scheduled: "scheduledCountOther" },

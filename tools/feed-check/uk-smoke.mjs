@@ -90,7 +90,8 @@ await page.click("#search-results li button");
 await page.waitForFunction(() => /NI Railways/.test(document.querySelector("#detail")?.textContent || ""), null, { timeout: 10000 }).catch(() => fail("NI train sheet"));
 const niSheet = (await page.textContent("#detail")).replace(/\s+/g, " ");
 if (!/los datos en directo de NI Railways no son públicos/.test(niSheet) || !/Horario: Translink \(NI Railways\)/.test(niSheet)) await fail(`NI sheet: ${niSheet.slice(0, 400)}`);
-if (!/de NI Railways según horario/.test(await page.textContent("#stats"))) await fail(`stats: ${await page.textContent("#stats")}`);
+// NI Railways (and, with TfL's data, the Underground) counted as "by timetable".
+if (!/\+ \d+ según horario/.test(await page.textContent("#stats"))) await fail(`stats: ${await page.textContent("#stats")}`);
 if ((await page.textContent("#net-chip")).trim() !== "Reino Unido") await fail(`chip over NI: ${await page.textContent("#net-chip")}`);
 await page.screenshot({ path: `${out}/uk-ni-train.png` });
 await page.click("#detail-close").catch(() => page.keyboard.press("Escape"));

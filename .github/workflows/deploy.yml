@@ -194,21 +194,29 @@ jobs:
         env:
           NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
           NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
+          UK_TFL_APP_KEY: ${{ secrets.UK_TFL_APP_KEY }}
           OSM_CACHED: ${{ steps.osm_uk.outputs.cache-hit }}
         run: |
           set -o pipefail # a failed download stops here, with its own message
           [ "$OSM_CACHED" = "true" ] || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
           tools/fetch-uk.sh | tee -a "$GITHUB_STEP_SUMMARY"
+          # London Underground, DLR and Trams from TfL's Unified API (~60
+          # calls; the key only in a header). Optional: without it the UK is
+          # National Rail only.
+          python3 -I tools/uk/tfl-gtfs.py gtfs/uk/tfl.zip | tee -a "$GITHUB_STEP_SUMMARY" ||
+            { echo "::warning::TfL's timetables failed: the UK without the Underground, DLR and Trams."; rm -f gtfs/uk/tfl.zip; }
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/uk-data --gzip \
               --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
               --rail gtfs/uk/rail.geojsonseq --report refdata-uk.md \
               $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) \
+              $( [ -s gtfs/uk/tfl.zip ] && echo --uk-tfl-gtfs gtfs/uk/tfl.zip ) \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/uk-data; then
             mv build/uk-data build/data/uk
             # Plan ahead: 63 days as far as published, in data/uk/plan/.
             if cargo run --release -q -p trainradar-refdata-build -- build --out build/uk-plan --gzip --days 63 \
                 --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
-                $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) --report uk-plan.md \
+                $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) \
+                $( [ -s gtfs/uk/tfl.zip ] && echo --uk-tfl-gtfs gtfs/uk/tfl.zip ) --report uk-plan.md \
               && cargo run --release -q -p trainradar-refdata-build -- verify build/uk-plan; then
               mv build/uk-plan build/data/uk/plan
               { echo "## UK plan-ahead timetables"; echo; cat uk-plan.md; } >> "$GITHUB_STEP_SUMMARY"

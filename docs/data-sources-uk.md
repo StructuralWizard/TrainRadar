@@ -136,6 +136,30 @@ Their answer (2026-11-21), which they note is not legal advice:
   live positions and the Network Rail feeds.
 - The attribution should be "National Rail" (`KB_SOURCE` in `backend-uk/src/kb.js`).
 
+## London Underground, DLR and Trams (TfL Unified API, added 2026-11-27)
+
+`tools/uk/tfl-gtfs.py` builds a GTFS of the 11 Underground lines, the DLR and London Trams from
+TfL's Unified API (`api.tfl.gov.uk`), region `uk-tfl` in the UK's data, by timetable:
+
+- `/Line/{id}/Route/Sequence/all`: each line's stations (positions, names) and branches.
+- `/Line/{id}/Timetable/{terminus}`: from each branch's first station, every departure per day
+  type ("Monday - Thursday", "Friday", "Saturday (also Good Friday)", "Sunday"…) and the minutes
+  to each station after it. One trip per departure; trips that start mid-line (from a depot)
+  aren't in TfL's timetables. Night Tube runs are in the Friday and Saturday schedules.
+- About 60 calls a run (2026-11-27: 28,701 trips a week, 351 stations, 242 KB compressed). The key
+  `UK_TFL_APP_KEY` (free, api-portal.tfl.gov.uk, 500 requests a minute) goes only in the `app_key`
+  header: TfL reads it there as well as in the query string (a wrong key in the header is
+  refused just like one in the URL). Without a key the anonymous limit applies; the script then
+  spaces its calls.
+- TfL's TransXChange download (`tfl.gov.uk/tfl/syndication/feeds/journey-planner-timetables.zip`)
+  sits behind a browser check that automated downloads can't pass: not used.
+- No shapes yet: straight lines between stations (`lineStrings` in the route sequence could give
+  them). Elizabeth line, Overground and Merseyrail are already in Network Rail's timetable.
+- **Live, next:** `/Mode/tube,dlr,tram/Arrivals` gives every prediction in one call (no GPS for
+  the Tube): positions would be estimated from the time to the next station.
+- **Licence:** TfL open data (transport data service terms): "Powered by TfL Open Data";
+  contains OS data © Crown copyright and database rights.
+
 ## Licence
 
 Network Rail open data: Open Government Licence v3.0. Attribution: "Contains information of

@@ -116,6 +116,7 @@ export const PT = {
   stoppedLikely: "⏸ Provavelmente parado entre {a} e {b} (sem GPS novo há {t})",
   timetableOnly: "Segundo o horário: ainda sem dados em direto deste país",
   timetableOnlyNi: "Posição segundo o horário: os dados em direto da NI Railways não estão públicos neste momento.",
+  timetableOnlyTfl: "Posição segundo o horário: os dados em direto da TfL ainda não são mostrados.",
   timetableSourceNi: "Horário: Translink (NI Railways), ao abrigo da Open Government Licence v3.0.",
   timetableSource: "Horário: Ponto de Acesso Nacional, publicado a {date}.",
   operatorLive: "Estado em direto na {op} ↗",
@@ -623,7 +624,7 @@ export const PT = {
   ukSource: "Avisos: {source}.",
   ukPosition: "posição estimada: horário + atraso em direto",
   attributionUk:
-    'Dados: contém informação da Network Rail Infrastructure Limited licenciada ao abrigo da <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Estações: NaPTAN (DfT, OGL v3.0) · Irlanda do Norte: horário da Translink (OGL v3.0) · Avisos: National Rail, via Rail Data Marketplace · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Sem ligação à Network Rail, à National Rail nem aos operadores',
+    'Dados: contém informação da Network Rail Infrastructure Limited licenciada ao abrigo da <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a> · Estações: NaPTAN (DfT, OGL v3.0) · Irlanda do Norte: horário da Translink (OGL v3.0) · Avisos: National Rail, via Rail Data Marketplace · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Metro de Londres, DLR e elétricos: <a href="https://tfl.gov.uk/info-for/open-data-users/" target="_blank" rel="noopener">Powered by TfL Open Data</a> (contains OS data © Crown copyright and database rights) · Sem ligação à Network Rail, à National Rail nem aos operadores',
   attributionFr:
     'Dados: horários e dados em direto da SNCF Voyageurs via <a href="https://transport.data.gouv.fr/datasets/horaires-sncf" target="_blank" rel="noopener">transport.data.gouv.fr</a> (ODbL) · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) · Sem ligação à SNCF',
   attributionLu:
