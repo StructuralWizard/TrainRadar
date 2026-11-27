@@ -6,7 +6,7 @@ import { CONFIG } from "./js/config.js";
 import { COUNTRY_INFO, COUNTRY_KEY, applyCountry, areaKey, areaName, areasOf, pickCountry, viewKey, withPlaces } from "./js/country.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
-import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
+import { formatAgo, formatCount, formatDelay, formatDistance, formatMedian, trainLabel } from "./js/format.js";
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
@@ -424,6 +424,8 @@ function applyLang() {
   }
   $("search-q").placeholder = t(lang, isPhone() ? "searchPlaceholderPhone" : "searchPlaceholder");
   phoneChrome();
+  // "Cargando trenes…" from the first frame, until the engine has positions.
+  if (!engine) renderLiveChip({ trains: 0, scheduled: 0, median_delay: null }, Date.now());
   $("about-btn").setAttribute("aria-label", t(lang, "about"));
   $("about-btn").title = t(lang, "about");
   $("about-title").textContent = t(lang, "about");
@@ -2617,6 +2619,9 @@ function renderHomeSummary(st, pos) {
         el("button", { type: "button", class: "icon-btn summary-hide", id: "delayed-hide", "aria-label": t(lang, "delayedHide"), title: t(lang, "delayedHide"), onclick: () => sheets.hideHome(true) }, icon("chevronDown", 18)),
       ),
       el("div", { class: "buckets" }, bucket("major", "bucketMajor"), bucket("minor", "bucketMinor"), bucket("ontime", "bucketOnTime")),
+      // Trains by timetable (Northern Ireland's, OUIGO's): counted here, not
+      // in the map's chips.
+      el("p", { class: "muted small summary-sched", id: "summary-sched" }),
     );
   }
   const set = (id, text) => {
@@ -2624,6 +2629,7 @@ function renderHomeSummary(st, pos) {
     if (e.textContent !== text) e.textContent = text;
   };
   set("summary-of", t(lang, "delayedOf", { n: formatCount(lang, st.delayed), total: formatCount(lang, st.trains) }));
+  set("summary-sched", st.scheduled ? t(lang, COUNTRY_TEXT[country].scheduled, { n: formatCount(lang, st.scheduled) }).replace(/^\+\s*/, "") : "");
   const show = $("delayed-show");
   if (show.dataset.lang !== lang) {
     show.dataset.lang = lang;
@@ -2694,26 +2700,36 @@ function updateNetChip() {
   }
 }
 
-/** "498 trenes · mediana +2 min" with a dot: green live, orange stale, red failing. */
+/** Two chips: "498 trenes" with a dot (green live, orange stale, red
+ * failing; pulsing while the first trains load) and "Mediana +2 min". */
 function renderLiveChip(st, now) {
   if (!isPhone()) return;
+  const median = $("median-chip");
+  const loading = !engine || (st.trains + st.scheduled === 0 && !(feeds?.lastUpdate() || 0) && !TIMETABLE_ONLY);
+  if (loading) {
+    $("live-text").textContent = t(lang, "loadingTrains");
+    $("live-chip").dataset.state = "loading";
+    median.hidden = true;
+    return;
+  }
   if (TIMETABLE_ONLY) {
     // A grey dot: by timetable, no live data to be stale or failing.
     $("live-text").textContent = t(lang, "trains", { n: formatCount(lang, st.trains + st.scheduled) });
     $("live-chip").dataset.state = "timetable";
     $("live-chip").title = t(lang, "timetableOnly");
+    median.hidden = true;
     return;
   }
   const last = feeds?.lastUpdate() || 0;
   const age = last ? (now - last) / 1000 : Infinity;
   const state = feeds?.failing() ? "bad" : age > 120 ? "stale" : "ok";
-  const text =
-    st.median_delay === null
-      ? t(lang, "trains", { n: formatCount(lang, st.trains) })
-      : t(lang, "liveChip", { trains: t(lang, "trains", { n: formatCount(lang, st.trains) }), delay: formatDelay(lang, st.median_delay) });
-  $("live-text").textContent = text;
+  // Trains by timetable (Northern Ireland's, OUIGO's) are counted in the
+  // delays sheet, not here: the chip stays one short line.
+  $("live-text").textContent = t(lang, "trains", { n: formatCount(lang, st.trains) });
   $("live-chip").dataset.state = state;
   $("live-chip").title = state === "bad" ? t(lang, ES ? "feedError" : "feedErrorOther") : last ? t(lang, "updated", { age: formatAgo(lang, age) }) : t(lang, "loading");
+  median.textContent = formatMedian(lang, st.median_delay);
+  median.hidden = !median.textContent;
 }
 
 /** Phone: the network picker ("Ir a…" on the desktop). */
@@ -3563,6 +3579,10 @@ async function main() {
   map.on("moveend", saveView);
   document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveView());
   window.addEventListener("pagehide", saveView);
+  // The credits start folded into their ⓘ (MapLibre opens compact credits
+  // when the map loads): a tap opens them.
+  map.once("load", foldCredits);
+  map.once("idle", foldCredits);
   // Open credits close with a tap on the map or on their text (not a link).
   map.on("click", foldCredits);
   map.getContainer().addEventListener("click", (e) => {

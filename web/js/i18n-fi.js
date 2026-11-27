@@ -653,4 +653,7 @@ export const FI = {
   cabTrain: "Katso ohjaamosta",
   netAreas: "Alueet",
   netSearchArea: "Etsi aluetta",
+  medianChip: "Mediaani {delay}",
+  medianOnTime: "Mediaani: ajallaan",
+  loadingTrains: "Ladataan junia…",
 };

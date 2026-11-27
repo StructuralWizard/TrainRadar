@@ -653,4 +653,7 @@ export const NL = {
   cabTrain: "Bekijk vanuit de cabine",
   netAreas: "Gebieden",
   netSearchArea: "Zoek een gebied",
+  medianChip: "Mediaan {delay}",
+  medianOnTime: "Mediaan: op tijd",
+  loadingTrains: "Treinen laden…",
 };

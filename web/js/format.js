@@ -11,6 +11,13 @@ export function formatDelay(lang, secs) {
   return m > 0 ? t(lang, "late", { m }) : t(lang, "early", { m: -m });
 }
 
+/** "Mediana +3 min", or "Mediana: a su hora" when the median is under a
+ * minute (not "mediana A su hora"). */
+export function formatMedian(lang, secs) {
+  if (secs === null || secs === undefined || Number.isNaN(secs)) return "";
+  return Math.round(secs / MINUTE) === 0 ? t(lang, "medianOnTime") : t(lang, "medianChip", { delay: formatDelay(lang, secs) });
+}
+
 /** Colour band, matching the engine: 0 <5 min, 1 5–14, 2 15+, 3 unknown. */
 export function delayClass(secs) {
   if (secs === null || secs === undefined) return 3;

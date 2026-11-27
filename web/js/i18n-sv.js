@@ -653,4 +653,7 @@ export const SV = {
   cabTrain: "Se från förarhytten",
   netAreas: "Områden",
   netSearchArea: "Sök ett område",
+  medianChip: "Median {delay}",
+  medianOnTime: "Median: i tid",
+  loadingTrains: "Läser in tåg…",
 };

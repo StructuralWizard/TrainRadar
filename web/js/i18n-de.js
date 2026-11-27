@@ -653,4 +653,7 @@ export const DE = {
   cabTrain: "Aus dem Führerstand ansehen",
   netAreas: "Gebiete",
   netSearchArea: "Gebiet suchen",
+  medianChip: "Median {delay}",
+  medianOnTime: "Median: pünktlich",
+  loadingTrains: "Züge werden geladen…",
 };

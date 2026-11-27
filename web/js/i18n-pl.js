@@ -653,4 +653,7 @@ export const PL = {
   cabTrain: "Zobacz z kabiny",
   netAreas: "Obszary",
   netSearchArea: "Szukaj obszaru",
+  medianChip: "Mediana {delay}",
+  medianOnTime: "Mediana: punktualnie",
+  loadingTrains: "Wczytywanie pociągów…",
 };

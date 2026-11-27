@@ -653,4 +653,7 @@ export const CS = {
   cabTrain: "Pohled ze stanoviště",
   netAreas: "Oblasti",
   netSearchArea: "Hledat oblast",
+  medianChip: "Medián {delay}",
+  medianOnTime: "Medián: včas",
+  loadingTrains: "Načítání vlaků…",
 };

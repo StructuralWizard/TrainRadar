@@ -676,4 +676,7 @@ export const JA = {
   cabTrain: "運転席から見る",
   netAreas: "エリア",
   netSearchArea: "エリアを検索",
+  medianChip: "中央値 {delay}",
+  medianOnTime: "中央値：定刻",
+  loadingTrains: "列車を読み込み中…",
 };

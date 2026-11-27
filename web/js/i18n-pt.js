@@ -676,4 +676,7 @@ export const PT = {
   cabTrain: "Ver da cabina",
   netAreas: "Zonas",
   netSearchArea: "Procurar uma zona",
+  medianChip: "Mediana {delay}",
+  medianOnTime: "Mediana: a horas",
+  loadingTrains: "A carregar comboios…",
 };

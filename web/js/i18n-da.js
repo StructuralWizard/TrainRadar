@@ -653,4 +653,7 @@ export const DA = {
   cabTrain: "Se fra førerrummet",
   netAreas: "Områder",
   netSearchArea: "Søg efter et område",
+  medianChip: "Median {delay}",
+  medianOnTime: "Median: til tiden",
+  loadingTrains: "Indlæser tog…",
 };

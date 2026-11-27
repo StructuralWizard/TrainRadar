@@ -653,4 +653,7 @@ export const ET = {
   cabTrain: "Vaata juhikabiinist",
   netAreas: "Piirkonnad",
   netSearchArea: "Otsi piirkonda",
+  medianChip: "Mediaan {delay}",
+  medianOnTime: "Mediaan: graafikus",
+  loadingTrains: "Rongide laadimine…",
 };

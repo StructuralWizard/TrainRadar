@@ -653,4 +653,7 @@ export const FR = {
   cabTrain: "Voir depuis la cabine",
   netAreas: "Zones",
   netSearchArea: "Chercher une zone",
+  medianChip: "Médiane {delay}",
+  medianOnTime: "Médiane : à l'heure",
+  loadingTrains: "Chargement des trains…",
 };

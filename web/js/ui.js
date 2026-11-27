@@ -9,6 +9,7 @@ import {
   formatDelay,
   formatDistance,
   formatDuration,
+  formatMedian,
 } from "./format.js";
 import { COLORS, SCHEDULED_COLOR, SERVICE_COLORS } from "./map.js";
 
@@ -32,7 +33,7 @@ export function statsText(lang, stats) {
   const parts = [t(lang, "trains", { n: formatCount(lang, stats.trains) })];
   parts.push(t(lang, "delayed", { n: formatCount(lang, stats.delayed) }));
   if (stats.median_delay !== null) {
-    parts.push(t(lang, "median", { delay: formatDelay(lang, stats.median_delay) }));
+    parts.push(formatMedian(lang, stats.median_delay));
   }
   return parts.join(" · ");
 }

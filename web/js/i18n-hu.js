@@ -653,4 +653,7 @@ export const HU = {
   cabTrain: "Nézd a vezetőállásból",
   netAreas: "Területek",
   netSearchArea: "Terület keresése",
+  medianChip: "Medián {delay}",
+  medianOnTime: "Medián: pontos",
+  loadingTrains: "Vonatok betöltése…",
 };

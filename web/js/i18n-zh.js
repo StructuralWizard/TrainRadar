@@ -653,4 +653,7 @@ export const ZH = {
   cabTrain: "从驾驶室观看",
   netAreas: "区域",
   netSearchArea: "搜索区域",
+  medianChip: "中位数 {delay}",
+  medianOnTime: "中位数：准点",
+  loadingTrains: "正在加载列车…",
 };

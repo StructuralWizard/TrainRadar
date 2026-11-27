@@ -653,4 +653,7 @@ export const NB = {
   cabTrain: "Se fra førerhuset",
   netAreas: "Områder",
   netSearchArea: "Søk etter et område",
+  medianChip: "Median {delay}",
+  medianOnTime: "Median: i rute",
+  loadingTrains: "Laster inn tog…",
 };
