@@ -656,4 +656,9 @@ export const ET = {
   medianChip: "Mediaan {delay}",
   medianOnTime: "Mediaan: graafikus",
   loadingTrains: "Rongide laadimine…",
+  follow: "Jälgi",
+  following: "Jälgid",
+  nowBetween: "Praegu: {a} ja {b} vahel",
+  journeyStops: "Teekond",
+  followChip: "Jälgi: {train}",
 };

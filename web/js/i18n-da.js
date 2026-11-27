@@ -656,4 +656,9 @@ export const DA = {
   medianChip: "Median {delay}",
   medianOnTime: "Median: til tiden",
   loadingTrains: "Indlæser tog…",
+  follow: "Følg",
+  following: "Følger",
+  nowBetween: "Nu: mellem {a} og {b}",
+  journeyStops: "Rute",
+  followChip: "Følg {train}",
 };

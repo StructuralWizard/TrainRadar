@@ -656,4 +656,9 @@ export const HU = {
   medianChip: "Medián {delay}",
   medianOnTime: "Medián: pontos",
   loadingTrains: "Vonatok betöltése…",
+  follow: "Követés",
+  following: "Követed",
+  nowBetween: "Most: {a} és {b} között",
+  journeyStops: "Útvonal",
+  followChip: "Követés: {train}",
 };

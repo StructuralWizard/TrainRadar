@@ -656,4 +656,9 @@ export const SK = {
   medianChip: "Medián {delay}",
   medianOnTime: "Medián: načas",
   loadingTrains: "Načítavajú sa vlaky…",
+  follow: "Sledovať",
+  following: "Sleduješ",
+  nowBetween: "Teraz: medzi {a} a {b}",
+  journeyStops: "Trasa",
+  followChip: "Sledovať {train}",
 };

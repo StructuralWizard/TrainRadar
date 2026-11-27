@@ -555,6 +555,11 @@ export const STRINGS = {
     // Phone layout: train and station sheets.
     trainNo: "Tren {n}",
     nextStops: "Próximas paradas",
+    follow: "Seguir",
+    following: "Siguiendo",
+    nowBetween: "Ahora: entre {a} y {b}",
+    journeyStops: "Recorrido",
+    followChip: "Seguir {train}",
     allStops: "Ver todas ({n})",
     noStops: "Sin próximas paradas en el horario.",
     leavesAt: "sale {time}",
@@ -1244,6 +1249,11 @@ export const STRINGS = {
     // Phone layout: train and station sheets.
     trainNo: "Train {n}",
     nextStops: "Next stops",
+    follow: "Follow",
+    following: "Following",
+    nowBetween: "Now: between {a} and {b}",
+    journeyStops: "Route",
+    followChip: "Follow {train}",
     allStops: "Show all ({n})",
     noStops: "No more stops in the timetable.",
     leavesAt: "leaves {time}",

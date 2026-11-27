@@ -679,4 +679,9 @@ export const JA = {
   medianChip: "中央値 {delay}",
   medianOnTime: "中央値：定刻",
   loadingTrains: "列車を読み込み中…",
+  follow: "追跡",
+  following: "追跡中",
+  nowBetween: "現在：{a}〜{b}間",
+  journeyStops: "経路",
+  followChip: "{train}を追跡",
 };

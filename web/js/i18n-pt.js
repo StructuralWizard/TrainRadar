@@ -679,4 +679,9 @@ export const PT = {
   medianChip: "Mediana {delay}",
   medianOnTime: "Mediana: a horas",
   loadingTrains: "A carregar comboios…",
+  follow: "Seguir",
+  following: "A seguir",
+  nowBetween: "Agora: entre {a} e {b}",
+  journeyStops: "Percurso",
+  followChip: "Seguir {train}",
 };

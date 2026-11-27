@@ -1050,6 +1050,25 @@ function selectedInfo(now) {
   return JSON.parse(engine.trainJson(i, now));
 }
 
+/** "Seguir": the map keeps the selected train in view until the user drags
+ * the map. The number is kept, so the next launch can offer to follow it
+ * again (step 9 of docs/design/ui-redesign/PLAN.md). */
+const FOLLOW_KEY = `follow-${country}`;
+let following = store.get(FOLLOW_KEY) || "";
+let followAt = 0;
+const sameTrain = (a, b) => String(a || "").replace(/^0+/, "") === String(b || "").replace(/^0+/, "");
+function setFollowing(number) {
+  following = number || "";
+  store.set(FOLLOW_KEY, following);
+  followAt = 0;
+}
+function followTrain(info, force = false) {
+  if (!following || !sameTrain(info.number, following) || !map) return;
+  if (!force && (map.isMoving() || Date.now() - followAt < 2000)) return;
+  followAt = Date.now();
+  map.easeTo({ center: [info.lon, info.lat], duration: force ? 600 : 1000, offset: isPhone() ? phoneOffset(true) : [0, 0] });
+}
+
 function showPopup(open = false) {
   const now = Date.now();
   const info = selectedInfo(now);
@@ -1058,6 +1077,7 @@ function showPopup(open = false) {
     return;
   }
   map.getSource("selected")?.setData(pointGeoJson(info.lon, info.lat));
+  followTrain(info);
   // Phone sheet or desktop side panel alike (docs/design/ui-redesign/PLAN.md, step 3).
   return showTrainSheet(info, open, now);
   if (popup) {
@@ -1155,6 +1175,15 @@ function showTrainSheet(info, open, now) {
   const route = info.route || info.line;
   const body = trainSheet(lang, info, {
     now,
+    follow: {
+      on: sameTrain(info.number, following),
+      onToggle: () => {
+        setFollowing(sameTrain(info.number, following) ? "" : info.number);
+        followTrain(info, true);
+        detailKey = "";
+        showPopup(true);
+      },
+    },
     regionName: regionName(info.region),
     lineColor: lineColors.get(`${info.region}|${route}`) || lineColors.get(`|${route}`),
     stops: trip?.stops,
@@ -3576,6 +3605,13 @@ async function main() {
     attribution(),
   ));
   map.on("moveend", saveView);
+  // A drag by the user stops "Seguir".
+  map.on("dragstart", (e) => {
+    if (e.originalEvent && following) {
+      setFollowing("");
+      if (detailKind === "train") (detailKey = ""), showPopup(true);
+    }
+  });
   document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveView());
   window.addEventListener("pagehide", saveView);
   // The credits start folded into their ⓘ (MapLibre opens compact credits

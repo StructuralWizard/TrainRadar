@@ -656,4 +656,9 @@ export const ZH = {
   medianChip: "中位数 {delay}",
   medianOnTime: "中位数：准点",
   loadingTrains: "正在加载列车…",
+  follow: "跟随",
+  following: "跟随中",
+  nowBetween: "现在：{a}与{b}之间",
+  journeyStops: "路线",
+  followChip: "跟随 {train}",
 };

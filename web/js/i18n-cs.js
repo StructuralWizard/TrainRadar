@@ -656,4 +656,9 @@ export const CS = {
   medianChip: "Medián {delay}",
   medianOnTime: "Medián: včas",
   loadingTrains: "Načítání vlaků…",
+  follow: "Sledovat",
+  following: "Sleduješ",
+  nowBetween: "Nyní: mezi {a} a {b}",
+  journeyStops: "Trasa",
+  followChip: "Sledovat {train}",
 };

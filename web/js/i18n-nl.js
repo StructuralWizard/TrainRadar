@@ -656,4 +656,9 @@ export const NL = {
   medianChip: "Mediaan {delay}",
   medianOnTime: "Mediaan: op tijd",
   loadingTrains: "Treinen laden…",
+  follow: "Volgen",
+  following: "Gevolgd",
+  nowBetween: "Nu: tussen {a} en {b}",
+  journeyStops: "Route",
+  followChip: "{train} volgen",
 };

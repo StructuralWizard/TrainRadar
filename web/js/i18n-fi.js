@@ -656,4 +656,9 @@ export const FI = {
   medianChip: "Mediaani {delay}",
   medianOnTime: "Mediaani: ajallaan",
   loadingTrains: "Ladataan junia…",
+  follow: "Seuraa",
+  following: "Seurataan",
+  nowBetween: "Nyt: välillä {a}–{b}",
+  journeyStops: "Reitti",
+  followChip: "Seuraa: {train}",
 };

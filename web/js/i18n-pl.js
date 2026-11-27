@@ -656,4 +656,9 @@ export const PL = {
   medianChip: "Mediana {delay}",
   medianOnTime: "Mediana: punktualnie",
   loadingTrains: "Wczytywanie pociągów…",
+  follow: "Śledź",
+  following: "Śledzisz",
+  nowBetween: "Teraz: między {a} a {b}",
+  journeyStops: "Trasa",
+  followChip: "Śledź {train}",
 };

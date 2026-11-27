@@ -21,6 +21,8 @@
   --tr-brand-fill: #1d4ed8; --tr-on-brand: #ffffff;
   /* Soft fills behind delay pills and buckets. */
   --tr-ontime-soft: #dcfce7; --tr-minor-soft: #ffedd5; --tr-major-soft: #fee2e2; --tr-nodata-soft: #f1f5f9;
+  /* Text on those fills (and coloured delay text): ≥ 4.5:1 in both themes. */
+  --tr-ontime-text: #166534; --tr-minor-text: #9a3412; --tr-major-text: #991b1b;
   --tr-link: #1d4ed8;
   --tr-focus: #93c5fd;
   --fg: var(--tr-ink);
@@ -38,6 +40,7 @@
     --tr-ground: #020617; --tr-line: #1e293b; --tr-brand: #60a5fa;
     --tr-brand-fill: #2563eb;
     --tr-ontime-soft: #052e16; --tr-minor-soft: #431407; --tr-major-soft: #450a0a; --tr-nodata-soft: #1e293b;
+    --tr-ontime-text: #86efac; --tr-minor-text: #fdba74; --tr-major-text: #fca5a5;
     --tr-link: #93c5fd;
     --tr-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
   }
@@ -841,6 +844,60 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .cab-time { color: #93c5fd; background: rgba(147, 197, 253, 0.15); }
   .cab-row { border-color: #1f2937; }
 }
+
+/* Train detail (step 4): header, actions, stop timeline, neighbour cards. */
+.ts-title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; font-size: 22px; line-height: 1.2; font-weight: 800; color: var(--tr-ink); overflow-wrap: anywhere; }
+.ts-title .line-badge { font-size: 13px; }
+.ts-number { font-variant-numeric: tabular-nums; }
+.ts-title .ts-dest { font-size: inherit; font-weight: inherit; margin: 0; }
+.ts-head .ts-meta { margin: 2px 0 0; font-size: 13px; color: var(--tr-muted); }
+.ts-pill { flex: none; align-self: flex-start; padding: 6px 12px; border-radius: var(--tr-radius-sm); font-size: 15px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ts-pill.tone-ok { background: var(--tr-ontime-soft); color: var(--tr-ontime-text); }
+.ts-pill.tone-minor { background: var(--tr-minor); color: #fff; }
+.ts-pill.tone-major { background: var(--tr-major); color: #fff; }
+.ts-pill.tone-none { background: var(--tr-nodata-soft); color: var(--tr-muted); }
+.ts-acts { display: flex; gap: 8px; margin-top: 14px; }
+.ts-acts > .ts-act { flex: 1 1 0; min-width: 0; }
+.ts-acts > .ts-act-icon { flex: 0 0 52px; }
+.ts-act {
+  min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px;
+  border: 1px solid var(--tr-line); border-radius: var(--tr-radius-sm); background: var(--tr-surface); color: var(--tr-ink);
+  font: inherit; font-size: 15px; font-weight: 600;
+}
+.ts-act[aria-pressed="true"].fav-btn { background: var(--tr-ontime-soft); color: var(--tr-ontime-text); border-color: transparent; }
+.ts-act[aria-pressed="true"].fav-btn .icon-star { fill: currentColor; }
+.ts-act-strong { background: var(--tr-brand-fill); border-color: var(--tr-brand-fill); color: var(--tr-on-brand); }
+.ts-act-strong[aria-pressed="true"] { background: var(--tr-surface); color: var(--tr-brand); border-color: var(--tr-brand); }
+.ts-act-icon { padding: 0; }
+.ts-act:focus-visible { outline: 3px solid var(--tr-focus); outline-offset: 2px; }
+.trip-btn { margin-top: 10px; }
+.ts-h3 { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tr-muted); }
+.timeline { list-style: none; margin: 0; padding: 0; }
+.tl-stop, .tl-now { position: relative; display: grid; grid-template-columns: 52px 20px 1fr auto; gap: 10px; align-items: center; min-height: 40px; }
+.tl-time { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--tr-muted); }
+.tl-name { font-size: 15px; overflow-wrap: anywhere; }
+.tl-delay { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; color: var(--tr-muted); }
+.tl-delay.tone-text-ok { color: var(--tr-ontime-text); }
+/* The line through the dots. */
+.tl-stop::before, .tl-now::before { content: ""; position: absolute; left: 71px; top: 0; bottom: 0; width: 2px; background: var(--tr-line); }
+.timeline > :first-child::before { top: 50%; }
+.timeline > :last-child::before { bottom: 50%; }
+.tl-dot { position: relative; justify-self: center; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--tr-nodata); background: var(--tr-surface); }
+.tl-passed .tl-dot { background: var(--tr-nodata); border-color: var(--tr-nodata); }
+.tl-passed .tl-name, .tl-passed .tl-time { color: var(--tr-muted); }
+.tl-next .tl-dot { width: 14px; height: 14px; border: 3px solid var(--tr-brand); background: var(--tr-surface); }
+.tl-next .tl-name, .tl-next .tl-time { font-weight: 700; color: var(--tr-ink); }
+.tl-now { min-height: 28px; }
+.tl-now .tl-dot { width: 0; height: 0; border: 0; }
+.tl-now::before { background: var(--tr-brand); }
+.tl-now .tl-name { font-size: 13px; font-weight: 600; color: var(--tr-brand); }
+.ts-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.ts-card {
+  display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 0; border-radius: var(--tr-radius-sm);
+  background: var(--tr-ground); color: var(--tr-ink); text-align: left; font: inherit; min-height: 56px;
+}
+.ts-card-k { font-size: 12px; color: var(--tr-muted); }
+.ts-card-v { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* ------------------------------------------------------------------ */
 /* From 900 px: the same components in a left side panel (logo and

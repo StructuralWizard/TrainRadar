@@ -656,4 +656,9 @@ export const NB = {
   medianChip: "Median {delay}",
   medianOnTime: "Median: i rute",
   loadingTrains: "Laster inn tog…",
+  follow: "Følg",
+  following: "Følger",
+  nowBetween: "Nå: mellom {a} og {b}",
+  journeyStops: "Rute",
+  followChip: "Følg {train}",
 };

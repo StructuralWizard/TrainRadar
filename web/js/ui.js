@@ -487,7 +487,7 @@ export function trainRows(
           : t(lang, "estimatedPos", { age }),
     ),
   );
-  if (info.origin) {
+  if (info.origin && !skip.has("gaps")) {
     rows.push(row(t(lang, "ahead"), gapText(lang, info.ahead, onTrain)));
     rows.push(row(t(lang, "behind"), gapText(lang, info.behind, onTrain)));
     if (info.oncoming) rows.push(row(t(lang, "oncoming"), oncomingText(lang, info.oncoming, onTrain)));
