@@ -40,12 +40,14 @@ Español, inglés, portugués, japonés, francés, alemán, italiano, neerlandé
 
 EN EL MAPA
 • Cada tren con su sentido, velocidad, próxima parada y retraso.
+• «Seguir» un tren: el mapa lo mantiene a la vista mientras avanza.
 • Estaciones con las próximas salidas y los trenes que llegan.
 • Avisos de los operadores (obras, huelgas, incidencias) en el mapa y por línea.
 • Búsqueda por número de tren, estación o línea; mapa normal o satélite.
 • Trayectos: directos o con transbordos, con el tiempo de cada cambio y los retrasos en directo.
 • Horarios hasta 9 semanas vista: elige fecha y hora para una estación, un trayecto o un tren.
 • ¿Voy en este tren?: con tu ubicación, la app averigua en qué tren vas (tu ubicación nunca sale del móvil).
+• Vídeos desde la cabina: en cada estación, vídeos de YouTube grabados desde la cabina que se abren en el momento en que el tren pasa por ella (unos 2.500 vídeos en 21 países).
 
 GRATIS
 • Todo lo anterior, sin cuentas ni anuncios.
@@ -83,12 +85,14 @@ Spanish, English, Portuguese, Japanese, French, German, Italian, Dutch, Danish, 
 
 ON THE MAP
 • Every train with its direction, speed, next stop and delay.
+• Follow a train: the map keeps it in view as it moves.
 • Stations with the next departures and approaching trains.
 • Operators' notices (works, strikes, disruptions) on the map and per line.
 • Search by train number, station or line; standard or satellite map.
 • Journeys: direct or with changes, with the time for each change and live delays.
 • Timetables up to 9 weeks ahead: pick a date and time for a station, a journey or a train.
 • Am I on this train?: with your location, the app works out which train you're on (your location never leaves the phone).
+• Videos from the cab: at each station, YouTube cab-ride videos that open at the moment the train passes it (about 2,500 videos in 21 countries).
 
 FREE
 • All of the above, no accounts, no ads.
@@ -126,12 +130,14 @@ Espanhol, inglês, português, japonês, francês, alemão, italiano, neerlandê
 
 NO MAPA
 • Cada comboio com o sentido, a velocidade, a próxima paragem e o atraso.
+• «Seguir» um comboio: o mapa mantém-no à vista enquanto avança.
 • Estações com as próximas partidas e os comboios a chegar.
 • Avisos dos operadores (obras, greves, perturbações) no mapa e por linha.
 • Pesquisa por número de comboio, estação ou linha; mapa normal ou satélite.
 • Trajetos: diretos ou com transbordos, com o tempo de cada transbordo e os atrasos ao vivo.
 • Horários até 9 semanas à frente: escolha data e hora para uma estação, um trajeto ou um comboio.
 • Estou neste comboio?: com a sua localização, a app descobre em que comboio vai (a sua localização nunca sai do telemóvel).
+• Vídeos da cabina: em cada estação, vídeos do YouTube filmados da cabina que abrem no momento em que o comboio lá passa (cerca de 2500 vídeos em 21 países).
 
 GRÁTIS
 • Tudo o que está acima, sem contas nem anúncios.
@@ -169,12 +175,14 @@ TrainRadar は、列車の現在位置をリアルタイムで地図上に表示
 
 地図で
 • 各列車の進行方向、速度、次の停車駅、遅延。
+• 列車を「追跡」：走行中の列車を地図の中央に表示し続けます。
 • 駅ごとの次の発車と接近中の列車。
 • 事業者のお知らせ（工事、ストライキ、運行障害）を地図上と路線ごとに表示。
 • 列車番号、駅、路線で検索；標準地図または衛星写真。
 • 経路検索：直通または乗り換えあり、乗り換えごとの時間とリアルタイムの遅延つき。
 • 最大 9 週間先までの時刻表：駅、経路、列車ごとに日付と時刻を選べます。
 • この列車に乗っていますか？：位置情報から、乗っている列車をアプリが判定します（位置情報が端末の外に出ることはありません）。
+• 運転席からの動画：各駅で、列車がその駅を通過する場面から始まるYouTubeの前面展望動画を再生（21か国、約2,500本）。
 
 無料
 • 上記のすべてを、アカウント不要・広告なしで。
@@ -212,12 +220,14 @@ Espagnol, anglais, portugais, japonais, français, allemand, italien, néerlanda
 
 SUR LA CARTE
 • Chaque train avec son sens, sa vitesse, son prochain arrêt et son retard.
+• « Suivre » un train : la carte le garde à l'écran pendant qu'il roule.
 • Les gares avec les prochains départs et les trains en approche.
 • Les infos trafic des opérateurs (travaux, grèves, perturbations) sur la carte et par ligne.
 • Recherche par numéro de train, gare ou ligne ; carte standard ou satellite.
 • Trajets : directs ou avec correspondances, avec le temps de chaque correspondance et les retards en direct.
 • Horaires jusqu’à 9 semaines à l’avance : choisissez une date et une heure pour une gare, un trajet ou un train.
 • Suis-je dans ce train ? : grâce à votre position, l’appli trouve dans quel train vous êtes (votre position ne quitte jamais le téléphone).
+• Vidéos en cabine : à chaque gare, des vidéos YouTube filmées depuis la cabine, qui s'ouvrent au moment où le train y passe (environ 2 500 vidéos dans 21 pays).
 
 GRATUIT
 • Tout ce qui précède, sans compte ni publicité.
@@ -255,12 +265,14 @@ Spanisch, Englisch, Portugiesisch, Japanisch, Französisch, Deutsch, Italienisch
 
 AUF DER KARTE
 • Jeder Zug mit Richtung, Geschwindigkeit, nächstem Halt und Verspätung.
+• Einem Zug „Folgen“: Die Karte behält ihn im Blick, während er fährt.
 • Bahnhöfe mit den nächsten Abfahrten und den Zügen, die sich nähern.
 • Meldungen der Betreiber (Bauarbeiten, Streiks, Störungen) auf der Karte und pro Linie.
 • Suche nach Zugnummer, Bahnhof oder Linie; Standard- oder Satellitenkarte.
 • Verbindungen: direkt oder mit Umstiegen, mit der Zeit für jeden Umstieg und Live-Verspätungen.
 • Fahrpläne bis zu 9 Wochen im Voraus: Wähle Datum und Uhrzeit für einen Bahnhof, eine Verbindung oder einen Zug.
 • Bin ich in diesem Zug?: Mit deinem Standort erkennt die App, in welchem Zug du sitzt (dein Standort verlässt nie das Handy).
+• Führerstandsmitfahrten: an jedem Bahnhof YouTube-Videos aus dem Führerstand, die dort starten, wo der Zug ihn passiert (rund 2.500 Videos in 21 Ländern).
 
 KOSTENLOS
 • Alles oben Genannte, ohne Konto, ohne Werbung.
@@ -298,12 +310,14 @@ Spagnolo, inglese, portoghese, giapponese, francese, tedesco, italiano, olandese
 
 SULLA MAPPA
 • Ogni treno con direzione, velocità, prossima fermata e ritardo.
+• «Segui» un treno: la mappa lo tiene in vista mentre viaggia.
 • Stazioni con le prossime partenze e i treni in arrivo.
 • Avvisi degli operatori (lavori, scioperi, disagi) sulla mappa e per linea.
 • Ricerca per numero di treno, stazione o linea; mappa standard o satellite.
 • Tragitti: diretti o con cambi, con il tempo di ogni cambio e i ritardi in tempo reale.
 • Orari fino a 9 settimane in avanti: scegli data e ora per una stazione, un tragitto o un treno.
 • Sono su questo treno?: con la tua posizione, l'app capisce su quale treno sei (la tua posizione non lascia mai il telefono).
+• Video dalla cabina: in ogni stazione, video YouTube girati dalla cabina che si aprono nel momento in cui il treno ci passa (circa 2.500 video in 21 paesi).
 
 GRATIS
 • Tutto quanto sopra, senza account né pubblicità.
@@ -341,12 +355,14 @@ Spaans, Engels, Portugees, Japans, Frans, Duits, Italiaans, Nederlands, Deens, Z
 
 OP DE KAART
 • Elke trein met zijn richting, snelheid, volgende halte en vertraging.
+• Een trein volgen: de kaart houdt hem in beeld terwijl hij rijdt.
 • Stations met de eerstvolgende vertrektijden en naderende treinen.
 • Meldingen van de vervoerders (werkzaamheden, stakingen, storingen) op de kaart en per lijn.
 • Zoeken op treinnummer, station of lijn; standaard- of satellietkaart.
 • Reizen: direct of met overstappen, met de tijd voor elke overstap en live vertragingen.
 • Dienstregelingen tot 9 weken vooruit: kies een datum en tijd voor een station, een reis of een trein.
 • Zit ik in deze trein?: met je locatie bepaalt de app in welke trein je zit (je locatie verlaat nooit je telefoon).
+• Video's uit de cabine: bij elk station YouTube-video's vanuit de cabine, die openen op het moment dat de trein er langskomt (zo'n 2.500 video's in 21 landen).
 
 GRATIS
 • Alles hierboven, zonder account, zonder advertenties.
@@ -384,12 +400,14 @@ Spansk, engelsk, portugisisk, japansk, fransk, tysk, italiensk, nederlandsk, dan
 
 PÅ KORTET
 • Hvert tog med retning, hastighed, næste stop og forsinkelse.
+• Følg et tog: kortet holder det i billedet, mens det kører.
 • Stationer med de næste afgange og tog på vej ind.
 • Operatørernes driftsinfo (sporarbejde, strejker, driftsforstyrrelser) på kortet og pr. linje.
 • Søg efter tognummer, station eller linje; standard- eller satellitkort.
 • Rejser: direkte eller med skift, med tiden til hvert skift og live forsinkelser.
 • Køreplaner op til 9 uger frem: vælg dato og tid for en station, en rejse eller et tog.
 • Er jeg med dette tog?: ud fra din placering finder appen ud af, hvilket tog du er med (din placering forlader aldrig telefonen).
+• Videoer fra førerrummet: ved hver station YouTube-videoer optaget fra førerrummet, der åbner i det øjeblik toget passerer den (omkring 2.500 videoer i 21 lande).
 
 GRATIS
 • Alt ovenstående, uden konto, uden reklamer.
@@ -427,12 +445,14 @@ Spanska, engelska, portugisiska, japanska, franska, tyska, italienska, nederlän
 
 PÅ KARTAN
 • Varje tåg med riktning, hastighet, nästa stopp och försening.
+• Följ ett tåg: kartan håller det i bild medan det rör sig.
 • Stationer med nästa avgångar och tåg som närmar sig.
 • Operatörernas meddelanden (banarbeten, strejker, störningar) på kartan och per linje.
 • Sök på tågnummer, station eller linje; standard- eller satellitkarta.
 • Resor: direkt eller med byten, med tiden för varje byte och förseningar i realtid.
 • Tidtabeller upp till 9 veckor framåt: välj datum och tid för en station, en resa eller ett tåg.
 • Är jag på det här tåget?: med din position räknar appen ut vilket tåg du sitter på (din position lämnar aldrig telefonen).
+• Videor från förarhytten: vid varje station YouTube-videor från förarhytten, som öppnas i det ögonblick tåget passerar den (cirka 2 500 videor i 21 länder).
 
 GRATIS
 • Allt ovan, utan konto, utan reklam.
@@ -470,12 +490,14 @@ Spansk, engelsk, portugisisk, japansk, fransk, tysk, italiensk, nederlandsk, dan
 
 PÅ KARTET
 • Hvert tog med retning, fart, neste stopp og forsinkelse.
+• Følg et tog: kartet holder det i bildet mens det kjører.
 • Stasjoner med de neste avgangene og tog som nærmer seg.
 • Operatørenes meldinger (arbeider, streiker, avvik) på kartet og per linje.
 • Søk etter tognummer, stasjon eller linje; standard- eller satellittkart.
 • Reiser: direkte eller med bytter, med tiden for hvert bytte og forsinkelser i sanntid.
 • Rutetabeller opptil 9 uker fram: velg dato og tid for en stasjon, en reise eller et tog.
 • Er jeg på dette toget?: ut fra posisjonen din finner appen ut hvilket tog du sitter på (posisjonen din forlater aldri telefonen).
+• Videoer fra førerhuset: ved hver stasjon YouTube-videoer filmet fra førerhuset, som åpnes i det øyeblikket toget passerer den (rundt 2 500 videoer i 21 land).
 
 GRATIS
 • Alt det ovenfor, uten konto, uten reklame.
@@ -513,12 +535,14 @@ espanja, englanti, portugali, japani, ranska, saksa, italia, hollanti, tanska, r
 
 KARTALLA
 • Jokainen juna suuntineen, nopeuksineen, seuraavine pysähdyksineen ja myöhästymisineen.
+• Seuraa junaa: kartta pitää sen näkyvissä sen liikkuessa.
 • Asemat, joilla seuraavat lähdöt ja saapuvat junat.
 • Liikennöitsijöiden tiedotteet (ratatyöt, lakot, häiriöt) kartalla ja linjoittain.
 • Haku junan numerolla, asemalla tai linjalla; tavallinen kartta tai satelliittikuva.
 • Matkat: suorat tai vaihdollisiset, vaihtoajat ja reaaliaikaiset myöhästymiset.
 • Aikataulut jopa 9 viikoksi eteenpäin: valitse päivä ja aika asemalle, matkalle tai junalle.
 • Olenko tässä junassa?: sijaintisi avulla sovellus päättelee, missä junassa olet (sijaintisi ei koskaan lähde puhelimesta).
+• Videot ohjaamosta: jokaisella asemalla ohjaamosta kuvattuja YouTube-videoita, jotka alkavat kohdasta, jossa juna ohittaa aseman (noin 2 500 videota 21 maasta).
 
 ILMAINEN
 • Kaikki edellä mainittu, ilman tilejä ja mainoksia.
@@ -556,12 +580,14 @@ hiszpański, angielski, portugalski, japoński, francuski, niemiecki, włoski, n
 
 NA MAPIE
 • Każdy pociąg z kierunkiem, prędkością, następnym przystankiem i opóźnieniem.
+• „Śledź” pociąg: mapa trzyma go w widoku, gdy jedzie.
 • Stacje z najbliższymi odjazdami i nadjeżdżającymi pociągami.
 • Komunikaty przewoźników (prace, strajki, utrudnienia) na mapie i dla każdej linii.
 • Wyszukiwanie po numerze pociągu, stacji lub linii; mapa standardowa lub satelitarna.
 • Podróże: bezpośrednie lub z przesiadkami, z czasem na każdą przesiadkę i opóźnieniami na żywo.
 • Rozkłady do 9 tygodni naprzód: wybierz datę i godzinę dla stacji, podróży lub pociągu.
 • Czy jadę tym pociągiem?: na podstawie Twojej lokalizacji aplikacja ustala, którym pociągiem jedziesz (Twoja lokalizacja nigdy nie opuszcza telefonu).
+• Filmy z kabiny: przy każdej stacji filmy z YouTube nagrane z kabiny, otwierane w chwili, gdy pociąg ją mija (około 2500 filmów w 21 krajach).
 
 ZA DARMO
 • Wszystko powyższe, bez kont i bez reklam.
@@ -599,12 +625,14 @@ TrainRadar ukazuje na mapě, kde právě jsou vlaky, živě a obarvené podle zp
 
 NA MAPĚ
 • Každý vlak se směrem, rychlostí, příští zastávkou a zpožděním.
+• „Sledovat“ vlak: mapa ho drží v záběru, zatímco jede.
 • Stanice s nejbližšími odjezdy a přijíždějícími vlaky.
 • Oznámení dopravců (výluky, stávky, mimořádnosti) na mapě i u jednotlivých linek.
 • Hledání podle čísla vlaku, stanice nebo linky; standardní nebo satelitní mapa.
 • Spojení: přímá nebo s přestupy, s časem na každý přestup a živým zpožděním.
 • Jízdní řády až 9 týdnů dopředu: vyberte datum a čas pro stanici, spojení nebo vlak.
 • Jedu tímto vlakem?: podle vaší polohy aplikace zjistí, kterým vlakem jedete (vaše poloha nikdy neopustí telefon).
+• Videa z kabiny: u každé stanice videa z YouTube natočená z kabiny, která se otevřou ve chvíli, kdy jí vlak projíždí (asi 2 500 videí ve 21 zemích).
 
 ZDARMA
 • Vše výše uvedené, bez účtů a bez reklam.
@@ -642,12 +670,14 @@ TrainRadar ukazuje na mape naživo, kde sa nachádzajú vlaky, zafarbené podľa
 
 NA MAPE
 • Každý vlak so smerom, rýchlosťou, ďalšou zastávkou a meškaním.
+• „Sledovať“ vlak: mapa ho drží v zábere, kým ide.
 • Stanice s najbližšími odchodmi a prichádzajúcimi vlakmi.
 • Oznamy dopravcov (výluky, štrajky, mimoriadnosti) na mape a pri každej linke.
 • Vyhľadávanie podľa čísla vlaku, stanice alebo linky; štandardná alebo satelitná mapa.
 • Spojenia: priame alebo s prestupmi, s časom na každý prestup a živými meškaniami.
 • Cestovné poriadky až 9 týždňov dopredu: vyberte dátum a čas pre stanicu, spojenie alebo vlak.
 • Som v tomto vlaku?: podľa vašej polohy aplikácia zistí, v ktorom vlaku ste (vaša poloha nikdy neopustí telefón).
+• Videá z kabíny: pri každej stanici videá z YouTube natočené z kabíny, ktoré sa otvoria vo chvíli, keď ňou vlak prechádza (asi 2 500 videí v 21 krajinách).
 
 ZADARMO
 • Všetko uvedené, bez účtov a bez reklám.
@@ -685,12 +715,14 @@ Spanyol, angol, portugál, japán, francia, német, olasz, holland, dán, svéd,
 
 A TÉRKÉPEN
 • Minden vonat iránnyal, sebességgel, következő megállóval és késéssel.
+• Vonat követése: a térkép szem előtt tartja, ahogy halad.
 • Állomások a következő indulásokkal és az érkező vonatokkal.
 • A vasúttársaságok közleményei (pályamunkák, sztrájkok, forgalmi zavarok) a térképen és vonalanként.
 • Keresés vonatszám, állomás vagy vonal szerint; normál vagy műholdas térkép.
 • Útvonalak: közvetlenül vagy átszállással, az egyes átszállások idejével és élő késésekkel.
 • Menetrendek akár 9 hétre előre: válassz dátumot és időpontot egy állomáshoz, útvonalhoz vagy vonathoz.
 • Ezen a vonaton ülök?: a helyzeted alapján az alkalmazás kitalálja, melyik vonaton utazol (a helyzeted soha nem hagyja el a telefont).
+• Videók a vezetőfülkéből: minden állomásnál a vezetőfülkéből felvett YouTube-videók, amelyek ott indulnak, ahol a vonat elhalad az állomás mellett (mintegy 2500 videó 21 országból).
 
 INGYENES
 • Mindez fiók és hirdetések nélkül.
@@ -728,12 +760,14 @@ hispaania, inglise, portugali, jaapani, prantsuse, saksa, itaalia, hollandi, taa
 
 KAARDIL
 • Iga rong koos suuna, kiiruse, järgmise peatuse ja hilinemisega.
+• „Jälgi“ rongi: kaart hoiab seda liikumise ajal vaateväljas.
 • Jaamad järgmiste väljumiste ja saabuvate rongidega.
 • Vedajate teated (tööd, streigid, häired) kaardil ja liinide kaupa.
 • Otsing rongi numbri, jaama või liini järgi; tavaline kaart või satelliitvaade.
 • Sõidud: otse või ümberistumistega, iga ümberistumise aja ja reaalajas hilinemistega.
 • Sõiduplaanid kuni 9 nädalat ette: vali jaamale, sõidule või rongile kuupäev ja kellaaeg.
 • Kas olen selles rongis?: sinu asukoha abil leiab rakendus, millises rongis sa oled (sinu asukoht ei lahku kunagi telefonist).
+• Videod juhikabiinist: igas jaamas juhikabiinist filmitud YouTube'i videod, mis avanevad hetkel, kui rong jaamast möödub (umbes 2500 videot 21 riigist).
 
 TASUTA
 • Kõik ülaltoodu, ilma kontode ja reklaamideta.
@@ -771,12 +805,14 @@ TrainRadar 在地图上实时显示列车的位置，并按误点着色：绿色
 
 地图功能
 • 每趟列车的方向、速度、下一站和误点。
+• “跟随”列车：列车行驶时地图会一直将其保持在视野内。
 • 车站显示下几班出发列车和即将到站的列车。
 • 运营商的通告（工程、罢工、服务中断）显示在地图上，并可按线路查看。
 • 按车次、车站或线路搜索；标准地图或卫星地图。
 • 行程：直达或换乘，显示每次换乘的时间和实时误点。
 • 最长 9 周的时刻表：为车站、行程或列车选择日期和时间。
 • 我在这趟车上吗？：根据您的位置，应用会判断您乘坐的是哪趟列车（您的位置绝不会离开手机）。
+• 驾驶室视频：在每个车站，可观看从驾驶室拍摄的 YouTube 视频，从列车经过该站的时刻开始播放（21 个国家约 2,500 个视频）。
 
 免费
 • 以上所有功能，无需账户，无广告。
