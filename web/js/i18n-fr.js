@@ -652,6 +652,7 @@ export const FR = {
   attributionIe: "Données : horaires d’Iarnród Éireann issus de la <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, fournis « en l’état » · Voies : © contributeurs d’<a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL) · Non affilié à Iarnród Éireann ni à la NTA",
   attribution: "Données : © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO : NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Voies : © contributeurs d’<a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Altitudes : Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Non affilié à Renfe, Adif ni OUIGO",
   cabTitle: "Vidéos depuis la cabine",
+  cabLayerHint: "Les tronçons filmés depuis la cabine, sur la carte ; touchez une gare pour ses vidéos.",
   cabMore: "{n} de plus",
   cabNote: "Elles s'ouvrent sur YouTube au moment de cette gare. ≈ : moment estimé.",
   cabTrain: "Voir depuis la cabine",

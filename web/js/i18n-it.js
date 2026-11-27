@@ -652,6 +652,7 @@ export const IT = {
   attributionIe: "Dati: orario di Iarnród Éireann dalla <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, fornito \"così com'è\" · Binari: © contributori di <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL) · Non affiliato a Iarnród Éireann né alla NTA",
   attribution: "Dati: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Binari: © contributori di <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Altitudini: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Non affiliato a Renfe, Adif né OUIGO",
   cabTitle: "Video dalla cabina di guida",
+  cabLayerHint: "I tratti filmati dalla cabina, sulla mappa; tocca una stazione per i suoi video.",
   cabMore: "altri {n}",
   cabNote: "Si aprono su YouTube al momento di questa stazione. ≈: momento stimato.",
   cabTrain: "Guarda dalla cabina",

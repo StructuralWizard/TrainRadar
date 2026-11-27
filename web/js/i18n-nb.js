@@ -652,6 +652,7 @@ export const NB = {
   attributionIe: "Data: rutetabellen til Iarnród Éireann fra <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, levert \"som den er\" · Spor: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>-bidragsytere (ODbL) · Ikke tilknyttet Iarnród Éireann eller NTA",
   attribution: "Data: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Spor: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>-bidragsytere (ODbL), IGN (IGR-RT, CC BY 4.0) · Høyder: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Ikke tilknyttet Renfe, Adif eller OUIGO",
   cabTitle: "Videoer fra førerhuset",
+  cabLayerHint: "Strekningene filmet fra førerhuset, på kartet; trykk på en stasjon for videoene.",
   cabMore: "{n} til",
   cabNote: "De åpnes på YouTube ved denne stasjonen. ≈: anslått tidspunkt.",
   cabTrain: "Se fra førerhuset",

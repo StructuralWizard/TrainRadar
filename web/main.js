@@ -11,29 +11,12 @@ import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
 import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, lineBadge, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
-import { loadRides, videoForTrain, videosAt } from "./js/cabrides.js";
+import { loadRides, ridesGeoJson, videoForTrain, videosAt } from "./js/cabrides.js";
 import { endStations } from "./js/route.js";
 import { Planner } from "./js/planner.js";
 import { Locator, circlePolygon } from "./js/location.js";
 import { LANGS, pickLang, t } from "./js/i18n.js";
-import {
-  ARROW_ZOOM,
-  FLAG,
-  SERVICE_COLORS,
-  OVERVIEW_ZOOM,
-  addCountries,
-  addLayers,
-  addOverview,
-  overviewNetwork,
-  scheduledNow,
-  createMap,
-  emptyGeoJson,
-  maplibregl,
-  pointGeoJson,
-  setBasemap,
-  setMapLanguage,
-  trainsGeoJson,
-} from "./js/map.js";
+import { ARROW_ZOOM, FLAG, SERVICE_COLORS, OVERVIEW_ZOOM, addCountries, addLayers, addOverview, overviewNetwork, scheduledNow, createMap, emptyGeoJson, maplibregl, pointGeoJson, setBasemap, setMapLanguage, trainsGeoJson, TRACK_OPACITY } from "./js/map.js";
 import { formatClock, setTimeZone } from "./js/format.js";
 import { countVisit, dismissAppBanner, showAppBanner } from "./js/visits.js";
 import { ReplayData, madridToMs, msToMadrid, replayGeoJson, replayRoot } from "./js/replay.js";
@@ -351,6 +334,8 @@ let favFull = null; // key of the item whose save just hit the limit
 const show = {
   commuter: true, av: true, ld: true, md: true, scheduled: true,
   lines: true, tav: true, tld: true, tmd: true, stations: true, stopped: true,
+  // Cab-ride videos: off unless chosen (kept on this device).
+  cab: store.get("cab-layer") === "1",
 };
 // Map layers each "Capas" checkbox shows or hides (trains are filtered in render()).
 const LAYER_IDS = {
@@ -360,7 +345,11 @@ const LAYER_IDS = {
   tmd: ["track-md-casing", "track-md"],
   stations: ["stations", "stations-ld", "stations-hit", "stations-ld-hit", "station-labels", "station-labels-big"],
   stopped: ["stopped-ring"],
+  cab: ["cab-casing", "cab-line", "cab-stops"],
 };
+let ridesNone = false; // the country has no cab-ride videos: no layer switch
+// Faded while the cab-ride layer shows, so the filmed stretches stand out.
+const FADE_UNDER_CAB = ["lines", "lines-casing", "track-av", "track-ld", "track-md", "track-av-casing", "track-ld-casing", "track-md-casing"];
 // Kinds of Renfe notice (engine incidents::Kind bits), each with a switch.
 const KINDS = { strike: 1, accessibility: 2, works: 4, disruption: 8, other: 16 };
 const showKind = { strike: true, accessibility: true, works: true, disruption: true, other: true };
@@ -419,6 +408,7 @@ function applyLang() {
     ["f-tld-l", "showTrackLd"],
     ["f-tmd-l", "showTrackMd"],
     ["f-stations-l", "showStations"],
+    ["f-cab-l", "cabTitle"],
     ["b-standard-l", "baseStandard"],
     ["b-satellite-l", "baseSatellite"],
   ]) {
@@ -1401,13 +1391,31 @@ function renderTrainDay(open = false) {
  * time a station or train is shown; then whatever is open is redrawn. */
 let rides = null;
 let ridesAsked = false;
+let cabDrawn = false;
+/** The "Videos from the cab" layer's lines and stations, drawn once the
+ * videos and the stations are in (cabrides.js ridesGeoJson). */
+function refreshCab() {
+  if (!show.cab || cabDrawn || !map?.getSource("cab") || !engine) return;
+  const idx = cabIndex();
+  if (!idx) return; // cabIndex calls back here once loaded
+  const stations = JSON.parse(engine.stationsGeoJson()).features.map((f) => ({
+    name: f.properties.name,
+    lon: f.geometry.coordinates[0],
+    lat: f.geometry.coordinates[1],
+  }));
+  map.getSource("cab").setData(ridesGeoJson(idx, stations));
+  cabDrawn = true;
+}
 let cabAllFor = ""; // the station whose every video is listed
 function cabIndex() {
   if (!ridesAsked) {
     ridesAsked = true;
     loadRides([CONFIG.remoteDataBase, CONFIG.dataBase].filter(Boolean)).then((idx) => {
       rides = idx;
+      ridesNone = !idx || !idx.videos.length;
+      if (!$("layers-panel").hidden) renderLayers();
       if (!idx) return;
+      refreshCab();
       if (stationPop?.isOpen() && lastStation) showStation(lastStation, { refresh: true });
       if (detailKind === "station" && stationView) showStation(stationView, { refresh: true });
     });
@@ -2770,7 +2778,16 @@ function renderLegend() {
       el("span", {}, t(lang, "legendTitle")),
       icon(open ? "chevronDown" : "chevronUp", 16),
     ),
-    open ? el("div", { class: "legend-body" }, el("div", { class: "legend-row" }, ...legend(lang)), el("div", { class: "legend-row" }, ...serviceLegend(lang, true, ES))) : null,
+    open
+      ? el(
+          "div",
+          { class: "legend-body" },
+          el("div", { class: "legend-row" }, ...legend(lang)),
+          el("div", { class: "legend-row" }, ...serviceLegend(lang, true, ES)),
+          // The cab-ride layer, while it shows.
+          show.cab && !ridesNone ? el("div", { class: "legend-row" }, el("i", { class: "cab-key", "aria-hidden": "true" }), t(lang, "cabTitle")) : null,
+        )
+      : null,
   );
 }
 
@@ -2928,6 +2945,7 @@ function renderLayers() {
     };
   };
   const base = document.querySelector('input[name="basemap"]:checked')?.value || "standard";
+  cabIndex(); // to know whether the country has cab-ride videos (the switch)
   const key = el(
     "div",
     { class: "map-key", id: "map-key" },
@@ -2936,6 +2954,8 @@ function renderLayers() {
     el("p", { class: "legend-row" }, ...serviceLegend(lang, false, ES)),
     // Spain's station key (long-distance and Cercanías interchanges).
     ES ? el("p", { class: "small muted" }, t(lang, "legendStations")) : null,
+    // The cab-ride layer, while it shows.
+    show.cab && !ridesNone ? el("p", { class: "legend-row" }, el("i", { class: "cab-key", "aria-hidden": "true" }), t(lang, "cabTitle")) : null,
   );
   $("layers-panel-body").replaceChildren(
     key,
@@ -2957,7 +2977,15 @@ function renderLayers() {
         },
         {
           title: t(lang, "groupMap"),
-          items: [sw("f-lines", ES ? "showLines" : "showLinesOther"), sw("f-tav", "showTrackAv"), sw("f-tld", "showTrackLd"), sw("f-tmd", "showTrackMd"), sw("f-stations", "showStations")],
+          items: [
+            sw("f-lines", ES ? "showLines" : "showLinesOther"),
+            sw("f-tav", "showTrackAv"),
+            sw("f-tld", "showTrackLd"),
+            sw("f-tmd", "showTrackMd"),
+            sw("f-stations", "showStations"),
+            // Countries with cab-ride videos (all but a few): the filmed stretches.
+            ridesNone ? null : sw("f-cab", "cabTitle", "cabLayerHint"),
+          ].filter(Boolean),
         },
         {
           title: t(lang, "groupIncidents"),
@@ -3748,6 +3776,9 @@ async function main() {
   }
   setUserLayers();
   map.getSource("stations").setData(JSON.parse(engine.stationsGeoJson()));
+  // The cab-ride layer, if it was left on (once the train layers, added
+  // after their images load, are there too).
+  if (show.cab) map.once("idle", applyLayerVisibility);
   map.on("moveend", loadVisibleRegions);
   map.on("moveend", updateNetChip);
   // A pan or zoom by the user: the chip follows the map again.
@@ -4023,6 +4054,11 @@ function applyLayerVisibility() {
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
     }
   }
+  // Cab-ride layer on: the rest of the network faded behind it.
+  for (const id of FADE_UNDER_CAB) {
+    if (map.getLayer(id)) map.setPaintProperty(id, "line-opacity", show.cab ? 0.3 : id.endsWith("casing") ? 0.9 : id === "lines" ? 0.95 : TRACK_OPACITY);
+  }
+  if (show.cab) refreshCab();
 }
 for (const key of Object.keys(KINDS)) {
   $(`f-k-${key}`).addEventListener("change", (e) => {
@@ -4030,13 +4066,19 @@ for (const key of Object.keys(KINDS)) {
     renderIncidents();
   });
 }
-for (const key of ["commuter", "av", "ld", "md", "scheduled", "lines", "tav", "tld", "tmd", "stations", "stopped"]) {
+for (const key of ["commuter", "av", "ld", "md", "scheduled", "lines", "tav", "tld", "tmd", "stations", "stopped", "cab"]) {
   $(`f-${key}`).addEventListener("change", (e) => {
     show[key] = e.target.checked;
+    if (key === "cab") {
+      store.set("cab-layer", e.target.checked ? "1" : "0");
+      if (!$("layers-panel").hidden) renderLayers(); // the key's row
+      if ($("legend")) renderLegend();
+    }
     applyLayerVisibility();
     render(true);
   });
 }
+$("f-cab").checked = show.cab;
 for (const r of document.querySelectorAll('input[name="basemap"]')) {
   r.addEventListener("change", (e) => {
     if (!e.target.checked || !map?.getLayer("track-av")) return;

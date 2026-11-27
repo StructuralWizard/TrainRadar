@@ -652,6 +652,7 @@ export const FI = {
   attributionIe: "Data: Iarnród Éireannin aikataulu, <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, toimitettu \"sellaisenaan\" · Radat: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMapin</a> tekijät (ODbL) · Ei yhteydessä Iarnród Éireanniin tai NTA:han",
   attribution: "Data: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Radat: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMapin</a> tekijät (ODbL), IGN (IGR-RT, CC BY 4.0) · Korkeudet: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Ei yhteydessä Renfeen, Adifiin tai OUIGOon",
   cabTitle: "Videoita ohjaamosta",
+  cabLayerHint: "Ohjaamosta kuvatut osuudet kartalla; napauta asemaa nähdäksesi sen videot.",
   cabMore: "{n} lisää",
   cabNote: "Ne avautuvat YouTubessa tämän aseman kohdalta. ≈: arvioitu kohta.",
   cabTrain: "Katso ohjaamosta",

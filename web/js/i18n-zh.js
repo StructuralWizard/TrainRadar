@@ -652,6 +652,7 @@ export const ZH = {
   attributionIe: "数据：Iarnród Éireann 时刻表，来自 <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a>（Transport for Ireland），CC BY 4.0，按“原样”提供 · 轨道：© <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> 贡献者（ODbL） · 与 Iarnród Éireann 或 NTA 无关联",
   attribution: "数据：© <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a>（CC BY 4.0） · OUIGO：NAP，<a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · 轨道：© <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> 贡献者（ODbL），IGN（IGR-RT，CC BY 4.0） · 高程：Copernicus WorldDEM-30 © DLR e.V.，© Airbus DS · 与 Renfe、Adif 或 OUIGO 无关联",
   cabTitle: "驾驶室视角视频",
+  cabLayerHint: "在地图上显示从驾驶室拍摄的路段；点按车站即可观看视频。",
   cabMore: "还有{n}个",
   cabNote: "在 YouTube 上从本站的时刻开始播放。≈：估计的时刻。",
   cabTrain: "从驾驶室观看",

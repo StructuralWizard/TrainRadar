@@ -675,6 +675,7 @@ export const PT = {
   attribution:
     'Dados: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · Via: © contribuidores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Altitudes: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Sem ligação à Renfe, à Adif nem à OUIGO',
   cabTitle: "Vídeos da cabina",
+  cabLayerHint: "Os troços filmados da cabina, no mapa; toque numa estação para ver os vídeos.",
   cabMore: "mais {n}",
   cabNote: "Abrem no YouTube no momento desta estação. ≈: momento estimado.",
   cabTrain: "Ver da cabina",

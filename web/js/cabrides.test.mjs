@@ -1,7 +1,7 @@
 // Run with: node --test web/js/cabrides.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { clock, indexRides, norm, stationKey, videoForTrain, videosAt, videoUrl } from "./cabrides.js";
+import { clock, indexRides, norm, ridesGeoJson, stationKey, videoForTrain, videosAt, videoUrl } from "./cabrides.js";
 
 // tools/cabrides/build.py's format: [id, title, channel, quality, view,
 // [[station_key, name, t, real], ...]], best first.
@@ -75,4 +75,33 @@ test("times and links", () => {
   assert.equal(clock(2470), "41:10");
   assert.equal(clock(3725), "1:02:05");
   assert.equal(videoUrl("a&b", 12.6), "https://www.youtube.com/watch?v=a%26b&t=13s");
+});
+
+test("the map layer: lines between filmed stations the app has, and those stations", () => {
+  // A → B → (C, not in the app) → D, and a second video B → A; far away, E.
+  const idx = indexRides({
+    v: 1,
+    alias: {},
+    videos: [
+      ["v1", "A to D", "ch", "precise", "cab", [["a", "A", 0, 1], ["b", "B", 60, 1], ["c", "C", 120, 1], ["d", "D", 180, 1], ["e", "E", 900, 0]]],
+      ["v2", "B to A", "ch", "precise", "cab", [["b", "B", 0, 1], ["a", "A", 60, 1]]],
+    ],
+  });
+  const stations = [
+    { name: "A", lon: 0, lat: 0 },
+    { name: "B", lon: 0.1, lat: 0 },
+    { name: "D", lon: 0.3, lat: 0 },
+    { name: "E", lon: 5, lat: 0 }, // over 500 km on: no line to it
+    { name: "Z", lon: 1, lat: 1 }, // no video
+  ];
+  const fc = ridesGeoJson(idx, stations);
+  const lines = fc.features.filter((f) => f.geometry.type === "LineString");
+  const points = fc.features.filter((f) => f.geometry.type === "Point");
+  // A–B (both videos, once), B–D (across C, which the app lacks); not D–E.
+  assert.deepEqual(lines.map((f) => [f.geometry.coordinates, f.properties.n]), [
+    [[[0, 0], [0.1, 0]], 2],
+    [[[0.1, 0], [0.3, 0]], 1],
+  ]);
+  assert.deepEqual(points.map((f) => [f.geometry.coordinates[0], f.properties.n]).sort(), [[0, 2], [0.1, 2], [0.3, 1], [5, 1]]);
+  assert.deepEqual(ridesGeoJson(null, stations).features, []);
 });

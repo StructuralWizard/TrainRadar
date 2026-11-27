@@ -652,6 +652,7 @@ export const NL = {
   attributionIe: "Gegevens: dienstregeling van Iarnród Éireann van de <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, geleverd \"as is\" · Spoor: © bijdragers van <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL) · Niet verbonden aan Iarnród Éireann of de NTA",
   attribution: "Gegevens: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Spoor: © bijdragers van <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Hoogtes: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Niet verbonden aan Renfe, Adif of OUIGO",
   cabTitle: "Video's vanuit de cabine",
+  cabLayerHint: "De trajecten gefilmd vanuit de cabine, op de kaart; tik op een station voor de video's.",
   cabMore: "nog {n}",
   cabNote: "Ze openen op YouTube bij dit station. ≈: geschat moment.",
   cabTrain: "Bekijk vanuit de cabine",

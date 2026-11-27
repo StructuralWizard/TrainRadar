@@ -13,6 +13,11 @@ export const SERVICE_COLORS = { av: "#6d28d9", conv: "#0f766e", cer: "#dc2626" }
 export const TRACK_COLORS = { av: SERVICE_COLORS.av, ld: SERVICE_COLORS.conv, md: SERVICE_COLORS.conv };
 /** Metre-gauge track (ex-FEVE and regional narrow-gauge lines). */
 export const METRIC_COLOR = "#b45309";
+/** The cab-ride videos layer: fuchsia, apart from the delay colours, the
+ * timetable violet and the track colours. */
+export const CAB_COLOR = "#c026d3";
+/** Track out of use (closed for works) is faded. */
+export const TRACK_OPACITY = ["case", ["==", ["get", "disused"], true], 0.4, 0.95];
 /** Line widths (px by zoom), thicker for readability on a phone; a white
  * casing 3 px wider goes under each line. */
 const TRACK_W = [5, 2.5, 6, 4, 9, 5.5, 11, 7, 13, 10, 16, 13];
@@ -383,7 +388,7 @@ export function addLayers(map) {
   map.addSource("track", { type: "geojson", data: empty() });
   // One layer per kind (the high-speed one drawn on top). Track out of use
   // (closed for works) is faded.
-  const trackOpacity = ["case", ["==", ["get", "disused"], true], 0.4, 0.95];
+  const trackOpacity = TRACK_OPACITY;
   for (const [kind, prop] of [["md", "md"], ["ld", "ld"], ["av", "av"]]) {
     const color = kind === "md" ? ["match", ["get", "kind"], "metric", METRIC_COLOR, TRACK_COLORS.md] : TRACK_COLORS[kind];
     map.addLayer({
@@ -433,6 +438,26 @@ export function addLayers(map) {
       "line-dasharray": [1.5, 1.5],
       "line-opacity": 0.85,
     },
+  });
+  // Cab-ride videos (the "Videos from the cab" layer, off by default): the
+  // stretches filmed from the cab, station to station (cabrides.js
+  // ridesGeoJson), over the network, which is faded while it shows.
+  map.addSource("cab", { type: "geojson", data: empty() });
+  map.addLayer({
+    id: "cab-casing",
+    type: "line",
+    source: "cab",
+    filter: ["==", ["geometry-type"], "LineString"],
+    layout: { visibility: "none", "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#ffffff", "line-width": width(CER_W, 4), "line-opacity": 0.95 },
+  });
+  map.addLayer({
+    id: "cab-line",
+    type: "line",
+    source: "cab",
+    filter: ["==", ["geometry-type"], "LineString"],
+    layout: { visibility: "none", "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": CAB_COLOR, "line-width": width(CER_W, 1), "line-opacity": 0.95 },
   });
   map.addLayer({
     id: "route",
@@ -486,6 +511,22 @@ export function addLayers(map) {
     "circle-stroke-color": ["match", ["get", "services"], 3, "#1f2937", 2, SERVICE_COLORS.cer, SERVICE_COLORS.conv],
   };
   const longDistance = ["==", ["%", ["get", "services"], 2], 1]; // SERVICE_LONG_DISTANCE bit
+  // A filmed station: a violet ring around its dot (under the stations, so a
+  // tap still opens the station and its videos).
+  map.addLayer({
+    id: "cab-stops",
+    type: "circle",
+    source: "cab",
+    minzoom: 7,
+    filter: ["==", ["geometry-type"], "Point"],
+    layout: { visibility: "none" },
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, 4, 12, 8],
+      "circle-color": "rgba(0,0,0,0)",
+      "circle-stroke-color": CAB_COLOR,
+      "circle-stroke-width": 2.5,
+    },
+  });
   map.addLayer({ id: "stations-ld", type: "circle", source: "stations", minzoom: 6, maxzoom: 9, filter: longDistance, paint: stationPaint });
   map.addLayer({ id: "stations", type: "circle", source: "stations", minzoom: 9, paint: stationPaint });
   const hit = { "circle-radius": 22, "circle-color": "#000000", "circle-opacity": 0 };
