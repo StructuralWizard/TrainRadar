@@ -76,7 +76,8 @@ await page.click("#search-results li button");
 await page.waitForSelector("#detail:not([hidden]) .popup-title, #detail:not([hidden])", { timeout: 10000 }).catch(() => fail("train sheet didn't open"));
 const sheet = (await page.textContent("#detail")).replace(/\s+/g, " ");
 if (!sheet.includes("posición estimada: horario + retraso en directo")) await fail(`sheet: ${sheet.slice(0, 200)}`);
-if (!/\+[17]\s*min/.test(sheet)) await fail(`delay not shown: ${sheet.slice(0, 200)}`);
+// The delay pill: "+1" or "+7" (its accessible label says "+1 min").
+if (!/\+[17](?!\d)/.test(sheet)) await fail(`delay not shown: ${sheet.slice(0, 200)}`);
 // Where the figures come from: Network Rail, not Renfe.
 if (!/Retraso: Network Rail/.test(sheet) || /Renfe/.test(sheet)) await fail(`sources: ${sheet.slice(Math.max(0, sheet.indexOf("Renfe") - 150), sheet.indexOf("Renfe") + 100)}`);
 await page.screenshot({ path: `${out}/uk-train.png` });

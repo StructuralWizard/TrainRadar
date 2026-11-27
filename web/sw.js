@@ -22,6 +22,7 @@ const SHELL_FILES = [
   "vendor/maplibre/maplibre-gl.mjs",
   "vendor/maplibre/maplibre-gl-worker.mjs",
   "vendor/maplibre/maplibre-gl.css",
+  "vendor/inter/inter-latin-wght-normal.woff2",
   "icon.svg",
   "manifest.webmanifest",
 ];

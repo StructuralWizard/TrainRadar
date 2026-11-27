@@ -802,8 +802,10 @@ TRAINRADAR PRO（年度订阅，€1.99）
 | Asset | Size | Source |
 |---|---|---|
 | App icon | 512 × 512 PNG | `web/icons/icon-512.png` |
-| Feature graphic | 1024 × 500 PNG | `store-assets` artifact: `feature-graphic.png` |
-| Phone screenshots (2–8) | 1080 × 1920 | `store-assets` artifact: `phone-*.png` (map, train, station, favourites, history, Pro) |
+| Feature graphic | 1024 × 500 PNG | `store-assets` artifact: `feature-graphic.png` (es-ES) and `feature-graphic-en.png` (en-GB): the live map with the logo |
+| Phone screenshots (8) | 1080 × 1920 | `store-assets` artifact: `es/` for es-ES and `en/` for en-GB, in this order: map · train detail · station · notices · Pro · UK · dark mode · no account, no ads. Each is the new UI captured at 1080 × 2340 (in `raw/`) in a phone frame under a 5–7 word headline (Play takes at most 2:1, so the framed image is 1080 × 1920) |
+
+The other 16 listings can use the English set until each has its own.
 
 ## App content (Policy → App content)
 

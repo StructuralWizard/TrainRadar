@@ -72,11 +72,13 @@ const swiped = await p.evaluate(() => [document.querySelector("#detail .sheet-st
 await eq(swiped, ["Madrid-Puerta de Atocha", "‹Favorito 1 de 3›", true], "swipe: the station at once, the map still moving");
 await p.waitForTimeout(3000);
 const left = await p.evaluate(() => { const c = window.__trainradar.map.getCenter(); return { lon: c.lng, lat: c.lat, zoom: window.__trainradar.map.getZoom() }; });
-// Reopen the app: same place, station sheet again.
+// Reopen the app: same place, on the map (step 9 of
+// docs/design/ui-redesign/PLAN.md: the phone no longer reopens the last
+// station's or train's sheet).
 await p.reload(); await ready(); await p.waitForTimeout(2500);
 const back = await p.evaluate(() => { const c = window.__trainradar.map.getCenter(); return { lon: c.lng, lat: c.lat, zoom: window.__trainradar.map.getZoom(), station: document.querySelector("#detail:not([hidden]) .sheet-station h2")?.textContent }; });
 log("reopened", back);
-if (Math.abs(back.lon - left.lon) > 0.005 || Math.abs(back.lat - left.lat) > 0.005 || Math.abs(back.zoom - left.zoom) > 0.1 || back.station !== "Madrid-Puerta de Atocha") await fail(`not where it was left: ${JSON.stringify(back)}`);
+if (Math.abs(back.lon - left.lon) > 0.005 || Math.abs(back.lat - left.lat) > 0.005 || Math.abs(back.zoom - left.zoom) > 0.1 || back.station) await fail(`not where it was left, or a sheet reopened: ${JSON.stringify(back)}`);
 await p.screenshot({ path: `${OUT}/favs-reopened.png` });
 if (errs.length) await fail(`page errors: ${errs.join(" | ")}`);
 console.log("OK");

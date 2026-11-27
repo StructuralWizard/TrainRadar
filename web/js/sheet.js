@@ -1,14 +1,15 @@
-// Bottom sheets on a phone (≤ 719 px): every `.sheet` section becomes a
+// Bottom sheets on a phone or tablet (< 900 px): every `.sheet` section becomes a
 // card that sits above the tab bar at one of three heights — peek
 // (≈ 160 px), half (≈ 55 %) or full (≈ 92 %) — and can be dragged between
 // them by its handle or title, or pulled down from the top of its content.
-// Dragging below peek (or pressing Back) closes it. On wider screens this
-// does nothing: the sheets stay the desktop side panels.
+// Dragging below peek (or pressing Back) closes it. From 900 px the sheets
+// are the side panel's content (app.css): no heights or dragging, and the
+// home sheet shows whenever no other is open.
 //
 // The rest of the app still opens and closes sheets by toggling `hidden`;
 // this module watches that attribute, so nothing else has to change.
 
-export const PHONE_QUERY = "(max-width: 719px)";
+export const PHONE_QUERY = "(max-width: 899px)";
 const mq = typeof matchMedia === "function" ? matchMedia(PHONE_QUERY) : { matches: false, addEventListener() {} };
 export const isPhone = () => mq.matches;
 
@@ -120,8 +121,13 @@ export class Sheets {
 
   /** Back button / scrim: close the top sheet, else lower the home one. */
   back() {
-    if (!this.phone) return false;
     const top = this.top();
+    if (!this.phone) {
+      // Side panel: back to the home sheet.
+      if (!top) return false;
+      this.opts.get(top).el.hidden = true;
+      return true;
+    }
     if (top) {
       this.opts.get(top).el.hidden = true;
       return true;
@@ -182,24 +188,23 @@ export class Sheets {
     this.onChange({ id: top, snap: shown?.snap || null });
   }
 
-  /** Leaving the phone layout: back to the plain side panels. */
+  /** From 900 px: the side panel shows the open sheet, else the home one. */
   layout() {
     if (this.phone) return this.apply();
     for (const o of this.opts.values()) {
       o.el.style.height = "";
       delete o.el.dataset.snap;
     }
+    const top = this.top();
     if (this.home) {
-      // Shown only because it was the phone's home sheet: hide it again.
-      if (this.homeAuto) {
-        this.setHidden(this.home, true);
-        this.homeAuto = false;
-      }
+      this.setHidden(this.home, !!top);
+      this.homeAuto = !top;
     }
     if (this.scrim) this.scrim.hidden = true;
     if (this.restore) this.restore.hidden = true;
     document.body.dataset.sheet = "none";
     document.documentElement.style.setProperty("--sheet-h", "0px");
+    this.onChange({ id: top, snap: null });
   }
 
   /** Drag by the handle or title; pull down from the top of the content. */

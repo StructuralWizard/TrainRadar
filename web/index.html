@@ -98,8 +98,18 @@
     </div>
     <button id="fav-btn" class="pill" type="button">★</button>
     <button id="about-btn" class="pill" type="button">ⓘ</button>
-    <button id="lang" class="pill" type="button">EN</button>
   </header>
+
+  <!-- From 900 px: the side panel's background and its top row (logo, language). -->
+  <!-- Phone launch: "Seguir C10 75172", the train followed last time. -->
+  <button id="follow-chip" class="follow-chip" type="button" hidden></button>
+
+  <div class="panel-bg" aria-hidden="true"></div>
+  <div id="panel-brand" class="panel-brand">
+    <img class="panel-logo" src="icon.svg" alt="" width="32" height="32">
+    <span class="panel-name">TrainRadar</span>
+    <button id="lang" class="pill" type="button">EN</button>
+  </div>
 
   <div id="legend" class="legend"></div>
 
@@ -114,7 +124,8 @@
     <!-- Phone: live status and the delay colours, as two small chips. -->
     <div id="chips" class="chips">
       <span id="live-chip" class="map-chip live-chip" role="status"><i id="live-dot" class="live-dot"></i><span id="live-text"></span></span>
-      <span id="legend-chip" class="map-chip legend-chip"></span>
+      <span id="median-chip" class="map-chip median-chip" hidden></span>
+      <span id="legend-chip" class="map-chip legend-chip" hidden></span>
       <!-- Android, with TrainRadar Pro: a small sticker; opens Settings. -->
       <button id="pro-chip" class="map-chip pro-chip" type="button" hidden>PRO</button>
     </div>

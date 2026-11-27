@@ -9,6 +9,7 @@ import {
   formatDelay,
   formatDistance,
   formatDuration,
+  formatMedian,
 } from "./format.js";
 import { COLORS, SCHEDULED_COLOR, SERVICE_COLORS } from "./map.js";
 
@@ -32,7 +33,7 @@ export function statsText(lang, stats) {
   const parts = [t(lang, "trains", { n: formatCount(lang, stats.trains) })];
   parts.push(t(lang, "delayed", { n: formatCount(lang, stats.delayed) }));
   if (stats.median_delay !== null) {
-    parts.push(t(lang, "median", { delay: formatDelay(lang, stats.median_delay) }));
+    parts.push(formatMedian(lang, stats.median_delay));
   }
   return parts.join(" · ");
 }
@@ -50,14 +51,15 @@ export function legend(lang) {
 }
 
 /** The kind-of-service key: the colour of track and of each train's ring. */
-export function serviceLegend(lang, short = false) {
+export function serviceLegend(lang, short = false, spain = true) {
   const item = (cls, style, k) => el("span", { class: "legend-item" }, el("i", { class: `legend-line ${cls}`, style }), t(lang, k));
   return [
     el("span", { class: "legend-head" }, `${t(lang, short ? "legendServiceShort" : "legendService")}:`),
     item("", `background:${SERVICE_COLORS.av}`, "legendAv"),
     item("", `background:${SERVICE_COLORS.conv}`, "legendConv"),
-    item("legend-line-cer", null, "legendCer"),
-  ];
+    // Cercanías lines in their own colours: Spain's.
+    spain ? item("legend-line-cer", null, "legendCer") : null,
+  ].filter(Boolean);
 }
 
 /** "AVE 03071", "C3 · 20015", or just the number. */
@@ -284,15 +286,23 @@ export function profileChart(lang, p) {
 /** About panel: what TrainRadar is, where the live data comes from, legal
  * pages, licences, and (when configured) the app and coffee links. The
  * coffee link is web only, never inside the Android app. */
-export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web", feedMode = "fallback", onSettings = null, version = "dev" } = {}) {
+export function aboutPanel(lang, { spain = true, countryName = "", credit = "", playUrl = "", coffeeUrl = "", platform = "web", feedMode = "fallback", onSettings = null, version = "dev" } = {}) {
   const link = (href, text) => el("a", { href, target: "_blank", rel: "noopener" }, text);
-  const out = [el("p", {}, t(lang, "aboutText"))];
+  const out = [el("p", {}, spain ? t(lang, "aboutText") : t(lang, "aboutTextCountry", { country: countryName }))];
   if (onSettings) {
     out.push(el("p", {}, el("button", { class: "pill", type: "button", id: "settings-btn", onclick: onSettings }, `⚙ ${t(lang, platform === "android" ? "settingsPro" : "settings")}`)));
   }
   if (playUrl && platform === "web") out.push(el("p", {}, el("a", { class: "pill pill-strong", href: playUrl, target: "_blank", rel: "noopener" }, t(lang, "getApp"))));
   if (coffeeUrl && platform === "web") out.push(el("p", {}, link(coffeeUrl, `☕ ${t(lang, "coffee")}`)));
-  out.push(el("p", { class: "small muted" }, t(lang, "feedSource", { source: t(lang, feedMode === "live" ? "feedLive" : "feedProxy") })));
+  // Where Spain's live data comes from (a copy of Renfe's open data).
+  if (spain) out.push(el("p", { class: "small muted" }, t(lang, "feedSource", { source: t(lang, feedMode === "live" ? "feedLive" : "feedProxy") })));
+  if (!spain && credit) {
+    // The country's sources and licences: the credit line's own text (a
+    // fixed string from i18n.js, with its links).
+    const p = el("p", { class: "small about-credit" });
+    p.innerHTML = credit;
+    out.push(el("h3", {}, t(lang, "aboutData")), p);
+  }
   out.push(el("h3", {}, t(lang, "legal")));
   out.push(
     el(
@@ -306,15 +316,15 @@ export function aboutPanel(lang, { playUrl = "", coffeeUrl = "", platform = "web
       ].map(([href, k]) => el("li", {}, link(href, t(lang, k)))),
     ),
   );
-  if (platform === "web") {
-    // Guide pages (static text on the site; not bundled in the app).
+  if (platform === "web" && spain) {
+    // Guide pages (static text on the site; not bundled in the app): Spain's.
     const guides = lang === "en"
       ? [["en/spain-train-delays/", "guideDelays"], ["en/renfe-delay-compensation/", "guideClaims"]]
       : [["retrasos-trenes-renfe/", "guideDelays"], ["indemnizacion-retrasos-renfe/", "guideClaims"]];
     out.push(el("h3", {}, t(lang, "guides")));
     out.push(el("ul", { class: "links" }, guides.map(([href, k]) => el("li", {}, el("a", { href }, t(lang, k))))));
   }
-  out.push(...officialLinks(lang));
+  if (spain) out.push(...officialLinks(lang)); // Renfe's and Adif's pages
   out.push(el("p", { class: "small" }, link("https://github.com/StructuralWizard/TrainRadar", `${t(lang, "sourceCode")} ↗`)));
   out.push(el("p", { class: "small" }, link("https://github.com/StructuralWizard/TrainRadar/issues/new/choose", `${t(lang, "moreFeedback")} ↗`)));
   out.push(el("p", { class: "small muted", id: "about-version" }, t(lang, "aboutBy", { v: version })));
@@ -486,7 +496,7 @@ export function trainRows(
           : t(lang, "estimatedPos", { age }),
     ),
   );
-  if (info.origin) {
+  if (info.origin && !skip.has("gaps")) {
     rows.push(row(t(lang, "ahead"), gapText(lang, info.ahead, onTrain)));
     rows.push(row(t(lang, "behind"), gapText(lang, info.behind, onTrain)));
     if (info.oncoming) rows.push(row(t(lang, "oncoming"), oncomingText(lang, info.oncoming, onTrain)));

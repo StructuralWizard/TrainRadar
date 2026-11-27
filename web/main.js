@@ -6,11 +6,11 @@ import { CONFIG } from "./js/config.js";
 import { COUNTRY_INFO, COUNTRY_KEY, applyCountry, areaKey, areaName, areasOf, pickCountry, viewKey, withPlaces } from "./js/country.js";
 import { RefData } from "./js/data.js";
 import { Feeds } from "./js/feeds.js";
-import { formatAgo, formatCount, formatDelay, formatDistance, trainLabel } from "./js/format.js";
+import { formatAgo, formatCount, formatDelay, formatDistance, formatMedian, trainLabel } from "./js/format.js";
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
-import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
+import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, lineBadge, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
 import { loadRides, videoForTrain, videosAt } from "./js/cabrides.js";
 import { endStations } from "./js/route.js";
 import { Planner } from "./js/planner.js";
@@ -378,7 +378,8 @@ const lineColors = new Map(); // "region|line" and "|line" → "#rrggbb"
 
 function applyLang() {
   document.documentElement.lang = lang;
-  document.title = t(lang, "title");
+  // The page title names the country shown (Spain keeps its own, with Renfe).
+  document.title = ES ? t(lang, "title") : t(lang, "titleCountry", { country: countryName(country) });
   const btn = $("lang");
   // The button shows the language in use and opens the list of languages.
   btn.textContent = lang.toUpperCase();
@@ -387,7 +388,7 @@ function applyLang() {
   $("langs-title").textContent = t(lang, "moreLanguage");
   $("langs-close").setAttribute("aria-label", t(lang, "close"));
   if (!$("langs").hidden) renderLangs();
-  $("legend").replaceChildren(...legend(lang), el("span", { class: "legend-sep" }), ...serviceLegend(lang, true));
+  renderLegend();
   $("delayed-btn").textContent = t(lang, "delayedList");
   $("delayed-title").textContent = t(lang, "delayedTitle");
   $("delayed-close").setAttribute("aria-label", t(lang, "close"));
@@ -422,8 +423,10 @@ function applyLang() {
   ]) {
     $(id).textContent = t(lang, k);
   }
-  $("search-q").placeholder = t(lang, isPhone() ? "searchPlaceholderPhone" : "searchPlaceholder");
+  $("search-q").placeholder = t(lang, "searchPlaceholderPhone");
   phoneChrome();
+  // "Cargando trenes…" from the first frame, until the engine has positions.
+  if (!engine) renderLiveChip({ trains: 0, scheduled: 0, median_delay: null }, Date.now());
   $("about-btn").setAttribute("aria-label", t(lang, "about"));
   $("about-btn").title = t(lang, "about");
   $("about-title").textContent = t(lang, "about");
@@ -1019,6 +1022,7 @@ function regionName(code) {
 }
 
 function selectTrain(info, { fly = false } = {}) {
+  $("follow-chip").hidden = true;
   selected = { trip_id: info.trip_id, number: info.number };
   popupToTop = true;
   updateRoute();
@@ -1048,6 +1052,43 @@ function selectedInfo(now) {
   return JSON.parse(engine.trainJson(i, now));
 }
 
+/** "Seguir": the map keeps the selected train in view until the user drags
+ * the map. The number is kept, so the next launch can offer to follow it
+ * again (step 9 of docs/design/ui-redesign/PLAN.md). */
+const FOLLOW_KEY = `follow-${country}`;
+let following = store.get(FOLLOW_KEY) || "";
+let followAt = 0;
+const sameTrain = (a, b) => String(a || "").replace(/^0+/, "") === String(b || "").replace(/^0+/, "");
+function setFollowing(number) {
+  following = number || "";
+  store.set(FOLLOW_KEY, following);
+  followAt = 0;
+}
+function followTrain(info, force = false) {
+  if (!following || !sameTrain(info.number, following) || !map) return;
+  if (!force && (map.isMoving() || Date.now() - followAt < 2000)) return;
+  followAt = Date.now();
+  map.easeTo({ center: [info.lon, info.lat], duration: force ? 600 : 1000, offset: isPhone() ? phoneOffset(true) : [0, 0] });
+}
+
+/** "Seguir C10 75172": the train followed when the app was left, if it's
+ * still running; a tap opens it and follows it again. */
+function showFollowChip() {
+  const chip = $("follow-chip");
+  const info = following ? liveTrain(following) : null;
+  if (!info) return (chip.hidden = true);
+  const route = info.route || info.line;
+  chip.replaceChildren(
+    route ? lineBadge(route, lineColors.get(`${info.region}|${route}`) || lineColors.get(`|${route}`)) : null,
+    el("span", {}, t(lang, "followChip", { train: String(info.number).replace(/^0+/, "") })),
+  );
+  chip.onclick = () => {
+    chip.hidden = true;
+    selectTrain(info, { fly: true });
+  };
+  chip.hidden = false;
+}
+
 function showPopup(open = false) {
   const now = Date.now();
   const info = selectedInfo(now);
@@ -1056,7 +1097,9 @@ function showPopup(open = false) {
     return;
   }
   map.getSource("selected")?.setData(pointGeoJson(info.lon, info.lat));
-  if (isPhone()) return showTrainSheet(info, open, now);
+  followTrain(info);
+  // Phone sheet or desktop side panel alike (docs/design/ui-redesign/PLAN.md, step 3).
+  return showTrainSheet(info, open, now);
   if (popup) {
     popup.setLngLat([info.lon, info.lat]);
     // Rebuilding the content swaps its buttons out from under a finger, so
@@ -1152,6 +1195,15 @@ function showTrainSheet(info, open, now) {
   const route = info.route || info.line;
   const body = trainSheet(lang, info, {
     now,
+    follow: {
+      on: sameTrain(info.number, following),
+      onToggle: () => {
+        setFollowing(sameTrain(info.number, following) ? "" : info.number);
+        followTrain(info, true);
+        detailKey = "";
+        showPopup(true);
+      },
+    },
     regionName: regionName(info.region),
     lineColor: lineColors.get(`${info.region}|${route}`) || lineColors.get(`|${route}`),
     stops: trip?.stops,
@@ -1384,7 +1436,7 @@ function showStation(f, { refresh = false } = {}) {
   for (const r of regions) {
     if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(() => (stationPop?.isOpen() || (detailKind === "station" && stationView === f)) && showStation(f, { refresh: true }));
   }
-  if (isPhone() || (stationWhen && stationWhenId === id)) return showStationSheet(f, regions, refresh);
+  return showStationSheet(f, regions, refresh);
   const body = stationPopup(
     lang,
     { id, name },
@@ -1474,15 +1526,15 @@ function showStationSheet(f, regions, refresh) {
   const board = when ? stationPlan.board : JSON.parse(engine.stationBoardJson(id, now, 90 * 60, 12));
   const approaching = when ? [] : JSON.parse(engine.approachingJson(id, now, 30 * 60)).slice(0, 10);
   const nucleo = regions.find((r) => r.code !== "ld");
-  const routes = [...new Set(board.map((r) => r.route).filter(Boolean))].slice(0, 4);
+  const routes = [...new Set(board.map((r) => r.route).filter(Boolean))].slice(0, 6);
   const sub = [];
   if (nucleo) sub.push(t(lang, "cercanias", { region: nucleo.name }));
-  if (routes.length) sub.push(routes.join(", "));
   if (userFix) sub.push(t(lang, "awayDistance", { d: formatDistance(lang, distanceM(userFix, { lat, lon })) }));
   const redraw = () => showStation(f, { refresh: true });
   const region = nucleo?.code || "";
   const body = stationSheet(lang, { id, name }, {
     sub: sub.join(" · "),
+    routes,
     board,
     approaching,
     planned: !!when,
@@ -2064,9 +2116,9 @@ function liveTrain(number) {
 
 function openStation(st) {
   const f = { properties: { id: st.id, name: st.name }, geometry: { coordinates: [st.lon, st.lat] } };
-  // Phone: the station's sheet at once, the map moving behind it (as for a
-  // train). The desktop popup is anchored on the map: show it on arrival.
-  if (isPhone()) {
+  // The station's sheet (or side panel) at once, the map moving behind it
+  // (as for a train).
+  {
     showStation(f);
     flyToVisible(st.lon, st.lat, 13, { forPopup: true });
     return;
@@ -2189,6 +2241,10 @@ function openLink(link) {
   if (link.type === "train") {
     const info = liveTrain(link.number);
     if (info) return selectTrain(info, { fly: true });
+    // The first trains can be on the map before the linked one's data:
+    // give it a few seconds before falling back to the search.
+    const tries = link.tries || 0;
+    if (tries < 10) return void setTimeout(() => openLink({ ...link, tries: tries + 1 }), 1000);
     $("search-q").value = link.number; // not running now: show what search finds
     return renderSearch();
   }
@@ -2204,7 +2260,7 @@ function goBack() {
     else stopReplay();
     return true;
   }
-  if (isPhone() && sheets.back()) return true;
+  if (sheets.back()) return true;
   const sheet = SHEETS.map($).find((x) => !x.hidden);
   if (sheet) return (sheet.hidden = true), true;
   if (popup) return popup.remove(), true;
@@ -2596,7 +2652,6 @@ function renderMore() {
  * tap never lands on a box being replaced. */
 let summaryLang = "";
 function renderHomeSummary(st, pos) {
-  if (!isPhone()) return;
   const c = [0, 0, 0, 0];
   for (let i = 0; i + 5 < pos.length; i += 6) if (!(pos[i + 5] & FLAG.scheduled)) c[pos[i + 2]] += 1;
   if (summaryLang !== lang) {
@@ -2617,6 +2672,9 @@ function renderHomeSummary(st, pos) {
         el("button", { type: "button", class: "icon-btn summary-hide", id: "delayed-hide", "aria-label": t(lang, "delayedHide"), title: t(lang, "delayedHide"), onclick: () => sheets.hideHome(true) }, icon("chevronDown", 18)),
       ),
       el("div", { class: "buckets" }, bucket("major", "bucketMajor"), bucket("minor", "bucketMinor"), bucket("ontime", "bucketOnTime")),
+      // Trains by timetable (Northern Ireland's, OUIGO's): counted here, not
+      // in the map's chips.
+      el("p", { class: "muted small summary-sched", id: "summary-sched" }),
     );
   }
   const set = (id, text) => {
@@ -2624,6 +2682,7 @@ function renderHomeSummary(st, pos) {
     if (e.textContent !== text) e.textContent = text;
   };
   set("summary-of", t(lang, "delayedOf", { n: formatCount(lang, st.delayed), total: formatCount(lang, st.trains) }));
+  set("summary-sched", st.scheduled ? t(lang, COUNTRY_TEXT[country].scheduled, { n: formatCount(lang, st.scheduled) }).replace(/^\+\s*/, "") : "");
   const show = $("delayed-show");
   if (show.dataset.lang !== lang) {
     show.dataset.lang = lang;
@@ -2694,26 +2753,55 @@ function updateNetChip() {
   }
 }
 
-/** "498 trenes · mediana +2 min" with a dot: green live, orange stale, red failing. */
+/** Desktop (≥ 900 px): the map key as a small card at the map's bottom
+ * left, folded or open as the user left it (on a phone it's in Capas). */
+const LEGEND_KEY = "legend-open";
+function renderLegend() {
+  const open = store.get(LEGEND_KEY) !== "0";
+  const toggle = () => {
+    store.set(LEGEND_KEY, open ? "0" : "1");
+    renderLegend();
+  };
+  $("legend").replaceChildren(
+    el(
+      "button",
+      { type: "button", class: "legend-toggle", id: "legend-toggle", "aria-expanded": String(open), onclick: toggle },
+      el("span", {}, t(lang, "legendTitle")),
+      icon(open ? "chevronDown" : "chevronUp", 16),
+    ),
+    open ? el("div", { class: "legend-body" }, el("div", { class: "legend-row" }, ...legend(lang)), el("div", { class: "legend-row" }, ...serviceLegend(lang, true, ES))) : null,
+  );
+}
+
+/** Two chips: "498 trenes" with a dot (green live, orange stale, red
+ * failing; pulsing while the first trains load) and "Mediana +2 min". */
 function renderLiveChip(st, now) {
-  if (!isPhone()) return;
+  const median = $("median-chip");
+  const loading = !engine || (st.trains + st.scheduled === 0 && !(feeds?.lastUpdate() || 0) && !TIMETABLE_ONLY);
+  if (loading) {
+    $("live-text").textContent = t(lang, "loadingTrains");
+    $("live-chip").dataset.state = "loading";
+    median.hidden = true;
+    return;
+  }
   if (TIMETABLE_ONLY) {
     // A grey dot: by timetable, no live data to be stale or failing.
     $("live-text").textContent = t(lang, "trains", { n: formatCount(lang, st.trains + st.scheduled) });
     $("live-chip").dataset.state = "timetable";
     $("live-chip").title = t(lang, "timetableOnly");
+    median.hidden = true;
     return;
   }
   const last = feeds?.lastUpdate() || 0;
   const age = last ? (now - last) / 1000 : Infinity;
   const state = feeds?.failing() ? "bad" : age > 120 ? "stale" : "ok";
-  const text =
-    st.median_delay === null
-      ? t(lang, "trains", { n: formatCount(lang, st.trains) })
-      : t(lang, "liveChip", { trains: t(lang, "trains", { n: formatCount(lang, st.trains) }), delay: formatDelay(lang, st.median_delay) });
-  $("live-text").textContent = text;
+  // Trains by timetable (Northern Ireland's, OUIGO's) are counted in the
+  // delays sheet, not here: the chip stays one short line.
+  $("live-text").textContent = t(lang, "trains", { n: formatCount(lang, st.trains) });
   $("live-chip").dataset.state = state;
   $("live-chip").title = state === "bad" ? t(lang, ES ? "feedError" : "feedErrorOther") : last ? t(lang, "updated", { age: formatAgo(lang, age) }) : t(lang, "loading");
+  median.textContent = formatMedian(lang, st.median_delay);
+  median.hidden = !median.textContent;
 }
 
 /** Phone: the network picker ("Ir a…" on the desktop). */
@@ -2844,8 +2932,9 @@ function renderLayers() {
     { class: "map-key", id: "map-key" },
     el("h3", { class: "group-h" }, t(lang, "legendTitle")),
     el("p", { class: "legend-row" }, el("span", { class: "legend-head" }, `${t(lang, "legendDelay")}:`), ...legend(lang)),
-    el("p", { class: "legend-row" }, ...serviceLegend(lang)),
-    el("p", { class: "small muted" }, t(lang, "legendStations")),
+    el("p", { class: "legend-row" }, ...serviceLegend(lang, false, ES)),
+    // Spain's station key (long-distance and Cercanías interchanges).
+    ES ? el("p", { class: "small muted" }, t(lang, "legendStations")) : null,
   );
   $("layers-panel-body").replaceChildren(
     key,
@@ -2860,11 +2949,14 @@ function renderLayers() {
       groups: [
         {
           title: t(lang, "groupTrains"),
-          items: [sw("f-commuter", "showCommuter"), sw("f-av", "showAv"), sw("f-ld", "showLd"), sw("f-md", "showMd"), sw("f-scheduled", "showScheduled", "scheduledHint")],
+          // Spain's own names (Cercanías, AVE, OUIGO); elsewhere, the kinds of service.
+          items: ES
+            ? [sw("f-commuter", "showCommuter"), sw("f-av", "showAv"), sw("f-ld", "showLd"), sw("f-md", "showMd"), sw("f-scheduled", "showScheduled", "scheduledHint")]
+            : [sw("f-commuter", "kindSuburban"), sw("f-av", "kindHighSpeed"), sw("f-ld", "kindLongDistance"), sw("f-md", "kindRegional"), sw("f-scheduled", "kindTimetable", "scheduledHint")],
         },
         {
           title: t(lang, "groupMap"),
-          items: [sw("f-lines", "showLines"), sw("f-tav", "showTrackAv"), sw("f-tld", "showTrackLd"), sw("f-tmd", "showTrackMd"), sw("f-stations", "showStations")],
+          items: [sw("f-lines", ES ? "showLines" : "showLinesOther"), sw("f-tav", "showTrackAv"), sw("f-tld", "showTrackLd"), sw("f-tmd", "showTrackMd"), sw("f-stations", "showStations")],
         },
         {
           title: t(lang, "groupIncidents"),
@@ -2874,8 +2966,9 @@ function renderLayers() {
             sw("f-k-accessibility", "kind_accessibility"),
             sw("f-k-strike", "kind_strike"),
             sw("f-k-other", "kind_other"),
-            sw("f-stopped", "showStopped"),
-          ],
+            // Stopped trains come from Renfe's GPS: Spain only.
+            ES ? sw("f-stopped", "showStopped") : null,
+          ].filter(Boolean),
         },
       ],
     }).flat(),
@@ -3169,6 +3262,10 @@ function haptic() {
 function renderAbout() {
   $("about-body").replaceChildren(
     ...aboutPanel(lang, {
+      // Outside Spain: the country's own description and data sources.
+      spain: ES,
+      countryName: countryName(country),
+      credit: attribution(),
       playUrl: CONFIG.playUrl,
       coffeeUrl: CONFIG.coffeeUrl,
       platform: CONFIG.platform,
@@ -3274,7 +3371,7 @@ function trainMeta(pos, now) {
       n,
       rows: rows.map(([, route, number, , , , , delay, flags]) => {
         const cer = !!(flags & FLAG.commuter);
-        return { lb: trainLabel(route, number, delay, cer), lc: cer && route ? lineColors.get(`|${route}`) || null : null };
+        return { lb: trainLabel(route, number, delay, cer, t(lang, "onTime")), lc: cer && route ? lineColors.get(`|${route}`) || null : null };
       }),
     };
   }
@@ -3561,8 +3658,19 @@ async function main() {
     attribution(),
   ));
   map.on("moveend", saveView);
+  // A drag by the user stops "Seguir".
+  map.on("dragstart", (e) => {
+    if (e.originalEvent && following) {
+      setFollowing("");
+      if (detailKind === "train") (detailKey = ""), showPopup(true);
+    }
+  });
   document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveView());
   window.addEventListener("pagehide", saveView);
+  // The credits start folded into their ⓘ (MapLibre opens compact credits
+  // when the map loads): a tap opens them.
+  map.once("load", foldCredits);
+  map.once("idle", foldCredits);
   // Open credits close with a tap on the map or on their text (not a link).
   map.on("click", foldCredits);
   map.getContainer().addEventListener("click", (e) => {
@@ -3632,7 +3740,7 @@ async function main() {
     setInterval(() => map.getZoom() < OVERVIEW_ZOOM && refreshOverview(), 60_000);
     if (map.getZoom() < OVERVIEW_ZOOM) refreshOverview();
   }
-  if (window.innerWidth < 720) map.once("idle", foldCredits);
+  map.once("idle", foldCredits);
   if (store.get("basemap") === "satellite") {
     setBasemap(map, "satellite");
     document.querySelector('input[name="basemap"][value="satellite"]').checked = true;
@@ -3703,7 +3811,7 @@ async function main() {
       const other = map.getLayer("countries-other") && map.queryRenderedFeatures(e.point, { layers: ["countries-other"] })[0];
       if (other && COUNTRY_LIST.includes(other.properties.code)) return offerCountry(other.properties.code, e.lngLat);
       countryPop?.remove();
-      if (isPhone()) $("detail").hidden = true;
+      $("detail").hidden = true;
       return clearSelection();
     }
     const info = JSON.parse(engine.trainJson(hits[0].properties.i, Date.now()));
@@ -3748,8 +3856,12 @@ async function main() {
       if (!lastView && savedArea && (ref?.region(savedArea) || placeByCode(savedArea))) goToNetwork(savedArea);
       // A region of areas.json (the UK's, Sweden's…): once that file is in.
       else if (!lastView && String(savedArea || "").startsWith("adm:")) placesReady.then(() => placeArea(savedArea) && goToNetwork(savedArea));
-      if (lastView?.detail && restoreDetail(lastView.detail)) return;
-      const nothingOpen = isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden);
+      // Phone (step 9 of docs/design/ui-redesign/PLAN.md): open on the map,
+      // not on the last train's or station's sheet; a train being followed
+      // gets a chip that brings it back. The side panel restores it.
+      if (isPhone()) showFollowChip();
+      else if (lastView?.detail && restoreDetail(lastView.detail)) return;
+      const nothingOpen = !sheets.top();
       if (CONFIG.pro && activeCommute(commutes) && nothingOpen) {
         openSheet("commute");
         renderCommute();
@@ -3892,7 +4004,7 @@ $("fab-locate").addEventListener("click", () => {
     renderNear(true);
   }
 });
-matchMedia("(max-width: 719px)").addEventListener?.("change", () => applyLang());
+matchMedia("(max-width: 899px)").addEventListener?.("change", () => applyLang());
 $("jump").addEventListener("change", (e) => {
   const v = e.target.value;
   e.target.value = "";

@@ -1,7 +1,7 @@
 // MapLibre map with the train and station layers.
 import * as maplibregl from "../vendor/maplibre/maplibre-gl.mjs";
 
-export const COLORS = ["#1a9850", "#f39c12", "#d7301f", "#8c8c8c"]; // on time, 5–14, 15+, unknown
+export const COLORS = ["#15803d", "#b45309", "#b91c1c", "#64748b"]; // on time, 5–14, 15+, no data (the design tokens)
 export const SCHEDULED_COLOR = "#7c3aed"; // timetable-only trains (OUIGO)
 export const STRIDE = 6; // engine.positions(): lon, lat, class, bearing, fix age, flags
 export const FLAG = { stopped: 1, likely: 2, scheduled: 4, commuter: 8, highSpeed: 16, medium: 32 };
@@ -218,6 +218,37 @@ function addIcons(map) {
       g.fill();
     }),
     { sdf: true, pixelRatio: 2 },
+  );
+  // The heading on a train's disc (step 7 of docs/design/ui-redesign/PLAN.md):
+  // a small white arrow, rotated to the bearing.
+  map.addImage(
+    "tr-head",
+    make((g) => {
+      g.beginPath();
+      g.moveTo(24, 12);
+      g.lineTo(32, 32);
+      g.lineTo(24, 27.5);
+      g.lineTo(16, 32);
+      g.closePath();
+      g.fill();
+    }),
+    { sdf: true, pixelRatio: 2 },
+  );
+  // A dark rounded chip behind a train's label ("C10 · +3"), stretched to
+  // the text (not SDF: it keeps its own colour).
+  map.addImage(
+    "tr-label",
+    (() => {
+      const c = document.createElement("canvas");
+      c.width = c.height = 32;
+      const g = c.getContext("2d");
+      g.fillStyle = "#0f172a";
+      g.beginPath();
+      g.roundRect(0, 0, 32, 32, 12);
+      g.fill();
+      return g.getImageData(0, 0, 32, 32);
+    })(),
+    { pixelRatio: 2, stretchX: [[12, 20]], stretchY: [[12, 20]], content: [6, 6, 26, 26] },
   );
   // Stations: white squares with a dark border (not SDF: two colours).
   map.addImage(
@@ -506,15 +537,16 @@ export function addLayers(map) {
       "circle-stroke-width": 2.5,
     },
   });
+  // The selected train: a soft brand halo around it.
   map.addLayer({
     id: "selected-ring",
     type: "circle",
     source: "selected",
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 9, 8, 13, 9, 15, 12, 19, 15, 22],
-      "circle-color": "rgba(0,0,0,0)",
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 9, 8, 13, 9, 15, 12, 20, 15, 24],
+      "circle-color": "rgba(29, 78, 216, 0.18)",
       "circle-stroke-color": "#1d4ed8",
-      "circle-stroke-width": 3,
+      "circle-stroke-width": 2,
     },
   });
   // Trains stopped between stations get a red ring.
@@ -531,77 +563,74 @@ export function addLayers(map) {
       "circle-stroke-opacity": ["case", ["==", ["get", "dim"], 1], 0.25, 1],
     },
   });
-  // Trains: zoomed out, coloured dots; from ARROW_ZOOM, drops pointing where
-  // they're heading (a dot if unknown). Inside = delay (white: position
-  // from the timetable only); the ring = kind of service (purple high
-  // speed, teal conventional, the line's colour for Cercanías), with a thin
-  // white rim that keeps them clear on any base map.
-  const image = (part) => [
-    "step", ["zoom"],
-    `tr-dot-${part}`,
-    ARROW_ZOOM,
-    ["case", ["has", "b"], `tr-drop-${part}`, `tr-dot-${part}`],
-  ];
-  const trainLayout = (part) => ({
-    "icon-image": image(part),
-    "icon-rotate": ["coalesce", ["get", "b"], 0],
-    "icon-rotation-alignment": "map",
-    "icon-allow-overlap": true,
-    "icon-ignore-placement": true,
-    // Dots: about 8 px for all of Spain, 18 px just before ARROW_ZOOM.
-    // Drops: about 22 px at ARROW_ZOOM, 28 px at city zoom (12), 32 px close up.
-    "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 6, 0.8, ARROW_ZOOM - 0.01, 1.35, ARROW_ZOOM, 1.2, 12, 1.55, 15, 1.8],
-    "symbol-sort-key": ["get", "c"],
-  });
+  // Trains (step 7 of docs/design/ui-redesign/PLAN.md): a disc in the
+  // delay's colour with a white rim, growing with the zoom; trains placed
+  // by timetable only (no live delay) in the "no data" grey, as in the key.
+  // From ARROW_ZOOM, a white arrow on the disc shows where it's heading.
+  const size = ["interpolate", ["linear"], ["zoom"], 4, 0.55, 6, 0.75, ARROW_ZOOM, 1.15, 12, 1.6, 15, 1.9];
   const opacity = ["case", ["==", ["get", "dim"], 1], 0.18, [">", ["get", "a"], 600], 0.65, 1];
-  map.addLayer({
-    id: "trains-ring",
-    type: "symbol",
-    source: "trains",
-    layout: trainLayout("out"),
-    paint: {
-      "icon-color": [
-        "match", ["get", "t"],
-        ["av", "ouigo"], SERVICE_COLORS.av,
-        "cer", ["coalesce", ["get", "lc"], SERVICE_COLORS.cer],
-        SERVICE_COLORS.conv,
-      ],
-      "icon-halo-color": "#ffffff",
-      "icon-halo-width": 1.2,
-      "icon-opacity": opacity,
-    },
-  });
   map.addLayer({
     id: "trains",
     type: "symbol",
     source: "trains",
-    layout: trainLayout("in"),
+    layout: {
+      "icon-image": "tr-dot",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-size": size,
+      "symbol-sort-key": ["get", "c"],
+    },
     paint: {
       "icon-color": [
         "case",
         ["==", ["get", "sch"], 1],
-        "#ffffff",
+        COLORS[3],
         ["match", ["get", "c"], 0, COLORS[0], 1, COLORS[1], 2, COLORS[2], COLORS[3]],
       ],
+      "icon-halo-color": "#ffffff",
+      "icon-halo-width": 1.6,
       "icon-opacity": opacity,
     },
   });
-  // "C5 +12" next to each train when zoomed in to a city.
+  // The heading arrow (its id is the old ring's: taps and the cursor look
+  // at "trains" and "trains-ring").
+  map.addLayer({
+    id: "trains-ring",
+    type: "symbol",
+    source: "trains",
+    minzoom: ARROW_ZOOM,
+    filter: ["has", "b"],
+    layout: {
+      "icon-image": "tr-head",
+      "icon-rotate": ["get", "b"],
+      "icon-rotation-alignment": "map",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-size": size,
+      "symbol-sort-key": ["get", "c"],
+    },
+    paint: { "icon-color": "#ffffff", "icon-opacity": opacity },
+  });
+  // "C10 · +3" in a dark chip beside each train, zoomed in to a city.
   map.addLayer({
     id: "train-labels",
     type: "symbol",
     source: "trains",
-    minzoom: 12,
+    minzoom: 11,
     filter: ["all", ["has", "lb"], ["!=", ["get", "dim"], 1]],
     layout: {
       "text-field": ["get", "lb"],
       "text-size": 11.5,
       "text-anchor": "left",
-      "text-offset": [1.5, 0],
+      "text-offset": [2.3, 0],
       "text-optional": true,
+      "icon-image": "tr-label",
+      "icon-text-fit": "both",
+      "icon-text-fit-padding": [3, 7, 3, 7],
+      "icon-optional": false,
       "symbol-sort-key": ["-", 3, ["get", "c"]],
     },
-    paint: { "text-color": "#111827", "text-halo-color": "#ffffff", "text-halo-width": 1.8 },
+    paint: { "text-color": "#ffffff" },
   });
 }
 

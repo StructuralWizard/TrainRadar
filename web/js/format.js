@@ -11,6 +11,13 @@ export function formatDelay(lang, secs) {
   return m > 0 ? t(lang, "late", { m }) : t(lang, "early", { m: -m });
 }
 
+/** "Mediana +3 min", or "Mediana: a su hora" when the median is under a
+ * minute (not "mediana A su hora"). */
+export function formatMedian(lang, secs) {
+  if (secs === null || secs === undefined || Number.isNaN(secs)) return "";
+  return Math.round(secs / MINUTE) === 0 ? t(lang, "medianOnTime") : t(lang, "medianChip", { delay: formatDelay(lang, secs) });
+}
+
 /** Colour band, matching the engine: 0 <5 min, 1 5–14, 2 15+, 3 unknown. */
 export function delayClass(secs) {
   if (secs === null || secs === undefined) return 3;
@@ -78,13 +85,16 @@ export function formatDay(lang, unixSecs) {
  * line says enough), "AVE 3047 +3" for the rest; no delay part when on
  * time or unknown. null when there's nothing to say.
  */
-export function trainLabel(route, number, delaySecs, commuter) {
+export function trainLabel(route, number, delaySecs, commuter, onTime = "") {
   const n = String(number || "").replace(/^0+/, "");
   const base = (commuter ? route || n : [route, n].filter(Boolean).join(" ")).trim();
   if (!base) return null;
   if (delaySecs === null || delaySecs === undefined) return base;
+  // "LINE · +delay" (docs/design/ui-redesign/PLAN.md, step 7).
   const m = Math.round(delaySecs / 60);
-  return m >= 1 ? `${base} +${m}` : m <= -1 ? `${base} ${m}` : base;
+  if (m >= 1) return `${base} · +${m}`;
+  if (m <= -1) return `${base} · ${m}`;
+  return onTime ? `${base} · ${onTime}` : base;
 }
 
 /** "YYYY-MM-DDTHH:MM" (a datetime-local field's value) for `ms` in time zone `tz`. */
