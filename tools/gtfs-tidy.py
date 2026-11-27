@@ -4,6 +4,7 @@ take names from its translations.txt.
 
     python3 -I tools/gtfs-tidy.py IN.zip OUT.zip [--prefix=ft:] [--keep-trips]
         [--lang=en] [--bilingual] [--merge-platforms] [--short=ID:NAME,...]
+        [--route-type=N]
 
 --prefix      put PREFIX before every id (agency, route, service, trip, stop,
               shape, block), so feeds whose ids clash (Fertagus' and Lisbon
@@ -21,6 +22,8 @@ take names from its translations.txt.
               where the feed has none.
 --merge-platforms  stops with the same name less than 150 m apart become one
               (a tram stop's two platforms, one per direction, as Tosaden's).
+--route-type  every route gets this route_type: for feeds that file their
+              trains as buses (3), as Toyama's tram (0) and Asa's DMV (2).
 
 Fares, translations and other tables the build doesn't read are left out.
 Standard library only.
@@ -159,6 +162,10 @@ def main(argv):
     bilingual = "--bilingual" in opts
     merge = "--merge-platforms" in opts
     short = dict(p.split(":", 1) for a in opts if a.startswith("--short=") for p in a[8:].split(",") if ":" in p)
+    rtype = next((a[13:] for a in opts if a.startswith("--route-type=")), "")
+    if rtype and not rtype.isdigit():
+        print(f"--route-type: {rtype!r} is not a number", file=sys.stderr)
+        return 2
     named = 0
     same = {}  # stop_id → the stop it is merged into
     with zipfile.ZipFile(src) as z, zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as w:
@@ -185,6 +192,7 @@ def main(argv):
         # stop's name in the language asked for.
         last_stop = {}
         stop_text = {}
+        by_name = {}  # a stop's own name → a translation another stop of that name has
         if lang:
             head, rows = table(z, "stops.txt")
             if head and "stop_id" in head and "stop_name" in head:
@@ -194,6 +202,7 @@ def main(argv):
                         t = by_record.get(("stops", "stop_name", r[si])) or by_value.get(("stops", "stop_name", r[ni].strip()))
                         if t:
                             stop_text[r[si]] = t
+                            by_name.setdefault(r[ni].strip(), t)
             head, rows = table(z, "stop_times.txt")
             if head and "trip_id" in head:
                 ti, si, qi = head.index("trip_id"), head.index("stop_id"), head.index("stop_sequence")
@@ -235,11 +244,17 @@ def main(argv):
                     text = by_record.get((tname, f, r[ki])) or by_value.get((tname, f, own))
                     if not text and name == "trips.txt" and f == "trip_headsign":
                         text = stop_text.get(last_stop.get(r[ki], ""))
+                    # A station whose platforms are translated but not itself
+                    # (Ise Railway's): their translation.
+                    if not text and name == "stops.txt":
+                        text = by_name.get(own)
                     if text and text != own:
                         named += 1
                         r[fi] = f"{text} {own}" if bilingual and name == "stops.txt" and own else text
                 if short and name == "routes.txt" and "route_short_name" in head:
                     r[head.index("route_short_name")] = short.get(r[head.index("route_id")], r[head.index("route_short_name")])
+                if rtype and name == "routes.txt" and "route_type" in head:
+                    r[head.index("route_type")] = rtype
                 if prefix:
                     for i in idx:
                         if r[i]:

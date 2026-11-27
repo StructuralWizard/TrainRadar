@@ -106,7 +106,7 @@ export function newerData(a, b) {
  * France's TGV and Intercités (its TER areas load like núcleos), Finland's
  * long-distance trains, Norway and the Netherlands, Switzerland's and
  * Poland's long-distance trains, Sweden. */
-export const NATIONAL = ["ld", "uk", "ie", "fr", "fi", "no", "nl", "ch", "se", "pl", "at", "cz", "it", "dk", "hu", "de", "be", "au-nsw", "au-vic", "nz-wlg", "nz-akl", "sg", "pt", "pt-lis", "jp-tyo", "jp-kch"];
+export const NATIONAL = ["ld", "uk", "ie", "fr", "fi", "no", "nl", "ch", "se", "pl", "at", "cz", "it", "dk", "hu", "de", "be", "au-nsw", "au-vic", "nz-wlg", "nz-akl", "sg", "pt", "pt-lis", "jp-tyo", "jp-kch", "jp-aom", "jp-ygt", "jp-tym", "jp-gif", "jp-mie", "jp-tks", "jp-kmm"];
 
 /** Tell the engine which time zone a region's timetable is in (the
  * manifest's `tz`; docs/plan-europe.md A2). Older data has none: the engine

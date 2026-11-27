@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download an M2 country's sources for the reference data into gtfs/<cc>/
-# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch [--no-osm]
+# (gitignored):  tools/fetch-eu.sh fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch|jp-aom|jp-ygt|jp-tym|jp-gif|jp-mie|jp-tks|jp-kmm [--no-osm]
 #   gtfs.zip          the country's trains in one GTFS:
 #                     fi  Digitraffic's (Fintraffic), CC BY 4.0, daily,
 #                         platforms merged into stations
@@ -68,6 +68,12 @@
 #                         straight lines: use --no-osm
 #                     jp-kch  Kōchi: Tosaden's trams (ODPT, CC BY 4.0); its
 #                         own shapes: use --no-osm
+#                     jp-aom|jp-ygt|jp-tym|jp-gif|jp-mie|jp-tks|jp-kmm
+#                         Japan's regional railways and trams from the GTFS
+#                         Data Repository (gtfs-data.jp, no key; CC BY 4.0,
+#                         CC BY 2.1 JP or CC0, each feed its own): Aomori,
+#                         Yamagata, Toyama, Gifu, Mie, Tokushima, Kumamoto
+#                         (docs/world/jp.md); use --no-osm
 #   sources.tsv       name, url, etag, last-modified (for the manifest)
 #   rail.geojsonseq   the country's OpenStreetMap track (needs osmium-tool;
 #                     skipped with --no-osm)
@@ -459,10 +465,43 @@ except Exception as e:
     python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "$dir/tosaden-en.zip" --also=0
     rm -f "$dir/tosaden.zip" "$dir/tosaden-en.zip"
     region=asia/japan ;;
+  jp-aom|jp-ygt|jp-tym|jp-gif|jp-mie|jp-tks|jp-kmm)
+    # Japan's regional railways and trams, from the GTFS Data Repository
+    # (gtfs-data.jp: operators' own GTFS-JP files, no key). Only feeds under
+    # CC BY 4.0, CC BY 2.1 JP or CC0; each one's licence is in its label (the
+    # credits). Names "Hirosaki 弘前" from each feed's translations (English,
+    # else romaji from the kana reading). Toyama's tram and Asa's DMV are
+    # filed as buses (3): set to tram (0) and rail (2).
+    jpfeed() { # label org feed out [gtfs-tidy options]
+      local label=$1 org=$2 feed=$3 out=$4
+      shift 4
+      get "$label" "https://api.gtfs-data.jp/v2/organizations/$org/feeds/$feed/files/feed.zip?rid=current" "$dir/raw.zip"
+      python3 -I tools/gtfs-tidy.py "$dir/raw.zip" "$out" --lang=en --bilingual "$@"
+      rm -f "$dir/raw.zip"
+    }
+    parts=("$dir/a.zip")
+    case "$cc" in
+      jp-aom) jpfeed "Kōnan Railway GTFS (Hirosaki City, gtfs-data.jp, CC BY 4.0)" hirosakicity kounan-tetsudou "$dir/a.zip" ;;
+      jp-ygt) jpfeed "Yamagata Railway GTFS (gtfs-data.jp, CC BY 4.0)" yamagatatetsudo flowerliner "$dir/a.zip" ;;
+      jp-tym) jpfeed "Toyama Chihō Railway city tram GTFS (gtfs-data.jp, CC0 1.0)" chitetsu chitetsushinaidensha "$dir/a.zip" \
+                --route-type=0 --merge-platforms ;;
+      jp-gif) jpfeed "Akechi Railway GTFS (gtfs-data.jp, CC BY 4.0)" aketetsu akechirailway "$dir/a.zip" ;;
+      jp-mie) jpfeed "Ise Railway GTFS (gtfs-data.jp, CC BY 4.0)" isetetu iserailway "$dir/a.zip" ;;
+      jp-tks) jpfeed "Asa Seaside Railway GTFS (gtfs-data.jp, CC BY 4.0)" asatetu asakaigantetsudo "$dir/a.zip" --route-type=2 ;;
+      jp-kmm)
+        # The city tram and Kumamoto Electric Railway, ids prefixed, merged.
+        jpfeed "Kumamoto City Transportation Bureau tram GTFS (gtfs-data.jp, CC BY 2.1 JP)" kumamoto-shiden kumamotoshiden \
+          "$dir/a.zip" --prefix=ks: --merge-platforms
+        jpfeed "Kumamoto Electric Railway GTFS (gtfs-data.jp, CC0 1.0)" kumamotodentetsu kumamotodentetsu "$dir/b.zip" --prefix=kd:
+        parts+=("$dir/b.zip") ;;
+    esac
+    python3 -I tools/gtfs-rail.py "$dir/gtfs.zip" "${parts[@]}" --parents --also=0
+    rm -f "${parts[@]}"
+    region=asia/japan ;;
   nz-osm)
     # Only the OSM track for New Zealand (shared by its regions' builds).
     region=australia-oceania/new-zealand ;;
-  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch [--no-osm]" >&2; exit 2 ;;
+  *) echo "usage: $0 fi|no|nl|sk|ee|ch|se|pl|at|cz|it|dk|hu|de|be|au-nsw|au-vic|au-osm|nz-wlg|nz-akl|nz-osm|sg|pt|pt-lis|jp-tyo|jp-kch|jp-aom|jp-ygt|jp-tym|jp-gif|jp-mie|jp-tks|jp-kmm [--no-osm]" >&2; exit 2 ;;
 esac
 
 if [ "$osm" = 1 ] && [ ! -s "$dir/rail.geojsonseq" ]; then

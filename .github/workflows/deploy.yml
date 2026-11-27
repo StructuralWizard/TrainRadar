@@ -945,6 +945,7 @@ jobs:
       # Japan → data/jp/, with JP_ENABLED: Tokyo (Toei's subway, tram and
       # Nippori-Toneri Liner) and Kōchi (Tosaden's trams), CC BY 4.0 from
       # ODPT's public API, no key; Toei's live data with JP_LIVE_ENABLED.
+      # Regional railways and trams from gtfs-data.jp (docs/world/jp.md).
       - name: Japan reference data
         if: vars.JP_ENABLED == 'true'
         continue-on-error: true
@@ -954,6 +955,16 @@ jobs:
           tools/fetch-eu.sh jp-kch --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
           cat gtfs/jp-kch/sources.tsv >> gtfs/jp-tyo/sources.tsv
           args=(--jp-tyo-gtfs gtfs/jp-tyo/gtfs.zip --jp-kch-gtfs gtfs/jp-kch/gtfs.zip)
+          # Regional railways and trams (gtfs-data.jp, no key), each optional:
+          # a feed that fails to download leaves its area out, not Japan.
+          for r in jp-aom jp-ygt jp-tym jp-gif jp-mie jp-tks jp-kmm; do
+            if tools/fetch-eu.sh "$r" --no-osm | tee -a "$GITHUB_STEP_SUMMARY"; then
+              args+=(--jp-gtfs "$r=gtfs/$r/gtfs.zip")
+              cat "gtfs/$r/sources.tsv" >> gtfs/jp-tyo/sources.tsv
+            else
+              echo "::warning::Japan: $r (gtfs-data.jp) failed: built without it."
+            fi
+          done
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/jp-data --gzip "${args[@]}" \
               --sources gtfs/jp-tyo/sources.tsv --report refdata-jp.md \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/jp-data; then

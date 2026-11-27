@@ -2,7 +2,7 @@
 // (Renfe), the United Kingdom (Network Rail), Ireland (Iarnród Éireann),
 // France (SNCF), Luxembourg (CFL), Finland (VR), Norway (Entur) or the
 // Netherlands (NS and the others), Slovakia (ZSSK), Estonia (Elron),
-// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB), Australia (New South Wales, Victoria) New Zealand (Wellington, Auckland), Singapore (estimated), Portugal (Lisbon) or Japan (Tokyo, Kōchi).
+// Switzerland (SBB and the others), Sweden, Poland (PKP PLK), Austria, Czechia, Italy (Trenitalia, Trenord), Denmark, Hungary (MÁV, GYSEV), Germany (DELFI, DB), Belgium (SNCB), Australia (New South Wales, Victoria) New Zealand (Wellington, Auckland), Singapore (estimated), Portugal or Japan (Tokyo, Kōchi and regional lines).
 // Chosen on the network chip, remembered on the device; the page reloads
 // with the other country's data, feeds and settings.
 
@@ -45,7 +45,8 @@ export const COUNTRY_INFO = {
   // Lisbon (Fertagus, Lisbon Metro) by timetable: Portugal publishes no live
   // data; CP's national timetable once CP allows its reuse.
   pt: { zone: "Europe/Lisbon", center: [-8.1, 39.6], zoom: 6.2, live: false },
-  // Tokyo (Toei: GPS, delays, alerts) and Kōchi (Tosaden, by timetable).
+  // Tokyo (Toei: GPS, delays, alerts); Kōchi (Tosaden) and the regional lines
+  // from gtfs-data.jp (Aomori … Kumamoto), by timetable.
   jp: { zone: "Asia/Tokyo", center: [139.75, 35.69], zoom: 10.6, live: true },
 };
 

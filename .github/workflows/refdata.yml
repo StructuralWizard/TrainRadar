@@ -476,13 +476,24 @@ jobs:
           target/release/refdata-build verify build/pt
           { echo "## Portugal reference data"; echo; cat refdata-pt.md; } >> "$GITHUB_STEP_SUMMARY"
           unzip -p gtfs/pt-lis/gtfs.zip routes.txt | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Japan (ODPT public API, CC BY 4.0, no key)
+      - name: Japan (ODPT public API and gtfs-data.jp, open licences, no key)
         continue-on-error: true # outside services: a report, not a gate
         run: |
           set -o pipefail
           tools/fetch-eu.sh jp-tyo --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
           tools/fetch-eu.sh jp-kch --no-osm | tee -a "$GITHUB_STEP_SUMMARY"
-          target/release/refdata-build build --out build/jp --jp-tyo-gtfs gtfs/jp-tyo/gtfs.zip --jp-kch-gtfs gtfs/jp-kch/gtfs.zip \
+          args=(--jp-tyo-gtfs gtfs/jp-tyo/gtfs.zip --jp-kch-gtfs gtfs/jp-kch/gtfs.zip)
+          # Regional railways and trams (gtfs-data.jp, no key), each optional:
+          # a feed that fails to download leaves its area out, not Japan.
+          for r in jp-aom jp-ygt jp-tym jp-gif jp-mie jp-tks jp-kmm; do
+            if tools/fetch-eu.sh "$r" --no-osm | tee -a "$GITHUB_STEP_SUMMARY"; then
+              args+=(--jp-gtfs "$r=gtfs/$r/gtfs.zip")
+              cat "gtfs/$r/sources.tsv" >> gtfs/jp-tyo/sources.tsv
+            else
+              echo "::warning::Japan: $r (gtfs-data.jp) failed: built without it."
+            fi
+          done
+          target/release/refdata-build build --out build/jp "${args[@]}" \
             --sources gtfs/jp-tyo/sources.tsv --report refdata-jp.md
           target/release/refdata-build verify build/jp
           { echo "## Japan reference data"; echo; cat refdata-jp.md; } >> "$GITHUB_STEP_SUMMARY"
