@@ -117,6 +117,7 @@ if (!pt) await fail("every C3 station had a train on it");
 await page.mouse.click(pt.x, pt.y);
 await page.waitForSelector("#detail:not([hidden]) .sheet-station #seg-dep", { timeout: 5000 }).catch(() => fail("station sheet didn't open"));
 console.log("station:", (await page.textContent("#detail")).replace(/\s+/g, " ").slice(0, 200));
+if ((await page.getAttribute("#detail", "data-snap")) !== "full") await fail(`station sheet opened at ${await page.getAttribute("#detail", "data-snap")}, not full screen`);
 await page.screenshot({ path: `${out}/station.png` });
 await page.click("#seg-arr");
 if ((await page.getAttribute("#seg-arr", "aria-selected")) !== "true") await fail("Llegando tab not selected");

@@ -1592,7 +1592,7 @@ function showStationSheet(f, regions, refresh) {
   detailKind = "station";
   stationView = f;
   if (sheet.hidden) openSheet("detail");
-  sheets.setSnap("detail", "half");
+  sheets.setSnap("detail", "full"); // a station opens full screen on a phone (its departures need the room)
   sheet.scrollTop = 0;
   keepVisible(lon, lat);
 }
