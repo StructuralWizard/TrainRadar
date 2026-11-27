@@ -147,7 +147,8 @@ test("the Worker re-arms only the countries switched on", async () => {
     IE_ENABLED: "true", // but no key: Ireland stays off
     FEED_INGEST: { idFromName: (n) => n, get: (id) => ({ fetch: async (u) => asked.push([id, u]) }) },
   };
-  await worker.scheduled({}, env);
+  // A minute off the world view's ten (that write is tested on its own).
+  await worker.scheduled({ scheduledTime: Date.UTC(2026, 0, 1, 12, 1) }, env);
   assert.deepEqual(asked, [["fr", "https://ingest/ensure?c=fr"]]);
 });
 
