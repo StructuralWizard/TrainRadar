@@ -652,4 +652,5 @@ export const ET = {
   cabNote: "Need avanevad YouTube'is selle jaama kohalt. ≈: hinnanguline hetk.",
   cabTrain: "Vaata juhikabiinist",
   netAreas: "Piirkonnad",
+  netSearchArea: "Otsi piirkonda",
 };

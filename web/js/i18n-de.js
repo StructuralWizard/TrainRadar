@@ -652,4 +652,5 @@ export const DE = {
   cabNote: "Sie öffnen sich auf YouTube an der Stelle dieses Bahnhofs. ≈: geschätzte Stelle.",
   cabTrain: "Aus dem Führerstand ansehen",
   netAreas: "Gebiete",
+  netSearchArea: "Gebiet suchen",
 };

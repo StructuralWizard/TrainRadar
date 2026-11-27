@@ -457,8 +457,8 @@ export function networksSheet(lang, o) {
     type: "search",
     inputmode: "search",
     autocomplete: "off",
-    placeholder: t(lang, "netSearch"),
-    "aria-label": t(lang, "netSearch"),
+    placeholder: o.searchLabel || t(lang, "netSearch"),
+    "aria-label": o.searchLabel || t(lang, "netSearch"),
     value: q,
     oninput: (e) => o.onQuery?.(e.target.value),
   });

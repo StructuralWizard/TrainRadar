@@ -652,4 +652,5 @@ export const SK = {
   cabNote: "Otvoria sa na YouTube v mieste tejto stanice. ≈: odhadovaný čas.",
   cabTrain: "Pohľad zo stanovišťa",
   netAreas: "Oblasti",
+  netSearchArea: "Hľadať oblasť",
 };

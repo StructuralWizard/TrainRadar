@@ -652,4 +652,5 @@ export const HU = {
   cabNote: "A YouTube-on ennél az állomásnál nyílnak meg. ≈: becsült időpont.",
   cabTrain: "Nézd a vezetőállásból",
   netAreas: "Területek",
+  netSearchArea: "Terület keresése",
 };

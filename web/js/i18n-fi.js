@@ -652,4 +652,5 @@ export const FI = {
   cabNote: "Ne avautuvat YouTubessa tämän aseman kohdalta. ≈: arvioitu kohta.",
   cabTrain: "Katso ohjaamosta",
   netAreas: "Alueet",
+  netSearchArea: "Etsi aluetta",
 };

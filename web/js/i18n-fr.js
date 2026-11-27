@@ -652,4 +652,5 @@ export const FR = {
   cabNote: "Elles s'ouvrent sur YouTube au moment de cette gare. ≈ : moment estimé.",
   cabTrain: "Voir depuis la cabine",
   netAreas: "Zones",
+  netSearchArea: "Chercher une zone",
 };

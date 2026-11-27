@@ -652,4 +652,5 @@ export const SV = {
   cabNote: "De öppnas på YouTube vid den här stationen. ≈: uppskattad tidpunkt.",
   cabTrain: "Se från förarhytten",
   netAreas: "Områden",
+  netSearchArea: "Sök ett område",
 };

@@ -652,4 +652,5 @@ export const NL = {
   cabNote: "Ze openen op YouTube bij dit station. ≈: geschat moment.",
   cabTrain: "Bekijk vanuit de cabine",
   netAreas: "Gebieden",
+  netSearchArea: "Zoek een gebied",
 };

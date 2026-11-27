@@ -652,4 +652,5 @@ export const IT = {
   cabNote: "Si aprono su YouTube al momento di questa stazione. ≈: momento stimato.",
   cabTrain: "Guarda dalla cabina",
   netAreas: "Zone",
+  netSearchArea: "Cerca una zona",
 };

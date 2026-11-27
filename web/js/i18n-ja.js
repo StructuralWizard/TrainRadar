@@ -675,4 +675,5 @@ export const JA = {
   cabNote: "この駅の場面からYouTubeで開きます。≈：推定の時刻。",
   cabTrain: "運転席から見る",
   netAreas: "エリア",
+  netSearchArea: "エリアを検索",
 };

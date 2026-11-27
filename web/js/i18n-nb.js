@@ -652,4 +652,5 @@ export const NB = {
   cabNote: "De åpnes på YouTube ved denne stasjonen. ≈: anslått tidspunkt.",
   cabTrain: "Se fra førerhuset",
   netAreas: "Områder",
+  netSearchArea: "Søk etter et område",
 };

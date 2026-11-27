@@ -652,4 +652,5 @@ export const DA = {
   cabNote: "De åbner på YouTube ved denne station. ≈: anslået tidspunkt.",
   cabTrain: "Se fra førerrummet",
   netAreas: "Områder",
+  netSearchArea: "Søg efter et område",
 };

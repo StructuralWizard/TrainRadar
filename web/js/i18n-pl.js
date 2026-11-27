@@ -652,4 +652,5 @@ export const PL = {
   cabNote: "Otwierają się w YouTube w momencie tej stacji. ≈: szacowany moment.",
   cabTrain: "Zobacz z kabiny",
   netAreas: "Obszary",
+  netSearchArea: "Szukaj obszaru",
 };
