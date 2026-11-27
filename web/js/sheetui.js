@@ -1,4 +1,4 @@
-// Train and station details for the phone's bottom sheet (≤ 719 px). The
+// Train and station details for the phone's bottom sheet (< 900 px) and the desktop side panel. The
 // desktop keeps the map popups (ui.js trainPopup / stationPopup). Feed text
 // (names, lines, notices) only ever goes into textContent.
 import { t } from "./i18n.js";

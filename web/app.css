@@ -32,7 +32,7 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
-@media (max-width: 719px) and (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
   :root {
     --tr-ink: #f1f5f9; --tr-muted: #94a3b8; --tr-surface: #0f172a;
     --tr-ground: #020617; --tr-line: #1e293b; --tr-brand: #60a5fa;
@@ -108,7 +108,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   padding: 4px 12px calc(12px + var(--safe-bottom));
 }
 .sheet[hidden] { display: none; }
-@media (min-width: 720px) {
+@media (min-width: 900px) {
   .sheet { left: auto; right: 8px; bottom: auto; top: 64px; width: 380px; max-height: calc(100vh - 140px); border-radius: var(--tr-radius); }
 }
 .sheet-head { position: sticky; top: 0; background: var(--tr-surface); display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
@@ -242,7 +242,7 @@ details.small summary { cursor: pointer; }
 /* "Capas" can be long: scroll inside it instead of running under the buttons. */
 #layers[open] { max-height: calc(100vh - 260px - var(--safe-top) - var(--safe-bottom)); overflow: auto; }
 /* Desktop side panels start below the zoom buttons. */
-@media (min-width: 720px) { .sheet { top: 84px; } }
+@media (min-width: 900px) { .sheet { top: 84px; } }
 /* Search results: even rows. */
 .search-results li { padding: 0; }
 .search-results button { display: block; padding: 8px 10px; line-height: 1.3; }
@@ -266,7 +266,7 @@ details.small summary { cursor: pointer; }
 /* One-time "get the Android app" banner (only once a Play listing exists). */
 .app-banner { position: absolute; z-index: 4; left: 8px; right: 8px; bottom: calc(64px + var(--safe-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--tr-surface); border-radius: var(--tr-radius-sm); box-shadow: var(--shadow); padding: 8px 10px; font-size: 14px; }
 .app-banner[hidden] { display: none; }
-@media (min-width: 720px) { .app-banner { left: auto; width: 380px; } }
+@media (min-width: 900px) { .app-banner { left: auto; width: 380px; } }
 .app-link { display: inline-block; margin-top: 4px; }
 .commute-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
 
@@ -282,14 +282,17 @@ details.small summary { cursor: pointer; }
 .replay-bar input[type="range"] { flex: 1; min-width: 120px; }
 .replay-bar .grow { flex: 1; }
 body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note { display: none; }
-@media (min-width: 720px) { .replay-bar { left: auto; width: 420px; } }
+@media (min-width: 900px) { .replay-bar { left: auto; width: 420px; } }
 
 /* ------------------------------------------------------------------ */
-/* Phone layout (≤ 719 px, and the Android app): app tab bar and bottom
- * sheets with snap points (js/sheet.js). The desktop layout above is
- * unchanged; nothing below applies from 720 px. */
-.tabbar, .delayed-summary, .delayed-show, .scrim, .sheet-handle, .search-icon, .net-chip, .chips, .fabs { display: none; }
-@media (max-width: 719px) {
+/* The app's layout, at every width (docs/design/ui-redesign/PLAN.md, step
+ * 3): a search bar with the country button, two status chips, the tab bar
+ * and the sheets. Under 900 px (phones, tablets, the Android app) the tab
+ * bar sits at the bottom and the sheets snap (js/sheet.js); from 900 px the
+ * block at the end of this file turns them into a left side panel. The old
+ * header, legend, "Ir a…" box and Capas box stay in the page, hidden. */
+.panel-bg, .panel-brand { display: none; }
+@media all {
   :root { --tab-h: calc(58px + var(--safe-bottom)); --sheet-h: 0px; }
   .bottom { display: none; }
 
@@ -597,14 +600,14 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .app-banner { bottom: calc(var(--tab-h) + var(--sheet-h) + 8px); }
   body.replaying .tabbar, body.replaying #delayed { display: none; }
 }
-@media (max-width: 719px) and (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
   .sheet, .fabs, .switch, .switch::after { transition: none; }
 }
 /* An SVG close cross sits where the ✕ character was. */
 .sheet-head button[id$="-close"] .icon, #app-banner-close .icon, #country-note-close .icon { display: block; margin: auto; }
 
-/* Phone polish: tap targets of 44 px or more, tabular figures. */
-@media (max-width: 719px) {
+/* Tap targets of 44 px or more, tabular figures. */
+@media all {
   .sheet .pill { min-height: 44px; }
   .sheet .link { min-height: 44px; }
   .sheet .pill.small { min-height: 40px; }
@@ -616,8 +619,8 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   #detail .ts-meta { font-variant-numeric: tabular-nums; }
 }
 
-/* Phone dark mode (the map keeps its light style). */
-@media (max-width: 719px) and (prefers-color-scheme: dark) {
+/* Dark mode (the map keeps its light style). */
+@media (prefers-color-scheme: dark) {
   :root { --fg: #f3f4f6; --muted: #9ca3af; --line: rgba(255, 255, 255, 0.1); --accent: #60a5fa; }
   body { color: var(--fg); }
   .sheet, .sheet-head, .sheet-handle, .tabbar, .search-results { background: #111827; color: #f3f4f6; }
@@ -728,7 +731,7 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
 .journey-change, .journey-walk { display: flex; align-items: center; gap: 6px; padding: 2px 0; color: var(--tr-muted); }
 .journey-change.at-risk { color: #c2410c; font-weight: 600; }
 .journey-save { margin: 0 0 10px 10px; }
-@media (max-width: 719px) and (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
   .route-field, .route-swap { background: #1f2937; color: #f3f4f6; border-color: var(--tr-ink); }
   .route-field input { color: #f3f4f6; }
   .route-k, .route-sugg-row .icon, .search-place .icon, .search-route .icon { color: #9ca3af; }
@@ -769,7 +772,7 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
 .notices-history-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
 .notices-history-bar input[type="date"] { font: inherit; padding: 4px 6px; border: 1px solid var(--line); border-radius: 8px; }
 #notices-history-btn { display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 8px; }
-@media (max-width: 719px) and (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
   .notices-history-bar input[type="date"] { background: #1f2937; color: #f3f4f6; border-color: var(--tr-ink); color-scheme: dark; }
 }
 
@@ -781,7 +784,7 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   min-height: 44px; width: 100%; padding: 0 10px; border: 1px solid var(--tr-line); border-radius: var(--tr-radius-sm);
   background: var(--bg, #fff); color: inherit; font: inherit; font-size: 15px;
 }
-@media (max-width: 719px) and (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
   /* After the rule above, which would otherwise keep them white with light text. */
   .net-pick select { background: #1f2937; color: #f3f4f6; border-color: var(--tr-ink); }
 }
@@ -793,7 +796,7 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
 .uk-text { white-space: pre-line; }
 .upcoming-filter { font: inherit; font-size: 14px; padding: 6px 8px; border-radius: var(--tr-radius-sm); border: 1px solid var(--line); margin: 4px 0 8px; max-width: 100%; }
 #upcoming-all { margin: 4px 0 12px; }
-@media (max-width: 719px) and (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
   .upcoming-filter { background: #1f2937; color: #f3f4f6; border-color: var(--tr-ink); }
 }
 
@@ -834,7 +837,60 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
 .cab-note { margin: 6px 0 0; }
 .popup .cab-row { padding: 6px 0; }
 .popup .cab-title { font-size: 13px; }
-@media (max-width: 719px) and (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
   .cab-time { color: #93c5fd; background: rgba(147, 197, 253, 0.15); }
   .cab-row { border-color: #1f2937; }
+}
+
+/* ------------------------------------------------------------------ */
+/* From 900 px: the same components in a left side panel (logo and
+ * language, search with the country button, the five tabs as a segmented
+ * control, then the open sheet); the map fills the rest. */
+@media (min-width: 900px) {
+  :root { --panel-w: 392px; --panel-top: 196px; --tab-h: 0px; }
+  #map { left: var(--panel-w); }
+  .panel-bg {
+    display: block; position: fixed; z-index: 5; left: 0; top: 0; bottom: 0; width: var(--panel-w);
+    background: var(--tr-surface); border-right: 1px solid var(--tr-line);
+  }
+  .panel-brand {
+    display: flex; align-items: center; gap: 10px; position: fixed; z-index: 7;
+    top: 16px; left: 20px; width: calc(var(--panel-w) - 40px); height: 44px;
+  }
+  .panel-logo { width: 32px; height: 32px; border-radius: 8px; flex: none; }
+  .panel-name { flex: 1; font-size: 18px; font-weight: 800; color: var(--tr-ink); }
+  .panel-brand #lang { min-width: 44px; min-height: 44px; border-radius: var(--tr-radius-sm); box-shadow: none; background: var(--tr-surface); color: var(--tr-ink); border-color: var(--tr-line); font-weight: 600; }
+  .controls { top: 70px; left: 20px; right: auto; width: calc(var(--panel-w) - 40px); z-index: 8; } /* results above the tabs */
+  .controls .search { height: 52px; background: var(--tr-ground); box-shadow: none; border-radius: var(--tr-radius); }
+  .search:has(#search-q:focus) { box-shadow: 0 0 0 3px var(--tr-focus); }
+  .search-results { box-shadow: var(--tr-shadow); }
+  /* The status chips stay on the map, top left. */
+  .chips { position: fixed; z-index: 4; top: 20px; left: calc(var(--panel-w) + 20px); }
+  .map-chip { box-shadow: var(--tr-shadow); }
+  .tabbar {
+    position: fixed; z-index: 7; top: 134px; left: 20px; right: auto; bottom: auto;
+    width: calc(var(--panel-w) - 40px); height: 48px; padding: 4px; gap: 2px;
+    background: var(--tr-ground); border: 0; border-radius: var(--tr-radius-sm);
+  }
+  .tab { min-height: 40px; flex-direction: row; gap: 4px; font-size: 13px; border-radius: 8px; color: var(--tr-muted); }
+  .tab > .icon { display: none; }
+  .tab[aria-current="page"] { background: var(--tr-surface); color: var(--tr-brand); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
+  .tab-badge { position: static; margin: 0; }
+  .sheet {
+    z-index: 6; left: 0; right: auto; top: var(--panel-top); bottom: 0; width: var(--panel-w);
+    height: auto; max-height: none; padding: 0 20px 20px; border-radius: 0; box-shadow: none;
+    border-top: 1px solid var(--tr-line); background: var(--tr-surface); transition: none;
+  }
+  .sheet-handle, .scrim, .delayed-show, .summary-hide { display: none !important; }
+  .sheet-head { top: 0; padding: 14px 0 8px; background: var(--tr-surface); }
+  .delayed-summary { padding-top: 16px; }
+  /* Map buttons and credits on the map's own edge. */
+  .maplibregl-ctrl-top-right { display: block; }
+  .maplibregl-ctrl-bottom-right { left: auto; right: 0; bottom: 0; }
+  .maplibregl-ctrl-attrib.maplibregl-compact-show { max-width: calc(100vw - var(--panel-w) - 24px); }
+  .fabs { right: 20px; bottom: 40px; }
+  body.lefty .fabs { left: calc(var(--panel-w) + 20px); right: auto; }
+  .app-banner { left: calc(var(--panel-w) + 16px); right: auto; bottom: 16px; }
+  .replay-bar { left: calc(var(--panel-w) + 16px); right: auto; }
+  .toast { left: calc(50% + var(--panel-w) / 2); }
 }

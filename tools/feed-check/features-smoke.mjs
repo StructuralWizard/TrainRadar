@@ -267,82 +267,53 @@ await page.click("#more-lefty");
 await page.click("#more-close");
 if ((await page.$eval("#fab-layers", (e) => e.getBoundingClientRect().x)) < 200) await fail("right-handed again: buttons still left");
 
-// Desktop (≥ 720 px): trains and stations keep their map popups, and a
-// popup can be dragged out of the way by its title.
+// Desktop (≥ 900 px): the side panel (docs/design/ui-redesign/PLAN.md,
+// step 3). The tabs are a segmented control at the top of the panel, and a
+// train or station opens in the panel, not in a popup on the map.
 {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(url);
   await page.waitForFunction(() => window.__trainradar?.engine?.positions(Date.now()).length > 0, null, { timeout: 30000 });
-  if (await page.isVisible("#tabbar")) await fail("tab bar shown on the desktop");
+  const tabs = await page.locator("#tabbar").boundingBox();
+  if (!tabs || tabs.y > 200 || tabs.x > 40) await fail(`desktop: the tabs aren't at the top of the side panel: ${JSON.stringify(tabs)}`);
+  const mapBox = await page.locator("#map").boundingBox();
+  if (!mapBox || mapBox.x < 380) await fail(`desktop: the map isn't beside the panel: ${JSON.stringify(mapBox)}`);
   await page.fill("#search-q", number);
   await page.waitForSelector("#search-results li button");
   await page.click(`#search-results li button:has-text("${number}")`);
-  await page.waitForSelector(".maplibregl-popup .popup-title", { timeout: 5000 }).catch(() => fail("desktop: no train popup"));
-  // Drag the popup by its title: it moves and loses its pointer. The popup
-// is redrawn as the train moves, so measure once it's settled and visible.
-const boxOf = async (sel) => {
-  for (let k = 0; k < 20; k++) {
-    const b = await page.locator(sel).first().boundingBox().catch(() => null);
-    if (b && b.width > 0) return b;
-    await page.waitForTimeout(250);
-  }
-  return null;
-};
-// The popup is redrawn as the train moves; a redraw in the middle of the
-// drag can drop it, so try up to three times.
-let dragged = false;
-for (let attempt = 0; attempt < 3 && !dragged; attempt++) {
-  // The card may still be scrolled down to its history link: back to the
-  // title, as a person would before dragging it.
-  await page.evaluate(() => document.querySelector(".maplibregl-popup-content")?.scrollTo(0, 0));
-  // The title inside the map's train popup (another .popup-title can exist
-  // elsewhere on the page, off screen: dragging that moved nothing).
-  const box = await boxOf(".maplibregl-popup:has(.popup-title)");
-  const tb = await boxOf(".maplibregl-popup .popup-title");
-  if (!box || !tb) {
-    const state = await page.evaluate(() => ({ popups: document.querySelectorAll(".maplibregl-popup").length, html: document.querySelector(".maplibregl-popup")?.textContent?.slice(0, 120) }));
-    await fail(`train popup gone before the drag: ${JSON.stringify(state)}`);
-  }
-  const under = await page.evaluate(([x, y]) => {
-    const e = document.elementFromPoint(x, y);
-    return e ? `${e.tagName}#${e.id}.${e.className}` : "nothing";
-  }, [tb.x + 10, tb.y + 5]);
-  console.log("drag at", Math.round(tb.x + 10), Math.round(tb.y + 5), "on", under);
-  await page.mouse.move(tb.x + 10, tb.y + 5);
-  await page.mouse.down();
-  await page.mouse.move(tb.x + 10, tb.y + 205, { steps: 5 });
-  await page.mouse.up();
-  const moved = await page.locator(".maplibregl-popup:has(.popup-title)").first().boundingBox();
-  console.log("popup y:", Math.round(box.y), "→", Math.round(moved.y));
-  dragged = moved.y - box.y >= 150;
-}
-if (!dragged) await fail("popup didn't move when dragged");
-if (!(await page.$(".maplibregl-popup.dragged"))) await fail("dragged popup still has its pointer");
-await page.screenshot({ path: `${out}/dragged.png` });
-await page.click(".maplibregl-popup-close-button");
+  await page.waitForFunction((n) => {
+    const d = document.getElementById("detail");
+    return d && !d.hidden && d.textContent.includes(n);
+  }, number.replace(/^0+/, ""), { timeout: 5000 }).catch(() => fail("desktop: the train didn't open in the side panel"));
+  if (await page.$(".maplibregl-popup .popup-title")) await fail("desktop: a train popup opened on the map too");
+  const panel = await page.locator("#detail").boundingBox();
+  if (!panel || panel.x > 10 || panel.width > 400) await fail(`desktop: the train isn't in the side panel: ${JSON.stringify(panel)}`);
+  await page.screenshot({ path: `${out}/desktop-train.png` });
 
-// Station popup: click a C3 station square that no train or notice marker
-// covers right now (trains and notices take the tap first, by design).
-const pt = await page.evaluate(async () => {
-  const { map } = window.__trainradar;
-  const stops = [[-3.7110, 40.3460], [-3.7186, 40.3115], [-3.6763, 40.1905], [-3.6157, 40.0358]];
-  for (const c of stops) {
-    map.jumpTo({ center: c, zoom: 13 });
-    await new Promise((r) => setTimeout(r, 1200));
-    const p = map.project(c);
-    const box = [[p.x - 16, p.y - 16], [p.x + 16, p.y + 16]];
-    if (!map.queryRenderedFeatures(box, { layers: ["trains", "incidents"] }).length) return p;
-  }
-  return null;
-});
-if (!pt) await fail("every C3 station had a train on it");
-await page.mouse.click(pt.x, pt.y);
-await page.waitForFunction(() => /Próximas salidas/.test(document.querySelector(".maplibregl-popup")?.textContent || ""), null, { timeout: 5000 })
-  .catch(() => fail("station popup didn't open"));
-console.log("station:", (await page.textContent(".maplibregl-popup")).replace(/\s+/g, " ").slice(0, 200));
-await page.screenshot({ path: `${out}/station.png` });
-
+  // Station: click a C3 station square that no train or notice marker
+  // covers right now (trains and notices take the tap first, by design).
+  const pt = await page.evaluate(async () => {
+    const { map } = window.__trainradar;
+    const stops = [[-3.7110, 40.3460], [-3.7186, 40.3115], [-3.6763, 40.1905], [-3.6157, 40.0358]];
+    const r = map.getContainer().getBoundingClientRect();
+    for (const c of stops) {
+      map.jumpTo({ center: c, zoom: 13 });
+      await new Promise((ok) => setTimeout(ok, 1200));
+      const p = map.project(c);
+      const box = [[p.x - 16, p.y - 16], [p.x + 16, p.y + 16]];
+      if (!map.queryRenderedFeatures(box, { layers: ["trains", "incidents"] }).length) return { x: p.x + r.left, y: p.y + r.top };
+    }
+    return null;
+  });
+  if (!pt) await fail("every C3 station had a train on it");
+  await page.mouse.click(pt.x, pt.y);
+  await page.waitForFunction(() => {
+    const d = document.getElementById("detail");
+    return d && !d.hidden && d.querySelector(".sheet-station");
+  }, null, { timeout: 5000 }).catch(() => fail("desktop: the station didn't open in the side panel"));
+  console.log("station:", (await page.textContent("#detail")).replace(/\s+/g, " ").slice(0, 200));
+  await page.screenshot({ path: `${out}/station.png` });
 }
 
 if (errors.length) await fail(`page errors: ${errors.join("; ")}`);

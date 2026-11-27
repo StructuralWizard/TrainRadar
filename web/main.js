@@ -422,7 +422,7 @@ function applyLang() {
   ]) {
     $(id).textContent = t(lang, k);
   }
-  $("search-q").placeholder = t(lang, isPhone() ? "searchPlaceholderPhone" : "searchPlaceholder");
+  $("search-q").placeholder = t(lang, "searchPlaceholderPhone");
   phoneChrome();
   // "Cargando trenes…" from the first frame, until the engine has positions.
   if (!engine) renderLiveChip({ trains: 0, scheduled: 0, median_delay: null }, Date.now());
@@ -1058,7 +1058,8 @@ function showPopup(open = false) {
     return;
   }
   map.getSource("selected")?.setData(pointGeoJson(info.lon, info.lat));
-  if (isPhone()) return showTrainSheet(info, open, now);
+  // Phone sheet or desktop side panel alike (docs/design/ui-redesign/PLAN.md, step 3).
+  return showTrainSheet(info, open, now);
   if (popup) {
     popup.setLngLat([info.lon, info.lat]);
     // Rebuilding the content swaps its buttons out from under a finger, so
@@ -1386,7 +1387,7 @@ function showStation(f, { refresh = false } = {}) {
   for (const r of regions) {
     if (!ref.loaded.has(r.code)) ref.loadRegion(r.code).then(() => (stationPop?.isOpen() || (detailKind === "station" && stationView === f)) && showStation(f, { refresh: true }));
   }
-  if (isPhone() || (stationWhen && stationWhenId === id)) return showStationSheet(f, regions, refresh);
+  return showStationSheet(f, regions, refresh);
   const body = stationPopup(
     lang,
     { id, name },
@@ -2066,9 +2067,9 @@ function liveTrain(number) {
 
 function openStation(st) {
   const f = { properties: { id: st.id, name: st.name }, geometry: { coordinates: [st.lon, st.lat] } };
-  // Phone: the station's sheet at once, the map moving behind it (as for a
-  // train). The desktop popup is anchored on the map: show it on arrival.
-  if (isPhone()) {
+  // The station's sheet (or side panel) at once, the map moving behind it
+  // (as for a train).
+  {
     showStation(f);
     flyToVisible(st.lon, st.lat, 13, { forPopup: true });
     return;
@@ -2206,7 +2207,7 @@ function goBack() {
     else stopReplay();
     return true;
   }
-  if (isPhone() && sheets.back()) return true;
+  if (sheets.back()) return true;
   const sheet = SHEETS.map($).find((x) => !x.hidden);
   if (sheet) return (sheet.hidden = true), true;
   if (popup) return popup.remove(), true;
@@ -2598,7 +2599,6 @@ function renderMore() {
  * tap never lands on a box being replaced. */
 let summaryLang = "";
 function renderHomeSummary(st, pos) {
-  if (!isPhone()) return;
   const c = [0, 0, 0, 0];
   for (let i = 0; i + 5 < pos.length; i += 6) if (!(pos[i + 5] & FLAG.scheduled)) c[pos[i + 2]] += 1;
   if (summaryLang !== lang) {
@@ -2703,7 +2703,6 @@ function updateNetChip() {
 /** Two chips: "498 trenes" with a dot (green live, orange stale, red
  * failing; pulsing while the first trains load) and "Mediana +2 min". */
 function renderLiveChip(st, now) {
-  if (!isPhone()) return;
   const median = $("median-chip");
   const loading = !engine || (st.trains + st.scheduled === 0 && !(feeds?.lastUpdate() || 0) && !TIMETABLE_ONLY);
   if (loading) {
@@ -3652,7 +3651,7 @@ async function main() {
     setInterval(() => map.getZoom() < OVERVIEW_ZOOM && refreshOverview(), 60_000);
     if (map.getZoom() < OVERVIEW_ZOOM) refreshOverview();
   }
-  if (window.innerWidth < 720) map.once("idle", foldCredits);
+  map.once("idle", foldCredits);
   if (store.get("basemap") === "satellite") {
     setBasemap(map, "satellite");
     document.querySelector('input[name="basemap"][value="satellite"]').checked = true;
@@ -3723,7 +3722,7 @@ async function main() {
       const other = map.getLayer("countries-other") && map.queryRenderedFeatures(e.point, { layers: ["countries-other"] })[0];
       if (other && COUNTRY_LIST.includes(other.properties.code)) return offerCountry(other.properties.code, e.lngLat);
       countryPop?.remove();
-      if (isPhone()) $("detail").hidden = true;
+      $("detail").hidden = true;
       return clearSelection();
     }
     const info = JSON.parse(engine.trainJson(hits[0].properties.i, Date.now()));
@@ -3769,7 +3768,7 @@ async function main() {
       // A region of areas.json (the UK's, Sweden's…): once that file is in.
       else if (!lastView && String(savedArea || "").startsWith("adm:")) placesReady.then(() => placeArea(savedArea) && goToNetwork(savedArea));
       if (lastView?.detail && restoreDetail(lastView.detail)) return;
-      const nothingOpen = isPhone() ? !sheets.top() : SHEETS.every((x) => $(x).hidden);
+      const nothingOpen = !sheets.top();
       if (CONFIG.pro && activeCommute(commutes) && nothingOpen) {
         openSheet("commute");
         renderCommute();
@@ -3912,7 +3911,7 @@ $("fab-locate").addEventListener("click", () => {
     renderNear(true);
   }
 });
-matchMedia("(max-width: 719px)").addEventListener?.("change", () => applyLang());
+matchMedia("(max-width: 899px)").addEventListener?.("change", () => applyLang());
 $("jump").addEventListener("change", (e) => {
   const v = e.target.value;
   e.target.value = "";
