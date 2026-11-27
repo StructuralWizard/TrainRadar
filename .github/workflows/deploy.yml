@@ -194,21 +194,32 @@ jobs:
         env:
           NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
           NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
+          UK_TFL_APP_KEY: ${{ secrets.UK_TFL_APP_KEY }}
           OSM_CACHED: ${{ steps.osm_uk.outputs.cache-hit }}
         run: |
           set -o pipefail # a failed download stops here, with its own message
           [ "$OSM_CACHED" = "true" ] || { sudo apt-get update && sudo apt-get install -y osmium-tool; }
           tools/fetch-uk.sh | tee -a "$GITHUB_STEP_SUMMARY"
+          # London Underground, DLR and Trams from TfL's Unified API (~60
+          # calls; the key only in a header). Optional: without it the UK is
+          # National Rail only.
+          # The index is the same timetable for the UK Worker, which matches
+          # TfL's live arrivals to these trips (backend-uk/src/tfl.js).
+          python3 -I tools/uk/tfl-gtfs.py gtfs/uk/tfl.zip --index=gtfs/uk/tfl-index.json | tee -a "$GITHUB_STEP_SUMMARY" ||
+            { echo "::warning::TfL's timetables failed: the UK without the Underground, DLR and Trams."; rm -f gtfs/uk/tfl.zip gtfs/uk/tfl-index.json; }
           if cargo run --release -q -p trainradar-refdata-build -- build --out build/uk-data --gzip \
               --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
               --rail gtfs/uk/rail.geojsonseq --report refdata-uk.md \
               $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) \
+              $( [ -s gtfs/uk/tfl.zip ] && echo --uk-tfl-gtfs gtfs/uk/tfl.zip ) \
             && cargo run --release -q -p trainradar-refdata-build -- verify build/uk-data; then
             mv build/uk-data build/data/uk
+            [ -s gtfs/uk/tfl-index.json ] && cp gtfs/uk/tfl-index.json build/data/uk/
             # Plan ahead: 63 days as far as published, in data/uk/plan/.
             if cargo run --release -q -p trainradar-refdata-build -- build --out build/uk-plan --gzip --days 63 \
                 --uk-schedule gtfs/uk/schedule.json.gz --naptan gtfs/uk/naptan.csv --corpus gtfs/uk/corpus.json.gz \
-                $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) --report uk-plan.md \
+                $( [ -s gtfs/uk/ni-txc.zip ] && echo --ni-txc gtfs/uk/ni-txc.zip ) \
+                $( [ -s gtfs/uk/tfl.zip ] && echo --uk-tfl-gtfs gtfs/uk/tfl.zip ) --report uk-plan.md \
               && cargo run --release -q -p trainradar-refdata-build -- verify build/uk-plan; then
               mv build/uk-plan build/data/uk/plan
               { echo "## UK plan-ahead timetables"; echo; cat uk-plan.md; } >> "$GITHUB_STEP_SUMMARY"
@@ -1233,6 +1244,7 @@ jobs:
           NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
           NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
           NATIONAL_RAIL_KB_KEY: ${{ secrets.NATIONAL_RAIL_KB_KEY }}
+          UK_TFL_APP_KEY: ${{ secrets.UK_TFL_APP_KEY }}
         run: |
           npx --yes "$WRANGLER" deploy --config backend-uk/wrangler.toml --var "UK_ENABLED:true"
           # Secrets on stdin, never on the command line.
@@ -1241,6 +1253,11 @@ jobs:
           # National Rail incidents (Rail Data Marketplace), when the key is set.
           if [ -n "$NATIONAL_RAIL_KB_KEY" ]; then
             printf '%s' "$NATIONAL_RAIL_KB_KEY" | npx --yes "$WRANGLER" secret put NATIONAL_RAIL_KB_KEY --config backend-uk/wrangler.toml
+          fi
+          # London's live arrivals (TfL), when the key is set: sent only in
+          # a request header (backend-uk/src/tfl.js).
+          if [ -n "$UK_TFL_APP_KEY" ]; then
+            printf '%s' "$UK_TFL_APP_KEY" | npx --yes "$WRANGLER" secret put UK_TFL_APP_KEY --config backend-uk/wrangler.toml
           fi
           echo "UK ingest deployed: its status is uk/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 

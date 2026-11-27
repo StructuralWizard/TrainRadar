@@ -500,6 +500,19 @@ jobs:
           unzip -p gtfs/jp-tyo/gtfs.zip trips.txt | python3 -I -c "import csv,sys; [print(r['trip_id']) for r in csv.DictReader(sys.stdin)]" > build/jp-trips.txt
           echo "### jp: Toei's live feeds through the Worker" >> "$GITHUB_STEP_SUMMARY"
           node tools/feed-check/eu-probe.mjs jp build/jp-trips.txt build/probe-jp | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: London (TfL Unified API → Underground, DLR, Trams)
+        continue-on-error: true # outside services: a report, not a gate
+        env:
+          UK_TFL_APP_KEY: ${{ secrets.UK_TFL_APP_KEY }}
+        run: |
+          set -o pipefail
+          mkdir -p gtfs/uk
+          python3 -I tools/uk/tfl-gtfs.py gtfs/uk/tfl.zip --index=gtfs/uk/tfl-index.json | tee -a "$GITHUB_STEP_SUMMARY"
+          target/release/refdata-build build --out build/uk-tfl --uk-tfl-gtfs gtfs/uk/tfl.zip --report refdata-uk-tfl.md
+          target/release/refdata-build verify build/uk-tfl
+          { echo "## London (TfL) reference data"; echo; cat refdata-uk-tfl.md; } >> "$GITHUB_STEP_SUMMARY"
+          # Live: TfL's arrivals now (3 calls) matched to this timetable, as the UK Worker does.
+          node tools/feed-check/tfl-match.mjs gtfs/uk/tfl-index.json | sed 's/$/  /' | tee -a "$GITHUB_STEP_SUMMARY"
       # Taiwan, with TW_ENABLED (after TDX approves the GTFS service): the
       # file cached for the week, so a pull request's runs don't spend the
       # free plan's ~3,000 calls a month.

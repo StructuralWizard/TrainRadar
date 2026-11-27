@@ -143,6 +143,57 @@ export function videoForTrain(idx, stops, next, now) {
   return null;
 }
 
+/** Kilometres between two [lon, lat]. */
+function km(a, b) {
+  const r = Math.PI / 180;
+  const x = (b[0] - a[0]) * r * Math.cos(((a[1] + b[1]) / 2) * r);
+  const y = (b[1] - a[1]) * r;
+  return 6371 * Math.hypot(x, y);
+}
+
+/**
+ * The stretches the videos film, for the map's "Videos from the cab" layer:
+ * one GeoJSON FeatureCollection of lines between consecutive filmed
+ * stations the app has (a station the app lacks is skipped over, but not a
+ * gap longer than `maxKm`: no line across the country) and points at those
+ * stations, each with `n`, how many videos pass. `stations`: [{ name, lon,
+ * lat }], the country's stations.
+ */
+export function ridesGeoJson(idx, stations, maxKm = 40) {
+  const empty = { type: "FeatureCollection", features: [] };
+  if (!idx || !Array.isArray(stations)) return empty;
+  const at = new Map(); // station key → [lon, lat]
+  for (const st of stations) {
+    const k = stationKey(idx, st.name);
+    if (k && !at.has(k) && Number.isFinite(st.lon) && Number.isFinite(st.lat)) at.set(k, [st.lon, st.lat]);
+  }
+  const segs = new Map(); // "a|b" (sorted keys) → { coords, n }
+  const filmed = new Map(); // station key → videos passing
+  idx.videos.forEach((v) => {
+    let prev = null;
+    const seen = new Set();
+    for (const s of v.stops) {
+      const p = at.get(s.key);
+      if (!p) continue;
+      if (!seen.has(s.key)) {
+        seen.add(s.key);
+        filmed.set(s.key, (filmed.get(s.key) || 0) + 1);
+      }
+      if (prev && prev.key !== s.key && km(prev.p, p) <= maxKm) {
+        const id = [prev.key, s.key].sort().join("|");
+        const seg = segs.get(id) || { coords: [prev.p, p], n: 0 };
+        seg.n++;
+        segs.set(id, seg);
+      }
+      prev = { key: s.key, p };
+    }
+  });
+  const features = [];
+  for (const seg of segs.values()) features.push({ type: "Feature", properties: { n: seg.n }, geometry: { type: "LineString", coordinates: seg.coords } });
+  for (const [k, n] of filmed) features.push({ type: "Feature", properties: { n }, geometry: { type: "Point", coordinates: at.get(k) } });
+  return { type: "FeatureCollection", features };
+}
+
 let loading = null;
 let loadedFor = "";
 /** One country's file, fetched once: from the first of `bases` (the

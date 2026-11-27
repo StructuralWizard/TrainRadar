@@ -111,6 +111,9 @@ pub const JP_REGIONS: [(&str, &str, &str); 7] = [
 /// Taiwan: TDX's national GTFS (TRA, THSR, the metros), by timetable.
 pub const TW: &str = "tw";
 
+/// London Underground, DLR and Trams (TfL), part of the UK's data.
+pub const UK_TFL: &str = "uk-tfl";
+
 /// One of JP_REGIONS.
 pub fn is_jp_regional(code: &str) -> bool {
     JP_REGIONS.iter().any(|r| r.0 == code)
@@ -198,6 +201,7 @@ pub fn tz(code: &str) -> Option<&'static str> {
         JP_TYO | JP_KCH => "Asia/Tokyo",
         c if is_jp_regional(c) => "Asia/Tokyo",
         TW => "Asia/Taipei",
+        UK_TFL => "Europe/London",
         _ => return None,
     })
 }
@@ -237,6 +241,7 @@ pub fn region_name(code: &str) -> &'static str {
         JP_KCH => "Kōchi (Tosaden)",
         c if is_jp_regional(c) => JP_REGIONS.iter().find(|r| r.0 == c).map_or("", |r| r.1),
         TW => "Taiwan",
+        UK_TFL => "London Underground, DLR and Trams",
         DE_OTHER => "Germany (regional, cross-border)",
         c if c.starts_with("de-") => GERMAN_LANDS.iter().find(|l| l.1 == c).map_or("", |l| l.2),
         _ => "",

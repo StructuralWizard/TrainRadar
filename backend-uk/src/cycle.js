@@ -6,6 +6,7 @@ import { OLD_SUBSCRIPTIONS, drain, removeSubscription } from "./drain.js";
 import { applyMessage, expire, tripUpdates } from "./trust.js";
 import { encodeTripUpdates } from "./gtfsrt.js";
 import { refreshIncidents } from "./kb.js";
+import { refreshTfl } from "./tfl.js";
 
 export const CYCLE_MS = 60_000;
 export const CACHE = "public, max-age=30";
@@ -81,6 +82,9 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
   }
   // National Rail incidents, every few minutes (never stops the TRUST work).
   await refreshIncidents({ state, env, fetchFn, now }).catch(() => {});
+  // London Underground, DLR and Trams: TfL's arrivals matched to the
+  // timetable (tfl.js), with the key; independent of TRUST.
+  const tfl = env.UK_TFL_APP_KEY ? await refreshTfl({ env, fetchFn, now, encode: encodeTripUpdates }) : null;
   const trains = Object.values(state.trains);
   const status = {
     updatedAt: cycle.at,
@@ -100,10 +104,12 @@ export async function runCycle({ state, env, open, fetchFn = fetch, now = Date.n
     totals: state.counts,
     incidents: state.kb || null,
     oldSubscriptionsRemoved: state.removed,
+    tfl,
     // The same shape as Spain's poller status (backend/src/poller.js), so
     // the app's live mode reads the UK feed with the same code.
     feeds: {
       "trip_updates.pb": { ok: cycle.ok, fetchedAt: cycle.skipped ? state.lastLoginAt || null : cycle.at, renfeLastModified: state.feedLm || null },
+      ...(tfl ? { "tfl_updates.pb": { ok: tfl.ok, fetchedAt: tfl.ok ? tfl.at : null, kept: tfl.trips ?? 0 } } : {}),
     },
   };
   await env.LIVE.put("uk/rt/status.json", JSON.stringify(status), {

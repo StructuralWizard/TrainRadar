@@ -116,6 +116,7 @@ export const JA = {
   stoppedLikely: "⏸ {a}と{b}の間で停車中の可能性（{t}新しいGPSなし）",
   timetableOnly: "時刻表による表示：この国のリアルタイムデータはまだありません",
   timetableOnlyNi: "時刻表による位置：NI Railwaysのリアルタイムデータは現在公開されていません。",
+  timetableOnlyTfl: "時刻表に基づく位置：現在、この列車のTfLのリアルタイム到着情報はありません。",
   timetableSourceNi: "時刻表：Translink（NI Railways）、Open Government Licence v3.0に基づく。",
   timetableSource: "時刻表：ナショナルアクセスポイント、{date}公開。",
   operatorLive: "{op}で運行状況を見る ↗",
@@ -623,7 +624,7 @@ export const JA = {
   ukSource: "お知らせ：{source}。",
   ukPosition: "推定位置：時刻表 + リアルタイム遅延",
   attributionUk:
-    'データ: Network Rail Infrastructure Limitedの情報を含みます（<a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a>に基づく） · 駅: NaPTAN（DfT、OGL v3.0） · 北アイルランド: Translinkの時刻表（OGL v3.0） · お知らせ: National Rail、Rail Data Marketplace経由 · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · Network Rail、National Rail、各事業者とは関係ありません',
+    'データ: Network Rail Infrastructure Limitedの情報を含みます（<a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a>に基づく） · 駅: NaPTAN（DfT、OGL v3.0） · 北アイルランド: Translinkの時刻表（OGL v3.0） · お知らせ: National Rail、Rail Data Marketplace経由 · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · ロンドン地下鉄・DLR・トラム: <a href="https://tfl.gov.uk/info-for/open-data-users/" target="_blank" rel="noopener">Powered by TfL Open Data</a> (contains OS data © Crown copyright and database rights) · Network Rail、National Rail、各事業者とは関係ありません',
   attributionFr:
     'データ: SNCF Voyageursの時刻表とリアルタイムデータ、<a href="https://transport.data.gouv.fr/datasets/horaires-sncf" target="_blank" rel="noopener">transport.data.gouv.fr</a>経由（ODbL） · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL） · SNCFとは関係ありません',
   attributionLu:
@@ -674,6 +675,7 @@ export const JA = {
   attribution:
     'データ: © <a href="https://data.renfe.com" target="_blank" rel="noopener">Renfe</a>（CC BY 4.0） · OUIGO: NAP、<a href="https://www.transportes.gob.es/" target="_blank" rel="noopener">Powered by MITRAMS</a> · 線路: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors（ODbL）、IGN（IGR-RT、CC BY 4.0） · 標高: Copernicus WorldDEM-30 © DLR e.V.、© Airbus DS · Renfe、Adif、OUIGOとは関係ありません',
   cabTitle: "運転席からの動画",
+  cabLayerHint: "運転席から撮影された区間を地図に表示します。駅をタップすると動画が見られます。",
   cabMore: "他{n}件",
   cabNote: "この駅の場面からYouTubeで開きます。≈：推定の時刻。",
   cabTrain: "運転席から見る",

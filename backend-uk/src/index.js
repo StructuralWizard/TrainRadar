@@ -5,6 +5,8 @@
 // subscription (drain.js), update each train's delay (trust.js), and write to
 // the shared live bucket, served from the same live domain as Spain's:
 //   uk/rt/trip_updates.pb   GTFS-Realtime TripUpdates (gtfsrt.js)
+//   uk/rt/tfl_updates.pb    London Underground, DLR and Trams: TfL's arrivals
+//                           matched to the timetable (tfl.js), with UK_TFL_APP_KEY
 //   uk/rt/status.json       health: last drain, counts, errors
 // A cron (every minute) re-arms the alarm if it ever died. UK_ENABLED is
 // the kill switch. The login comes from Worker secrets.
