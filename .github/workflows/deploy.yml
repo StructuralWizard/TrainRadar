@@ -1064,6 +1064,19 @@ jobs:
             | jq -r '.packages[] | select(.name=="wasm-bindgen") | .version')
           cargo install wasm-bindgen-cli --version "$v" --locked
           sudo apt-get install -y binaryen
+      # Cab-ride videos at each station (docs/plan-cab-rides.md): each
+      # country's cabrides.json next to its data, from refdata/cabrides/,
+      # leaving out the videos the weekly check found gone from YouTube.
+      - name: Cab-ride videos gone from YouTube (weekly check)
+        continue-on-error: true
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: cabrides-gone
+          key: cabrides-gone-none
+          restore-keys: cabrides-gone-
+      - name: Cab-ride videos
+        continue-on-error: true
+        run: python3 -I tools/cabrides/build.py refdata/cabrides build/data --gone=cabrides-gone/gone.txt | tee -a "$GITHUB_STEP_SUMMARY"
       # The website's world view: every country's summary (stations, lines,
       # trains by half hour, a coarse network) in one data/world.json.
       - name: World summary

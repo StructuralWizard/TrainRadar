@@ -647,4 +647,10 @@ export const SK = {
   attributionEe: "Údaje: cestovný poriadok Elron z registra verejnej dopravy (estónske Ministerstvo regionálnych záležitostí a poľnohospodárstva) · Trate: © prispievatelia <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL) · Bez prepojenia s Elron",
   attributionIe: "Údaje: cestovný poriadok Iarnród Éireann od <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, poskytované „tak, ako sú“ · Trate: © prispievatelia <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL) · Bez prepojenia s Iarnród Éireann ani NTA",
   attribution: "Údaje: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Trate: © prispievatelia <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL), IGN (IGR-RT, CC BY 4.0) · Výšky: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Bez prepojenia s Renfe, Adif ani OUIGO",
+  cabTitle: "Videá zo stanovišťa rušňovodiča",
+  cabMore: "ďalšie: {n}",
+  cabNote: "Otvoria sa na YouTube v mieste tejto stanice. ≈: odhadovaný čas.",
+  cabTrain: "Pohľad zo stanovišťa",
+  netAreas: "Oblasti",
+  netSearchArea: "Hľadať oblasť",
 };

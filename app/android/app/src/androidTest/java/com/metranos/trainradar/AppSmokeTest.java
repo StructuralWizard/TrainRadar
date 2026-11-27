@@ -146,6 +146,42 @@ public class AppSmokeTest {
     }
 
     /**
+     * Cab-ride videos (docs/plan-cab-rides.md; the test build has the demo's
+     * cabrides.json): a station found through the search lists them, each a
+     * YouTube link at the station's moment, and tapping one leaves the app
+     * for YouTube or the browser.
+     */
+    @Test
+    public void cabRideVideosOpenOutsideTheApp() throws Exception {
+        waitFor("window.__trainradar && window.__trainradar.engine && window.__trainradar.engine.positions(Date.now()).length > 0", 90_000);
+        eval("var q = document.getElementById('search-q'); q.value = 'Barcelona-Sants';"
+                + "q.dispatchEvent(new Event('input', { bubbles: true })); return true;");
+        waitFor("Array.prototype.some.call(document.querySelectorAll('#search-results li button'), function (b) { return /Barcelona-Sants/.test(b.textContent); })", 10_000);
+        eval("var b = Array.prototype.find.call(document.querySelectorAll('#search-results li button'), function (b) { return /Barcelona-Sants/.test(b.textContent); });"
+                + " b.click(); return true;");
+        // The videos' file loads the first time a station opens.
+        waitFor("document.querySelector('#cab-list .cab-row')", 30_000);
+        String links = (String) eval("return Array.prototype.map.call(document.querySelectorAll('#cab-list .cab-row'), function (a) { return a.href; }).join(' ');");
+        assertTrue("YouTube links at a moment: " + links, links.matches("(https://www\\.youtube\\.com/watch\\?v=[\\w-]{11}&t=\\d+s ?)+"));
+
+        // Tap the first: Android hands it to YouTube or the browser.
+        eval("document.querySelector('#cab-list .cab-row').scrollIntoView(); return true;");
+        onWebView().withTimeout(60, TimeUnit.SECONDS)
+                .withElement(findElement(Locator.CSS_SELECTOR, "#cab-list .cab-row")).perform(webClick());
+        long until = System.currentTimeMillis() + 20_000;
+        while (appInFront() && System.currentTimeMillis() < until) Thread.sleep(500);
+        assertFalse("tapping a video left the app for YouTube or the browser", appInFront());
+        // Back to the app (as after the share sheet).
+        long end = System.currentTimeMillis() + 30_000;
+        while (!appInFront() && System.currentTimeMillis() < end) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
+            long settle = System.currentTimeMillis() + 6_000;
+            while (!appInFront() && System.currentTimeMillis() < settle) Thread.sleep(250);
+        }
+    }
+
+    /**
      * My trips' exports go through Filesystem and Share: a CSV and a trip's
      * image card must reach Android's share sheet (the call stays pending
      * while the sheet is open) and not fail.

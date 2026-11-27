@@ -56,6 +56,8 @@ jobs:
           cargo run --release -q -p trainradar-engine --example fixture -- demo/data demo/rt
           # The UK (plan 3): Great Britain and Northern Ireland, demo data and feeds.
           tools/demo-uk.sh
+          # Cab-ride videos next to the demo's data (docs/plan-cab-rides.md).
+          python3 -I tools/cabrides/build.py refdata/cabrides demo/data
       - name: Web bundle for the app (TARGET=android, demo data)
         run: TARGET=android DIST=app/www DATA_DIR=demo/data RT_FIXTURES=demo/rt tools/build-web.sh
       - name: Unit tests (alert rules) and the test APKs
@@ -70,7 +72,7 @@ jobs:
             sleep $(( i * 30 ))
           done
 
-      - name: Emulator smoke test (map renders, a train popup opens)
+      - name: Emulator smoke test (map renders, a train popup opens, cab-ride videos open)
         timeout-minutes: 25
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \

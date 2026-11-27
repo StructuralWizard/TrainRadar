@@ -647,4 +647,10 @@ export const ET = {
   attributionEe: "Andmed: Elroni sõiduplaan ühistranspordiregistrist (Eesti Regionaal- ja Põllumajandusministeerium) · Rööbastee: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> kaastöölised (ODbL) · Pole seotud Elroniga",
   attributionIe: "Andmed: Iarnród Éireanni sõiduplaan, allikas <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, „nagu on“ (\"as is\") · Rööbastee: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> kaastöölised (ODbL) · Pole seotud Iarnród Éireanni ega NTA-ga",
   attribution: "Andmed: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Rööbastee: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> kaastöölised (ODbL), IGN (IGR-RT, CC BY 4.0) · Kõrgused: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Pole seotud Renfe, Adifi ega OUIGO-ga",
+  cabTitle: "Videod juhikabiinist",
+  cabMore: "veel {n}",
+  cabNote: "Need avanevad YouTube'is selle jaama kohalt. ≈: hinnanguline hetk.",
+  cabTrain: "Vaata juhikabiinist",
+  netAreas: "Piirkonnad",
+  netSearchArea: "Otsi piirkonda",
 };

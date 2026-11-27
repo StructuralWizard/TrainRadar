@@ -647,4 +647,10 @@ export const SV = {
   attributionEe: "Data: Elrons tidtabell från kollektivtrafikregistret (Estlands ministerium för regionala frågor och jordbruk) · Spår: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>-bidragsgivare (ODbL) · Ingen koppling till Elron",
   attributionIe: "Data: Iarnród Éireanns tidtabell från <a href=\"https://www.transportforireland.ie/transitData/PT_Data.html\" target=\"_blank\" rel=\"noopener\">National Transport Authority</a> (Transport for Ireland), CC BY 4.0, tillhandahålls i befintligt skick (\"as is\") · Spår: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>-bidragsgivare (ODbL) · Ingen koppling till Iarnród Éireann eller NTA",
   attribution: "Data: © <a href=\"https://data.renfe.com\" target=\"_blank\" rel=\"noopener\">Renfe</a> (CC BY 4.0) · OUIGO: NAP, <a href=\"https://www.transportes.gob.es/\" target=\"_blank\" rel=\"noopener\">Powered by MITRAMS</a> · Spår: © <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>-bidragsgivare (ODbL), IGN (IGR-RT, CC BY 4.0) · Höjder: Copernicus WorldDEM-30 © DLR e.V., © Airbus DS · Ingen koppling till Renfe, Adif eller OUIGO",
+  cabTitle: "Videor från förarhytten",
+  cabMore: "{n} till",
+  cabNote: "De öppnas på YouTube vid den här stationen. ≈: uppskattad tidpunkt.",
+  cabTrain: "Se från förarhytten",
+  netAreas: "Områden",
+  netSearchArea: "Sök ett område",
 };

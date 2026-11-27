@@ -6,6 +6,7 @@ import { formatAgo, formatClock, formatCount, formatDistance, fromZonedInput, zo
 import { icon } from "./icons.js";
 import { fold, matchScore } from "./places.js";
 import { journeyKey } from "./route.js";
+import { clock } from "./cabrides.js";
 import { el, historyBox, minutesUntil, trainAlerts, trainRows, trainTitle } from "./ui.js";
 
 /** "ok" < 5 min, "minor" 5–14, "major" 15+, "none" unknown. */
@@ -456,8 +457,8 @@ export function networksSheet(lang, o) {
     type: "search",
     inputmode: "search",
     autocomplete: "off",
-    placeholder: t(lang, "netSearch"),
-    "aria-label": t(lang, "netSearch"),
+    placeholder: o.searchLabel || t(lang, "netSearch"),
+    "aria-label": o.searchLabel || t(lang, "netSearch"),
     value: q,
     oninput: (e) => o.onQuery?.(e.target.value),
   });
@@ -479,7 +480,7 @@ export function networksSheet(lang, o) {
     // No networks to list at all (the UK, for now): just the cards.
     ...(o.networks?.length || o.communities?.length || o.provinces?.length
       ? [
-          ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, t(lang, "netGroup"))] : []),
+          ...(list.length || !extra.length ? [el("h3", { class: "group-h" }, o.groupLabel || t(lang, "netGroup"))] : []),
           list.length ? el("ul", { class: "net-list" }, list.map((n) => row(n, right(n)))) : extra.length ? null : el("p", { class: "muted small" }, t(lang, "netNone")),
         ]
       : []),
@@ -752,4 +753,43 @@ export function pickField(lang, { id, label, placeholder, search, onPick }) {
     if (e.key === "Enter") ul.querySelector("button")?.click();
   });
   return el("div", { class: "pick-field" }, el("label", { class: "route-field" }, el("span", { class: "route-k" }, label), input), ul);
+}
+
+/** One cab-ride video row: a link that opens YouTube at the moment. */
+function cabRow(v) {
+  return el(
+    "li",
+    {},
+    el(
+      "a",
+      { class: "cab-row", href: v.url, target: "_blank", rel: "noopener" },
+      el("span", { class: "cab-main" }, el("span", { class: "cab-title" }, v.title), el("span", { class: "cab-channel muted small" }, v.channel)),
+      el("span", { class: "cab-time" }, `▶ ${v.real ? "" : "≈"}${clock(v.t)}`),
+    ),
+  );
+}
+
+/**
+ * Cab-ride videos at a station (docs/plan-cab-rides.md): the first three,
+ * then "N more". `items` from cabrides.videosAt; `o`: { showAll, onMore }.
+ * Nothing when there are none.
+ */
+export function cabVideos(lang, items, o = {}) {
+  if (!items?.length) return [];
+  const shown = o.showAll ? items : items.slice(0, 3);
+  return [
+    el("h3", { class: "sheet-h3", id: "cab-title" }, t(lang, "cabTitle")),
+    el("ul", { class: "cab-list", id: "cab-list" }, shown.map(cabRow)),
+    items.length > shown.length
+      ? el("button", { class: "link more-stops", type: "button", id: "cab-more", onclick: o.onMore }, t(lang, "cabMore", { n: items.length - shown.length }))
+      : null,
+    el("p", { class: "muted small cab-note" }, t(lang, "cabNote")),
+  ];
+}
+
+/** "Watch from the cab": a video of the stretch the train is on, opened at
+ * about where it is (cabrides.videoForTrain), or nothing. */
+export function cabTrain(lang, v) {
+  if (!v) return [];
+  return [el("h3", { class: "sheet-h3", id: "cab-train" }, t(lang, "cabTrain")), el("ul", { class: "cab-list" }, [cabRow({ ...v, real: false })])];
 }
