@@ -1,8 +1,10 @@
 # Legal pages: reviews and open points
 
 `web/legal/privacy.html` and `web/legal/terms.html` were rewritten on 2026-11-29 from two
-reviews (not formal legal advice). They keep the "draft" banner until a UK solicitor (technology
-and consumer law) has reviewed them.
+reviews, then checked with Metranos Ltd's legal advisers, who approved them with the Pro
+liability cap at the fees of the last 12 months or £10. The "draft" banner was removed from all
+the legal pages then. The points below stay as a record and as the checklist for any later
+change.
 
 ## Adopted
 
@@ -62,7 +64,7 @@ and consumer law) has reviewed them.
 - A narrow misuse clause. Consumer rights. Changes to the terms.
 - Courts: a consumer can also sue where they live (Scotland, NI, Spain, EU).
 
-## Points for the solicitor
+## Points raised for the solicitor
 
 1. **The liability cap for Pro** (fees in the last 12 months, or £2 if greater): fair under the
    Consumer Rights Act 2015 for digital content?
