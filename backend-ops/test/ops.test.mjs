@@ -165,3 +165,58 @@ test("the check: statuses from the bucket, a confirmed problem mailed once", asy
   assert.equal(sent.length, 1);
   assert.ok(store.get("alerts").open["ie:failing"]);
 });
+
+import { composeDigest, due, localClock, remember } from "../src/digest.js";
+
+test("digest: due once a day from 21:00 UK time, summer time too", () => {
+  const winter = Date.UTC(2026, 10, 28, 21, 2); // 21:02 GMT
+  assert.deepEqual(localClock(winter, "Europe/London"), { date: "2026-11-28", hour: 21 });
+  const st = {};
+  assert.equal(due(st, Date.UTC(2026, 10, 28, 20, 58)), null, "not before 21:00");
+  assert.equal(due(st, winter), "2026-11-28");
+  st.digestDay = "2026-11-28";
+  assert.equal(due(st, Date.UTC(2026, 10, 28, 23, 0)), null, "once a day");
+  assert.equal(due(st, Date.UTC(2026, 10, 29, 21, 0)), "2026-11-29");
+  // July: BST, so 21:00 in London is 20:00 UTC.
+  assert.equal(due({}, Date.UTC(2026, 6, 1, 20, 0)), "2026-07-01");
+  assert.equal(due({}, Date.UTC(2026, 6, 1, 19, 55)), null);
+});
+
+test("digest: everything in one message; quiet days say all fine", () => {
+  const now = Date.UTC(2026, 10, 28, 21, 0);
+  const st = {};
+  remember(st, [], [{ id: "old", country: "de", text: "yesterday's", lasted: 1 }], now - 30 * 3600_000);
+  remember(st, [{ id: "fr:stale", country: "fr", text: "ingest stopped" }], [], now - 5 * 3600_000);
+  remember(st, [], [{ id: "fr:stale", country: "fr", text: "ingest stopped", lasted: 40 * 60_000 }], now - 4 * 3600_000);
+  assert.equal(st.log.length, 2, "only the last day kept");
+  const feeds = [{ country: "es", ok: true }, { country: "ie", ok: false }, { country: "pl", off: true }];
+  const d = composeDigest({ open: { a: { country: "ie", text: "live feed failing", since: now - 90 * 60_000 } }, log: st.log, feeds, now, site: "https://ops.example.test" });
+  assert.equal(d.title, "📋 TrainRadar daily: 1 open, 1 recovered");
+  assert.match(d.text, /Broken now \(1\):\n• IE: live feed failing \(for 1\.5 h\)/);
+  assert.match(d.text, /Broke and recovered today \(1\):\n• FR: ingest stopped \(lasted 40 min\)/);
+  assert.match(d.text, /Live feeds: 1 ok · 1 failing \(IE\) · 1 off \(PL\)/);
+  assert.equal(d.silent, true);
+  const quiet = composeDigest({ open: {}, log: [], feeds: [{ country: "es", ok: true }], now, site: "x" });
+  assert.equal(quiet.title, "✅ TrainRadar daily: all fine");
+  assert.match(quiet.text, /Nothing broken now\.\n\nLive feeds: 1 ok$/);
+});
+
+test("the check sends the digest once at 21:00, beside the immediate alerts", async () => {
+  const sent = [];
+  const env = {
+    LIVE: { get: async (k) => (k === "rt/status.json" ? { text: async () => JSON.stringify({ generatedAt: new Date(Date.UTC(2026, 10, 28, 21, 0)).toISOString(), feeds: {} }) } : null) },
+    ALERTS_TELEGRAM_BOT_TOKEN: "1:t",
+    ALERTS_TELEGRAM_CHAT_ID: "42",
+  };
+  const store = new Map();
+  const ctx = { storage: { get: async (k) => store.get(k), put: async (k, v) => store.set(k, v) } };
+  const ops = new OpsState(ctx, env);
+  const fetchFn = async (url, init) => (url.startsWith("https://api.telegram.org/") ? (sent.push(JSON.parse(init.body)), new Response("{}")) : new Response("", { status: 404 }));
+  await ops.check(Date.UTC(2026, 10, 28, 20, 55), fetchFn);
+  assert.equal(sent.length, 0);
+  await ops.check(Date.UTC(2026, 10, 28, 21, 0), fetchFn);
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].text, /^✅ TrainRadar daily: all fine/);
+  await ops.check(Date.UTC(2026, 10, 28, 21, 5), fetchFn);
+  assert.equal(sent.length, 1, "once a day");
+});

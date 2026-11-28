@@ -39,6 +39,9 @@ bucket_name = "trainradar-live"
 OPS_ENABLED = "false"
 SITE_URL = "https://mytrainradar.com/"
 DASHBOARD_URL = "https://ops.mytrainradar.com/"
+# The daily digest: one message with everything, at this hour in this zone.
+DIGEST_TZ = "Europe/London"
+DIGEST_HOUR = "21"
 # Cloudflare Access (Zero Trust → Access → Applications → the app for
 # ops.mytrainradar.com): the team domain and the application's audience tag.
 # The deploy sets them from the repository variables of the same names.

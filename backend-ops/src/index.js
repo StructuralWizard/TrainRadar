@@ -15,6 +15,7 @@
 import { accessUser } from "./access.js";
 import { cloudflare } from "./cf.js";
 import { PAGE } from "./dashboard.js";
+import { composeDigest, due, remember } from "./digest.js";
 import { compose, send } from "./notify.js";
 import { play } from "./play.js";
 import { DATA_COUNTRIES, STATUS_KEYS, problems, step } from "./rules.js";
@@ -91,14 +92,26 @@ export class OpsState {
     }
     const found = problems({ statuses, manifests: manifests.data, now });
     const { raised, cleared } = step(state, found, now);
-    const mail = compose({ raised, cleared, open: state.open, site: this.env.DASHBOARD_URL || "https://ops.mytrainradar.com/" });
-    if (mail && this.env.ALERTS_TELEGRAM_BOT_TOKEN && this.env.ALERTS_TELEGRAM_CHAT_ID) {
+    remember(state, raised, cleared, now);
+    const site = this.env.DASHBOARD_URL || "https://ops.mytrainradar.com/";
+    const telegram = this.env.ALERTS_TELEGRAM_BOT_TOKEN && this.env.ALERTS_TELEGRAM_CHAT_ID;
+    const deliver = async (n) => {
       try {
-        await send(this.env, mail, fetchFn);
-        state.lastMail = { at: now, title: mail.title };
+        await send(this.env, n, fetchFn);
+        state.lastMail = { at: now, title: n.title };
+        return true;
       } catch (e) {
         state.lastMailError = { at: now, error: String(e?.message || e).slice(0, 200) };
+        return false;
       }
+    };
+    // Immediate: a problem confirmed, or cleared.
+    const mail = compose({ raised, cleared, open: state.open, site });
+    if (mail && telegram) await deliver(mail);
+    // Daily digest at DIGEST_HOUR (DIGEST_TZ), everything in one message.
+    const day = due(state, now, this.env.DIGEST_TZ || "Europe/London", Number(this.env.DIGEST_HOUR ?? 21));
+    if (day && telegram && (await deliver(composeDigest({ open: state.open, log: state.log, feeds: feedRows(statuses, now), now, site })))) {
+      state.digestDay = day;
     }
     state.checkedAt = now;
     await this.ctx.storage.put("alerts", state);
