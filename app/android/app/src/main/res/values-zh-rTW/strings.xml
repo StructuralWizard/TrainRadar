@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainRadar</string>
+    <string name="title_activity_main">TrainRadar</string>
+    <string name="package_name">com.metranos.trainradar</string>
+    <string name="custom_url_scheme">com.metranos.trainradar</string>
+    <string name="widget_description">您收藏的列車及其誤點（TrainRadar Pro）</string>
+    <string name="widget_departures_description">車站的下幾班出發列車（TrainRadar Pro）</string>
+    <string name="widget_arrivals_description">車站的下幾班到站列車（TrainRadar Pro）</string>
+    <string name="widget_train_description">單趟列車：誤點、下一站和終點站（TrainRadar Pro）</string>
+    <string name="widget_notices_description">生效中的 Renfe 通告（TrainRadar Pro）</string>
+    <string name="widget_departures_label">出發</string>
+    <string name="widget_arrivals_label">到站</string>
+    <string name="widget_train_label">列車</string>
+    <string name="widget_notices_label">Renfe 通告</string>
+    <string name="widget_refresh">重新整理</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">更新已就緒</string>
+    <string name="update_ready_message">TrainRadar 新版本已下載。重新啟動即可使用。</string>
+    <string name="update_restart">重新啟動</string>
+    <string name="update_later">稍後</string>
+</resources>

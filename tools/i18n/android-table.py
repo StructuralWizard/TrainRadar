@@ -38,6 +38,11 @@ def fmt(s):
     return sorted(pos)
 
 
+def method(lang):
+    """A Java method name for a language: zh-Hant → zh_Hant."""
+    return re.sub(r"\W", "_", lang)
+
+
 def java(s):
     return json.dumps(s, ensure_ascii=False)
 
@@ -92,7 +97,7 @@ def main():
         "",
     ]
     for lang, table in langs.items():
-        lines.append(f"    private static void {lang}() {{")
+        lines.append(f"    private static void {method(lang)}() {{")
         lines.append(f"        put({java(lang)},")
         pairs = [f"                {java(en)}, {java(tr)}" for en, tr in table.items()]
         lines.append(",\n".join(pairs) + ");")
@@ -100,7 +105,7 @@ def main():
         lines.append("")
     lines.append("    static {")
     for lang in langs:
-        lines.append(f"        {lang}();")
+        lines.append(f"        {method(lang)}();")
     lines.append("    }")
     lines.append("}")
     OUT.write_text("\n".join(lines) + "\n", "utf-8")

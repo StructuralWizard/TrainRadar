@@ -1261,6 +1261,67 @@ jobs:
           fi
           echo "UK ingest deployed: its status is uk/rt/status.json on the live domain." >> "$GITHUB_STEP_SUMMARY"
 
+  ops:
+    # Ops (backend-ops/): alerts to a Telegram chat every 5 minutes and the
+    # administrator dashboard at ops.mytrainradar.com, behind Cloudflare
+    # Access. Deployed with OPS_ENABLED=true; read-only: the live bucket, the
+    # site's manifests, Cloudflare's analytics and Google Play's numbers.
+    name: deploy the ops Worker
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Is ops enabled?
+        id: gate
+        env:
+          OPS_ENABLED: ${{ vars.OPS_ENABLED }}
+        run: |
+          norm() { printf %s "$1" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]'; }
+          if [ "$(norm "$OPS_ENABLED")" != "true" ]; then
+            echo "OPS_ENABLED is not true: skipping the ops Worker." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "on=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.gate.outputs.on == 'true'
+        with:
+          node-version: 22
+      - run: node --test backend-ops/test/*.test.mjs
+        if: steps.gate.outputs.on == 'true'
+      - name: Deploy the ops Worker
+        if: steps.gate.outputs.on == 'true'
+        env:
+          ALERTS_TELEGRAM_BOT_TOKEN: ${{ secrets.ALERTS_TELEGRAM_BOT_TOKEN }}
+          ALERTS_TELEGRAM_CHAT_ID: ${{ secrets.ALERTS_TELEGRAM_CHAT_ID }}
+          CLOUDFLARE_ANALYTICS_TOKEN: ${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+          PLAY_REPORTS_BUCKET: ${{ vars.PLAY_REPORTS_BUCKET }}
+        run: |
+          # Repository variables (not secret) on the command line; secrets on stdin.
+          npx --yes "$WRANGLER" deploy --config backend-ops/wrangler.toml --var "OPS_ENABLED:true" \
+            --var "ACCESS_TEAM_DOMAIN:$ACCESS_TEAM_DOMAIN" --var "ACCESS_AUD:$ACCESS_AUD" --var "PLAY_REPORTS_BUCKET:$PLAY_REPORTS_BUCKET"
+          # (A secret left empty in GitHub is skipped, not an error.)
+          put() { if [ -n "$2" ]; then printf '%s' "$2" | npx --yes "$WRANGLER" secret put "$1" --config backend-ops/wrangler.toml >/dev/null; fi; }
+          put ALERTS_TELEGRAM_BOT_TOKEN "$ALERTS_TELEGRAM_BOT_TOKEN"
+          put ALERTS_TELEGRAM_CHAT_ID "$ALERTS_TELEGRAM_CHAT_ID"
+          put CLOUDFLARE_ANALYTICS_TOKEN "$CLOUDFLARE_ANALYTICS_TOKEN"
+          put CLOUDFLARE_ACCOUNT_ID "$CLOUDFLARE_ACCOUNT_ID"
+          put GOOGLE_PLAY_SERVICE_ACCOUNT_JSON "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+          {
+            echo "Ops deployed: dashboard https://ops.mytrainradar.com/ (behind Cloudflare Access)."
+            if [ -z "$ACCESS_TEAM_DOMAIN" ] || [ -z "$ACCESS_AUD" ]; then echo "ACCESS_TEAM_DOMAIN / ACCESS_AUD not set: the dashboard refuses every request until they are (backend-ops/wrangler.toml)."; fi
+            if [ -z "$ALERTS_TELEGRAM_BOT_TOKEN" ] || [ -z "$ALERTS_TELEGRAM_CHAT_ID" ]; then echo "ALERTS_TELEGRAM_BOT_TOKEN / ALERTS_TELEGRAM_CHAT_ID not set: no alerts."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   eu:
     # Europe ingest (backend-eu/, docs/plan-europe.md A5): Ireland's live
     # feed from the NTA, with IE_ENABLED=true and the IE_NTA_API_KEY secret;
