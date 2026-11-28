@@ -435,7 +435,11 @@ export function stationSheet(lang, station, o = {}) {
           el("span", { class: "dep-sub" }, small.join(" · ")),
           // Travellers' reports on this train (reports.js), the biggest worry.
           o.reported?.(r)
-            ? el("span", { class: "dep-crowd" }, `⚠ ${t(lang, `reportCount_${o.reported(r).kind}`, { n: formatCount(lang, o.reported(r).n) })}`)
+            ? el(
+                "span",
+                { class: "dep-crowd" },
+                `⚠ ${t(lang, `reportCount_${o.reported(r).kind}`, { n: formatCount(lang, o.reported(r).n) })} · ${formatAgo(lang, Math.max(0, (Date.now() - o.reported(r).last) / 1000))}`,
+              )
             : null,
         ),
         delayPill(lang, r.delay, r.canceled),
