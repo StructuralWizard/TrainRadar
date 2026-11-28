@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_description">Ang iyong mga paboritong tren at ang pagkaantala nila (TrainRadar Pro)</string>
+    <string name="widget_departures_description">Mga susunod na aalis mula sa isang istasyon (TrainRadar Pro)</string>
+    <string name="widget_arrivals_description">Mga susunod na darating sa isang istasyon (TrainRadar Pro)</string>
+    <string name="widget_train_description">Isang tren: pagkaantala, susunod na hintuan at destinasyon (TrainRadar Pro)</string>
+    <string name="widget_notices_description">Mga umiiral na abiso ng Renfe (TrainRadar Pro)</string>
+    <string name="widget_departures_label">Mga aalis</string>
+    <string name="widget_arrivals_label">Mga darating</string>
+    <string name="widget_train_label">Tren</string>
+    <string name="widget_notices_label">Mga abiso ng Renfe</string>
+    <string name="widget_refresh">I-refresh</string>
+    <!-- In-app updates (InAppUpdates.java) -->
+    <string name="update_ready_title">Handa na ang update</string>
+    <string name="update_ready_message">Na-download na ang bagong bersyon ng TrainRadar. I-restart para magamit ito.</string>
+    <string name="update_restart">I-restart</string>
+    <string name="update_later">Mamaya</string>
+</resources>
