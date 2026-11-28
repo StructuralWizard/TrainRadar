@@ -12,7 +12,7 @@ import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchP
 import { icon } from "./js/icons.js";
 import { keepLongDistance } from "./js/board.js";
 import { NOTICE_KINDS, noticeLabel, noticeText } from "./js/notice.js";
-import { REPORT_COUNTRIES, REPORT_KINDS, monthlyToken, nonceText, placeCheck, sha256b64, trainReports } from "./js/reports.js";
+import { REPORT_COUNTRIES, REPORT_KINDS, UNDO_MS, monthlyToken, nonceText, placeCheck, reportResolved, sha256b64, trainReports } from "./js/reports.js";
 import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, lineBadge, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
 import { loadRides, ridesGeoJson, videoForTrain, videosAt } from "./js/cabrides.js";
 import { endStations } from "./js/route.js";
@@ -1188,6 +1188,7 @@ let reportsDoc = null;
 let reportFor = ""; // the train whose report choices are open
 let reportBusy = false;
 let reportMsg = { key: "", text: "" };
+let lastSent = null; // { key, trip, kind, at }: the report "Undo" can take back
 const reportsConsent = () => store.get("reports-consent") === "yes";
 
 async function loadReports() {
@@ -1266,7 +1267,7 @@ function askReportsConsent() {
 function reportAction(info, trip, now) {
   if (!REPORTS) return null;
   const key = `${info.trip_id}|${info.number}`;
-  const list = trainReports(reportsDoc, info.trip_id);
+  const list = trainReports(reportsDoc, info.trip_id).map((r) => ({ ...r, resolved: reportResolved(r, info) }));
   const canSend = REPORTS_SEND && reportsDoc?.on === true && !info.canceled;
   const redraw = () => {
     detailKey = "";
@@ -1284,6 +1285,19 @@ function reportAction(info, trip, now) {
     kinds: Object.keys(REPORT_KINDS),
     busy: reportBusy,
     msg: reportMsg.key === key ? reportMsg.text : "",
+    onUndo:
+      lastSent?.key === key && Date.now() - lastSent.at < UNDO_MS && reportMsg.key === key
+        ? async () => {
+            const sent = lastSent;
+            lastSent = null;
+            try {
+              await postReport("/undo", { country, trip: sent.trip, kind: sent.kind, token: token() });
+              say(t(lang, "reportUndone"));
+            } catch (e) {
+              say(t(lang, "reportErrSend", { why: e.message }));
+            }
+          }
+        : null,
     onToggle: async () => {
       if (reportFor !== key && !reportsConsent() && !(await askReportsConsent())) return;
       reportFor = reportFor === key ? "" : key;
@@ -1320,6 +1334,9 @@ function reportAction(info, trip, now) {
         if (!integrity) return say(t(lang, "reportErrSend", { why: "Google Play" }));
         await postReport("", { ...b, integrity });
         reportFor = "";
+        lastSent = { key, trip: b.trip, kind, at: Date.now() };
+        // The Undo button goes after a minute.
+        setTimeout(() => lastSent?.key === key && (detailKey = "", showPopup(true)), UNDO_MS + 500);
         say(t(lang, "reportSent"));
       } catch (e) {
         say(e.message === "repeat" ? t(lang, "reportErrRepeat") : t(lang, "reportErrSend", { why: e.message }));
@@ -1738,7 +1755,13 @@ function showStationSheet(f, regions, refresh) {
   const region = nucleo?.code || "";
   const body = stationSheet(lang, { id, name }, {
     sub: sub.join(" · "),
-    reported: (tripId) => trainReports(reportsDoc, tripId)[0] || null,
+    reported: (row) => {
+      const list = trainReports(reportsDoc, row.trip_id);
+      if (!list.length) return null;
+      const i = engine.findTrain(row.trip_id, row.number);
+      const info = i < 0 ? null : JSON.parse(engine.trainJson(i, now));
+      return list.find((r) => !reportResolved(r, info)) || null;
+    },
     routes,
     board,
     approaching,

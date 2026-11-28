@@ -11,6 +11,18 @@ no notifications from reports yet. Built:
   per country, `uk/rt/reports.json`;
 - the privacy policy and terms sections (drafts).
 
+How long reports last (as built):
+- **Shown:** once 3 phones agree within 20 minutes (5 for accidents); until 60 minutes after the
+  last report; each "Not right?" from a non-reporter lowers the count.
+- **Resolved by official data:** when the operator's data for the train (in the UK, TRUST's
+  latest movement) is newer than the last report and says otherwise (a reported delay but now
+  2 min late or less; "hasn't come" but now running), the app shows a muted "since then the
+  official data says…" line instead of the warning, and leaves it off station boards. Accidents
+  and incidents only expire.
+- **Undo:** for a minute after sending (`POST /v1/reports/undo`, the phone's own code only).
+- **Kept:** single reports and "Not right?" 48 hours; daily totals 60 days, without codes or
+  trains. "Delete my reports" removes everything sent with this month's code at once.
+
 Still to do before users see it: the short DPIA, a lawyer's look at the policy and terms, the Play
 data safety form, `PLAY_INTEGRITY_CREDENTIALS`, then `REPORTS_ENABLED=true`. Not built: the map
 badge, the trust statistics, notifications. Not checked server-side: that the train exists and

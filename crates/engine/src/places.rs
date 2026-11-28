@@ -388,6 +388,7 @@ mod tests {
             &net,
             "tu_cer",
             FeedData::TripUpdates(vec![RtTripUpdate {
+                updated: None,
                 trip_id: "1004D102C3".into(),
                 accessible: None,
                 delay: Some(240),

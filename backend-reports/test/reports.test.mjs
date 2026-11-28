@@ -1,7 +1,7 @@
 // Run with: node --test backend-reports/test/*.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DAILY, KINDS, count, nonceText, prune, publish, refused, sha256b64, validate, validateDispute } from "../src/rules.js";
+import { DAILY, KINDS, count, nonceText, prune, publish, refused, sha256b64, undo, validate, validateDispute } from "../src/rules.js";
 import { verdictProblem } from "../src/integrity.js";
 import { handle } from "../src/index.js";
 
@@ -115,4 +115,16 @@ test("a bad integrity token is refused before anything is stored", async () => {
   assert.equal(r.status, 403);
   assert.equal(stored, false);
   assert.equal((await sha256b64("x")).length, 43);
+});
+
+test("undo: only this phone's own report of that train and kind, within the minute (and slack)", () => {
+  const e = (h, trip, kind, secsAgo) => ({ h, trip, kind, at: NOW - secsAgo * 1000 });
+  const log = [e("a", "T1", "delay", 30), e("b", "T1", "delay", 30), e("a", "T2", "delay", 30), e("a", "T1", "incident", 30)];
+  const u = undo(log, "a", "T1", "delay", NOW);
+  assert.equal(u.removed.length, 1);
+  assert.equal(u.log.length, 3);
+  assert.equal(undo([e("a", "T1", "delay", 120)], "a", "T1", "delay", NOW).removed.length, 0);
+  // The daily totals go back down, never below zero.
+  const d = count({}, { kind: "delay" }, NOW);
+  assert.deepEqual(count(count(d, { kind: "delay" }, NOW, -1), { kind: "delay" }, NOW, -1), { "2026-11-28": { delay: 0 } });
 });

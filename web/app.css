@@ -451,6 +451,8 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .crowd-count { display: flex; gap: 6px; align-items: center; font-weight: 600; }
   .crowd-report .link { min-height: 44px; }
   .report-msg { margin: 8px 0 0; }
+  .crowd-resolved { margin: 10px 0 0; }
+  #report-undo { min-height: 44px; font-weight: 600; }
   .dep-crowd { display: block; font-size: 12px; color: #b45309; }
   .notice-pick .chip-row { margin-top: 8px; }
   .chip-btn {

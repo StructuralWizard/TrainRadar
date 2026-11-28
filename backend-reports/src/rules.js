@@ -124,11 +124,22 @@ export function publish(log, disputes, now, on = true) {
   return { on, at: now, trips };
 }
 
+/** "Undo" only works for this long after a report (a minute, and some slack
+ * for a slow network). */
+export const UNDO_MS = 90_000;
+
+/** Remove this phone's report of `trip` and `kind` if it's recent enough to
+ * undo: { log, removed } (removed: the entries taken out). */
+export function undo(log, h, trip, kind, now) {
+  const removed = log.filter((e) => e.h === h && e.trip === trip && e.kind === kind && now - e.at <= UNDO_MS);
+  return { log: log.filter((e) => !removed.includes(e)), removed };
+}
+
 /** Today's totals per kind, without tokens or trains (the statistics). */
-export function count(daily, r, now) {
+export function count(daily, r, now, by = 1) {
   const day = new Date(now).toISOString().slice(0, 10);
   const d = (daily[day] ||= {});
-  d[r.kind] = (d[r.kind] || 0) + 1;
+  d[r.kind] = Math.max(0, (d[r.kind] || 0) + by);
   for (const k of Object.keys(daily).sort().slice(0, -60)) delete daily[k];
   return daily;
 }

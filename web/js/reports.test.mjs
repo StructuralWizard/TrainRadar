@@ -1,7 +1,7 @@
 // Run with: node --test web/js/reports.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { distM, lineDistM, monthlyToken, nonceText, placeCheck, trainReports } from "./reports.js";
+import { distM, lineDistM, monthlyToken, nonceText, placeCheck, reportResolved, trainReports } from "./reports.js";
 
 // A straight track north from London Euston, roughly.
 const line = [[-0.1337, 51.5282], [-0.1337, 51.6282]];
@@ -55,4 +55,20 @@ test("counts from reports.json, the worst first, only above the threshold", () =
   assert.deepEqual(trainReports(doc, "T").map((r) => r.kind), ["incident", "delay"]);
   assert.deepEqual(trainReports(doc, "U"), []);
   assert.deepEqual(trainReports(null, "T"), []);
+});
+
+test("official data newer than the reports can resolve them; accidents never", () => {
+  const last = 1_000_000_000_000; // ms
+  const after = last / 1000 + 120;
+  const delay = { kind: "delay", n: 3, last };
+  assert.equal(reportResolved(delay, { delay: 60, official_at: after }), true);
+  assert.equal(reportResolved(delay, { delay: 600, official_at: after }), false);
+  // Official data from before the reports says nothing about them.
+  assert.equal(reportResolved(delay, { delay: 0, official_at: last / 1000 - 60 }), false);
+  assert.equal(reportResolved(delay, { delay: 0 }), false);
+  assert.equal(reportResolved(delay, { delay: 0, official_at: after, timetable_only: true }), false);
+  const cancel = { kind: "cancel", n: 3, last };
+  assert.equal(reportResolved(cancel, { delay: 900, official_at: after }), true);
+  assert.equal(reportResolved(cancel, { canceled: true, official_at: after }), false);
+  assert.equal(reportResolved({ kind: "incident", n: 5, last }, { delay: 0, official_at: after }), false);
 });

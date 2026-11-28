@@ -107,8 +107,8 @@ function withIcons(rows) {
  * The train sheet. `o`: { regionName, lineColor, stops (tripJson), now (ms),
  * onClose, fav {on, onToggle}, notify {on, onToggle} | {href}, onShare,
  * notice {open, kinds, label(kind), onToggle, onPick(kind)} ("Compartir aviso"),
- * report {list [{kind, n, last ms}], onDispute(kind)?, canReport, open, kinds,
- * busy, msg, onToggle, onPick(kind)} (travellers' reports),
+ * report {list [{kind, n, last ms, resolved}], onDispute(kind)?, canReport,
+ * open, kinds, busy, msg, onUndo?, onToggle, onPick(kind)} (travellers' reports),
  * onHistory, trip {on, pro, onToggle}, onIncidents, history, rows (trainRows
  * options), redraw }.
  */
@@ -157,7 +157,13 @@ export function trainSheet(lang, info, o = {}) {
   // Travellers' reports (reports.js): the counts, always with who says so
   // and that the operator hasn't confirmed them; the report choices.
   const crowd = (o.report?.list || []).map((r) =>
-    el(
+    r.resolved
+      ? el(
+          "p",
+          { class: "small muted crowd-resolved", "data-kind": r.kind },
+          t(lang, `reportResolved_${r.kind}`, { n: formatCount(lang, r.n) }),
+        )
+      : el(
       "div",
       { class: "crowd-report", "data-kind": r.kind },
       el("p", { class: "crowd-count" }, icon("warning", 16), el("span", {}, `${t(lang, `reportCount_${r.kind}`, { n: formatCount(lang, r.n) })} · ${t(lang, "reportLast", { age: formatAgo(lang, Math.max(0, now - r.last / 1000)) })}`)),
@@ -173,7 +179,14 @@ export function trainSheet(lang, info, o = {}) {
         el("div", { class: "chip-row" }, o.report.kinds.map((k) => el("button", { class: "chip-btn", type: "button", "data-kind": k, disabled: o.report.busy || null, onclick: () => o.report.onPick(k) }, t(lang, `reportKind_${k}`)))),
       )
     : null;
-  const reportMsg = o.report?.msg ? el("p", { class: "small report-msg", role: "status" }, o.report.msg) : null;
+  const reportMsg = o.report?.msg
+    ? el(
+        "p",
+        { class: "small report-msg", role: "status" },
+        o.report.msg,
+        o.report.onUndo ? el("button", { class: "link small", type: "button", id: "report-undo", onclick: o.report.onUndo }, ` ${t(lang, "reportUndo")}`) : null,
+      )
+    : null;
   // "Compartir aviso": what's happening, as a fixed choice (notice.js).
   const noticePick = o.notice?.open
     ? el(
@@ -413,8 +426,8 @@ export function stationSheet(lang, station, o = {}) {
           ),
           el("span", { class: "dep-sub" }, small.join(" · ")),
           // Travellers' reports on this train (reports.js), the biggest worry.
-          o.reported?.(r.trip_id)
-            ? el("span", { class: "dep-crowd" }, `⚠ ${t(lang, `reportCount_${o.reported(r.trip_id).kind}`, { n: formatCount(lang, o.reported(r.trip_id).n) })}`)
+          o.reported?.(r)
+            ? el("span", { class: "dep-crowd" }, `⚠ ${t(lang, `reportCount_${o.reported(r).kind}`, { n: formatCount(lang, o.reported(r).n) })}`)
             : null,
         ),
         delayPill(lang, r.delay, r.canceled),

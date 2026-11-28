@@ -1592,6 +1592,12 @@ impl Engine {
                 },
             )
             .b("canceled", t.canceled)
+            // When the operator last updated this trip (travellers' reports
+            // older than that, contradicted by it, are shown as resolved).
+            .on(
+                "official_at",
+                self.live.trip_update(&t.rt.trip_id).and_then(|u| u.updated),
+            )
             .on("speed_kmh", v.speed.map(|s| s.0.round()))
             .b("speed_measured", v.speed.is_some_and(|s| s.1))
             .os(
@@ -1979,6 +1985,7 @@ mod tests {
         assert_ne!(flag(&live) & FLAG_SCHEDULED_ONLY, 0);
         // A live delay: drawn in its delay colour like any live train.
         let tu = RtTripUpdate {
+            updated: None,
             trip_id: "C15016:2026-05-17:P".into(),
             delay: Some(300),
             canceled: false,
@@ -2016,6 +2023,7 @@ mod tests {
         assert_ne!(flag(&live) & FLAG_SCHEDULED_ONLY, 0);
         // Network Rail's feed doesn't clear TfL's, nor TfL's Network Rail's.
         let tu = |id: &str| RtTripUpdate {
+            updated: None,
             trip_id: id.into(),
             delay: Some(120),
             canceled: false,

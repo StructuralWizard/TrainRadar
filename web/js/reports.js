@@ -108,6 +108,24 @@ export function monthlyToken(saved, now = Date.now(), random = (n) => crypto.get
   return { month, token };
 }
 
+/** "Undo" is offered this long after sending a report. */
+export const UNDO_MS = 60_000;
+
+/**
+ * Whether the operator's own data, updated after the last traveller report,
+ * now says otherwise: a reported delay but the train is on time (2 min or
+ * less), or "hasn't come" but the train has since been reported running.
+ * Accidents and incidents never resolve this way. `info`: the train as the
+ * engine shows it (delay, canceled, official_at in Unix seconds).
+ */
+export function reportResolved(r, info) {
+  if (!info || info.timetable_only || !Number.isFinite(info.official_at)) return false;
+  if (info.official_at * 1000 <= r.last) return false;
+  if (r.kind === "delay") return Number.isFinite(info.delay) && Math.round(info.delay / 60) <= 2;
+  if (r.kind === "cancel") return !info.canceled;
+  return false;
+}
+
 /** A train's shown counts from reports.json: [{ kind, n, last }], biggest worry first. */
 export function trainReports(doc, tripId) {
   const t = doc?.trips?.[tripId];
