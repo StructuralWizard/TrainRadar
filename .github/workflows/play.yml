@@ -36,6 +36,11 @@ on:
 permissions:
   contents: read
 
+# Fail a step when any command in a pipe fails (node … | tee would hide it).
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: google-play
   cancel-in-progress: false
