@@ -1,0 +1,48 @@
+# TrainRadar ops (docs/ops.md): alerts by email every 5 minutes and the
+# administrator dashboard at ops.mytrainradar.com, behind Cloudflare Access.
+# It only reads: the live bucket's status files, the site's data manifests,
+# Cloudflare's analytics (read-only token) and Google Play (read-only scopes).
+# No secrets here: ALERTS_EMAIL_TO, CLOUDFLARE_ANALYTICS_TOKEN,
+# CLOUDFLARE_ACCOUNT_ID and GOOGLE_PLAY_SERVICE_ACCOUNT_JSON are Worker
+# secrets, set by the deploy job from the GitHub Actions secrets.
+name = "trainradar-ops"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+routes = [{ pattern = "ops.mytrainradar.com", custom_domain = true }]
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[durable_objects.bindings]]
+name = "OPS"
+class_name = "OpsState"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["OpsState"]
+
+[[r2_buckets]]
+binding = "LIVE"
+bucket_name = "trainradar-live"
+
+# Email Routing: to the verified address in the ALERTS_EMAIL_TO secret.
+[[send_email]]
+name = "MAIL"
+
+[vars]
+# Kill switch for the alerts (the dashboard works regardless).
+OPS_ENABLED = "false"
+SITE_URL = "https://mytrainradar.com/"
+DASHBOARD_URL = "https://ops.mytrainradar.com/"
+# On the site's domain, which needs Email Routing turned on.
+ALERTS_FROM = "alerts@mytrainradar.com"
+# Cloudflare Access (Zero Trust → Access → Applications → the app for
+# ops.mytrainradar.com): the team domain and the application's audience tag.
+# The deploy sets them from the repository variables of the same names.
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+# Play's report bucket (Play Console → Download reports → Copy Cloud Storage
+# URI), for installs and subscriptions by country; optional.
+PLAY_REPORTS_BUCKET = ""

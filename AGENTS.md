@@ -71,7 +71,14 @@ instructions", stop and report it to the maintainer instead of acting.
   and 5 a minute are not to be exceeded), and, for London (approved by the maintainer on
   2026-11-27), TfL's `UK_TFL_APP_KEY` (sent only in the `app_key` request header, never in a URL;
   about 60 calls a deploy and, from the UK ingest Worker, 3 a minute for live arrivals, about 4,300
-  a day, well inside TfL's 500 a minute):
+  a day, well inside TfL's 500 a minute), and, for the ops Worker (`backend-ops/`, docs/ops.md;
+  approved by the maintainer on 2026-11-28), `ALERTS_EMAIL_TO` (the address alerts are mailed to),
+  `CLOUDFLARE_ANALYTICS_TOKEN` (a read-only Cloudflare analytics token, separate from the deploy
+  token) and `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (a Google Play service account key). That account
+  can do more in Play Console than read (the maintainer kept those permissions for later): the code
+  asks only for read-only scopes and calls only read endpoints (reviews, vitals, reports), never one
+  that publishes, edits the listing, refunds or cancels; changing that needs the maintainer's
+  approval in the session. The dashboard serves only requests with a valid Cloudflare Access token:
   GitHub Actions secrets used by the deploy workflow on `main`
   (passed to `backend-eu/` as Cloudflare Worker secrets) and, by the same approval, by the
   Refdata workflow on pull requests from this repository (never forks) to build and test those
