@@ -47,6 +47,7 @@ jobs:
       - run: node --test backend-eu/test/*.test.mjs
       - run: node --test backend-ops/test/*.test.mjs
       - run: node --test backend-reports/test/*.test.mjs
+      - run: node --test tools/play/play.test.mjs
 
   web:
     name: web tests (unit + browser, demo data)

@@ -1,0 +1,106 @@
+# Google Play publishing (approved by the maintainer on 2026-11-29). Started
+# by hand only (Actions → Google Play → Run workflow); nothing runs on push.
+#
+#   upload-internal     the release's bundle (vX.Y.Z, made by the Release
+#                       workflow), signed with the upload key, to internal
+#                       testing with its "What's new" in every language
+#   promote-production  that versionCode from internal testing to production,
+#                       at the rollout percentage given (100 = everyone)
+#   update-listings     the store listings in every language, from
+#                       docs/play-store.md on main
+#
+# Secrets: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON (the Play service account),
+# ANDROID_UPLOAD_KEYSTORE_BASE64 (the upload keystore, base64),
+# ANDROID_UPLOAD_KEYSTORE_PASSWORD and, if different, ANDROID_UPLOAD_KEY_PASSWORD.
+# The key alias is "upload" (docs/android.md) unless the repository variable
+# ANDROID_UPLOAD_KEY_ALIAS says otherwise. Production only ever comes from
+# promote-production.
+name: Google Play
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to do
+        type: choice
+        options: [upload-internal, promote-production, update-listings]
+        required: true
+      tag:
+        description: "Release tag, e.g. v3.7.0 (upload and promote)"
+        required: false
+      percent:
+        description: "Production rollout % (promote only; 100 = everyone)"
+        required: false
+        default: "20"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-play
+  cancel-in-progress: false
+
+jobs:
+  play:
+    name: ${{ inputs.action }} ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: node --test tools/play/play.test.mjs
+      - name: Version from the tag
+        id: v
+        if: inputs.action != 'update-listings'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "::error::give a tag like v3.7.0"; exit 1; }
+          echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "code=$(( BASH_REMATCH[1] * 10000 + BASH_REMATCH[2] * 100 + BASH_REMATCH[3] ))" >> "$GITHUB_OUTPUT"
+      - name: Sign the bundle and upload it to internal testing
+        if: inputs.action == 'upload-internal'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          NAME: ${{ steps.v.outputs.name }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          STOREPASS: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          KEYPASS: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD || secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ vars.ANDROID_UPLOAD_KEY_ALIAS || 'upload' }}
+          RELEASE_NAME: ${{ steps.v.outputs.name }}
+        run: |
+          for s in GOOGLE_PLAY_SERVICE_ACCOUNT_JSON KEYSTORE_B64 STOREPASS; do
+            [ -n "${!s}" ] || { echo "::error::secret for $s isn't set"; exit 1; }
+          done
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dl \
+            --pattern "trainradar-$NAME-unsigned.aab" --pattern "play-release-notes-$NAME.txt"
+          ks="$RUNNER_TEMP/upload.jks"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$ks"
+          trap 'rm -f "$ks"' EXIT
+          cp "dl/trainradar-$NAME-unsigned.aab" "trainradar-$NAME.aab"
+          "$JAVA_HOME_21_X64/bin/jarsigner" -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore "$ks" -storepass:env STOREPASS -keypass:env KEYPASS "trainradar-$NAME.aab" "$ALIAS" > /dev/null
+          "$JAVA_HOME_21_X64/bin/jarsigner" -verify "trainradar-$NAME.aab" | grep -q "jar verified" || { echo "::error::signature check failed"; exit 1; }
+          rm -f "$ks"
+          node tools/play/play.mjs upload "trainradar-$NAME.aab" "dl/play-release-notes-$NAME.txt" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Next: install it from the internal testing link, then run this workflow with promote-production." >> "$GITHUB_STEP_SUMMARY"
+      - name: Promote to production
+        if: inputs.action == 'promote-production'
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          CODE: ${{ steps.v.outputs.code }}
+          PERCENT: ${{ inputs.percent }}
+        run: node tools/play/play.mjs promote "$CODE" "$PERCENT" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Update the store listings
+        if: inputs.action == 'update-listings'
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: node tools/play/play.mjs listings docs/play-store.md | tee -a "$GITHUB_STEP_SUMMARY"

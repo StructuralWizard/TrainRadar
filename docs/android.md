@@ -188,7 +188,30 @@ build scripts are bash.
       ```
 - [ ] Never copy it into the repository (`*.jks` and `*.keystore` are ignored anyway).
 
-### Every release
+### Every release, with the Google Play workflow (from 3.7.0)
+
+Approved by the maintainer on 2026-11-29: GitHub Actions uploads to Play, but only when you
+start it, and production only from the promote step.
+
+- [ ] One-time: the repository secrets `ANDROID_UPLOAD_KEYSTORE_BASE64` (the upload keystore,
+      `base64 -i ~/keys/trainradar-upload.jks | pbcopy` on a Mac, `base64 -w0 …` on Linux),
+      `ANDROID_UPLOAD_KEYSTORE_PASSWORD`, and `ANDROID_UPLOAD_KEY_PASSWORD` only if the key's
+      password differs (keystores made with the command above use one password for both). The
+      alias is `upload`; a different one goes in the repository variable `ANDROID_UPLOAD_KEY_ALIAS`.
+      `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` is the Play service account, which needs the
+      "Release to testing tracks", "Release to production" and "Manage store presence" permissions
+      for TrainRadar in Play Console → Users and permissions.
+- [ ] Release notes in `docs/releases/vX.Y.Z.md`, merged; then the Release workflow with the tag
+      (it builds the bundle).
+- [ ] Actions → **Google Play** → Run workflow → `upload-internal`, tag `vX.Y.Z`: signs the
+      bundle and puts it on internal testing with the notes in every language.
+- [ ] Install it from the internal testing link and check it (list below).
+- [ ] Actions → **Google Play** → `promote-production`, tag `vX.Y.Z`, percent `20`; later the
+      same with `100`.
+- [ ] Listings changed in `docs/play-store.md`? Merge, then `update-listings`. A new language
+      in a listing needs no click in Play Console: the workflow adds it.
+
+### Every release, by hand
 
 - [ ] Get the code: `git clone https://github.com/StructuralWizard/TrainRadar.git`
       (first time), then `git checkout main && git pull`.
