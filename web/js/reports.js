@@ -132,3 +132,14 @@ export function trainReports(doc, tripId) {
   if (!t) return [];
   return ["incident", "cancel", "delay"].filter((k) => t[k]?.n >= REPORT_KINDS[k].min).map((k) => ({ kind: k, n: t[k].n, last: t[k].last }));
 }
+
+/** Fewer shown counts than this in 30 days: too few to say how reliable. */
+export const TRUST_MIN = 20;
+
+/** The trust line's numbers for a kind from reports-stats.json, or null:
+ * { confirmed (%), earlierMin (minutes or null) }. */
+export function trustFor(stats, kind) {
+  const k = stats?.kinds?.[kind];
+  if (!k || k.shown < TRUST_MIN || k.confirmed === null) return null;
+  return { confirmed: k.confirmed, earlierMin: k.earlier >= 25 && k.earlierMin ? k.earlierMin : null };
+}

@@ -352,6 +352,8 @@ export const HU = {
   reportUndone: "Bejelentés visszavonva.",
   reportResolved_delay: "{n} utas késést jelentett be; azóta a hivatalos adatok szerint a vonat pontos.",
   reportResolved_cancel: "{n} utas jelentette, hogy nem jött meg a vonat; azóta a hivatalos adatok szerint a vonat közlekedik.",
+  reportTrust: "Az elmúlt 30 napban a hivatalos adatok később az ilyen bejelentések {pct}%-át erősítették meg.",
+  reportTrustEarlier: "Az elmúlt 30 napban a hivatalos adatok később az ilyen bejelentések {pct}%-át erősítették meg; az utasok átlagosan {min} perccel korábban jeleztek.",
   shareStation: "{station}: következő indulások a TrainRadaron",
   histTitle: "A vonal pontossága, utolsó 7 nap",
   histLine: "{p}% pontos · {l}% 5+ perc késés",

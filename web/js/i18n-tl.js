@@ -366,6 +366,8 @@ export const TL = {
   reportUndone: "Binawi ang ulat.",
   reportResolved_delay: "{n} pasahero ang nag-ulat ng pagkaantala; mula noon, sinasabi ng opisyal na datos na nasa oras ito.",
   reportResolved_cancel: "{n} pasahero ang nag-ulat na hindi ito dumating; mula noon, ipinapakita ng opisyal na datos na tumatakbo ito.",
+  reportTrust: "Sa nakaraang 30 araw, kinumpirma kalaunan ng opisyal na datos ang {pct}% ng mga ganitong ulat.",
+  reportTrustEarlier: "Sa nakaraang 30 araw, kinumpirma kalaunan ng opisyal na datos ang {pct}% ng mga ganitong ulat; mas maaga nang {min} min sa karaniwan ang mga pasahero.",
   shareStation: "{station}: mga susunod na aalis sa TrainRadar",
   histTitle: "Pagkanasa-oras ng linya, huling 7 araw",
   histLine: "{p}% nasa oras · {l}% 5+ min na huli",

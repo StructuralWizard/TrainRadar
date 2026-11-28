@@ -352,6 +352,8 @@ export const NL = {
   reportUndone: "Bericht ingetrokken.",
   reportResolved_delay: "{n} reizigers meldden vertraging; sindsdien zeggen de officiële gegevens dat hij op tijd is.",
   reportResolved_cancel: "{n} reizigers meldden dat hij niet was gekomen; sindsdien tonen de officiële gegevens dat hij rijdt.",
+  reportTrust: "In de afgelopen 30 dagen bevestigden de officiële gegevens later {pct}% van deze berichten.",
+  reportTrustEarlier: "In de afgelopen 30 dagen bevestigden de officiële gegevens later {pct}% van deze berichten; reizigers waren gemiddeld {min} min eerder.",
   shareStation: "{station}: eerstvolgende vertrektijden op TrainRadar",
   histTitle: "Punctualiteit van de lijn, afgelopen 7 dagen",
   histLine: "{p}% op tijd · {l}% 5+ min vertraagd",

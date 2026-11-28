@@ -354,6 +354,8 @@ export const ZH_TW = {
   reportUndone: "上報已撤回。",
   reportResolved_delay: "{n} 位乘客上報誤點；此後官方資訊顯示列車準點。",
   reportResolved_cancel: "{n} 位乘客上報列車沒來；此後官方資訊顯示列車正在運行。",
+  reportTrust: "過去 30 天，官方資訊事後證實了 {pct}% 的此類上報。",
+  reportTrustEarlier: "過去 30 天，官方資訊事後證實了 {pct}% 的此類上報；乘客平均提前 {min} 分鐘上報。",
   shareStation: "{station}：TrainRadar 上的下幾班出發列車",
   histTitle: "線路準點率，最近 7 天",
   histLine: "{p}% 準點 · {l}% 誤點 5 分鐘以上",

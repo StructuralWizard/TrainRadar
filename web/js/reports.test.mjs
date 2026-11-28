@@ -1,7 +1,7 @@
 // Run with: node --test web/js/reports.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { distM, lineDistM, monthlyToken, nonceText, placeCheck, reportResolved, trainReports } from "./reports.js";
+import { distM, lineDistM, monthlyToken, nonceText, placeCheck, reportResolved, trainReports, trustFor } from "./reports.js";
 
 // A straight track north from London Euston, roughly.
 const line = [[-0.1337, 51.5282], [-0.1337, 51.6282]];
@@ -71,4 +71,12 @@ test("official data newer than the reports can resolve them; accidents never", (
   assert.equal(reportResolved(cancel, { delay: 900, official_at: after }), true);
   assert.equal(reportResolved(cancel, { canceled: true, official_at: after }), false);
   assert.equal(reportResolved({ kind: "incident", n: 5, last }, { delay: 0, official_at: after }), false);
+});
+
+test("the trust line needs enough cases, and says 'earlier' only when it often was", () => {
+  const stats = { kinds: { delay: { shown: 40, confirmed: 82, earlier: 60, earlierMin: 6 }, cancel: { shown: 5, confirmed: 100 }, incident: { shown: 30, confirmed: 40, earlier: 10, earlierMin: 3 } } };
+  assert.deepEqual(trustFor(stats, "delay"), { confirmed: 82, earlierMin: 6 });
+  assert.equal(trustFor(stats, "cancel"), null);
+  assert.deepEqual(trustFor(stats, "incident"), { confirmed: 40, earlierMin: null });
+  assert.equal(trustFor(null, "delay"), null);
 });

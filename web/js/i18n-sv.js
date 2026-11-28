@@ -352,6 +352,8 @@ export const SV = {
   reportUndone: "Rapporten har dragits tillbaka.",
   reportResolved_delay: "{n} resenärer rapporterade en försening; sedan dess säger de officiella uppgifterna att tåget är i tid.",
   reportResolved_cancel: "{n} resenärer rapporterade att tåget inte hade kommit; sedan dess visar de officiella uppgifterna att det går.",
+  reportTrust: "Under de senaste 30 dagarna bekräftade de officiella uppgifterna senare {pct} % av dessa rapporter.",
+  reportTrustEarlier: "Under de senaste 30 dagarna bekräftade de officiella uppgifterna senare {pct} % av dessa rapporter; resenärerna var i snitt {min} min tidigare ute.",
   shareStation: "{station}: nästa avgångar på TrainRadar",
   histTitle: "Linjens punktlighet, senaste 7 dagarna",
   histLine: "{p} % i tid · {l} % 5+ min försenade",

@@ -352,6 +352,8 @@ export const PL = {
   reportUndone: "Zgłoszenie wycofane.",
   reportResolved_delay: "Opóźnienie zgłosili pasażerowie: {n}. Od tego czasu oficjalne dane podają, że pociąg jedzie punktualnie.",
   reportResolved_cancel: "Brak pociągu zgłosili pasażerowie: {n}. Od tego czasu oficjalne dane pokazują, że pociąg jedzie.",
+  reportTrust: "W ciągu ostatnich 30 dni oficjalne dane potwierdziły później {pct}% takich zgłoszeń.",
+  reportTrustEarlier: "W ciągu ostatnich 30 dni oficjalne dane potwierdziły później {pct}% takich zgłoszeń; pasażerowie byli średnio {min} min wcześniej.",
   shareStation: "{station}: najbliższe odjazdy w TrainRadar",
   histTitle: "Punktualność linii, ostatnie 7 dni",
   histLine: "{p}% punktualnie · {l}% z opóźnieniem 5+ min",

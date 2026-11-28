@@ -352,6 +352,8 @@ export const FI = {
   reportUndone: "Ilmoitus peruttu.",
   reportResolved_delay: "{n} matkustajaa ilmoitti myöhästymisestä; sen jälkeen virallisen tiedon mukaan juna on ajallaan.",
   reportResolved_cancel: "{n} matkustajaa ilmoitti, ettei juna ollut tullut; sen jälkeen virallisen tiedon mukaan juna kulkee.",
+  reportTrust: "Viimeisten 30 päivän aikana virallinen tieto vahvisti myöhemmin {pct} % näistä ilmoituksista.",
+  reportTrustEarlier: "Viimeisten 30 päivän aikana virallinen tieto vahvisti myöhemmin {pct} % näistä ilmoituksista; matkustajat olivat keskimäärin {min} min edellä.",
   shareStation: "{station}: seuraavat lähdöt TrainRadarissa",
   histTitle: "Linjan täsmällisyys, viimeiset 7 päivää",
   histLine: "{p} % ajallaan · {l} % yli 5 min myöhässä",

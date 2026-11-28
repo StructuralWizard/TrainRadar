@@ -352,6 +352,8 @@ export const CS = {
   reportUndone: "Hlášení staženo.",
   reportResolved_delay: "Zpoždění hlásili cestující: {n}. Od té doby oficiální údaje uvádějí, že vlak jede včas.",
   reportResolved_cancel: "Že vlak nepřijel, hlásili cestující: {n}. Od té doby oficiální údaje ukazují, že vlak jede.",
+  reportTrust: "Za posledních 30 dní oficiální údaje později potvrdily {pct} % těchto hlášení.",
+  reportTrustEarlier: "Za posledních 30 dní oficiální údaje později potvrdily {pct} % těchto hlášení; cestující byli v průměru o {min} min dříve.",
   shareStation: "{station}: nejbližší odjezdy v TrainRadaru",
   histTitle: "Přesnost linky za posledních 7 dní",
   histLine: "{p} % včas · {l} % se zpožděním 5+ min",

@@ -107,7 +107,7 @@ function withIcons(rows) {
  * The train sheet. `o`: { regionName, lineColor, stops (tripJson), now (ms),
  * onClose, fav {on, onToggle}, notify {on, onToggle} | {href}, onShare,
  * notice {open, kinds, label(kind), onToggle, onPick(kind)} ("Compartir aviso"),
- * report {list [{kind, n, last ms, resolved}], onDispute(kind)?, canReport,
+ * report {list [{kind, n, last ms, resolved, trust {confirmed, earlierMin}}], onDispute(kind)?, canReport,
  * open, kinds, busy, msg, onUndo?, onToggle, onPick(kind)} (travellers' reports),
  * onHistory, trip {on, pro, onToggle}, onIncidents, history, rows (trainRows
  * options), redraw }.
@@ -168,6 +168,14 @@ export function trainSheet(lang, info, o = {}) {
       { class: "crowd-report", "data-kind": r.kind },
       el("p", { class: "crowd-count" }, icon("warning", 16), el("span", {}, `${t(lang, `reportCount_${r.kind}`, { n: formatCount(lang, r.n) })} · ${t(lang, "reportLast", { age: formatAgo(lang, Math.max(0, now - r.last / 1000)) })}`)),
       el("p", { class: "small muted" }, [t(lang, "reportDisclaimer"), r.kind === "incident" ? t(lang, "reportEmergency") : ""].filter(Boolean).join(" ")),
+      // How often such counts were later confirmed (backend-reports stats.js).
+      r.trust
+        ? el(
+            "p",
+            { class: "small muted crowd-trust" },
+            t(lang, r.trust.earlierMin ? "reportTrustEarlier" : "reportTrust", { pct: formatCount(lang, r.trust.confirmed), min: formatCount(lang, r.trust.earlierMin || 0) }),
+          )
+        : null,
       o.report.onDispute ? el("button", { class: "link small", type: "button", onclick: () => o.report.onDispute(r.kind) }, t(lang, "reportDispute")) : null,
     ),
   );

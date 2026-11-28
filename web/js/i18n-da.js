@@ -352,6 +352,8 @@ export const DA = {
   reportUndone: "Rapporten er trukket tilbage.",
   reportResolved_delay: "{n} rejsende rapporterede en forsinkelse; siden da siger de officielle data, at toget er til tiden.",
   reportResolved_cancel: "{n} rejsende rapporterede, at toget ikke var kommet; siden da viser de officielle data, at det kører.",
+  reportTrust: "I de seneste 30 dage bekræftede de officielle data senere {pct} % af disse rapporter.",
+  reportTrustEarlier: "I de seneste 30 dage bekræftede de officielle data senere {pct} % af disse rapporter; de rejsende var i gennemsnit {min} min. tidligere ude.",
   shareStation: "{station}: næste afgange på TrainRadar",
   histTitle: "Linjens punktlighed, seneste 7 dage",
   histLine: "{p} % til tiden · {l} % 5+ min. forsinket",

@@ -350,6 +350,8 @@ export const PT = {
   reportUndone: "Relato retirado.",
   reportResolved_delay: "{n} passageiros relataram um atraso; depois, os dados oficiais indicam que está a horas.",
   reportResolved_cancel: "{n} passageiros relataram que não tinha passado; depois, os dados oficiais mostram-no em circulação.",
+  reportTrust: "Nos últimos 30 dias, os dados oficiais confirmaram depois {pct} % destes relatos.",
+  reportTrustEarlier: "Nos últimos 30 dias, os dados oficiais confirmaram depois {pct} % destes relatos; os passageiros anteciparam-se {min} min em média.",
   shareStation: "{station}: próximas partidas no TrainRadar",
   histTitle: "Pontualidade da linha, últimos 7 dias",
   histLine: "{p}% a horas · {l}% com 5+ min de atraso",

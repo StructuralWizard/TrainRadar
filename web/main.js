@@ -12,7 +12,7 @@ import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchP
 import { icon } from "./js/icons.js";
 import { keepLongDistance } from "./js/board.js";
 import { NOTICE_KINDS, noticeLabel, noticeText } from "./js/notice.js";
-import { REPORT_COUNTRIES, REPORT_KINDS, UNDO_MS, monthlyToken, nonceText, placeCheck, reportResolved, sha256b64, trainReports } from "./js/reports.js";
+import { REPORT_COUNTRIES, REPORT_KINDS, UNDO_MS, monthlyToken, nonceText, placeCheck, reportResolved, sha256b64, trainReports, trustFor } from "./js/reports.js";
 import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, lineBadge, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
 import { loadRides, ridesGeoJson, videoForTrain, videosAt } from "./js/cabrides.js";
 import { endStations } from "./js/route.js";
@@ -1191,12 +1191,22 @@ let reportMsg = { key: "", text: "" };
 let lastSent = null; // { key, trip, kind, at }: the report "Undo" can take back
 const reportsConsent = () => store.get("reports-consent") === "yes";
 
+let reportsStats = { at: 0, doc: null }; // how often counts were later confirmed (reports-stats.json)
 async function loadReports() {
   try {
     const r = await fetch(`${CONFIG.liveBase}reports.json?t=${Math.floor(Date.now() / 30_000)}`);
     reportsDoc = r.ok ? await r.json() : null;
   } catch {
     // keep what we have
+  }
+  if (reportsDoc?.trips && Object.keys(reportsDoc.trips).length && Date.now() - reportsStats.at > 10 * 60_000) {
+    reportsStats.at = Date.now();
+    try {
+      const r = await fetch(`${CONFIG.liveBase}reports-stats.json?t=${Math.floor(Date.now() / 600_000)}`);
+      if (r.ok) reportsStats.doc = await r.json();
+    } catch {
+      // without it, no trust line
+    }
   }
   detailKey = "";
   showPopup();
@@ -1267,7 +1277,7 @@ function askReportsConsent() {
 function reportAction(info, trip, now) {
   if (!REPORTS) return null;
   const key = `${info.trip_id}|${info.number}`;
-  const list = trainReports(reportsDoc, info.trip_id).map((r) => ({ ...r, resolved: reportResolved(r, info) }));
+  const list = trainReports(reportsDoc, info.trip_id).map((r) => ({ ...r, resolved: reportResolved(r, info), trust: trustFor(reportsStats.doc, r.kind) }));
   const canSend = REPORTS_SEND && reportsDoc?.on === true && !info.canceled;
   const redraw = () => {
     detailKey = "";

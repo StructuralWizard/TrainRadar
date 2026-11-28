@@ -352,6 +352,8 @@ export const DE = {
   reportUndone: "Bericht zurückgezogen.",
   reportResolved_delay: "{n} Fahrgäste haben von einer Verspätung berichtet; laut den seitdem aktualisierten offiziellen Daten ist er pünktlich.",
   reportResolved_cancel: "{n} Fahrgäste haben berichtet, dass er nicht gekommen ist; laut den seitdem aktualisierten offiziellen Daten fährt er.",
+  reportTrust: "In den letzten 30 Tagen haben die offiziellen Daten {pct} % dieser Berichte später bestätigt.",
+  reportTrustEarlier: "In den letzten 30 Tagen haben die offiziellen Daten {pct} % dieser Berichte später bestätigt; die Fahrgäste waren im Schnitt {min} Min. früher dran.",
   shareStation: "{station}: nächste Abfahrten auf TrainRadar",
   histTitle: "Pünktlichkeit der Linie, letzte 7 Tage",
   histLine: "{p} % pünktlich · {l} % 5+ Min. verspätet",

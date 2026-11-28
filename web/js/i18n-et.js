@@ -352,6 +352,8 @@ export const ET = {
   reportUndone: "Raport võeti tagasi.",
   reportResolved_delay: "{n} reisijat raporteeris hilinemisest; pärast seda näitavad ametlikud andmed, et rong on graafikus.",
   reportResolved_cancel: "{n} reisijat raporteeris, et rong polnud tulnud; pärast seda näitavad ametlikud andmed, et rong sõidab.",
+  reportTrust: "Viimase 30 päeva jooksul kinnitasid ametlikud andmed hiljem {pct}% sellistest raportitest.",
+  reportTrustEarlier: "Viimase 30 päeva jooksul kinnitasid ametlikud andmed hiljem {pct}% sellistest raportitest; reisijad olid keskmiselt {min} min varem.",
   shareStation: "{station}: järgmised väljumised TrainRadaris",
   histTitle: "Liini täpsus, viimased 7 päeva",
   histLine: "{p}% graafikus · {l}% hilinenud 5+ min",

@@ -352,6 +352,8 @@ export const FR = {
   reportUndone: "Signalement retiré.",
   reportResolved_delay: "{n} voyageurs ont signalé un retard ; depuis, l’info officielle l’indique à l’heure.",
   reportResolved_cancel: "{n} voyageurs ont signalé qu’il n’était pas passé ; depuis, l’info officielle le montre en circulation.",
+  reportTrust: "Sur les 30 derniers jours, l’info officielle a ensuite confirmé {pct} % de ces signalements.",
+  reportTrustEarlier: "Sur les 30 derniers jours, l’info officielle a ensuite confirmé {pct} % de ces signalements ; les voyageurs avaient en moyenne {min} min d’avance.",
   shareStation: "{station} : prochains départs sur TrainRadar",
   histTitle: "Ponctualité de la ligne, 7 derniers jours",
   histLine: "{p} % à l’heure · {l} % avec 5 min de retard ou plus",
