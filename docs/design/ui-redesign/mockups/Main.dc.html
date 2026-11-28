@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TrainRadar UI review</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F1F5F9}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+.row{display:grid;grid-template-columns:72px 120px minmax(0,1fr);gap:16px;padding:16px 0;border-top:1px solid #E2E8F0;align-items:start}
+@media (max-width:720px){.row{grid-template-columns:1fr}}
+</style>
+</helmet>
+<div style="font-family:Inter,system-ui,sans-serif;color:#0F172A;max-width:1120px;margin:0 auto;padding:56px 24px 80px;box-sizing:border-box">
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+<div style="width:36px;height:36px;border-radius:10px;background:#1D4ED8;display:flex;align-items:center;justify-content:center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3" fill="#fff"></circle></svg>
+</div>
+<span style="font-weight:700;font-size:15px;letter-spacing:.02em;color:#475569">TRAINRADAR · UI REVIEW · 26 NOV 2026</span>
+</div>
+<h1 style="margin:0 0 12px;font-size:44px;line-height:1.1;font-weight:800;letter-spacing:-.02em">The phone UI is good. Make desktop, tablet and the store look like it.</h1>
+<p style="margin:0 0 32px;font-size:18px;line-height:1.55;color:#334155;max-width:860px">Reviewed mytrainradar.com at 1440×900, 768×1024 and 375×812 (light and dark) plus the Google Play listing. The phone layout (bottom nav, sheets, delay cards) is clearly the newest and best. Desktop and tablet still run the older floating-widgets layout, and the Play Store screenshots show that older layout too, so first-time users meet the weakest version of the app.</p>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:48px">
+<div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #E2E8F0"><div style="font-size:13px;font-weight:600;color:#475569">Phone</div><div style="font-size:30px;font-weight:800;color:#15803D;margin-top:4px">Good</div><div style="font-size:14px;color:#475569;margin-top:4px">Polish only</div></div>
+<div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #E2E8F0"><div style="font-size:13px;font-weight:600;color:#475569">Desktop</div><div style="font-size:30px;font-weight:800;color:#B45309;margin-top:4px">Dated</div><div style="font-size:14px;color:#475569;margin-top:4px">Needs new layout</div></div>
+<div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #E2E8F0"><div style="font-size:13px;font-weight:600;color:#475569">Tablet</div><div style="font-size:30px;font-weight:800;color:#B91C1C;margin-top:4px">Broken</div><div style="font-size:14px;color:#475569;margin-top:4px">Legend overlaps search</div></div>
+<div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #E2E8F0"><div style="font-size:13px;font-weight:600;color:#475569">Play Store</div><div style="font-size:30px;font-weight:800;color:#B91C1C;margin-top:4px">Weak</div><div style="font-size:14px;color:#475569;margin-top:4px">Old UI, no captions</div></div>
+</div>
+
+<h2 style="font-size:26px;margin:0 0 4px;font-weight:800">Findings</h2>
+<p style="margin:0 0 8px;color:#475569;font-size:15px">P1 = fix first (broken or first impression) · P2 = clear UX gain · P3 = polish</p>
+
+<div class="row"><span style="font-weight:800;color:#B91C1C">P1</span><span style="font-weight:600;color:#475569">All</span><div><b>Three different UIs.</b> Phone has bottom nav + sheets; tablet/desktop use the old floating search, native “Ir a…” select and “▶ Capas” disclosure; Play screenshots show the old one. Adopt the phone design language everywhere, with a docked side panel from 900 px up.</div></div>
+<div class="row"><span style="font-weight:800;color:#B91C1C">P1</span><span style="font-weight:600;color:#475569">Tablet</span><div><b>Legend wraps and overlaps the search box</b> at 768 px (“Cercanías: color de su línea” sits on top of the input). Move the legend into a collapsible card at the bottom-left, or into the Capas sheet.</div></div>
+<div class="row"><span style="font-weight:800;color:#B91C1C">P1</span><span style="font-weight:600;color:#475569">All</span><div><b>Blank map for 10–15 s</b> on first load and on every country switch, with no loading state. In dark mode the blank area is light grey, so it flashes. Show a skeleton (country outline + “Cargando trenes…” chip) and set the map container background to the theme colour.</div></div>
+<div class="row"><span style="font-weight:800;color:#B91C1C">P1</span><span style="font-weight:600;color:#475569">All</span><div><b>Attribution expanded on load</b> covers about a third of the phone map and a full-width strip on desktop. Start collapsed as the (i) button; expand on tap.</div></div>
+<div class="row"><span style="font-weight:800;color:#B91C1C">P1</span><span style="font-weight:600;color:#475569">Play</span><div><b>Store screenshots are raw captures of the old UI</b> with tiny text and no captions; the feature graphic is a stock photo. Replace with 6–8 captioned phone frames of the new UI (see the Play Store board).</div></div>
+
+<div class="row"><span style="font-weight:800;color:#B45309">P2</span><span style="font-weight:600;color:#475569">All</span><div><b>Not country-aware.</b> Page title says “Trenes de Renfe” but desktop opened on Great Britain; Capas lists Cercanías / AVE / OUIGO while viewing the UK; “Acerca de” lists only Spanish sources. Drive layers, legend, sources and title from the selected country. Also check the Avisos badge (81) refreshes when the country changes.</div></div>
+<div class="row"><span style="font-weight:800;color:#B45309">P2</span><span style="font-weight:600;color:#475569">All</span><div><b>Stats copy.</b> “mediana A su hora” (capital mid-sentence); “+ 305 de NI Railways según horario” wraps to two lines; the phone chip truncates (“mediana 191 …”). Use two short chips: “42 trenes” and “Mediana +2 min”, and put the NI count in the detail.</div></div>
+<div class="row"><span style="font-weight:800;color:#B45309">P2</span><span style="font-weight:600;color:#475569">Desktop</span><div><b>Right-side panels cover the zoom-out button</b> (Retrasos, Avisos, Acerca). Dock panels on the left and keep map controls on the right edge, offset by any open panel.</div></div>
+<div class="row"><span style="font-weight:800;color:#B45309">P2</span><span style="font-weight:600;color:#475569">Desktop</span><div><b>Train popup hides the train and its route</b>: an 11-row key/value table with its own scrollbar, including empty rows (“Tren anterior —”). Show train detail in the side panel with a stop timeline, and hide empty fields.</div></div>
+<div class="row"><span style="font-weight:800;color:#B45309">P2</span><span style="font-weight:600;color:#475569">Phone</span><div><b>Train sheet:</b> “C10 75172” appears twice (badge row and heading); “Guardar” is a full-width card button; lots of empty space below. Use one header line, an icon button for Guardar, and fill the space with the stop timeline and next/previous trains.</div></div>
+<div class="row"><span style="font-weight:800;color:#B45309">P2</span><span style="font-weight:600;color:#475569">Map</span><div><b>Marker system.</b> Train dots are small at country zoom; hollow purple circles in the UK aren’t in the legend; at city zoom trains turn into teardrops; labels like “75172 · 1434” are unexplained. One marker: delay-coloured disc + white heading arrow, scaled by zoom; label = line + delay (“C10 · +3”).</div></div>
+
+<div class="row"><span style="font-weight:800;color:#1D4ED8">P3</span><span style="font-weight:600;color:#475569">Phone</span><div><b>Station sheet date input</b> shows the native “dd/mm/yyyy --:--”. Replace with chips “Ahora · Hoy · Mañana” + a time picker.</div></div>
+<div class="row"><span style="font-weight:800;color:#1D4ED8">P3</span><span style="font-weight:600;color:#475569">Phone</span><div><b>Reload reopens the last train</b> and the sheet covers the map at launch. Open on the map and offer a small “Seguir C10 75172” chip instead.</div></div>
+<div class="row"><span style="font-weight:800;color:#1D4ED8">P3</span><span style="font-weight:600;color:#475569">Dark</span><div><b>Link contrast</b> is low in dark mode (blue links on navy sheets). Use #93C5FD for links on dark surfaces.</div></div>
+<div class="row"><span style="font-weight:800;color:#1D4ED8">P3</span><span style="font-weight:600;color:#475569">All</span><div><b>Type and numbers.</b> system-ui renders differently per OS. Use Inter with <code>font-variant-numeric: tabular-nums</code> for times and delays so lists align.</div></div>
+<div class="row"><span style="font-weight:800;color:#1D4ED8">P3</span><span style="font-weight:600;color:#475569">Play</span><div><b>Listing.</b> 10+ downloads and no reviews yet: add an in-app rating prompt after the 3rd session that opened a train. Add an English listing for the UK audience.</div></div>
+
+<h2 style="font-size:26px;margin:48px 0 12px;font-weight:800">Design tokens to add</h2>
+<div style="background:#0F172A;color:#E2E8F0;border-radius:14px;padding:24px;font-family:ui-monospace,Menlo,monospace;font-size:14px;line-height:1.7;overflow-x:auto;white-space:pre">:root{
+  --tr-brand:#1D4ED8;  --tr-ink:#0F172A;  --tr-muted:#475569;
+  --tr-surface:#FFFFFF; --tr-ground:#F1F5F9; --tr-line:#E2E8F0;
+  --tr-ontime:#15803D; --tr-minor:#B45309; --tr-major:#B91C1C; --tr-nodata:#64748B;
+  --tr-radius-sm:10px; --tr-radius:16px; --tr-radius-sheet:24px;
+  --tr-shadow:0 4px 16px rgba(15,23,42,.12);
+  --tr-font:Inter,system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --tr-ink:#F1F5F9; --tr-muted:#94A3B8; --tr-surface:#0F172A;
+  --tr-ground:#020617; --tr-line:#1E293B; --tr-brand:#60A5FA;
+}}</div>
+
+<h2 style="font-size:26px;margin:48px 0 12px;font-weight:800">Plan for Claude Code (in order)</h2>
+<ol style="margin:0;padding-left:22px;font-size:16px;line-height:1.6;display:flex;flex-direction:column;gap:12px">
+<li><b>Tokens.</b> Add the CSS variables above; replace hard-coded colours, radii and shadows. Load Inter; tabular numerals on times/delays.</li>
+<li><b>Quick fixes.</b> Collapse attribution by default; map background = <code>var(--tr-ground)</code>; loading skeleton + “Cargando trenes…” chip until the first positions arrive; fix “mediana A su hora” casing; split stats into two chips.</li>
+<li><b>One responsive shell.</b> &lt;900 px: current phone layout (bottom nav + 3-height sheet: peek / half / full). ≥900 px: left side panel 380 px wide (search + country at top, tabs Mapa·Cerca·Avisos·Favoritos·Más as a segmented row, panel content below), map fills the rest. Delete the old floating search / select / Capas widgets.</li>
+<li><b>Train detail.</b> Same component in sheet (phone) and side panel (desktop): header (line badge, number, destination, delay pill), stop timeline with passed / current / next, actions row (Guardar, Compartir, Seguir). Hide empty fields.</li>
+<li><b>Map controls.</b> Zoom, layers, locate stacked on the right; offset by the open panel or sheet height so nothing is covered. Legend as a small bottom-left card, collapsible.</li>
+<li><b>Country awareness.</b> Layers, legend, sources, page title and alerts come from the selected country.</li>
+<li><b>Markers.</b> Delay-coloured disc + heading arrow; size by zoom; label “line · +delay”.</li>
+<li><b>Station sheet.</b> Ahora / Hoy / Mañana chips; departures rows with time, line badge, destination, platform, delay pill.</li>
+<li><b>Play Store.</b> Capture the new UI at 1080×2340, add captions per the Play Store board; product-shot feature graphic.</li>
+</ol>
+<p style="margin:24px 0 0;color:#475569;font-size:15px">Acceptance check for every step: test at 375, 768, 1024 and 1440 px, light and dark; no control may be covered by a panel, sheet or legend.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":3200}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

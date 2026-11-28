@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>TrainRadar móvil mapa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;font-family:Inter,system-ui,sans-serif;color:#0F172A;background:#E8EDF2;overflow:hidden;font-variant-numeric:tabular-nums">
+<svg width="390" height="844" viewBox="0 0 390 844" style="position:absolute;inset:0" aria-hidden="true">
+<path d="M0 844 L0 300 L60 160 L200 120 L390 150 L390 844Z" fill="#F8FAFC"></path>
+<path d="M140 420 C200 390 250 340 300 280 S360 220 390 210" stroke="#7C3AED" stroke-width="5" fill="none"></path>
+<path d="M140 420 C150 500 170 560 190 640" stroke="#7C3AED" stroke-width="5" fill="none"></path>
+<path d="M140 420 C100 360 90 280 100 190" stroke="#7C3AED" stroke-width="5" fill="none"></path>
+<path d="M140 420 C200 470 260 500 330 580" stroke="#0F766E" stroke-width="4" fill="none"></path>
+<path d="M300 280 C320 340 340 400 370 470" stroke="#0F766E" stroke-width="4" fill="none"></path>
+<circle cx="140" cy="420" r="7" fill="#fff" stroke="#0F172A" stroke-width="3"></circle>
+<circle cx="220" cy="365" r="9" fill="#15803D" stroke="#fff" stroke-width="2.5"></circle>
+<circle cx="335" cy="245" r="10" fill="#B91C1C" stroke="#fff" stroke-width="2.5"></circle>
+<circle cx="160" cy="520" r="9" fill="#15803D" stroke="#fff" stroke-width="2.5"></circle>
+<circle cx="250" cy="500" r="9" fill="#B45309" stroke="#fff" stroke-width="2.5"></circle>
+<circle cx="98" cy="260" r="9" fill="#15803D" stroke="#fff" stroke-width="2.5"></circle>
+<circle cx="355" cy="430" r="9" fill="#64748B" stroke="#fff" stroke-width="2.5"></circle>
+<text x="154" y="444" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#0F172A">Madrid</text>
+</svg>
+
+<div style="position:absolute;top:16px;left:16px;right:16px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:8px;height:52px;border-radius:26px;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.12);padding:0 6px 0 16px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<label style="flex:1;font-size:15px;color:#64748B;white-space:nowrap;overflow:hidden">Buscar tren o estación</label>
+<button style="height:40px;padding:0 12px;border-radius:20px;border:0;background:#DBEAFE;color:#1D4ED8;font-weight:700;font-size:14px">España ▾</button>
+</div>
+<div style="display:flex;gap:6px">
+<div style="height:32px;display:flex;align-items:center;gap:6px;padding:0 12px;background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(15,23,42,.12);font-weight:700;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:#15803D"></span>412 trenes</div>
+<div style="height:32px;display:flex;align-items:center;padding:0 12px;background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(15,23,42,.12);font-weight:700;font-size:13px">Mediana +2 min</div>
+</div>
+</div>
+
+<a href="Phone-Train.dc.html" style="position:absolute;left:16px;top:510px;height:40px;display:flex;align-items:center;gap:8px;padding:0 14px 0 8px;background:#0F172A;color:#fff;border-radius:20px;text-decoration:none;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(15,23,42,.25)"><span style="background:#FDE047;color:#713F12;font-weight:800;font-size:12px;border-radius:6px;padding:2px 6px">C10</span>Seguir 75172</a>
+
+<div style="position:absolute;right:16px;top:446px;display:flex;flex-direction:column;gap:8px">
+<button aria-label="Capas" style="width:48px;height:48px;border-radius:24px;border:0;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.12);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg></button>
+<button aria-label="Mi ubicación" style="width:48px;height:48px;border-radius:24px;border:0;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.12);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1D4ED8" aria-hidden="true"><path d="M21 3L3 10.5l7.5 3 3 7.5z"></path></svg></button>
+</div>
+<button aria-label="Atribución de datos" style="position:absolute;left:16px;top:470px;width:28px;height:28px;border-radius:50%;border:0;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.15);font-weight:800;font-size:13px;color:#475569">i</button>
+
+<div style="position:absolute;left:0;right:0;bottom:72px;height:200px;background:#fff;border-radius:24px 24px 0 0;box-shadow:0 -4px 20px rgba(15,23,42,.12);padding:10px 16px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+<div style="width:40px;height:5px;border-radius:3px;background:#CBD5E1;align-self:center"></div>
+<div style="display:flex;align-items:baseline"><h2 style="margin:0;font-size:20px;font-weight:800">Retrasos ahora</h2><span style="flex:1"></span><span style="font-size:13px;color:#475569">34 de 412</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+<button style="text-align:left;border:0;background:#FEF2F2;border-radius:14px;padding:10px 12px"><div style="font-size:12px;font-weight:600;color:#991B1B">15+ min</div><div style="font-size:26px;font-weight:800;color:#991B1B">12</div></button>
+<button style="text-align:left;border:0;background:#FFF7ED;border-radius:14px;padding:10px 12px"><div style="font-size:12px;font-weight:600;color:#9A3412">5–14 min</div><div style="font-size:26px;font-weight:800;color:#9A3412">22</div></button>
+<button style="text-align:left;border:0;background:#F0FDF4;border-radius:14px;padding:10px 12px"><div style="font-size:12px;font-weight:600;color:#166534">A su hora</div><div style="font-size:26px;font-weight:800;color:#166534">378</div></button>
+</div>
+</div>
+
+<nav style="position:absolute;left:0;right:0;bottom:0;height:72px;background:#fff;border-top:1px solid #E2E8F0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center">
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#1D4ED8;font-size:12px;font-weight:700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"></path><path d="M9 4v14M15 6v14"></path></svg>Mapa</a>
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#475569;font-size:12px;font-weight:600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>Cerca</a>
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#475569;font-size:12px;font-weight:600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3L2 20h20z"></path><path d="M12 10v4M12 17v.5"></path></svg>Avisos</a>
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#475569;font-size:12px;font-weight:600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></svg>Favoritos</a>
+<a href="#" style="display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#475569;font-size:12px;font-weight:600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>Más</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
