@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CONFIRM, problems, step } from "../src/rules.js";
-import { compose, mime } from "../src/mail.js";
+import { NTFY, body, compose, send } from "../src/notify.js";
 import { accessToken, latestByCountry, parseCsv } from "../src/play.js";
 import { accessUser } from "../src/access.js";
 import { cloudflare } from "../src/cf.js";
@@ -42,21 +42,27 @@ test("alert state: a mail only after two checks in a row, and on recovery after 
   assert.deepEqual(state.open, {});
 });
 
-test("mail: subject, new / cleared / still open, plain-text MIME", () => {
-  const m = compose({
+test("ntfy: title, new / cleared / still open, the topic only in the body", async () => {
+  const n = compose({
     raised: [{ country: "ie", text: "live feed failing for 45 min" }],
     cleared: [{ country: "fr", text: "stopped", lasted: 30 * 60_000 }],
     open: { a: { country: "uk", text: "TfL failing" } },
     site: "https://ops.example.test",
   });
-  assert.equal(m.subject, "TrainRadar: 1 new problem (IE)");
-  assert.match(m.text, /New:\n- IE: live feed failing for 45 min/);
-  assert.match(m.text, /Cleared:\n- FR: stopped \(lasted 30 min\)/);
-  assert.match(m.text, /Still open:\n- UK: TfL failing/);
+  assert.equal(n.title, "TrainRadar: 1 new problem (IE)");
+  assert.match(n.text, /New · IE: live feed failing for 45 min/);
+  assert.match(n.text, /Cleared · FR: stopped \(lasted 30 min\)/);
+  assert.match(n.text, /Still open · UK: TfL failing/);
+  assert.equal(n.priority, 4);
+  assert.equal(n.click, "https://ops.example.test/");
   assert.equal(compose({ raised: [], cleared: [], open: {}, site: "x" }), null);
-  const raw = mime({ from: "alerts@example.test", to: "me@example.test", subject: "Ñandú ✓", text: "a\nb", now: NOW });
-  assert.match(raw, /^From: TrainRadar alerts <alerts@example.test>\r\nTo: <me@example.test>\r\nSubject: =\?UTF-8\?B\?/);
-  assert.match(raw, /\r\n\r\na\r\nb$/);
+  const calls = [];
+  await send({ ALERTS_NTFY_TOPIC: "s3cret-topic" }, n, async (url, init) => (calls.push([url, init]), new Response("{}")));
+  assert.equal(calls[0][0], NTFY, "the topic never in the URL");
+  assert.ok(!calls[0][0].includes("s3cret"));
+  assert.deepEqual(JSON.parse(calls[0][1].body), body("s3cret-topic", n));
+  assert.equal(JSON.parse(calls[0][1].body).topic, "s3cret-topic");
+  await assert.rejects(send({ ALERTS_NTFY_TOPIC: "t" }, n, async () => new Response("", { status: 429 })), /HTTP 429/);
 });
 
 test("Play: UTF-16 reports, the latest day by country", () => {
@@ -127,24 +133,24 @@ test("the check: statuses from the bucket, a confirmed problem mailed once", asy
   const sent = [];
   const env = {
     LIVE: { get: async (k) => (bucket[k] ? { text: async () => bucket[k] } : null) },
-    ALERTS_EMAIL_TO: "me@example.test",
-    ALERTS_FROM: "alerts@example.test",
-    MAIL: { send: async (m) => sent.push(m) },
+    ALERTS_NTFY_TOPIC: "t0pic",
   };
   const store = new Map();
   const ctx = { storage: { get: async (k) => store.get(k), put: async (k, v) => store.set(k, v) } };
   const ops = new OpsState(ctx, env);
-  const fetchFn = async () => new Response("", { status: 404 });
+  const fetchFn = async (url, init) => (url === "https://ntfy.sh/" ? (sent.push(JSON.parse(init.body)), new Response("{}")) : new Response("", { status: 404 }));
   const statuses = await readStatuses(env);
   assert.equal(statuses.ie.error, "HTTP 503");
   assert.equal(statuses.fr, null);
   const r1 = await ops.check(NOW, fetchFn);
   assert.deepEqual(r1, { found: 1, raised: 0, cleared: 0 });
-  // The second check confirms it: a mail (here the import of cloudflare:email
-  // fails in Node, which the state records instead of throwing).
+  // The second check confirms it: one push, and not again on the third.
   const r2 = await ops.check(NOW + 300_000, fetchFn);
   assert.equal(r2.raised, 1);
-  const st = store.get("alerts");
-  assert.ok(st.open["ie:failing"]);
-  assert.ok(st.lastMail || st.lastMailError);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].topic, "t0pic");
+  assert.match(sent[0].message, /IE: live feed failing/);
+  await ops.check(NOW + 600_000, fetchFn);
+  assert.equal(sent.length, 1);
+  assert.ok(store.get("alerts").open["ie:failing"]);
 });

@@ -1,10 +1,11 @@
-// TrainRadar ops Worker: alerts and the administrator dashboard
-// (docs/ops.md). Separate from the ingest Workers: it only reads.
+// TrainRadar ops Worker: alerts and the administrator dashboard. Separate
+// from the ingest Workers: it only reads. Set-up: wrangler.toml's comments.
 //
 // Every 5 minutes (cron): every country's status.json in the live bucket and,
-// hourly, each country's data manifest on the site → rules.js → an email on
-// a new problem and on its recovery (mail.js, Cloudflare Email Routing), the
-// alert state kept in a Durable Object. OPS_ENABLED is the kill switch.
+// hourly, each country's data manifest on the site → rules.js → a push to
+// the ntfy app on a new problem and on its recovery (notify.js, ntfy.sh, the
+// topic in ALERTS_NTFY_TOPIC), the alert state kept in a Durable Object.
+// OPS_ENABLED is the kill switch.
 //
 // The dashboard (/, /api/summary, /api/test-mail) answers only requests with
 // a valid Cloudflare Access token (access.js): live feeds, data freshness,
@@ -13,7 +14,7 @@
 import { accessUser } from "./access.js";
 import { cloudflare } from "./cf.js";
 import { PAGE } from "./dashboard.js";
-import { compose, send } from "./mail.js";
+import { compose, send } from "./notify.js";
 import { play } from "./play.js";
 import { DATA_COUNTRIES, STATUS_KEYS, problems, step } from "./rules.js";
 
@@ -90,10 +91,10 @@ export class OpsState {
     const found = problems({ statuses, manifests: manifests.data, now });
     const { raised, cleared } = step(state, found, now);
     const mail = compose({ raised, cleared, open: state.open, site: this.env.DASHBOARD_URL || "https://ops.mytrainradar.com/" });
-    if (mail && this.env.ALERTS_EMAIL_TO) {
+    if (mail && this.env.ALERTS_NTFY_TOPIC) {
       try {
-        await send(this.env, mail);
-        state.lastMail = { at: now, subject: mail.subject };
+        await send(this.env, mail, fetchFn);
+        state.lastMail = { at: now, title: mail.title };
       } catch (e) {
         state.lastMailError = { at: now, error: String(e?.message || e).slice(0, 200) };
       }
@@ -129,8 +130,8 @@ export class OpsState {
     if (url.pathname === "/check") return Response.json(await this.check());
     if (url.pathname === "/summary") return Response.json(await this.summaryData(request.headers.get("X-Ops-User") || ""));
     if (url.pathname === "/test-mail") {
-      if (!this.env.ALERTS_EMAIL_TO) return new Response("ALERTS_EMAIL_TO is not set", { status: 400 });
-      await send(this.env, { subject: "TrainRadar: test alert", text: "This is a test from the TrainRadar ops dashboard. Alerts reach this address.\n" });
+      if (!this.env.ALERTS_NTFY_TOPIC) return new Response("ALERTS_NTFY_TOPIC is not set", { status: 400 });
+      await send(this.env, { title: "TrainRadar: test alert", text: "A test from the ops dashboard: alerts reach this phone.", priority: 3, tags: ["bell"] });
       return new Response("sent");
     }
     return new Response("not found", { status: 404 });
