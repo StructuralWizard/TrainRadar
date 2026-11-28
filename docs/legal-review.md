@@ -64,7 +64,7 @@ and consumer law) has reviewed them.
 
 ## Points for the solicitor
 
-1. **The liability cap for Pro** (fees in the last 12 months, or £10 if greater): fair under the
+1. **The liability cap for Pro** (fees in the last 12 months, or £2 if greater): fair under the
    Consumer Rights Act 2015 for digital content?
 2. **The exclusion list for the free service** (missed trains, travel costs, rejected claims,
    indirect loss): acceptable under the CRA s. 62 fairness test, and under Spanish consumer law
