@@ -47,6 +47,9 @@ test("the browser's language picks the app's language the first time; a choice m
   assert.equal(pickLang(null, ["no"]), "nb");
   assert.equal(pickLang(null, ["nn-NO"]), "nb");
   assert.equal(pickLang(null, ["zh-SG"]), "zh");
+  // Traditional characters: Taiwan, Hong Kong, Macau, or Hant named.
+  for (const l of ["zh-TW", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-TW"]) assert.equal(pickLang(null, [l]), "zh-Hant", l);
+  for (const l of ["zh-CN", "zh-Hans", "zh"]) assert.equal(pickLang(null, [l]), "zh", l);
   assert.equal(pickLang(null, ["ru"]), "es");
   assert.equal(nextLang("es"), "en");
   assert.equal(nextLang(LANGS.at(-1)), "es");

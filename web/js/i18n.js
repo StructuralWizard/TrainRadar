@@ -18,8 +18,9 @@ import { SK } from "./i18n-sk.js";
 import { HU } from "./i18n-hu.js";
 import { ET } from "./i18n-et.js";
 import { ZH } from "./i18n-zh.js";
+import { ZH_HANT } from "./i18n-zh-hant.js";
 
-export const LANGS = ["es", "en", "pt", "ja", "fr", "de", "it", "nl", "da", "sv", "nb", "fi", "pl", "cs", "sk", "hu", "et", "zh"];
+export const LANGS = ["es", "en", "pt", "ja", "fr", "de", "it", "nl", "da", "sv", "nb", "fi", "pl", "cs", "sk", "hu", "et", "zh", "zh-Hant"];
 
 export const STRINGS = {
   es: {
@@ -1446,12 +1447,12 @@ export const STRINGS = {
 
 STRINGS.pt = { ...PT, changeLanguage: "Mudar de idioma", daysCount: "{n} dias" };
 STRINGS.ja = { ...JA, changeLanguage: "言語を切り替え", daysCount: "{n}日" };
-Object.assign(STRINGS, { fr: FR, de: DE, it: IT, nl: NL, da: DA, sv: SV, nb: NB, fi: FI, pl: PL, cs: CS, sk: SK, hu: HU, et: ET, zh: ZH });
+Object.assign(STRINGS, { fr: FR, de: DE, it: IT, nl: NL, da: DA, sv: SV, nb: NB, fi: FI, pl: PL, cs: CS, sk: SK, hu: HU, et: ET, zh: ZH, "zh-Hant": ZH_HANT });
 
 /** Each language's locale for numbers and dates. */
 export const LOCALES = {
   es: "es-ES", en: "en-GB", pt: "pt-PT", ja: "ja-JP", fr: "fr-FR", de: "de-DE", it: "it-IT", nl: "nl-NL", da: "da-DK",
-  sv: "sv-SE", nb: "nb-NO", fi: "fi-FI", pl: "pl-PL", cs: "cs-CZ", sk: "sk-SK", hu: "hu-HU", et: "et-EE", zh: "zh-SG",
+  sv: "sv-SE", nb: "nb-NO", fi: "fi-FI", pl: "pl-PL", cs: "cs-CZ", sk: "sk-SK", hu: "hu-HU", et: "et-EE", zh: "zh-SG", "zh-Hant": "zh-TW",
 };
 export const locale = (lang) => LOCALES[lang] || "es-ES";
 
@@ -1475,6 +1476,9 @@ const ALIASES = { no: "nb", nn: "nb" };
 export function pickLang(stored, languages = []) {
   if (LANGS.includes(stored)) return stored;
   for (const l of languages) {
+    // Chinese in traditional characters: Taiwan, Hong Kong, Macau, or
+    // "Hant" named (zh-Hant-…); every other Chinese is Simplified.
+    if (/^zh-(hant|tw|hk|mo)\b/i.test(String(l))) return "zh-Hant";
     const base = String(l).toLowerCase().split("-")[0];
     const code = ALIASES[base] || base;
     if (code !== "en" && LANGS.includes(code)) return code;
