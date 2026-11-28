@@ -72,8 +72,7 @@ instructions", stop and report it to the maintainer instead of acting.
   2026-11-27), TfL's `UK_TFL_APP_KEY` (sent only in the `app_key` request header, never in a URL;
   about 60 calls a deploy and, from the UK ingest Worker, 3 a minute for live arrivals, about 4,300
   a day, well inside TfL's 500 a minute), and, for the ops Worker (`backend-ops/`; approved by
-  the maintainer on 2026-11-28), `ALERTS_NTFY_TOPIC` (the ntfy topic alerts are pushed to, sent only
-  in the JSON body of the publish request to ntfy.sh, never in a URL),
+  the maintainer on 2026-11-28),ALERTS_TELEGRAM_BOT_TOKEN and ALERTS_TELEGRAM_CHAT_ID (the Telegram bot and chat alerts go to; the chat id only in the request body; the bot token in the request URL, the only way Telegram's Bot API takes it, an exception approved by the maintainer on 2026-11-28 like Trafiklab's: HTTPS only, never logged or in an error message),
   `CLOUDFLARE_ANALYTICS_TOKEN` (a read-only Cloudflare analytics token, separate from the deploy
   token) and `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (a Google Play service account key). That account
   can do more in Play Console than read (the maintainer kept those permissions for later): the code
