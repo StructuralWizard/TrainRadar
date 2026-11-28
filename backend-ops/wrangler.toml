@@ -3,8 +3,8 @@
 # Set-up: a Telegram bot made with @BotFather, its token in the repository
 # secret ALERTS_TELEGRAM_BOT_TOKEN and your chat's id (after you message the
 # bot once) in ALERTS_TELEGRAM_CHAT_ID; a Cloudflare Access application for
-# ops.mytrainradar.com, whose team domain and audience tag go in the
-# repository variables ACCESS_TEAM_DOMAIN and ACCESS_AUD; optionally
+# ops.mytrainradar.com, whose team domain and audience tag go in
+# ACCESS_TEAM_DOMAIN and ACCESS_AUD (repository variables or secrets); optionally
 # PLAY_REPORTS_BUCKET; then OPS_ENABLED=true.
 # It only reads: the live bucket's status files, the site's data manifests,
 # Cloudflare's analytics (read-only token) and Google Play (read-only scopes).

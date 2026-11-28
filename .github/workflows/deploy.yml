@@ -1302,11 +1302,13 @@ jobs:
           ALERTS_TELEGRAM_CHAT_ID: ${{ secrets.ALERTS_TELEGRAM_CHAT_ID }}
           CLOUDFLARE_ANALYTICS_TOKEN: ${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
-          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN || secrets.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ vars.ACCESS_AUD || secrets.ACCESS_AUD }}
           PLAY_REPORTS_BUCKET: ${{ vars.PLAY_REPORTS_BUCKET }}
         run: |
-          # Repository variables (not secret) on the command line; secrets on stdin.
+          # Settings that aren't secret (the Access team domain and audience tag,
+          # from repository variables or secrets, whichever is set) as --var;
+          # secrets on stdin.
           npx --yes "$WRANGLER" deploy --config backend-ops/wrangler.toml --var "OPS_ENABLED:true" \
             --var "ACCESS_TEAM_DOMAIN:$ACCESS_TEAM_DOMAIN" --var "ACCESS_AUD:$ACCESS_AUD" --var "PLAY_REPORTS_BUCKET:$PLAY_REPORTS_BUCKET"
           # (A secret left empty in GitHub is skipped, not an error.)
