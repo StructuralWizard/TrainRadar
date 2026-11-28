@@ -1733,6 +1733,7 @@ fn board_rows_json(rows: &[places::BoardRow]) -> String {
             .n("expected", r.expected())
             .b("canceled", r.canceled)
             .b("live", r.live)
+            .s("region", &r.region)
             .end();
     }
     s.push(']');

@@ -380,7 +380,29 @@ app, and update the "last updated" dates when they change.
   alerts) in the `eu` Worker: one call every 15 s, 5,760 a day of ODPT's 24,000.
 - Still hidden in the app (`hiddenCountries`); `?country=jp` opens it. See [world/jp.md](world/jp.md).
 
-## The world view (website)
+## Travellers' reports (UK, docs/plan-crowd-reports.md)
+
+`backend-reports/` (Worker `trainradar-reports`, at `reports.mytrainradar.com`) takes reports
+from the Android app and writes the counts above the threshold to `uk/rt/reports.json` in the
+live bucket every 30 s when something changed (and every 5 minutes anyway). Off until set up:
+
+1. **Play Integrity.** Play Console → *Test and release → App integrity → Play Integrity API*:
+   link a Google Cloud project. In that project, enable the *Google Play Integrity API*, create a
+   service account with no roles, make a JSON key, and save it as the GitHub secret
+   `PLAY_INTEGRITY_CREDENTIALS`. It's used only with the `playintegrity` scope, to decode the
+   app's tokens.
+2. **Repository variable `REPORTS_ENABLED`**: `true` deploys the Worker and takes reports;
+   `false` keeps it deployed but refuses every report and publishes `{"on": false}`, which hides
+   the app's button at once (no release needed). Unset: not deployed.
+3. Before turning it on for users: the privacy policy and terms (done, drafts), the short DPIA,
+   and the Play data safety form ([play-store.md](play-store.md#once-travellers-reports-are-on-uk-docsplan-crowd-reportsmd)).
+
+The Android build points at `https://reports.mytrainradar.com/` (repository variable
+`REPORTS_PUBLIC_URL` overrides it); the button shows only while `reports.json` says
+`{"on": true}`. No coordinates, IP addresses or request logs: observability is off for the
+Worker, and it never reads the client's address.
+
+## The world view (website and app)
 
 - **`data/world.json`**, built by the deploy (`tools/world/build.mjs`) from each country's
   `summary.json` (refdata-build): stations, lines, trains running each half hour of the window,
@@ -388,6 +410,8 @@ app, and update the "last updated" dates when they change.
 - **`world/live.json`** on the live domain, written every 10 minutes by the `eu` Worker's cron
   from the status files already in the bucket (no provider calls): live trains per country.
 - Zoomed out below 3.5 the page draws the networks and each country's summary, not trains.
+- The Android app shows it too: it fetches the site's `data/world.json` (bundled copy for
+  offline starts, `tools/build-app.sh`).
 
 ## Calls to providers (all countries)
 

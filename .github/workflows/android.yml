@@ -140,6 +140,9 @@ jobs:
         env:
           LIVE_BASE: ${{ vars.LIVE_PUBLIC_URL }}
           API_BASE: ${{ vars.API_PUBLIC_URL }}
+          # Travellers' reports (backend-reports): the button only shows while the
+          # live bucket's reports.json says {"on": true}.
+          REPORTS_BASE: ${{ vars.REPORTS_PUBLIC_URL || 'https://reports.mytrainradar.com/' }}
         run: |
           if [ -z "$LIVE_BASE" ]; then
             echo "LIVE_PUBLIC_URL isn't set: no try-out APK." | tee -a "$GITHUB_STEP_SUMMARY"

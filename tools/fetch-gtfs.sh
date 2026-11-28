@@ -32,6 +32,17 @@ if [ -n "${NAP_API_KEY:-}" ]; then
     printf '%s\t%s\t%s\t%s\n' "OUIGO GTFS (NAP, Powered by MITRAMS)" \
       "https://nap.transportes.gob.es/ConjuntoDato/Detail/1515" "" "$updated" >>gtfs/sources.tsv
     printf -- '- OUIGO (NAP): %s bytes, updated %s\n' "$(wc -c <gtfs/ouigo.zip)" "$updated"
+    # The download is pinned to file 1766 (the one approved, valid to 12 Dec
+    # 2026). If OUIGO uploads a new timetable as another file of dataset 1515,
+    # say so in the build summary so the pinned id gets reviewed.
+    curl -fsSL --retry 3 -H "ApiKey: $NAP_API_KEY" -H "Accept: application/json" "$nap/Fichero/1515" \
+      | python3 -c "
+import json, sys
+files = [f for f in json.load(sys.stdin).get('ficherosDto', []) if f.get('ficheroId') != 1766]
+for f in files:
+    print('  - warning: OUIGO dataset 1515 also has file %s (%s), updated %s; the build uses 1766'
+          % (f.get('ficheroId'), f.get('nombre') or '?', f.get('fechaActualizacion') or '?'))
+" || true
   else
     echo "- OUIGO (NAP): download failed, building without it"
     rm -f gtfs/ouigo.zip

@@ -529,8 +529,23 @@ function popupActions(lang, fav, onShare) {
 /** Settings: TrainRadar Pro and tips (Android app), backup of the user's
  * own data (both). `pro`: entitlement.decide()'s result; `catalogue`:
  * Billing.catalogue() (null outside the app or before Play answers). */
-export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete }) {
+export function settingsPanel(lang, { platform, pro, catalogue, message, onBuy, onRestore, onManage, onExport, onImport, onDelete, reports = null }) {
   const out = [];
+  // Travellers' reports (the UK): on or off, which withdraws consent as
+  // easily as it was given, and deleting this phone's reports.
+  if (reports) {
+    out.push(el("h3", {}, t(lang, "reportsTitle")));
+    out.push(el("p", { class: "small" }, t(lang, "reportsSetting")));
+    out.push(el("p", { class: reports.on ? "pro-on" : "muted", id: "reports-state" }, t(lang, reports.on ? "reportsStateOn" : "reportsStateOff")));
+    out.push(
+      el(
+        "p",
+        { class: "popup-actions" },
+        el("button", { class: "pill small", type: "button", id: "reports-toggle", onclick: reports.onToggle }, t(lang, reports.on ? "reportsTurnOff" : "reportsTurnOn")),
+        el("button", { class: "pill small", type: "button", id: "reports-forget", onclick: reports.onForget }, t(lang, "reportsForget")),
+      ),
+    );
+  }
   if (platform === "android") {
     const sub = catalogue?.find((p) => p.kind === "subscription" && p.sell !== false);
     out.push(el("h3", {}, "TrainRadar Pro"));

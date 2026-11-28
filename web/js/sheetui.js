@@ -107,6 +107,8 @@ function withIcons(rows) {
  * The train sheet. `o`: { regionName, lineColor, stops (tripJson), now (ms),
  * onClose, fav {on, onToggle}, notify {on, onToggle} | {href}, onShare,
  * notice {open, kinds, label(kind), onToggle, onPick(kind)} ("Compartir aviso"),
+ * report {list [{kind, n, last ms}], onDispute(kind)?, canReport, open, kinds,
+ * busy, msg, onToggle, onPick(kind)} (travellers' reports),
  * onHistory, trip {on, pro, onToggle}, onIncidents, history, rows (trainRows
  * options), redraw }.
  */
@@ -151,6 +153,27 @@ export function trainSheet(lang, info, o = {}) {
   else if (o.notify) chips.push(chip("bell", t(lang, o.notify.on ? "actNotifyOn" : "actNotify"), o.notify.onToggle, { id: "notify-btn", "aria-pressed": String(o.notify.on) }));
   if (o.onHistory) chips.push(chip("chart", t(lang, "actHistory"), o.onHistory, { id: "history-btn" }));
   if (o.notice) chips.push(chip("message", t(lang, "noticeShare"), o.notice.onToggle, { id: "notice-btn", "aria-expanded": String(!!o.notice.open) }));
+  if (o.report?.canReport) chips.push(chip("warning", t(lang, "reportChip"), o.report.onToggle, { id: "report-btn", "aria-expanded": String(!!o.report.open) }));
+  // Travellers' reports (reports.js): the counts, always with who says so
+  // and that the operator hasn't confirmed them; the report choices.
+  const crowd = (o.report?.list || []).map((r) =>
+    el(
+      "div",
+      { class: "crowd-report", "data-kind": r.kind },
+      el("p", { class: "crowd-count" }, icon("warning", 16), el("span", {}, `${t(lang, `reportCount_${r.kind}`, { n: formatCount(lang, r.n) })} · ${t(lang, "reportLast", { age: formatAgo(lang, Math.max(0, now - r.last / 1000)) })}`)),
+      el("p", { class: "small muted" }, [t(lang, "reportDisclaimer"), r.kind === "incident" ? t(lang, "reportEmergency") : ""].filter(Boolean).join(" ")),
+      o.report.onDispute ? el("button", { class: "link small", type: "button", onclick: () => o.report.onDispute(r.kind) }, t(lang, "reportDispute")) : null,
+    ),
+  );
+  const reportPick = o.report?.open
+    ? el(
+        "div",
+        { class: "notice-pick", id: "report-pick", role: "group", "aria-label": t(lang, "reportChip") },
+        el("p", { class: "small muted" }, t(lang, "reportPick")),
+        el("div", { class: "chip-row" }, o.report.kinds.map((k) => el("button", { class: "chip-btn", type: "button", "data-kind": k, disabled: o.report.busy || null, onclick: () => o.report.onPick(k) }, t(lang, `reportKind_${k}`)))),
+      )
+    : null;
+  const reportMsg = o.report?.msg ? el("p", { class: "small report-msg", role: "status" }, o.report.msg) : null;
   // "Compartir aviso": what's happening, as a fixed choice (notice.js).
   const noticePick = o.notice?.open
     ? el(
@@ -257,8 +280,11 @@ export function trainSheet(lang, info, o = {}) {
       closeButton(lang, o.onClose),
     ),
     withIcons(trainAlerts(lang, info, o.onIncidents)),
+    crowd,
     acts.length ? el("div", { class: "ts-acts" }, acts) : null,
     chips.length ? el("div", { class: "chip-row" }, chips) : null,
+    reportPick,
+    reportMsg,
     noticePick,
     o.fav?.full ? el("p", { class: "small muted fav-full" }, t(lang, "favFull", { n: o.fav.limit })) : null,
     o.trip && info.origin
@@ -386,6 +412,10 @@ export function stationSheet(lang, station, o = {}) {
             el("span", { class: "dep-dest" }, r.terminates ? t(lang, "fromOrigin", { origin: r.other_end }) : r.other_end),
           ),
           el("span", { class: "dep-sub" }, small.join(" · ")),
+          // Travellers' reports on this train (reports.js), the biggest worry.
+          o.reported?.(r.trip_id)
+            ? el("span", { class: "dep-crowd" }, `⚠ ${t(lang, `reportCount_${o.reported(r.trip_id).kind}`, { n: formatCount(lang, o.reported(r.trip_id).n) })}`)
+            : null,
         ),
         delayPill(lang, r.delay, r.canceled),
       ),

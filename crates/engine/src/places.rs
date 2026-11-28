@@ -48,6 +48,10 @@ pub struct BoardRow {
     pub live: bool,
     /// An arrivals board's row: its time is the arrival here.
     pub by_arrival: bool,
+    /// The timetable it comes from ("ld", "ouigo", a Cercanías núcleo…), so
+    /// the app can keep the few long-distance trains in view at stations
+    /// that Cercanías trains also serve.
+    pub region: String,
 }
 
 impl BoardRow {
@@ -161,6 +165,7 @@ fn board_of(
                         canceled: tu.is_some_and(|u| u.canceled),
                         live: live_delay.is_some(),
                         by_arrival,
+                        region: r.tt.region.clone(),
                         trip_id,
                     };
                     // Keep trains that haven't left yet (with their delay).

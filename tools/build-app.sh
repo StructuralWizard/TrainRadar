@@ -34,6 +34,9 @@ for f in $(jq -r '.stations.file, (.network.file // empty), (.regions[] | .file,
   [ -f "$data/$f" ] || { echo "manifest names $f, which isn't in $data" >&2; exit 1; }
 done
 if ls "$data" | grep -q '\.gz$'; then echo "gzip files left in $data" >&2; exit 1; fi
+# The world view (every country, zoomed out): the app fetches the site's
+# copy when it can; this one is for offline starts.
+curl -fsS "$SITE/data/world.json" -o "$data/world.json" || echo "no world.json on $SITE: the app fetches it" >&2
 echo "reference data: $(du -sh "$data" | cut -f1) from $SITE"
 
 rm -rf app/www

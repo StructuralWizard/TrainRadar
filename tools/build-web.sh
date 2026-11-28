@@ -25,6 +25,8 @@ if [ -n "${RT_BASE:-}" ]; then
   #              keeps the app on the pass-through only.
   #   API_BASE   the public history API (e.g. https://api.example); empty
   #              hides the history teaser.
+  #   REPORTS_BASE travellers' reports (backend-reports, Android app): where
+  #              reports are sent; empty hides the report button.
   #   REMOTE_DATA the site's data/ (Android app): newer timetables than the
   #              copy in the app, downloaded when the app starts.
   origins=$(printf '%s' "$RT_BASE" | sed -E 's#^(https://[^/]+).*#\1#')
@@ -37,6 +39,12 @@ if [ -n "${RT_BASE:-}" ]; then
   if [ -n "${LIVE_BASE:-}" ]; then
     live="${LIVE_BASE%/}/rt/"
     origins="$origins $(printf '%s' "$LIVE_BASE" | sed -E 's#^(https://[^/]+).*#\1#')"
+  fi
+  if [ -n "${REPORTS_BASE:-}" ]; then
+    case "$REPORTS_BASE" in https://*/) ;; *) echo "REPORTS_BASE must be https://…/" >&2; exit 1 ;; esac
+    origins="$origins $(printf '%s' "$REPORTS_BASE" | sed -E 's#^(https://[^/]+).*#\1#')"
+    sed -i "s#reportsBase: \"\"#reportsBase: \"$REPORTS_BASE\"#" web/js/config.js
+    grep -q "reportsBase: \"$REPORTS_BASE\"" web/js/config.js || { echo "reportsBase not set" >&2; exit 1; }
   fi
   if [ -n "${REMOTE_DATA:-}" ]; then
     case "$REMOTE_DATA" in https://*/) ;; *) echo "REMOTE_DATA must be https://…/" >&2; exit 1 ;; esac

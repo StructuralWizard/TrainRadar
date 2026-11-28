@@ -1025,6 +1025,25 @@ Security practices: **Data is encrypted in transit: Yes** (HTTPS only). **Users 
 request data deletion:** not applicable (no data collected); the app has "Delete all my
 data" for what it stores on the phone.
 
+### Once travellers' reports are on (UK, docs/plan-crowd-reports.md)
+
+Before the release that ships with `REPORTS_ENABLED=true`, the answer changes to **Yes**:
+
+- **App activity → Other user-generated content** (the reports: train, what was seen, on the
+  train or at which station, rough distance and accuracy bands, time): **collected**, not shared,
+  **optional** (off by default, consent screen), purposes **App functionality** and **Fraud
+  prevention, security and compliance**. Processed **pseudonymously**.
+- **Device or other IDs** (a random code that changes every month, stored hashed for 48 hours):
+  collected, not shared, optional, same purposes.
+- **Location: not collected.** The check runs on the phone; no coordinates leave it.
+- **Users can request data deletion: Yes** (Settings → Travellers' reports → Delete my reports).
+- Data retention: single reports 48 hours; daily totals without codes or trains.
+- Play Integrity is Google's own processing for the developer: it doesn't add a data type.
+
+Also: **User Generated Content** policy: users accept the rules when they turn reports on (the
+consent screen and the terms' "Travellers' reports"), "Not right?" flags a count, and reports and
+codes can be dropped.
+
 ## Precise location declaration
 
 **Due by 27 January 2027.** Every app that asks for precise location (`ACCESS_FINE_LOCATION`)

@@ -24,6 +24,10 @@ export const CONFIG = {
   // Android app: the site's data/ (absolute URL), newer than the copy in the
   // app once the app is a few days old; "" = only dataBase.
   remoteDataBase: "",
+  // Travellers' reports (backend-reports, the Android app only), with a
+  // trailing slash; "" hides the report button. Reading the counts needs
+  // nothing: they're in the live bucket (<cc>/rt/reports.json).
+  reportsBase: "",
   // Free vector tiles, no API key (https://openfreemap.org).
   style: "https://tiles.openfreemap.org/styles/positron",
   // Initial view: mainland Spain.

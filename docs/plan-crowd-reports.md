@@ -1,8 +1,26 @@
 # Plan: travellers' reports
 
-Status: **proposed 2026-11-22**, nothing built yet. Before any code it needs:
-- the maintainer's decisions ([end of this page](#decisions-for-the-maintainer));
-- a lawyer's review of the points in [Legal](#legal-and-store).
+Status: **R1 and R2 built for the UK only (2026-11-28), off until set up** ([deploy.md](deploy.md#travellers-reports-uk-docsplan-crowd-reportsmd)).
+The maintainer chose: option A (the check on the phone), the UK only (Metranos is a UK company;
+no EU representative for now), the defaults below (phase 1 list, 3 phones and 5 for accidents),
+no notifications from reports yet. Built:
+- the app (`web/js/reports.js`): consent screen, "Tell other travellers" on the train sheet, the
+  on-phone check, counts on the train sheet and station boards with "Not right?", Settings (on or
+  off, delete my reports); Play Integrity (`TrainRadarPlugin.integrityToken`);
+- the Worker (`backend-reports/`): `POST /v1/reports`, `/dispute`, `/forget`, a Durable Object
+  per country, `uk/rt/reports.json`;
+- the privacy policy and terms sections (drafts).
+
+Still to do before users see it: the short DPIA, a lawyer's look at the policy and terms, the Play
+data safety form, `PLAY_INTEGRITY_CREDENTIALS`, then `REPORTS_ENABLED=true`. Not built: the map
+badge, the trust statistics, notifications. Not checked server-side: that the train exists and
+the station is on its route (the Worker has no timetable); Play Integrity, the limits and the
+agreement of several phones stand in for it.
+
+In the UK the UK GDPR still applies (consent, privacy policy, the DPIA the ICO expects for
+location combined with an identifier) and Metranos needs to pay the ICO's data protection fee if
+it doesn't already. The Online Safety Act's "limited functionality" exemption very likely covers
+fixed-choice reports.
 
 This is research for a plan, not legal advice. The policy texts are quoted in the
 [appendix](#appendix-the-rules-quoted), checked on 2026-11-22.

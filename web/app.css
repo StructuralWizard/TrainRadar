@@ -446,6 +446,12 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .notice-pick { margin-top: 10px; padding: 10px 12px; border-radius: var(--tr-radius); background: var(--tr-ground); }
   .notice-pick p { margin: 0; }
+  .crowd-report { margin-top: 10px; padding: 10px 12px; border-radius: var(--tr-radius); border: 1px solid #f59e0b; background: rgba(245,158,11,.08); }
+  .crowd-report p { margin: 0; }
+  .crowd-count { display: flex; gap: 6px; align-items: center; font-weight: 600; }
+  .crowd-report .link { min-height: 44px; }
+  .report-msg { margin: 8px 0 0; }
+  .dep-crowd { display: block; font-size: 12px; color: #b45309; }
   .notice-pick .chip-row { margin-top: 8px; }
   .chip-btn {
     min-height: 44px; padding: 0 14px; border: 1px solid var(--tr-line); border-radius: 22px; background: var(--tr-surface); color: var(--tr-ink);
@@ -995,3 +1001,11 @@ body.replaying .bottom, body.replaying #app-banner, body.replaying #country-note
   .replay-bar { left: calc(var(--panel-w) + 16px); right: auto; }
   .toast { left: calc(50% + var(--panel-w) / 2); }
 }
+
+/* Travellers' reports: the consent screen (Google Play's prominent
+   disclosure), a screen of its own over everything. */
+.consent-screen { position: fixed; inset: 0; z-index: 1000; background: var(--tr-surface); color: var(--tr-ink); overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+.consent-body { max-width: 560px; margin: 0 auto; font-size: 15px; line-height: 1.5; }
+.consent-body h2 { margin: 8px 0 12px; font-size: 22px; }
+.consent-acts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin: 20px 0 8px; }
+.consent-acts .pill { min-height: 44px; padding: 0 18px; }
