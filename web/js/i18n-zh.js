@@ -1,4 +1,5 @@
-// Interface strings in Simplified Chinese (zh-SG), translated from STRINGS.en in i18n.js.
+// Interface strings in Simplified Chinese (the mainland's, zh-CN; Singapore and Malaysia too),
+// translated from STRINGS.en in i18n.js. Taiwan's and Hong Kong's come from it: tools/i18n/zh-hant.py.
 export const ZH = {
   title: "TrainRadar · 西班牙 Renfe 列车与误点实时查看",
   loading: "加载中…",

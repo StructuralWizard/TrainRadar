@@ -585,8 +585,51 @@ final class TrTable {
                 "works", "banarbeten");
     }
 
-    private static void zh_Hant() {
-        put("zh-Hant",
+    private static void zh_HK() {
+        put("zh-HK",
+                "%1$s now leaves from platform %2$s (was %3$s)", "%1$s 現改為從 %2$s 號月台出發（原為 %3$s）",
+                "%d min late", "誤點 %d 分鐘",
+                "Arrivals · ", "到站 · ",
+                "Cancelled", "已取消",
+                "Change at %s at risk: %d min left for the %s", "%1$s 換乘可能趕不上：距 %3$s 僅剩 %2$d 分鐘",
+                "Delays of your trains", "您的列車誤點",
+                "Departures · ", "出發 · ",
+                "From ", "出發站 ",
+                "From your favourites:", "來自您的收藏：",
+                "Next stop: ", "下一站： ",
+                "No data yet.", "暫無數據。",
+                "No notices in force.", "沒有生效中的通告。",
+                "No trains in the next 3 hours.", "未來 3 小時內沒有列車。",
+                "Not running now.", "目前不運行。",
+                "Open TrainRadar", "打開 TrainRadar",
+                "Renfe notices", "Renfe 通告",
+                "Save a station with ☆ Save in TrainRadar first, then add the widget again.", "請先在 TrainRadar 中用 ☆ 收藏保存一個車站，然後重新添加小組件。",
+                "Save a train with ☆ Save in TrainRadar first, then add the widget again.", "請先在 TrainRadar 中用 ☆ 收藏保存一趟列車，然後重新添加小組件。",
+                "Save trains with ☆ to see them here.", "用 ☆ 收藏列車，即可在這裏查看。",
+                "Tap to choose a station or train.", "點按選擇車站或列車。",
+                "The widget is part of TrainRadar Pro.", "小組件是 TrainRadar Pro 功能。",
+                "This widget is part of TrainRadar Pro.", "此小組件是 TrainRadar Pro 功能。",
+                "Train", "列車",
+                "Updated ", "更新於 ",
+                "Updating…", "正在更新…",
+                "Which station?", "哪個車站？",
+                "Which train?", "哪趟列車？",
+                "You leave at %s: %s %s", "您在 %s 出發：%s %s",
+                "You'll miss the change at %1$s to %2$s: see other options", "您將趕不上在 %1$s 換乘開往 %2$s 的列車：查看其他選擇",
+                "cancelled", "已取消",
+                "cancelled — see other options", "已取消——查看其他選擇",
+                "disruption", "服務中斷",
+                "lifts and access", "電梯和出入口",
+                "no live delay", "無實時誤點",
+                "not running", "不運行",
+                "notice", "通告",
+                "on time", "準點",
+                "strike", "罷工",
+                "works", "工程");
+    }
+
+    private static void zh_TW() {
+        put("zh-TW",
                 "%1$s now leaves from platform %2$s (was %3$s)", "%1$s 現改為從 %2$s 號月台出發（原為 %3$s）",
                 "%d min late", "誤點 %d 分鐘",
                 "Arrivals · ", "到站 · ",
@@ -685,7 +728,8 @@ final class TrTable {
         pl();
         sk();
         sv();
-        zh_Hant();
+        zh_HK();
+        zh_TW();
         zh();
     }
 }

@@ -1,6 +1,7 @@
-// Interface strings in Traditional Chinese (zh-Hant: Taiwan, Hong Kong), generated from
+// Interface strings in Traditional Chinese for Taiwan (zh-TW), generated from
 // i18n-zh.js by tools/i18n/zh-hant.py: do not edit, change the Simplified text and regenerate.
-export const ZH_HANT = {
+// translated from STRINGS.en in i18n.js. Taiwan's and Hong Kong's come from it: tools/i18n/zh-hant.py.
+export const ZH_TW = {
   title: "TrainRadar · 西班牙 Renfe 列車與誤點即時檢視",
   loading: "載入中…",
   loadError: "無法載入資料。正在重試…",
@@ -547,7 +548,7 @@ export const ZH_HANT = {
   bucketOnTime: "準點",
   moreTitle: "更多",
   moreLanguage: "語言",
-  moreLanguageValue: "繁體中文",
+  moreLanguageValue: "繁體中文（台灣）",
   moreAbout: "關於 TrainRadar",
   moreSettings: "設定和備份",
   moreSettingsPro: "TrainRadar Pro 和設定",
