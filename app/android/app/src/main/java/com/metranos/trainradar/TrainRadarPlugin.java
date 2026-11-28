@@ -23,6 +23,9 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import com.google.android.play.core.integrity.IntegrityManager;
+import com.google.android.play.core.integrity.IntegrityManagerFactory;
+import com.google.android.play.core.integrity.IntegrityTokenRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -176,5 +179,28 @@ public class TrainRadarPlugin extends Plugin {
         ListWidget.renderAll(getContext());
         if (!ListWidget.allIds(getContext()).isEmpty()) WidgetsWorker.refreshIfStale(getContext());
         call.resolve();
+    }
+
+    /**
+     * A Google Play Integrity token for a travellers' report (web/js/reports.js):
+     * proof to backend-reports that the request comes from this app, installed
+     * from Google Play, on a real phone. The nonce is a hash of the report, so
+     * the token can't be reused for another. Only sent when the user reports.
+     */
+    @PluginMethod
+    public void integrityToken(PluginCall call) {
+        String nonce = call.getString("nonce", "");
+        if (nonce == null || nonce.length() < 16 || nonce.length() > 500) {
+            call.reject("nonce");
+            return;
+        }
+        IntegrityManager manager = IntegrityManagerFactory.create(getContext());
+        manager.requestIntegrityToken(IntegrityTokenRequest.builder().setNonce(nonce).build())
+                .addOnSuccessListener(r -> {
+                    JSObject o = new JSObject();
+                    o.put("token", r.token());
+                    call.resolve(o);
+                })
+                .addOnFailureListener(e -> call.reject("integrity"));
     }
 }

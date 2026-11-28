@@ -82,6 +82,9 @@ jobs:
           TAG: ${{ inputs.tag }}
           LIVE_BASE: ${{ vars.LIVE_PUBLIC_URL }}
           API_BASE: ${{ vars.API_PUBLIC_URL }}
+          # Travellers' reports (backend-reports): the button only shows while the
+          # live bucket's reports.json says {"on": true}.
+          REPORTS_BASE: ${{ vars.REPORTS_PUBLIC_URL || 'https://reports.mytrainradar.com/' }}
         run: |
           [[ "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "bad tag: $TAG"; exit 1; }
           [ -n "$LIVE_BASE" ] || { echo "::error::LIVE_PUBLIC_URL isn't set"; exit 1; }

@@ -1,0 +1,40 @@
+# TrainRadar travellers' reports (docs/plan-crowd-reports.md), UK only:
+# reports from the Android app at reports.mytrainradar.com, counts above the
+# threshold published to the live bucket as <cc>/rt/reports.json.
+# Off until the maintainer sets the repository variable REPORTS_ENABLED=true
+# and the secret PLAY_INTEGRITY_CREDENTIALS (a Google Cloud service account
+# for the Cloud project linked in Play Console → App integrity, with access
+# to the Play Integrity API only). No secrets here: the deploy job puts the
+# credential as a Worker secret, on stdin.
+name = "trainradar-reports"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+routes = [{ pattern = "reports.mytrainradar.com", custom_domain = true }]
+
+# No request logs: reports must not end up in logs.
+[observability]
+enabled = false
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[durable_objects.bindings]]
+name = "REPORTS"
+class_name = "Reports"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Reports"]
+
+[[r2_buckets]]
+binding = "LIVE"
+bucket_name = "trainradar-live"
+
+[vars]
+# Kill switch: anything but "true" refuses every report and publishes
+# {"on": false}, which hides the app's report button.
+REPORTS_ENABLED = "false"
+# Countries reports are taken for (the UK only: no EU representative yet).
+REPORT_COUNTRIES = "uk"

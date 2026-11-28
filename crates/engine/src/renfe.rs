@@ -135,6 +135,7 @@ impl SourceAdapter for Renfe {
                             .collect();
                         let delay = tu.delay.or_else(|| stops.iter().rev().find_map(|s| s.1));
                         Some(RtTripUpdate {
+                            updated: tu.timestamp.and_then(|t| i64::try_from(t).ok()),
                             trip_id: trip.trip_id?,
                             delay,
                             canceled: trip.schedule_relationship == Some(TRIP_CANCELED),

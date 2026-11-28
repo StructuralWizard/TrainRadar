@@ -737,6 +737,7 @@ mod tests {
             &net,
             "tu_cer",
             FeedData::TripUpdates(vec![RtTripUpdate {
+                updated: None,
                 trip_id: "1004D100C3".into(),
                 accessible: None,
                 delay: Some(300),
@@ -1041,6 +1042,7 @@ mod tests {
         // TRUST says 5 minutes late: it's still at A; the next train is
         // cancelled; a delay for a trip we don't have is ignored.
         let tu = |id: &str, delay: Option<i32>, canceled: bool| RtTripUpdate {
+            updated: None,
             trip_id: id.into(),
             delay,
             canceled,

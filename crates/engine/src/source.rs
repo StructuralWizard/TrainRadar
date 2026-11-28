@@ -61,6 +61,9 @@ pub struct RtTripUpdate {
     pub accessible: Option<bool>,
     /// (stop id, arrival delay seconds, arrival unix time).
     pub stops: Vec<(String, Option<i32>, Option<i64>)>,
+    /// When the operator's data for this trip was last updated (the feed's
+    /// trip timestamp, unix seconds): in the UK, the latest TRUST movement.
+    pub updated: Option<i64>,
 }
 
 /// Decoded contents of one feed fetch.

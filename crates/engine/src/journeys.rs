@@ -802,6 +802,7 @@ mod tests {
             "trip_updates.pb",
             FeedData::TripUpdates(vec![
                 RtTripUpdate {
+                    updated: None,
                     trip_id: "1004D100C3".into(),
                     accessible: None,
                     delay: Some(600),
@@ -809,6 +810,7 @@ mod tests {
                     stops: vec![],
                 },
                 RtTripUpdate {
+                    updated: None,
                     trip_id: "18005".into(),
                     accessible: None,
                     delay: None,

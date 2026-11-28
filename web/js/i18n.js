@@ -20,8 +20,9 @@ import { ET } from "./i18n-et.js";
 import { ZH } from "./i18n-zh.js";
 import { ZH_TW } from "./i18n-zh-tw.js";
 import { ZH_HK } from "./i18n-zh-hk.js";
+import { TL } from "./i18n-tl.js";
 
-export const LANGS = ["es", "en", "pt", "ja", "fr", "de", "it", "nl", "da", "sv", "nb", "fi", "pl", "cs", "sk", "hu", "et", "zh", "zh-TW", "zh-HK"];
+export const LANGS = ["es", "en", "pt", "ja", "fr", "de", "it", "nl", "da", "sv", "nb", "fi", "pl", "cs", "sk", "hu", "et", "zh", "zh-TW", "zh-HK", "tl"];
 
 export const STRINGS = {
   es: {
@@ -340,6 +341,59 @@ export const STRINGS = {
     favNotePro: "Favoritos ilimitados con Pro. Se guardan solo en este dispositivo.",
     share: "Compartir",
     shareTrain: "{train} en directo en TrainRadar",
+    noticeShare: "Compartir aviso",
+    noticePick: "¿Qué pasa con este tren? Se comparte con quien tú elijas; a TrainRadar no le llega nada.",
+    noticeLate: "Va con retraso",
+    noticeStopped: "Está parado",
+    noticeNoShow: "No ha pasado",
+    noticeCrowded: "Va muy lleno",
+    noticeIncident: "Hay una incidencia",
+    noticeNext: "Próxima parada: {stop}",
+    noticeOfficial: "Dato oficial: {status}",
+    noticeVia: "Aviso de un viajero, compartido desde TrainRadar",
+    noticeCopied: "Aviso copiado: pégalo donde quieras",
+    reportChip: "Avisar a otros viajeros",
+    reportPick: "¿Qué ves? Tu ubicación se comprueba en el móvil y no se envía.",
+    reportKind_delay: "Retraso o parado",
+    reportKind_cancel: "No ha pasado (estoy en la estación)",
+    reportKind_incident: "Accidente o incidente grave",
+    reportCount_delay: "{n} viajeros informan de un retraso",
+    reportCount_cancel: "{n} viajeros informan de que no ha pasado",
+    reportCount_incident: "{n} viajeros informan de un accidente o incidente grave (sin confirmar)",
+    reportLast: "último aviso {age}",
+    reportDisclaimer: "Avisos de viajeros de TrainRadar, no confirmados por el operador.",
+    reportEmergency: "En una emergencia, llama al 999.",
+    reportDispute: "¿No es así?",
+    reportDisputed: "Gracias: anotado.",
+    reportChecking: "Comprobando dónde estás…",
+    reportSent: "Gracias: aviso enviado. Se mostrará cuando más viajeros coincidan.",
+    reportErrWhere: "Parece que no estás en este tren ni en una de sus estaciones a su hora.",
+    reportErrAccuracy: "Tu ubicación no es lo bastante precisa. Prueba al aire libre o junto a una ventana.",
+    reportErrLocation: "TrainRadar necesita tu ubicación para comprobar el aviso.",
+    reportErrRepeat: "Ya has avisado de esto hace poco.",
+    reportErrSend: "No se pudo enviar el aviso ({why}).",
+    reportsTitle: "Avisos de viajeros",
+    reportsIntro: "Cuenta a otros viajeros los retrasos, los trenes que no han pasado y los incidentes graves, antes de que lo diga la información oficial. De momento, solo trenes del Reino Unido.",
+    reportsWhat: "Cuando avisas, y solo entonces, la app toma tu ubicación una vez y comprueba en el móvil que vas en el tren o estás en una de sus estaciones. Tu ubicación no se envía. TrainRadar recibe: el tren, lo que avisas, si vas en el tren o en qué estación, una franja aproximada de distancia y de precisión, la hora, una comprobación de Google Play Integrity y un código aleatorio que cambia cada mes.",
+    reportsWhy: "Para qué: mostrar recuentos como «5 viajeros informan de un retraso» cuando coinciden al menos 3 móviles, y frenar avisos falsos o automáticos.",
+    reportsKeep: "Los avisos sueltos se borran a las 48 horas; solo quedan totales diarios sin códigos. Los tratan Cloudflare (alojamiento) y Google (Play Integrity) por cuenta de Metranos. Puedes desactivarlo y borrar tus avisos en Ajustes cuando quieras.",
+    reportsRules: "Avisa solo de lo que ves. No se permiten avisos falsos ni automáticos: se eliminan. Los avisos nunca sirven para decisiones de seguridad.",
+    reportsPrivacy: "Política de privacidad",
+    reportsAccept: "Aceptar y continuar",
+    reportsDecline: "No, gracias",
+    reportsSetting: "Envía avisos sobre trenes del Reino Unido a otros viajeros. Tu ubicación se comprueba en el móvil y nunca se envía.",
+    reportsStateOn: "Activados",
+    reportsStateOff: "Desactivados",
+    reportsTurnOn: "Activar",
+    reportsTurnOff: "Desactivar",
+    reportsForget: "Borrar mis avisos",
+    reportsForgotten: "Tus avisos se han borrado.",
+    reportUndo: "Deshacer",
+    reportUndone: "Aviso retirado.",
+    reportResolved_delay: "{n} viajeros avisaron de un retraso; después, el dato oficial dice que va a su hora.",
+    reportResolved_cancel: "{n} viajeros avisaron de que no había pasado; después, el dato oficial lo muestra circulando.",
+    reportTrust: "En los últimos 30 días, el dato oficial confirmó después el {pct} % de estos avisos.",
+    reportTrustEarlier: "En los últimos 30 días, el dato oficial confirmó después el {pct} % de estos avisos; los viajeros se adelantaron {min} min de media.",
     shareStation: "{station}: próximas salidas en TrainRadar",
     histTitle: "Puntualidad de la línea, últimos 7 días",
     histLine: "{p} % a su hora · {l} % con 5+ min",
@@ -1050,6 +1104,59 @@ export const STRINGS = {
     favNotePro: "Unlimited favourites with Pro. Saved on this device only.",
     share: "Share",
     shareTrain: "{train} live on TrainRadar",
+    noticeShare: "Share a heads-up",
+    noticePick: "What's happening with this train? It goes to whoever you choose; nothing reaches TrainRadar.",
+    noticeLate: "Running late",
+    noticeStopped: "Stopped",
+    noticeNoShow: "Hasn't turned up",
+    noticeCrowded: "Very crowded",
+    noticeIncident: "There's an incident",
+    noticeNext: "Next stop: {stop}",
+    noticeOfficial: "Official: {status}",
+    noticeVia: "A traveller's heads-up, shared from TrainRadar",
+    noticeCopied: "Heads-up copied: paste it wherever you like",
+    reportChip: "Tell other travellers",
+    reportPick: "What do you see? Your location is checked on your phone and isn't sent.",
+    reportKind_delay: "Delayed or stopped",
+    reportKind_cancel: "Hasn't come (I'm at the station)",
+    reportKind_incident: "Accident or serious incident",
+    reportCount_delay: "{n} travellers report a delay",
+    reportCount_cancel: "{n} travellers report it hasn't come",
+    reportCount_incident: "{n} travellers report an accident or serious incident (unconfirmed)",
+    reportLast: "latest report {age}",
+    reportDisclaimer: "TrainRadar travellers' reports, not confirmed by the operator.",
+    reportEmergency: "In an emergency, call 999.",
+    reportDispute: "Not right?",
+    reportDisputed: "Thanks: noted.",
+    reportChecking: "Checking where you are…",
+    reportSent: "Thanks: report sent. It shows once more travellers agree.",
+    reportErrWhere: "You don't seem to be on this train or at one of its stations around its time.",
+    reportErrAccuracy: "Your location isn't precise enough. Try outdoors or by a window.",
+    reportErrLocation: "TrainRadar needs your location to check the report.",
+    reportErrRepeat: "You've already reported this recently.",
+    reportErrSend: "Couldn't send the report ({why}).",
+    reportsTitle: "Travellers' reports",
+    reportsIntro: "Tell other travellers about delays, trains that haven't come and serious incidents, before the official information does. UK trains only, for now.",
+    reportsWhat: "When you report, and only then, the app takes your location once and checks on your phone that you're on the train or at one of its stations. Your location is not sent. TrainRadar receives: the train, what you report, whether you're on the train or at which station, a rough distance and accuracy band, the time, a Google Play Integrity check and a random code that changes every month.",
+    reportsWhy: "Why: to show counts like \u201c5 travellers report a delay\u201d once at least 3 phones agree, and to stop false or automated reports.",
+    reportsKeep: "Single reports are deleted after 48 hours; only daily totals without codes are kept. Cloudflare (hosting) and Google (Play Integrity) process them for Metranos. You can turn this off and delete your reports in Settings at any time.",
+    reportsRules: "Report only what you see. False or automated reports aren't allowed and are removed. Reports are never for safety decisions.",
+    reportsPrivacy: "Privacy policy",
+    reportsAccept: "Accept and continue",
+    reportsDecline: "No, thanks",
+    reportsSetting: "Send reports about UK trains to other travellers. Your location is checked on your phone and never sent.",
+    reportsStateOn: "On",
+    reportsStateOff: "Off",
+    reportsTurnOn: "Turn on",
+    reportsTurnOff: "Turn off",
+    reportsForget: "Delete my reports",
+    reportsForgotten: "Your reports have been deleted.",
+    reportUndo: "Undo",
+    reportUndone: "Report withdrawn.",
+    reportResolved_delay: "{n} travellers reported a delay; since then the official data says it's on time.",
+    reportResolved_cancel: "{n} travellers reported it hadn't come; since then the official data shows it running.",
+    reportTrust: "Over the last 30 days, the official data later confirmed {pct}% of these reports.",
+    reportTrustEarlier: "Over the last 30 days, the official data later confirmed {pct}% of these reports; travellers were {min} min earlier on average.",
     shareStation: "{station}: next departures on TrainRadar",
     histTitle: "Line punctuality, last 7 days",
     histLine: "{p}% on time · {l}% 5+ min late",
@@ -1448,12 +1555,12 @@ export const STRINGS = {
 
 STRINGS.pt = { ...PT, changeLanguage: "Mudar de idioma", daysCount: "{n} dias" };
 STRINGS.ja = { ...JA, changeLanguage: "言語を切り替え", daysCount: "{n}日" };
-Object.assign(STRINGS, { fr: FR, de: DE, it: IT, nl: NL, da: DA, sv: SV, nb: NB, fi: FI, pl: PL, cs: CS, sk: SK, hu: HU, et: ET, zh: ZH, "zh-TW": ZH_TW, "zh-HK": ZH_HK });
+Object.assign(STRINGS, { fr: FR, de: DE, it: IT, nl: NL, da: DA, sv: SV, nb: NB, fi: FI, pl: PL, cs: CS, sk: SK, hu: HU, et: ET, zh: ZH, "zh-TW": ZH_TW, "zh-HK": ZH_HK, tl: TL });
 
 /** Each language's locale for numbers and dates. */
 export const LOCALES = {
   es: "es-ES", en: "en-GB", pt: "pt-PT", ja: "ja-JP", fr: "fr-FR", de: "de-DE", it: "it-IT", nl: "nl-NL", da: "da-DK",
-  sv: "sv-SE", nb: "nb-NO", fi: "fi-FI", pl: "pl-PL", cs: "cs-CZ", sk: "sk-SK", hu: "hu-HU", et: "et-EE", zh: "zh-CN", "zh-TW": "zh-TW", "zh-HK": "zh-HK",
+  sv: "sv-SE", nb: "nb-NO", fi: "fi-FI", pl: "pl-PL", cs: "cs-CZ", sk: "sk-SK", hu: "hu-HU", et: "et-EE", zh: "zh-CN", "zh-TW": "zh-TW", "zh-HK": "zh-HK", tl: "fil-PH",
 };
 export const locale = (lang) => LOCALES[lang] || "es-ES";
 
@@ -1469,8 +1576,8 @@ export function t(lang, key, vars = {}) {
 }
 
 /** Browser language codes that mean one of LANGS: Norwegian (no, nn) is
- * written in Bokmål. */
-const ALIASES = { no: "nb", nn: "nb" };
+ * written in Bokmål; Filipino (fil) is Tagalog. */
+const ALIASES = { no: "nb", nn: "nb", fil: "tl" };
 
 /** The language picked before; else the browser's (or phone's) first
  * language that the app speaks, English excepted; else Spanish. */

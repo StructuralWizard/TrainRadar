@@ -10,6 +10,9 @@ import { formatAgo, formatCount, formatDelay, formatDistance, formatMedian, trai
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
+import { keepLongDistance } from "./js/board.js";
+import { NOTICE_KINDS, noticeLabel, noticeText } from "./js/notice.js";
+import { REPORT_COUNTRIES, REPORT_KINDS, UNDO_MS, monthlyToken, nonceText, placeCheck, reportResolved, sha256b64, trainReports, trustFor } from "./js/reports.js";
 import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, lineBadge, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
 import { loadRides, ridesGeoJson, videoForTrain, videosAt } from "./js/cabrides.js";
 import { endStations } from "./js/route.js";
@@ -238,8 +241,16 @@ async function refreshOverview() {
   if (!src) return;
   if (!world) {
     try {
-      const r = await fetch("data/world.json", { cache: "no-cache", signal: AbortSignal.timeout(15_000) });
-      world = r.ok ? await r.json() : { countries: {} };
+      // The app: the site's copy (today's), else the one it was built with.
+      const urls = [...(CONFIG.remoteDataBase ? [`${CONFIG.remoteDataBase}world.json`] : []), "data/world.json"];
+      for (const u of urls) {
+        const r = await fetch(u, { cache: "no-cache", signal: AbortSignal.timeout(15_000) }).catch(() => null);
+        if (r?.ok) {
+          world = await r.json();
+          break;
+        }
+      }
+      world ||= { countries: {} };
     } catch {
       world = { countries: {} };
     }
@@ -711,7 +722,7 @@ function fillJump() {
         "optgroup",
         { label: t(lang, "country") },
         countryChoices().map((c) => el("option", { value: `country:${c}` }, countryName(c))),
-        CONFIG.platform === "web" ? el("option", { value: "overview" }, t(lang, "allCountries")) : null,
+        el("option", { value: "overview" }, t(lang, "allCountries")),
       );
   if (!ES) {
     const areas = countryAreas();
@@ -1167,6 +1178,214 @@ function trainVideo(info, now) {
   return videoForTrain(idx, trip?.stops, info.next_stop, (now ?? Date.now()) / 1000);
 }
 
+// Travellers' reports (js/reports.js, docs/plan-crowd-reports.md): the UK
+// only. Everyone sees the counts (<cc>/rt/reports.json); the Android app,
+// with the user's consent, can send one after the location check on the
+// phone. The fix never leaves the phone.
+const REPORTS = REPORT_COUNTRIES.includes(country) && !!CONFIG.liveBase;
+const REPORTS_SEND = REPORTS && CONFIG.platform === "android" && !!CONFIG.reportsBase;
+let reportsDoc = null;
+let reportFor = ""; // the train whose report choices are open
+let reportBusy = false;
+let reportMsg = { key: "", text: "" };
+let lastSent = null; // { key, trip, kind, at }: the report "Undo" can take back
+const reportsConsent = () => store.get("reports-consent") === "yes";
+
+let reportsStats = { at: 0, doc: null }; // how often counts were later confirmed (reports-stats.json)
+async function loadReports() {
+  try {
+    const r = await fetch(`${CONFIG.liveBase}reports.json?t=${Math.floor(Date.now() / 30_000)}`);
+    reportsDoc = r.ok ? await r.json() : null;
+  } catch {
+    // keep what we have
+  }
+  if (reportsDoc?.trips && Object.keys(reportsDoc.trips).length && Date.now() - reportsStats.at > 10 * 60_000) {
+    reportsStats.at = Date.now();
+    try {
+      const r = await fetch(`${CONFIG.liveBase}reports-stats.json?t=${Math.floor(Date.now() / 600_000)}`);
+      if (r.ok) reportsStats.doc = await r.json();
+    } catch {
+      // without it, no trust line
+    }
+  }
+  detailKey = "";
+  showPopup();
+}
+
+function reportToken() {
+  let saved = null;
+  try {
+    saved = JSON.parse(store.get("reports-token") || "null");
+  } catch {
+    saved = null;
+  }
+  const tok = monthlyToken(saved);
+  if (tok !== saved) store.set("reports-token", JSON.stringify(tok));
+  return tok.token;
+}
+
+async function postReport(path, body) {
+  const r = await fetch(`${CONFIG.reportsBase}v1/reports${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+  return j;
+}
+
+/** One location fix, precise, in the foreground; null if refused or failed. */
+function oneFix() {
+  return new Promise((resolve) => {
+    if (!("geolocation" in navigator)) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 30_000 },
+    );
+  });
+}
+
+/** The consent screen (Google Play's prominent disclosure): its own screen,
+ * nothing pre-chosen; resolves true on "Accept". */
+function askReportsConsent() {
+  return new Promise((resolve) => {
+    const done = (yes) => {
+      box.remove();
+      if (yes) store.set("reports-consent", "yes");
+      resolve(yes);
+    };
+    const box = el(
+      "div",
+      { class: "consent-screen", role: "dialog", "aria-modal": "true", "aria-labelledby": "consent-title" },
+      el(
+        "div",
+        { class: "consent-body" },
+        el("h2", { id: "consent-title" }, t(lang, "reportsTitle")),
+        ...["reportsIntro", "reportsWhat", "reportsWhy", "reportsKeep", "reportsRules"].map((k) => el("p", {}, t(lang, k))),
+        el("p", {}, el("a", { href: `${CONFIG.siteUrl}legal/privacy.html#${lang === "es" ? "avisos" : "reports"}`, target: "_blank", rel: "noopener" }, t(lang, "reportsPrivacy"))),
+        el(
+          "div",
+          { class: "consent-acts" },
+          el("button", { class: "pill", type: "button", id: "consent-no", onclick: () => done(false) }, t(lang, "reportsDecline")),
+          el("button", { class: "pill pill-strong", type: "button", id: "consent-yes", onclick: () => done(true) }, t(lang, "reportsAccept")),
+        ),
+      ),
+    );
+    document.body.append(box);
+    box.querySelector("#consent-title")?.focus?.();
+  });
+}
+
+function reportAction(info, trip, now) {
+  if (!REPORTS) return null;
+  const key = `${info.trip_id}|${info.number}`;
+  const list = trainReports(reportsDoc, info.trip_id).map((r) => ({ ...r, resolved: reportResolved(r, info), trust: trustFor(reportsStats.doc, r.kind) }));
+  const canSend = REPORTS_SEND && reportsDoc?.on === true && !info.canceled;
+  const redraw = () => {
+    detailKey = "";
+    showPopup(true);
+  };
+  const say = (text) => {
+    reportMsg = { key, text };
+    redraw();
+  };
+  const token = () => reportToken();
+  return {
+    list,
+    canReport: canSend,
+    open: reportFor === key,
+    kinds: Object.keys(REPORT_KINDS),
+    busy: reportBusy,
+    msg: reportMsg.key === key ? reportMsg.text : "",
+    onUndo:
+      lastSent?.key === key && Date.now() - lastSent.at < UNDO_MS && reportMsg.key === key
+        ? async () => {
+            const sent = lastSent;
+            lastSent = null;
+            try {
+              await postReport("/undo", { country, trip: sent.trip, kind: sent.kind, token: token() });
+              say(t(lang, "reportUndone"));
+            } catch (e) {
+              say(t(lang, "reportErrSend", { why: e.message }));
+            }
+          }
+        : null,
+    onToggle: async () => {
+      if (reportFor !== key && !reportsConsent() && !(await askReportsConsent())) return;
+      reportFor = reportFor === key ? "" : key;
+      reportMsg = { key: "", text: "" };
+      redraw();
+    },
+    onDispute:
+      canSend && reportsConsent()
+        ? async (kind) => {
+            const b = { country, trip: info.trip_id, kind, at: Date.now(), token: token() };
+            const integrity = await appNative.integrityToken(await sha256b64(nonceText(b, true)));
+            if (!integrity) return say(t(lang, "reportErrSend", { why: "Google Play" }));
+            try {
+              await postReport("/dispute", { ...b, integrity });
+              say(t(lang, "reportDisputed"));
+            } catch (e) {
+              say(t(lang, "reportErrSend", { why: e.message }));
+            }
+          }
+        : null,
+    onPick: async (kind) => {
+      if (reportBusy) return;
+      reportBusy = true;
+      say(t(lang, "reportChecking"));
+      try {
+        const fix = await oneFix();
+        if (!fix) return say(t(lang, "reportErrLocation"));
+        const live = selectedInfo(Date.now()) || info;
+        const place = placeCheck(kind, fix, live, trip, Date.now() / 1000);
+        // The fix is dropped here: only the check's result goes on.
+        if (place.error) return say(t(lang, place.error === "accuracy" ? "reportErrAccuracy" : "reportErrWhere"));
+        const b = { country, trip: info.trip_id, train: info.number, kind, where: place.where, station: place.station, band: place.band, acc: place.acc, at: Date.now(), token: token() };
+        const integrity = await appNative.integrityToken(await sha256b64(nonceText(b)));
+        if (!integrity) return say(t(lang, "reportErrSend", { why: "Google Play" }));
+        await postReport("", { ...b, integrity });
+        reportFor = "";
+        lastSent = { key, trip: b.trip, kind, at: Date.now() };
+        // The Undo button goes after a minute.
+        setTimeout(() => lastSent?.key === key && (detailKey = "", showPopup(true)), UNDO_MS + 500);
+        say(t(lang, "reportSent"));
+      } catch (e) {
+        say(e.message === "repeat" ? t(lang, "reportErrRepeat") : t(lang, "reportErrSend", { why: e.message }));
+      } finally {
+        reportBusy = false;
+        redraw();
+      }
+    },
+  };
+}
+
+/** "Compartir aviso" (js/notice.js): the train whose choices are open. */
+let noticeFor = "";
+
+function noticeAction(info, trip, now) {
+  const key = `${info.trip_id}|${info.number}`;
+  const redraw = () => {
+    detailKey = "";
+    showPopup(true);
+  };
+  return {
+    open: noticeFor === key,
+    kinds: NOTICE_KINDS,
+    label: (k) => noticeLabel(lang, k),
+    onToggle: () => {
+      noticeFor = noticeFor === key ? "" : key;
+      redraw();
+    },
+    onPick: async (kind) => {
+      noticeFor = "";
+      redraw();
+      const text = noticeText(lang, kind, info, { title: trainTitle(info), stops: trip?.stops || [], nowSecs: (now ?? Date.now()) / 1000 });
+      const url = `${CONFIG.siteUrl}?train=${encodeURIComponent(info.number)}`;
+      if (canShare()) await share({ title: t(lang, "noticeShare"), text, url });
+      else if (await copyText(`${text}\n${url}`)) toast(t(lang, "noticeCopied"));
+    },
+  };
+}
+
 /** Phone: the selected train in the detail sheet (desktop: a popup). */
 function showTrainSheet(info, open, now) {
   const sheet = $("detail");
@@ -1208,6 +1427,8 @@ function showTrainSheet(info, open, now) {
     onHistory: CONFIG.apiBase && info.history_line
       ? () => openHistory({ kind: "train", trainNo: info.number, line: info.history_line, product: info.history_product, title: trainTitle(info), days: FREE_DAYS })
       : null,
+    notice: noticeAction(info, trip, now),
+    report: reportAction(info, trip, now),
     trip: CONFIG.platform === "android" && !info.timetable_only ? tripButton(info) : null,
     onIncidents: (x) =>
       showIncidents({
@@ -1522,8 +1743,8 @@ function showStationSheet(f, regions, refresh) {
         if (stationPlan.key !== key) return;
         stationPlan = {
           key,
-          board: JSON.parse(e.stationBoardJson(id, when, 3 * 3600, 30)).filter((r) => !r.terminates),
-          arrivals: JSON.parse(e.stationArrivalsJson(id, when, 3 * 3600, 30)),
+          board: keepLongDistance(JSON.parse(e.stationBoardJson(id, when, 3 * 3600, 300)).filter((r) => !r.terminates), 30),
+          arrivals: keepLongDistance(JSON.parse(e.stationArrivalsJson(id, when, 3 * 3600, 300)), 30),
         };
         redrawPlan();
       })
@@ -1532,8 +1753,9 @@ function showStationSheet(f, regions, refresh) {
         if (stationPlan.key === key) (stationPlan = { key, board: [], arrivals: [] }), redrawPlan();
       });
   }
-  const board = when ? stationPlan.board : JSON.parse(engine.stationBoardJson(id, now, 90 * 60, 12));
-  const approaching = when ? [] : JSON.parse(engine.approachingJson(id, now, 30 * 60)).slice(0, 10);
+  // The next trains, plus the long-distance ones of the next 3 hours (js/board.js).
+  const board = when ? stationPlan.board : keepLongDistance(JSON.parse(engine.stationBoardJson(id, now, 3 * 3600, 200)), 12);
+  const approaching = when ? [] : keepLongDistance(JSON.parse(engine.approachingJson(id, now, 90 * 60)), 10);
   const nucleo = regions.find((r) => r.code !== "ld");
   const routes = [...new Set(board.map((r) => r.route).filter(Boolean))].slice(0, 6);
   const sub = [];
@@ -1543,6 +1765,13 @@ function showStationSheet(f, regions, refresh) {
   const region = nucleo?.code || "";
   const body = stationSheet(lang, { id, name }, {
     sub: sub.join(" · "),
+    reported: (row) => {
+      const list = trainReports(reportsDoc, row.trip_id);
+      if (!list.length) return null;
+      const i = engine.findTrain(row.trip_id, row.number);
+      const info = i < 0 ? null : JSON.parse(engine.trainJson(i, now));
+      return list.find((r) => !reportResolved(r, info)) || null;
+    },
     routes,
     board,
     approaching,
@@ -1750,6 +1979,25 @@ function renderSettings() {
         }
         renderSettings();
       },
+      reports: REPORTS_SEND
+        ? {
+            on: reportsConsent(),
+            onToggle: async () => {
+              if (reportsConsent()) store.set("reports-consent", "no");
+              else await askReportsConsent();
+              renderSettings();
+            },
+            onForget: async () => {
+              try {
+                await postReport("/forget", { country, token: reportToken() });
+                settingsMsg = t(lang, "reportsForgotten");
+              } catch (e) {
+                settingsMsg = t(lang, "reportErrSend", { why: e.message });
+              }
+              renderSettings();
+            },
+          }
+        : null,
       onDelete: async () => {
         if (!window.confirm(t(lang, "deleteConfirm"))) return;
         await prefs.clear();
@@ -2890,7 +3138,7 @@ function renderNetworks(keepInput = false) {
       : [
           ...countryChoices().map((c) => ({ code: c, name: countryName(c), current: c === country, onPick: () => switchCountry(c) })),
           // The website: every country at once (zoomed out).
-          ...(CONFIG.platform === "web" ? [{ code: "overview", name: t(lang, "allCountries"), current: false, onPick: () => (($("networks").hidden = true), showOverview()) }] : []),
+          { code: "overview", name: t(lang, "allCountries"), current: false, onPick: () => (($("networks").hidden = true), showOverview()) },
         ],
     // The area drop-down: the country's areas (Spain: núcleos, then its
     // communities and provinces).
@@ -3683,7 +3931,7 @@ async function main() {
   // Where the app was left, else the country's default view.
   ({ map, attr } = createMap(
     "map",
-    { ...CONFIG, ...(lastView ? { center: lastView.center, zoom: lastView.zoom } : {}), minZoom: MULTI_COUNTRY && CONFIG.platform === "web" ? 1 : 4 },
+    { ...CONFIG, ...(lastView ? { center: lastView.center, zoom: lastView.zoom } : {}), minZoom: MULTI_COUNTRY ? 1 : 4 },
     attribution(),
   ));
   map.on("moveend", saveView);
@@ -3754,14 +4002,17 @@ async function main() {
     loadUkIncidents();
     setInterval(loadUkIncidents, 5 * 60_000);
   }
+  if (REPORTS) {
+    loadReports();
+    setInterval(() => document.visibilityState === "visible" && loadReports(), 60_000);
+  }
 
   await mapReady;
   setMapLanguage(map, lang);
   addLayers(map);
   if (MULTI_COUNTRY) addCountries(map, country);
-  // The website's overview of every country, zoomed out (too heavy for the
-  // app: it isn't offered there).
-  if (MULTI_COUNTRY && CONFIG.platform === "web") {
+  // The overview of every country, zoomed out (the website and the app).
+  if (MULTI_COUNTRY) {
     addOverview(map);
     map.on("moveend", () => map.getZoom() < OVERVIEW_ZOOM && refreshOverview());
     // While it's open: the labels follow the half hour and the ten-minute

@@ -207,6 +207,12 @@ export const shortcutLink = (kind, country, id) => `trainradar://${kind}/${count
  * background delay alerts, notifications and the widget. No-ops on the web. */
 export const appNative = {
   available: () => !!plugin("TrainRadar"),
+  /** A Play Integrity token bound to `nonce` (travellers' reports), or null. */
+  async integrityToken(nonce) {
+    const p = plugin("TrainRadar");
+    if (!p?.integrityToken) return null;
+    return (await p.integrityToken({ nonce }).catch(() => null))?.token || null;
+  },
   async setAlerts(enabled, lang) {
     await plugin("TrainRadar")?.setAlerts({ enabled, lang });
   },

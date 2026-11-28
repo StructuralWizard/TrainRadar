@@ -51,6 +51,8 @@ test("the browser's language picks the app's language the first time; a choice m
   for (const l of ["zh-HK", "zh-MO", "zh-Hant-HK", "zh-hk"]) assert.equal(pickLang(null, [l]), "zh-HK", l);
   for (const l of ["zh-TW", "zh-Hant", "zh-Hant-TW"]) assert.equal(pickLang(null, [l]), "zh-TW", l);
   for (const l of ["zh-CN", "zh-Hans", "zh-SG", "zh"]) assert.equal(pickLang(null, [l]), "zh", l);
+  // Tagalog: Filipino (fil) or Tagalog (tl), Philippines or not.
+  for (const l of ["fil", "fil-PH", "tl", "tl-PH"]) assert.equal(pickLang(null, [l]), "tl", l);
   assert.equal(pickLang(null, ["ru"]), "es");
   assert.equal(nextLang("es"), "en");
   assert.equal(nextLang(LANGS.at(-1)), "es");

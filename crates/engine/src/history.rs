@@ -417,6 +417,7 @@ mod tests {
         let mut rec = Recorder::new();
         let now = local(8, 1);
         let tu = |id: &str, delay, canceled| RtTripUpdate {
+            updated: None,
             trip_id: id.into(),
             delay,
             canceled,

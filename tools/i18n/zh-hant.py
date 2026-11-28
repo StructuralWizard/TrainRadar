@@ -84,9 +84,9 @@ def convert(text, variant):
     text = cc.convert(text)
     for a, b in v["fix"].items():
         text = text.replace(a, b)
-    # The language's own name (the Simplified file names itself 简体中文).
-    for simp in ("簡體中文", "简体中文"):
-        text = text.replace(simp, v["name"])
+    # The language's own name in the language list (the Simplified file's
+    # moreLanguageValue is 简体中文); elsewhere 简体中文 means Simplified.
+    text = re.sub(r'(moreLanguageValue:\s*")(?:簡體中文|简体中文)(")', lambda m: m.group(1) + v["name"] + m.group(2), text)
     return text
 
 
