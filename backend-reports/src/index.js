@@ -8,6 +8,9 @@
 // (hashed token, train, kind, on the train or which station, time) and
 // writes the counts above the threshold to the live bucket every 30 s when
 // something changed: <cc>/rt/reports.json, read by everyone from the CDN.
+// Every 5 minutes it also checks the counts it showed against the official
+// live files in the same bucket and publishes how often they were later
+// confirmed, and how much earlier: <cc>/rt/reports-stats.json (stats.js).
 //
 // Privacy: no coordinates ever arrive (the location check runs on the
 // phone); IP addresses and headers aren't read, stored or logged; nothing
@@ -17,6 +20,7 @@
 // app's report button.
 
 import { checkIntegrity } from "./integrity.js";
+import { aggregate, judge, officialTrips, summary, track } from "./stats.js";
 import { KINDS, count, nonceText, prune, publish, refused, sha256b64, undo, validate, validateDispute } from "./rules.js";
 
 const CORS = {
@@ -27,6 +31,8 @@ const CORS = {
 };
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...CORS } });
 const PUBLISH_MS = 30_000;
+/** The operator's live files each country's reports are checked against. */
+const OFFICIAL_FILES = { uk: ["trip_updates.pb", "tfl_updates.pb"] };
 
 export const enabled = (env) => env.REPORTS_ENABLED === "true" && !!env.PLAY_INTEGRITY_CREDENTIALS;
 export const countries = (env) => String(env.REPORT_COUNTRIES || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -87,6 +93,7 @@ export class Reports {
     }
     if (path === "/publish") {
       await this.alarm();
+      await this.trust();
       return json({ ok: true });
     }
     return json({ error: "not found" }, 404);
@@ -103,6 +110,32 @@ export class Reports {
     const doc = publish(st.log, st.disputes, now, enabled(this.env));
     await this.env.LIVE.put(`${st.country}/rt/reports.json`, JSON.stringify(doc), {
       httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=30" },
+    });
+    // Each count shown opens a case for the trust statistics.
+    const cases = track((await this.ctx.storage.get("cases")) || {}, doc, now);
+    await this.ctx.storage.put("cases", cases);
+  }
+
+  /** The trust statistics: judge the open cases against the official data
+   * and publish the 30-day summary. */
+  async trust() {
+    const now = Date.now();
+    const country = (await this.ctx.storage.get("country")) || "";
+    if (!country) return;
+    const official = new Map();
+    for (const f of OFFICIAL_FILES[country] || []) {
+      try {
+        const obj = await this.env.LIVE.get(`${country}/rt/${f}`);
+        if (obj) officialTrips(new Uint8Array(await obj.arrayBuffer()), official);
+      } catch {
+        // a missing or broken file: those cases wait, or end "unknown"
+      }
+    }
+    const r = judge((await this.ctx.storage.get("cases")) || {}, official, now);
+    const trust = aggregate((await this.ctx.storage.get("trust")) || {}, r.decided);
+    await this.ctx.storage.put({ cases: r.cases, trust });
+    await this.env.LIVE.put(`${country}/rt/reports-stats.json`, JSON.stringify(summary(trust, now)), {
+      httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=600" },
     });
   }
 }

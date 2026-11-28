@@ -384,7 +384,9 @@ app, and update the "last updated" dates when they change.
 
 `backend-reports/` (Worker `trainradar-reports`, at `reports.mytrainradar.com`) takes reports
 from the Android app and writes the counts above the threshold to `uk/rt/reports.json` in the
-live bucket every 30 s when something changed (and every 5 minutes anyway). Off until set up:
+live bucket every 30 s when something changed (and every 5 minutes anyway), and every 5
+minutes `uk/rt/reports-stats.json`, how often those counts were later confirmed by the official
+feeds. Off until set up:
 
 1. **Play Integrity.** Play Console → *Test and release → App integrity → Play Integrity API*:
    link a Google Cloud project. In that project, enable the *Google Play Integrity API*, create a

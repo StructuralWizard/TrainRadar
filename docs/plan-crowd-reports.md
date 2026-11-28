@@ -23,6 +23,23 @@ How long reports last (as built):
 - **Kept:** single reports and "Not right?" 48 hours; daily totals 60 days, without codes or
   trains. "Delete my reports" removes everything sent with this month's code at once.
 
+Trust statistics (as built, `backend-reports/src/stats.js`): every 5 minutes the Worker checks
+each count it showed against the operator's live files in the bucket (UK: `trip_updates.pb` from
+Network Rail's TRUST, `tfl_updates.pb` from TfL) and decides it:
+- **confirmed:** a delay or "hasn't come" when the official delay reaches 5 min or the train is
+  cancelled; an incident at 10 min or a cancellation. If the official data didn't already say so
+  when the count was shown, the minutes between the two are how much earlier the travellers were.
+- **contradicted:** the official data, newer than the last report, says 2 min late or less and not
+  cancelled (never for incidents).
+- **unknown:** neither within 3 hours.
+
+Decided cases become daily totals per kind (60 days, no trains or phones);
+`<cc>/rt/reports-stats.json` has the last 30 days per kind: shown, % confirmed, contradicted,
+unknown, % earlier and the average minutes earlier. The app shows "Over the last 30 days, the
+official data later confirmed 82% of these reports; travellers were 6 min earlier on average"
+under a count once a kind has 20 cases in 30 days (the "earlier" part when at least a quarter of
+confirmed ones were earlier).
+
 Still to do before users see it: the short DPIA, a lawyer's look at the policy and terms, the Play
 data safety form, `PLAY_INTEGRITY_CREDENTIALS`, then `REPORTS_ENABLED=true`. Not built: the map
 badge, the trust statistics, notifications. Not checked server-side: that the train exists and
@@ -395,3 +412,30 @@ Checked 2026-11-22. Not legal advice.
   - Art. 16: notice and action.
 - **UK Online Safety Act 2023:** Schedule 1 para 4 exempts services where users only post comments
   or reviews on provider content, vote yes/no, or rate or score it.
+
+## Buses (planned, UK)
+
+The maintainer plans UK buses with travellers' reports, under rules of their own. Nothing built.
+
+**Data.** The Department for Transport's Bus Open Data Service (BODS) publishes every local bus
+operator's timetables (TransXChange, and GTFS for Great Britain) and live vehicle locations
+(SIRI-VM, and GTFS-RT), free with an API key, under the Open Government Licence. The live
+locations are what let the app check a report and the trust statistics judge it. A new data
+source: it needs the maintainer's approval and an entry in `docs/data-sources-uk.md`.
+
+**Why the rules differ from trains:**
+
+| | Trains | Buses (proposed) |
+|---|---|---|
+| What's reported | a trip (a train has a number and a timetable slot) | frequent routes: a route and direction at a stop ("no bus for 20 min"), not a trip; trips only on infrequent routes |
+| Kinds | delay, hasn't come, accident | late or no bus; drove past full; didn't stop; diverted (not serving this stop); incident |
+| On board | within 300 m of the track and 3 km of the train | within 100 m of the route and 500 m of the bus's live position (BODS GPS) |
+| At a stop | within 400 m, 30 min before to 90 min after | within 80 m of a stop on the route, while a bus is due (from 10 min before) |
+| Agreement | 3 phones in 20 min (5 for accidents) | 2 phones in 15 min for "no bus"/"didn't stop"/"full" (fewer people per vehicle, shorter waits); 3 for incidents |
+| Shown for | 60 min after the last report | 30 min |
+| Official check | TRUST movements: on time contradicts, a delay confirms | BODS GPS: a bus seen passing the stop contradicts "no bus"/"didn't stop"; "drove past full" can't be checked (no trust figure, only counts) |
+
+**Points to settle:** the lower threshold makes pranks at a stop easier (Play Integrity and the
+per-phone limits still apply; maybe 3 phones at first and lower later from the trust figures);
+small stops make the station band more precise, so the bands stay coarse (under 100 m, under 300 m);
+the DPIA covers buses too; the Online Safety Act exemption reasoning is the same (fixed choices).
