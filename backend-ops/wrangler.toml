@@ -1,13 +1,15 @@
-# TrainRadar ops: alerts to the ntfy app every 5 minutes and the
+# TrainRadar ops: alerts to a Telegram chat every 5 minutes and the
 # administrator dashboard at ops.mytrainradar.com, behind Cloudflare Access.
-# Set-up: the repository secret ALERTS_NTFY_TOPIC (a hard-to-guess ntfy topic,
-# subscribed to in the ntfy app); a Cloudflare Access application for
+# Set-up: a Telegram bot made with @BotFather, its token in the repository
+# secret ALERTS_TELEGRAM_BOT_TOKEN and your chat's id (after you message the
+# bot once) in ALERTS_TELEGRAM_CHAT_ID; a Cloudflare Access application for
 # ops.mytrainradar.com, whose team domain and audience tag go in the
 # repository variables ACCESS_TEAM_DOMAIN and ACCESS_AUD; optionally
 # PLAY_REPORTS_BUCKET; then OPS_ENABLED=true.
 # It only reads: the live bucket's status files, the site's data manifests,
 # Cloudflare's analytics (read-only token) and Google Play (read-only scopes).
-# No secrets here: ALERTS_NTFY_TOPIC, CLOUDFLARE_ANALYTICS_TOKEN,
+# No secrets here: ALERTS_TELEGRAM_BOT_TOKEN, ALERTS_TELEGRAM_CHAT_ID,
+# CLOUDFLARE_ANALYTICS_TOKEN,
 # CLOUDFLARE_ACCOUNT_ID and GOOGLE_PLAY_SERVICE_ACCOUNT_JSON are Worker
 # secrets, set by the deploy job from the GitHub Actions secrets.
 name = "trainradar-ops"

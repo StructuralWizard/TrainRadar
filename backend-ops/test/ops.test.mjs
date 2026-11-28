@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CONFIRM, problems, step } from "../src/rules.js";
-import { NTFY, body, compose, send } from "../src/notify.js";
+import { body, compose, send } from "../src/notify.js";
 import { accessToken, latestByCountry, parseCsv } from "../src/play.js";
 import { accessUser } from "../src/access.js";
 import { cloudflare } from "../src/cf.js";
@@ -42,27 +42,37 @@ test("alert state: a mail only after two checks in a row, and on recovery after 
   assert.deepEqual(state.open, {});
 });
 
-test("ntfy: title, new / cleared / still open, the topic only in the body", async () => {
+test("Telegram: title, new / cleared / still open; the token never in an error", async () => {
   const n = compose({
     raised: [{ country: "ie", text: "live feed failing for 45 min" }],
     cleared: [{ country: "fr", text: "stopped", lasted: 30 * 60_000 }],
     open: { a: { country: "uk", text: "TfL failing" } },
     site: "https://ops.example.test",
   });
-  assert.equal(n.title, "TrainRadar: 1 new problem (IE)");
+  assert.equal(n.title, "⚠️ TrainRadar: 1 new problem (IE)");
   assert.match(n.text, /New · IE: live feed failing for 45 min/);
   assert.match(n.text, /Cleared · FR: stopped \(lasted 30 min\)/);
   assert.match(n.text, /Still open · UK: TfL failing/);
-  assert.equal(n.priority, 4);
-  assert.equal(n.click, "https://ops.example.test/");
+  assert.equal(n.silent, false);
+  assert.equal(compose({ raised: [], cleared: [{ country: "fr", text: "x", lasted: 0 }], open: {}, site: "x" }).silent, true, "a recovery is silent");
   assert.equal(compose({ raised: [], cleared: [], open: {}, site: "x" }), null);
+  const env = { ALERTS_TELEGRAM_BOT_TOKEN: "123:s3cret", ALERTS_TELEGRAM_CHAT_ID: "42" };
   const calls = [];
-  await send({ ALERTS_NTFY_TOPIC: "s3cret-topic" }, n, async (url, init) => (calls.push([url, init]), new Response("{}")));
-  assert.equal(calls[0][0], NTFY, "the topic never in the URL");
-  assert.ok(!calls[0][0].includes("s3cret"));
-  assert.deepEqual(JSON.parse(calls[0][1].body), body("s3cret-topic", n));
-  assert.equal(JSON.parse(calls[0][1].body).topic, "s3cret-topic");
-  await assert.rejects(send({ ALERTS_NTFY_TOPIC: "t" }, n, async () => new Response("", { status: 429 })), /HTTP 429/);
+  await send(env, n, async (url, init) => (calls.push([url, init]), new Response("{}")));
+  assert.equal(calls[0][0], "https://api.telegram.org/bot123:s3cret/sendMessage");
+  const b = JSON.parse(calls[0][1].body);
+  assert.deepEqual(b, body("42", n));
+  assert.equal(b.chat_id, "42");
+  assert.ok(!calls[0][1].body.includes("s3cret"), "the token not in the body");
+  // Errors never carry the token (the URL).
+  const failures = [
+    async () => new Response(JSON.stringify({ description: "Unauthorized" }), { status: 401 }),
+    async () => {
+      throw new TypeError("fetch failed https://api.telegram.org/bot123:s3cret/sendMessage");
+    },
+  ];
+  for (const f of failures) await assert.rejects(send(env, n, f), (e) => !String(e.message).includes("s3cret") && /Telegram/.test(e.message));
+  await assert.rejects(send({}, n, async () => new Response("{}")), /not set/);
 });
 
 test("Play: UTF-16 reports, the latest day by country", () => {
@@ -133,12 +143,13 @@ test("the check: statuses from the bucket, a confirmed problem mailed once", asy
   const sent = [];
   const env = {
     LIVE: { get: async (k) => (bucket[k] ? { text: async () => bucket[k] } : null) },
-    ALERTS_NTFY_TOPIC: "t0pic",
+    ALERTS_TELEGRAM_BOT_TOKEN: "1:t",
+    ALERTS_TELEGRAM_CHAT_ID: "42",
   };
   const store = new Map();
   const ctx = { storage: { get: async (k) => store.get(k), put: async (k, v) => store.set(k, v) } };
   const ops = new OpsState(ctx, env);
-  const fetchFn = async (url, init) => (url === "https://ntfy.sh/" ? (sent.push(JSON.parse(init.body)), new Response("{}")) : new Response("", { status: 404 }));
+  const fetchFn = async (url, init) => (url.startsWith("https://api.telegram.org/") ? (sent.push(JSON.parse(init.body)), new Response("{}")) : new Response("", { status: 404 }));
   const statuses = await readStatuses(env);
   assert.equal(statuses.ie.error, "HTTP 503");
   assert.equal(statuses.fr, null);
@@ -148,8 +159,8 @@ test("the check: statuses from the bucket, a confirmed problem mailed once", asy
   const r2 = await ops.check(NOW + 300_000, fetchFn);
   assert.equal(r2.raised, 1);
   assert.equal(sent.length, 1);
-  assert.equal(sent[0].topic, "t0pic");
-  assert.match(sent[0].message, /IE: live feed failing/);
+  assert.equal(sent[0].chat_id, "42");
+  assert.match(sent[0].text, /IE: live feed failing/);
   await ops.check(NOW + 600_000, fetchFn);
   assert.equal(sent.length, 1);
   assert.ok(store.get("alerts").open["ie:failing"]);

@@ -1,43 +1,51 @@
-// Alert notifications (backend-ops), through ntfy (https://ntfy.sh): a push
-// to the ntfy app on the maintainer's phone, subscribed to the topic in the
-// ALERTS_NTFY_TOPIC secret. The topic goes in the JSON body of the publish
-// request (ntfy's JSON publishing), never in a URL; anyone who knows it can
-// read the alerts, which only name feeds and countries.
+// Alert notifications (backend-ops), through a Telegram bot: a message to
+// the maintainer's chat. The bot's token (ALERTS_TELEGRAM_BOT_TOKEN) goes in
+// the request URL, the only way Telegram's Bot API takes it (HTTPS; the
+// exception the maintainer records in AGENTS.md): that URL is built only for
+// the call, never logged and never in an error. The chat id
+// (ALERTS_TELEGRAM_CHAT_ID) goes in the JSON body. A recovery is sent
+// silently (no sound).
 
-export const NTFY = "https://ntfy.sh/";
+const API = "https://api.telegram.org";
 
 /** The notification for this check's changes, or null if nothing changed. */
 export function compose({ raised, cleared, open, site }) {
   if (!raised.length && !cleared.length) return null;
   const line = (p) => `${p.country.toUpperCase()}: ${p.text}`;
   const title = raised.length
-    ? `TrainRadar: ${raised.length} new problem${raised.length > 1 ? "s" : ""} (${[...new Set(raised.map((p) => p.country.toUpperCase()))].join(", ")})`
-    : `TrainRadar: ${cleared.length} problem${cleared.length > 1 ? "s" : ""} cleared`;
+    ? `⚠️ TrainRadar: ${raised.length} new problem${raised.length > 1 ? "s" : ""} (${[...new Set(raised.map((p) => p.country.toUpperCase()))].join(", ")})`
+    : `✅ TrainRadar: ${cleared.length} problem${cleared.length > 1 ? "s" : ""} cleared`;
   const parts = [];
   if (raised.length) parts.push(...raised.map((p) => `New · ${line(p)}`));
   if (cleared.length) parts.push(...cleared.map((p) => `Cleared · ${line(p)} (lasted ${Math.round(p.lasted / 60_000)} min)`));
   const still = Object.values(open || {}).filter((o) => !raised.some((p) => p.text === o.text));
   if (still.length) parts.push(...still.map((o) => `Still open · ${o.country.toUpperCase()}: ${o.text}`));
-  return {
-    title,
-    text: parts.join("\n"),
-    priority: raised.length ? 4 : 2, // high for a new problem, low for a recovery
-    tags: raised.length ? ["warning"] : ["white_check_mark"],
-    click: site.replace(/\/?$/, "/"),
-  };
+  return { title, text: parts.join("\n"), silent: !raised.length, link: site.replace(/\/?$/, "/") };
 }
 
-/** The ntfy publish request's JSON body. */
-export function body(topic, n) {
-  return { topic, title: n.title, message: n.text.slice(0, 3900), priority: n.priority ?? 3, tags: n.tags || [], ...(n.click ? { click: n.click } : {}) };
+/** The sendMessage request's JSON body (plain text, no Markdown to escape). */
+export function body(chatId, n) {
+  const text = [n.title, "", n.text, ...(n.link ? ["", n.link] : [])].join("\n").slice(0, 4000);
+  return { chat_id: chatId, text, disable_notification: !!n.silent, link_preview_options: { is_disabled: true } };
 }
 
-/** Publish one notification; throws on failure. */
+/** Send one notification; throws on failure (never with the token). */
 export async function send(env, n, fetchFn = fetch) {
-  const r = await fetchFn(NTFY, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "User-Agent": "Metranos-TrainRadar ops" },
-    body: JSON.stringify(body(env.ALERTS_NTFY_TOPIC, n)),
-  });
-  if (!r.ok) throw new Error(`ntfy: HTTP ${r.status}`);
+  const token = env.ALERTS_TELEGRAM_BOT_TOKEN;
+  const chat = env.ALERTS_TELEGRAM_CHAT_ID;
+  if (!token || !chat) throw new Error("ALERTS_TELEGRAM_BOT_TOKEN or ALERTS_TELEGRAM_CHAT_ID not set");
+  let r;
+  try {
+    r = await fetchFn(`${API}/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body(chat, n)),
+    });
+  } catch (e) {
+    throw new Error(`Telegram: ${e?.name || "network error"}`);
+  }
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    throw new Error(`Telegram: HTTP ${r.status}${j.description ? ` ${String(j.description).slice(0, 120)}` : ""}`);
+  }
 }

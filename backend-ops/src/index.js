@@ -2,9 +2,10 @@
 // from the ingest Workers: it only reads. Set-up: wrangler.toml's comments.
 //
 // Every 5 minutes (cron): every country's status.json in the live bucket and,
-// hourly, each country's data manifest on the site → rules.js → a push to
-// the ntfy app on a new problem and on its recovery (notify.js, ntfy.sh, the
-// topic in ALERTS_NTFY_TOPIC), the alert state kept in a Durable Object.
+// hourly, each country's data manifest on the site → rules.js → a Telegram
+// message on a new problem and on its recovery (notify.js, the bot and chat
+// in ALERTS_TELEGRAM_BOT_TOKEN / _CHAT_ID), the alert state kept in a
+// Durable Object.
 // OPS_ENABLED is the kill switch.
 //
 // The dashboard (/, /api/summary, /api/test-mail) answers only requests with
@@ -91,7 +92,7 @@ export class OpsState {
     const found = problems({ statuses, manifests: manifests.data, now });
     const { raised, cleared } = step(state, found, now);
     const mail = compose({ raised, cleared, open: state.open, site: this.env.DASHBOARD_URL || "https://ops.mytrainradar.com/" });
-    if (mail && this.env.ALERTS_NTFY_TOPIC) {
+    if (mail && this.env.ALERTS_TELEGRAM_BOT_TOKEN && this.env.ALERTS_TELEGRAM_CHAT_ID) {
       try {
         await send(this.env, mail, fetchFn);
         state.lastMail = { at: now, title: mail.title };
@@ -130,8 +131,12 @@ export class OpsState {
     if (url.pathname === "/check") return Response.json(await this.check());
     if (url.pathname === "/summary") return Response.json(await this.summaryData(request.headers.get("X-Ops-User") || ""));
     if (url.pathname === "/test-mail") {
-      if (!this.env.ALERTS_NTFY_TOPIC) return new Response("ALERTS_NTFY_TOPIC is not set", { status: 400 });
-      await send(this.env, { title: "TrainRadar: test alert", text: "A test from the ops dashboard: alerts reach this phone.", priority: 3, tags: ["bell"] });
+      if (!this.env.ALERTS_TELEGRAM_BOT_TOKEN || !this.env.ALERTS_TELEGRAM_CHAT_ID) return new Response("ALERTS_TELEGRAM_BOT_TOKEN or ALERTS_TELEGRAM_CHAT_ID is not set", { status: 400 });
+      try {
+        await send(this.env, { title: "🔔 TrainRadar: test alert", text: "A test from the ops dashboard: alerts reach this chat." });
+      } catch (e) {
+        return new Response(String(e?.message || e), { status: 502 });
+      }
       return new Response("sent");
     }
     return new Response("not found", { status: 404 });
