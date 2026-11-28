@@ -10,6 +10,7 @@ import { formatAgo, formatCount, formatDelay, formatDistance, formatMedian, trai
 import { Sheets, isPhone } from "./js/sheet.js";
 import { COMMUNITIES, PROVINCES, cityBox, fold, parseRoute, placeByCode, searchPlaces } from "./js/places.js";
 import { icon } from "./js/icons.js";
+import { NOTICE_KINDS, noticeLabel, noticeText } from "./js/notice.js";
 import { PLACE_ICON, cabTrain, cabVideos, journeyResults, layersSheet, lineBadge, networksSheet, pickField, placeKind, stationSheet, trainDayList, trainSheet, whenField } from "./js/sheetui.js";
 import { loadRides, ridesGeoJson, videoForTrain, videosAt } from "./js/cabrides.js";
 import { endStations } from "./js/route.js";
@@ -1167,6 +1168,34 @@ function trainVideo(info, now) {
   return videoForTrain(idx, trip?.stops, info.next_stop, (now ?? Date.now()) / 1000);
 }
 
+/** "Compartir aviso" (js/notice.js): the train whose choices are open. */
+let noticeFor = "";
+
+function noticeAction(info, trip, now) {
+  const key = `${info.trip_id}|${info.number}`;
+  const redraw = () => {
+    detailKey = "";
+    showPopup(true);
+  };
+  return {
+    open: noticeFor === key,
+    kinds: NOTICE_KINDS,
+    label: (k) => noticeLabel(lang, k),
+    onToggle: () => {
+      noticeFor = noticeFor === key ? "" : key;
+      redraw();
+    },
+    onPick: async (kind) => {
+      noticeFor = "";
+      redraw();
+      const text = noticeText(lang, kind, info, { title: trainTitle(info), stops: trip?.stops || [], nowSecs: (now ?? Date.now()) / 1000 });
+      const url = `${CONFIG.siteUrl}?train=${encodeURIComponent(info.number)}`;
+      if (canShare()) await share({ title: t(lang, "noticeShare"), text, url });
+      else if (await copyText(`${text}\n${url}`)) toast(t(lang, "noticeCopied"));
+    },
+  };
+}
+
 /** Phone: the selected train in the detail sheet (desktop: a popup). */
 function showTrainSheet(info, open, now) {
   const sheet = $("detail");
@@ -1208,6 +1237,7 @@ function showTrainSheet(info, open, now) {
     onHistory: CONFIG.apiBase && info.history_line
       ? () => openHistory({ kind: "train", trainNo: info.number, line: info.history_line, product: info.history_product, title: trainTitle(info), days: FREE_DAYS })
       : null,
+    notice: noticeAction(info, trip, now),
     trip: CONFIG.platform === "android" && !info.timetable_only ? tripButton(info) : null,
     onIncidents: (x) =>
       showIncidents({

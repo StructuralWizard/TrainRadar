@@ -106,6 +106,7 @@ function withIcons(rows) {
 /**
  * The train sheet. `o`: { regionName, lineColor, stops (tripJson), now (ms),
  * onClose, fav {on, onToggle}, notify {on, onToggle} | {href}, onShare,
+ * notice {open, kinds, label(kind), onToggle, onPick(kind)} ("Compartir aviso"),
  * onHistory, trip {on, pro, onToggle}, onIncidents, history, rows (trainRows
  * options), redraw }.
  */
@@ -149,6 +150,16 @@ export function trainSheet(lang, info, o = {}) {
   if (o.notify?.href) chips.push(el("a", { class: "chip-btn", id: "notify-btn", href: o.notify.href, target: "_blank", rel: "noopener" }, icon("bell", 16), t(lang, "actNotify")));
   else if (o.notify) chips.push(chip("bell", t(lang, o.notify.on ? "actNotifyOn" : "actNotify"), o.notify.onToggle, { id: "notify-btn", "aria-pressed": String(o.notify.on) }));
   if (o.onHistory) chips.push(chip("chart", t(lang, "actHistory"), o.onHistory, { id: "history-btn" }));
+  if (o.notice) chips.push(chip("message", t(lang, "noticeShare"), o.notice.onToggle, { id: "notice-btn", "aria-expanded": String(!!o.notice.open) }));
+  // "Compartir aviso": what's happening, as a fixed choice (notice.js).
+  const noticePick = o.notice?.open
+    ? el(
+        "div",
+        { class: "notice-pick", id: "notice-pick", role: "group", "aria-label": t(lang, "noticePick") },
+        el("p", { class: "small muted" }, t(lang, "noticePick")),
+        el("div", { class: "chip-row" }, o.notice.kinds.map((k) => el("button", { class: "chip-btn", type: "button", "data-kind": k, onclick: () => o.notice.onPick(k) }, o.notice.label(k)))),
+      )
+    : null;
 
   // The stop timeline: the last stop passed (grey), "Ahora: entre X e Y",
   // the next stop (a ring in brand blue) and the ones after (hollow), each
@@ -248,6 +259,7 @@ export function trainSheet(lang, info, o = {}) {
     withIcons(trainAlerts(lang, info, o.onIncidents)),
     acts.length ? el("div", { class: "ts-acts" }, acts) : null,
     chips.length ? el("div", { class: "chip-row" }, chips) : null,
+    noticePick,
     o.fav?.full ? el("p", { class: "small muted fav-full" }, t(lang, "favFull", { n: o.fav.limit })) : null,
     o.trip && info.origin
       ? el(
