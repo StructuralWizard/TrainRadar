@@ -208,9 +208,10 @@ exists.
 
 `web/legal/` holds the privacy policy, terms, provider identification and data licences
 (ES + EN), linked from the About panel (ⓘ), with Metranos Ltd's details (company
-16886706, 128 City Road, London EC1V 2NX; support@metranos.com; English law). They are
-drafts written without legal advice: have them reviewed before publishing the Android
-app, and update the "last updated" dates when they change.
+16886706, 128 City Road, London EC1V 2NX; support@metranos.com; English law). They were
+reviewed and approved by Metranos Ltd's legal advisers in November 2026 (see
+[legal-review.md](legal-review.md)); update the "last updated" dates when they change, and have
+material changes reviewed again.
 
 ## Ireland (docs/europe/ie.md)
 
@@ -396,7 +397,7 @@ feeds. Off until set up:
 2. **Repository variable `REPORTS_ENABLED`**: `true` deploys the Worker and takes reports;
    `false` keeps it deployed but refuses every report and publishes `{"on": false}`, which hides
    the app's button at once (no release needed). Unset: not deployed.
-3. Before turning it on for users: the privacy policy and terms (done, drafts), the short DPIA,
+3. Before turning it on for users: the privacy policy and terms (done, reviewed), the short DPIA,
    and the Play data safety form ([play-store.md](play-store.md#once-travellers-reports-are-on-uk-docsplan-crowd-reportsmd)).
 
 The Android build points at `https://reports.mytrainradar.com/` (repository variable
